@@ -1,0 +1,790 @@
+"use client";
+
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+
+import { Badge } from "@nauta/ui/badge";
+import { Button } from "@nauta/ui/button";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@nauta/ui/card";
+import { Skeleton } from "@nauta/ui/skeleton";
+
+import { api } from "~/trpc/react";
+
+import { ActiveParentBanner } from "./active-parent-banner";
+import { CanvasShell } from "./canvas-shell";
+import { ExtractionSummaryPanel } from "./extraction-summary-panel";
+import { InspectorPanel } from "./inspector-panel";
+import { LayersPanel } from "./layers-panel";
+import { PdfPreviewPane } from "./pdf-preview-pane";
+import { ReprocessDialog } from "./reprocess-dialog";
+import { useAutofillFields } from "./use-autofill-fields";
+import { useCanvasState } from "./use-canvas-state";
+import { useRoleMutations } from "./use-role-mutations";
+
+import type { ParentEntityOption } from "./field-relationship-picker";
+import type { InspectorComponent } from "./inspector-panel";
+import type { LayersComponent } from "./layers-panel";
+import type { ComponentRole } from "./region-overlay-box";
+import type { Polygon } from "./use-region-edit";
+
+/** Full-page polygon used by the legacy "Classify Page" affordance. */
+const FULL_PAGE_POLYGON: Polygon = [
+  [0, 0],
+  [1, 0],
+  [1, 1],
+  [0, 1],
+];
+
+const fmt = (d: Date | string | null) =>
+  d ? new Date(d).toLocaleString() : "—";
+
+const parseStatusVariant = (
+  status: string,
+): "default" | "secondary" | "destructive" => {
+  if (status === "parsed") return "default";
+  if (status === "failed") return "destructive";
+  return "secondary";
+};
+
+/** Signed URL entry with expiry tracking (WR-01). */
+interface SignedUrlEntry {
+  readonly url: string;
+  readonly expiresAt: number;
+}
+
+type SignedUrlCache = Record<string, SignedUrlEntry>;
+
+function getCachedUrl(cache: SignedUrlCache, id: string): string | undefined {
+  const entry = cache[id];
+  if (!entry) return undefined;
+  return entry.expiresAt > Date.now() ? entry.url : undefined;
+}
+
+function getLocationPageIndex(location: unknown): number | null {
+  if (
+    location !== null &&
+    typeof location === "object" &&
+    "page_index" in location &&
+    typeof (location as { page_index?: unknown }).page_index === "number"
+  ) {
+    return (location as { page_index: number }).page_index;
+  }
+  return null;
+}
+
+/** The lineage origin marker AutofillFieldsUseCase stamps on auto-detected boxes. */
+const AUTO_DETECTED_ORIGIN = "auto_detected";
+
+/**
+ * Read the lineage origin from a component's content_raw (HIGH-1/WR-05), mirroring
+ * the server's DenyFieldUseCase: recognizes both the nested `lineage.origin`
+ * Phase-6 convention and a flat top-level `origin`. True ONLY for an auto-detected
+ * box — any other value (including null/missing) means user-drawn.
+ */
+function isAutoDetectedOrigin(contentRaw: unknown): boolean {
+  if (contentRaw === null || typeof contentRaw !== "object") return false;
+  const raw = contentRaw as Record<string, unknown>;
+  const lineage = raw.lineage;
+  if (lineage !== null && typeof lineage === "object") {
+    const origin = (lineage as Record<string, unknown>).origin;
+    if (typeof origin === "string") return origin === AUTO_DETECTED_ORIGIN;
+  }
+  return raw.origin === AUTO_DETECTED_ORIGIN;
+}
+
+/** Narrow a raw confidence value (string|number|null|unknown) to number|null. */
+function toConfidence(raw: unknown): number | null {
+  if (typeof raw === "number") return raw;
+  if (typeof raw === "string") {
+    const n = parseFloat(raw);
+    return Number.isNaN(n) ? null : n;
+  }
+  return null;
+}
+
+/**
+ * Resolve a FIELD's candidate value from its extraction record (WR-02).
+ *
+ * extractedFields is the JSONB blob keyed by field SLUG. When the FIELD box is
+ * mapped to a property (entity_type_field_id → its slug, `fieldKey`), the value
+ * is selected DETERMINISTICALLY by that key — never `Object.entries(...)[0]`,
+ * which could surface a value for a different property than the mapped one.
+ *
+ * `fieldKey` is the resolved slug for the mapped entity_type_field_id (null when
+ * the box is not yet mapped). Falls back to the single-entry blob only when the
+ * box is unmapped AND exactly one value exists (a safe, unambiguous default).
+ * Rendered as a React text node (auto-escaped, T-09-80).
+ */
+function getCandidateValue(
+  extractedFields: unknown,
+  fieldKey: string | null,
+): string | null {
+  if (
+    extractedFields === null ||
+    typeof extractedFields !== "object" ||
+    Array.isArray(extractedFields)
+  ) {
+    return null;
+  }
+  const fields = extractedFields as Record<string, unknown>;
+
+  // Mapped: select the value for the mapped property's slug (deterministic).
+  if (fieldKey !== null) {
+    const v = fields[fieldKey];
+    return v === null || v === undefined ? null : String(v);
+  }
+
+  // Unmapped: only surface a candidate when exactly one value exists, so an
+  // unmapped box never shows an arbitrary value from a multi-property blob.
+  const entries = Object.entries(fields);
+  if (entries.length === 1) {
+    const [, v] = entries[0]!;
+    return v === null || v === undefined ? null : String(v);
+  }
+  return null;
+}
+
+interface EmailDetailProps {
+  emailId: string;
+}
+
+export function EmailDetail({ emailId }: EmailDetailProps) {
+  const { data, isLoading, isError } = api.emails.detail.useQuery({
+    id: emailId,
+  });
+
+  // ---- PDF preview state (hoisted for the canvas zone) ----
+  const [activeAttachmentId, setActiveAttachmentId] = useState<string | null>(
+    null,
+  );
+  const [activeComponentId, setActiveComponentId] = useState<string | null>(
+    null,
+  );
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [signedUrls, setSignedUrls] = useState<SignedUrlCache>({});
+  const signedUrlsRef = useRef<SignedUrlCache>({});
+  useEffect(() => {
+    signedUrlsRef.current = signedUrls;
+  }, [signedUrls]);
+
+  // ---- Canvas shell view-toggle state ----
+  const [showRegions, setShowRegions] = useState<boolean>(true);
+  const [showHistory, setShowHistory] = useState<boolean>(false);
+  const [showUnrelated, setShowUnrelated] = useState<boolean>(false);
+
+  // ---- Resolve the attachment_page parent for the current page (createRegion) ----
+  const utils = api.useUtils();
+
+  // ---- Reprocess dialog (preserved from Phase 7) ----
+  const [reprocessDialogOpen, setReprocessDialogOpen] = useState(false);
+  const reprocessMutation = api.emails.reprocessEmail.useMutation({
+    onSuccess: async () => {
+      await utils.emails.detail.invalidate({ id: emailId });
+      toast.success("Email sent for reprocessing");
+    },
+    onError: () => toast.error("Could not reprocess email. Try again."),
+  });
+
+  // ---- Entity types (label resolution + slug → id mapping) ----
+  const { data: entityTypes } = api.entityTypes.list.useQuery();
+  const slugToId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const et of entityTypes ?? []) map.set(et.slug, et.id);
+    return map;
+  }, [entityTypes]);
+  const idToLabel = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const et of entityTypes ?? []) map.set(et.id, et.label);
+    return map;
+  }, [entityTypes]);
+  /** entityTypeFieldId → label, for FIELD property labels in the tree/inspector. */
+  const fieldIdToLabel = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const et of entityTypes ?? []) {
+      for (const f of et.fields) map.set(f.id, f.label);
+    }
+    return map;
+  }, [entityTypes]);
+  /**
+   * entityTypeFieldId (uuid) → field key/slug (WR-02). extractedFields is keyed
+   * by slug; this resolves the mapped property's slug so the candidate value is
+   * selected deterministically (not by JSONB insertion order).
+   */
+  const fieldIdToKey = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const et of entityTypes ?? []) {
+      for (const f of et.fields) map.set(f.id, f.key);
+    }
+    return map;
+  }, [entityTypes]);
+
+  /** Resolve a component's mapped field slug (null when unmapped). */
+  function fieldKeyFor(entityTypeFieldId: string | null): string | null {
+    return entityTypeFieldId !== null
+      ? (fieldIdToKey.get(entityTypeFieldId) ?? null)
+      : null;
+  }
+
+  // ---- 09-08 hooks: canvas state + role mutations + autofill-fields ----
+  const components = data?.components ?? [];
+
+  function resolvePageComponentId(pageIndex: number): string | null {
+    if (activeAttachmentId === null) return null;
+    const pageComp = components.find(
+      (c) =>
+        c.sourceType === "attachment_page" &&
+        c.attachmentId === activeAttachmentId &&
+        getLocationPageIndex(c.location) === pageIndex,
+    );
+    return pageComp?.id ?? null;
+  }
+
+  const canvas = useCanvasState({ emailId });
+  const roleMutations = useRoleMutations({ emailId });
+  const autofill = useAutofillFields({
+    emailId,
+    confirmFields: roleMutations.confirmFields,
+  });
+
+  // D-10: a box drawn while an entity is the active parent becomes a FIELD child
+  // of that entity. createRegion returns the new id; we chain setRole=field +
+  // setFieldRelationship(parentComponentId) so the next-drawn box is a field.
+  const createFieldRegionMutation = api.emails.createRegion.useMutation({
+    onSuccess: async (raw, _vars) => {
+      const newId = (
+        raw as { data?: { component_id?: string } } | null | undefined
+      )?.data?.component_id;
+      const parentId = canvas.activeParentId;
+      if (typeof newId === "string" && parentId !== null) {
+        roleMutations.setRole(newId, "field");
+        roleMutations.setFieldRelationship(newId, parentId, null);
+      }
+      await utils.emails.detail.invalidate({ id: emailId });
+    },
+    onError: () => toast.error("Could not add field region. Try again."),
+  });
+
+  const h1Ref = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    h1Ref.current?.focus();
+  }, []);
+
+  // Fetch the signed URL for the active attachment if absent/expired (WR-01/08).
+  useEffect(() => {
+    if (!activeAttachmentId) return;
+    if (getCachedUrl(signedUrlsRef.current, activeAttachmentId)) return;
+    let cancelled = false;
+    async function fetchUrl() {
+      try {
+        const res = await fetch(`/api/attachments/${activeAttachmentId}`);
+        if (!res.ok) return;
+        const json = (await res.json()) as { url?: string };
+        if (!cancelled && json.url) {
+          setSignedUrls((prev) => ({
+            ...prev,
+            [activeAttachmentId as string]: {
+              url: json.url as string,
+              expiresAt: Date.now() + 55 * 60 * 1000,
+            },
+          }));
+        }
+      } catch {
+        // Silently fail — the inbox/download path surfaces its own errors.
+      }
+    }
+    void fetchUrl();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeAttachmentId]);
+
+  // Auto-open the first PDF attachment on load (the preview is the core surface).
+  useEffect(() => {
+    if (activeAttachmentId !== null) return;
+    const atts = data?.attachments ?? [];
+    const firstPdf =
+      atts.find((a) => a.contentType === "application/pdf") ?? atts[0];
+    if (firstPdf) setActiveAttachmentId(firstPdf.id);
+  }, [data, activeAttachmentId]);
+
+  if (isLoading) {
+    return (
+      <main className="h-full p-6">
+        <div className="space-y-3" aria-busy="true" aria-label="Loading…">
+          <Skeleton className="h-28 w-full rounded-xl" />
+          <Skeleton className="h-28 w-full rounded-xl" />
+          <Skeleton className="h-28 w-full rounded-xl" />
+        </div>
+      </main>
+    );
+  }
+
+  if (isError) {
+    return (
+      <main className="h-full p-6">
+        <Card className="border-destructive" role="alert">
+          <CardHeader>
+            <CardTitle className="text-destructive text-base">
+              Failed to load email
+            </CardTitle>
+            <CardDescription>
+              Unable to load this email. Please try refreshing the page.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </main>
+    );
+  }
+
+  if (data === null || data === undefined) {
+    return (
+      <main className="h-full p-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Email not found</CardTitle>
+            <CardDescription>
+              Email not found. It may have been deleted or the link is invalid.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      </main>
+    );
+  }
+
+  const { email, attachments } = data;
+  const subject = email.subject ?? "(no subject)";
+
+  const activeSignedUrl = activeAttachmentId
+    ? getCachedUrl(signedUrls, activeAttachmentId)
+    : undefined;
+
+  // attachment_page parent for the current page (createRegion / classify).
+  const pageComponentId =
+    activeAttachmentId !== null
+      ? resolvePageComponentId(currentPage - 1)
+      : null;
+
+  // ---- Derive view-model rows for LAYERS + INSPECTOR ----
+  const layersComponents: LayersComponent[] = components.map((c) => ({
+    id: c.id,
+    sourceType: c.sourceType,
+    role: (c.role ?? null) as ComponentRole,
+    parentComponentId: c.parentComponentId ?? null,
+    entityTypeLabel:
+      c.entityTypeId !== null
+        ? (idToLabel.get(c.entityTypeId) ?? c.entityTypeLabel)
+        : c.entityTypeLabel,
+    entityTypeFieldId: c.entityTypeFieldId ?? null,
+    extractionStatus: c.extractionStatus,
+    location: c.location,
+    contentText: c.contentText,
+    candidateValue: getCandidateValue(
+      c.extractedFields,
+      fieldKeyFor(c.entityTypeFieldId ?? null),
+    ),
+    propertyLabel:
+      c.entityTypeFieldId !== null
+        ? (fieldIdToLabel.get(c.entityTypeFieldId) ?? null)
+        : null,
+  }));
+
+  // HIGH-1/D-16: FIELD boxes that carry a pending candidate value get the on-PDF
+  // inline ✓/✗. Confirmed/terminal boxes show no controls (UI-SPEC §Inline ✓/✗).
+  const confirmDenyComponentIds: string[] = components
+    .filter(
+      (c) =>
+        c.role === "field" &&
+        c.extractionStatus !== "confirmed" &&
+        c.extractionStatus !== "rejected" &&
+        c.extractionStatus !== "superseded" &&
+        getCandidateValue(
+          c.extractedFields,
+          fieldKeyFor(c.entityTypeFieldId ?? null),
+        ) !== null,
+    )
+    .map((c) => c.id);
+
+  // WR-05/D-18: boxes the AI auto-detected (origin marker) drive the canonical
+  // control's origin-aware deny + Undo affordance on the PDF.
+  const autoDetectedComponentIds: string[] = components
+    .filter((c) => isAutoDetectedOrigin(c.contentRaw))
+    .map((c) => c.id);
+
+  // Same-page ENTITY regions for the field-relationship parent picker (06-04).
+  const selectedId = canvas.selectedIds[0] ?? null;
+  const selectedComponent =
+    selectedId !== null
+      ? components.find((c) => c.id === selectedId)
+      : undefined;
+  const selectedPageIndex =
+    selectedComponent !== undefined
+      ? getLocationPageIndex(selectedComponent.location)
+      : null;
+
+  const parentOptions: ParentEntityOption[] = components
+    .filter(
+      (c) =>
+        c.sourceType === "region" &&
+        c.role === "entity" &&
+        c.id !== selectedId &&
+        c.extractionStatus !== "rejected" &&
+        c.extractionStatus !== "superseded" &&
+        (selectedPageIndex === null ||
+          getLocationPageIndex(c.location) === selectedPageIndex),
+    )
+    .map((c) => ({
+      id: c.id,
+      label:
+        (c.entityTypeId !== null ? idToLabel.get(c.entityTypeId) : null) ??
+        c.entityTypeLabel ??
+        "Entity",
+      entityTypeId: c.entityTypeId ?? null,
+      entityTypeLabel:
+        (c.entityTypeId !== null ? idToLabel.get(c.entityTypeId) : null) ??
+        c.entityTypeLabel,
+    }));
+
+  // The candidate field children of the selected entity (Confirm All Fields).
+  const candidateFieldIds =
+    selectedComponent !== undefined && selectedComponent.role === "entity"
+      ? components
+          .filter(
+            (c) =>
+              c.role === "field" &&
+              c.parentComponentId === selectedComponent.id &&
+              c.extractionStatus !== "confirmed" &&
+              getCandidateValue(
+                c.extractedFields,
+                fieldKeyFor(c.entityTypeFieldId ?? null),
+              ) !== null,
+          )
+          .map((c) => c.id)
+      : [];
+
+  const inspectorSelected: InspectorComponent | null =
+    selectedComponent !== undefined
+      ? {
+          id: selectedComponent.id,
+          role: (selectedComponent.role ?? null) as ComponentRole,
+          entityTypeId: selectedComponent.entityTypeId ?? null,
+          entityTypeFieldId: selectedComponent.entityTypeFieldId ?? null,
+          parentComponentId: selectedComponent.parentComponentId ?? null,
+          entityTypeLabel:
+            selectedComponent.entityTypeId !== null
+              ? (idToLabel.get(selectedComponent.entityTypeId) ??
+                selectedComponent.entityTypeLabel)
+              : selectedComponent.entityTypeLabel,
+          extractionStatus: selectedComponent.extractionStatus,
+          pageNumber:
+            (getLocationPageIndex(selectedComponent.location) ?? 0) + 1,
+          candidateValue: getCandidateValue(
+            selectedComponent.extractedFields,
+            fieldKeyFor(selectedComponent.entityTypeFieldId ?? null),
+          ),
+          confidenceScore: toConfidence(selectedComponent.confidenceScore),
+          propertyLabel:
+            selectedComponent.entityTypeFieldId !== null
+              ? (fieldIdToLabel.get(selectedComponent.entityTypeFieldId) ?? null)
+              : null,
+          candidateFieldIds,
+        }
+      : null;
+
+  const inspectorEntityTypeLabel =
+    selectedComponent !== undefined && selectedComponent.entityTypeId !== null
+      ? (idToLabel.get(selectedComponent.entityTypeId) ?? null)
+      : null;
+
+  // The active-parent entity label (D-10 banner).
+  const activeParentComponent =
+    canvas.activeParentId !== null
+      ? components.find((c) => c.id === canvas.activeParentId)
+      : undefined;
+  const activeParentLabel =
+    activeParentComponent !== undefined
+      ? ((activeParentComponent.entityTypeId !== null
+          ? idToLabel.get(activeParentComponent.entityTypeId)
+          : null) ??
+        activeParentComponent.entityTypeLabel ??
+        "Entity")
+      : "";
+
+  // Selecting a row drives selection + arms active-parent (D-10).
+  //   - ENTITY → arm it as the active parent (its fields reveal; focus mode).
+  //   - FIELD  → select the field but KEEP its parent entity active (B4) so the
+  //     entity stays armed, the field's siblings stay visible, and the field
+  //     surfaces in the inspector — clicking a field must not deselect the entity.
+  //   - anything else → clear the active parent.
+  function handleSelectRow(id: string): void {
+    canvas.select(id);
+    setActiveComponentId(id);
+    const comp = components.find((c) => c.id === id);
+    const pageIndex = comp ? getLocationPageIndex(comp.location) : null;
+    if (pageIndex !== null) setCurrentPage(pageIndex + 1);
+    if (comp?.role === "entity") {
+      canvas.setActiveParentId(id);
+    } else if (
+      comp?.role === "field" &&
+      comp.parentComponentId !== null &&
+      comp.parentComponentId !== undefined
+    ) {
+      canvas.setActiveParentId(comp.parentComponentId);
+    } else {
+      canvas.setActiveParentId(null);
+    }
+  }
+
+  // INSPECTOR: resolve the chosen entity-type slug → id, then setEntityType.
+  function handleSetEntityTypeSlug(componentId: string, slug: string): void {
+    const id = slugToId.get(slug) ?? null;
+    roleMutations.setEntityType(componentId, id);
+  }
+
+  // Route a finished draw (D-08/D-10): redraw/split take precedence; otherwise a
+  // draw with an active parent becomes a FIELD child of that entity, and a draw
+  // with no active parent creates a standalone unclassified region.
+  function handleRectDrawn(polygon: Polygon): void {
+    if (canvas.edit.drawMode === "redraw" && selectedId !== null) {
+      canvas.edit.redraw(selectedId, polygon, currentPage - 1);
+    } else if (canvas.edit.drawMode === "split") {
+      canvas.edit.pushRect(polygon);
+    } else if (pageComponentId !== null) {
+      if (canvas.activeParentId !== null) {
+        // The mutation's zod input expects a mutable [number, number][]; copy
+        // the readonly Polygon into fresh tuples (immutable source preserved).
+        createFieldRegionMutation.mutate({
+          pageComponentId,
+          polygon: polygon.map(([x, y]) => [x, y] as [number, number]),
+          pageIndex: currentPage - 1,
+        });
+        canvas.edit.cancelDraw();
+      } else {
+        canvas.edit.createRegion(pageComponentId, polygon, currentPage - 1);
+      }
+    } else {
+      // MEDIUM-B: no resolvable attachment_page component to anchor a new region
+      // on this page — drawing here cannot create anything. Surface why instead
+      // of silently dropping the drawn rect (which looks like a dead toggle).
+      canvas.edit.cancelDraw();
+      toast.warning(
+        "Can't draw a region on this page — it has no recognized document page to attach to.",
+      );
+    }
+  }
+
+  function handleConfirmSplit(): void {
+    if (selectedId === null || canvas.edit.drawnRects.length < 2) return;
+    canvas.edit.split(
+      selectedId,
+      canvas.edit.drawnRects.map((polygon) => ({
+        polygon,
+        pageIndex: currentPage - 1,
+      })),
+    );
+  }
+
+  const inspectorAutofillPhase =
+    selectedComponent !== undefined
+      ? autofill.phases[selectedComponent.id]
+      : undefined;
+
+  const canvasZone =
+    activeAttachmentId !== null && !activeSignedUrl ? (
+      <div className="p-4">
+        <Skeleton className="h-96 w-full rounded-xl" />
+      </div>
+    ) : activeAttachmentId !== null && activeSignedUrl ? (
+      <PdfPreviewPane
+        signedUrl={activeSignedUrl}
+        filename={
+          attachments.find((a) => a.id === activeAttachmentId)?.filename ??
+          "attachment.pdf"
+        }
+        components={components}
+        activeComponentId={activeComponentId}
+        setActiveComponentId={setActiveComponentId}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        onClose={() => setActiveAttachmentId(null)}
+        // Single source of truth for overlay visibility (Bundle C): the shell
+        // "Regions" toggle owns the state and drives the on-PDF overlays via
+        // this controlled read-only prop (the pane has no separate toggle).
+        showOverlays={showRegions}
+        selectedComponentIds={canvas.selectedIds}
+        drawMode={canvas.edit.drawMode}
+        liveRect={canvas.edit.liveRect}
+        setLiveRect={canvas.edit.setLiveRect}
+        drawnRects={canvas.edit.drawnRects}
+        showHistory={showHistory}
+        setShowHistory={setShowHistory}
+        mutatingComponentIds={[
+          ...canvas.mutatingIds,
+          ...roleMutations.mutatingComponentIds,
+        ]}
+        onSelectComponent={handleSelectRow}
+        onShiftClick={canvas.shiftToggle}
+        onClearSelection={() => {
+          canvas.clearSelection();
+          canvas.clearActiveParent();
+        }}
+        onAccept={canvas.edit.accept}
+        onReject={canvas.edit.reject}
+        onRedraw={() => canvas.edit.enterDraw("redraw")}
+        onSplit={() => canvas.edit.enterDraw("split")}
+        onEnterDraw={canvas.edit.enterDraw}
+        onCancelDraw={canvas.edit.cancelDraw}
+        onRectDrawn={handleRectDrawn}
+        onConfirmSplit={handleConfirmSplit}
+        canAddRegion={pageComponentId !== null}
+        onClassifyPage={
+          pageComponentId !== null
+            ? () =>
+                canvas.edit.createRegion(
+                  pageComponentId,
+                  FULL_PAGE_POLYGON,
+                  currentPage - 1,
+                )
+            : undefined
+        }
+        onClassifyDocument={
+          pageComponentId !== null
+            ? () => canvas.edit.classifyDocument(pageComponentId)
+            : undefined
+        }
+        rejectDialogOpen={canvas.edit.rejectDialogOpen}
+        onRejectDialogChange={canvas.edit.setRejectDialogOpen}
+        nestPickerOpen={canvas.edit.nestPickerOpen}
+        onNestPickerChange={canvas.edit.setNestPickerOpen}
+        eligibleRegions={parentOptions.map((p) => ({
+          id: p.id,
+          extractionStatus: "candidate",
+          entityTypeLabel: p.entityTypeLabel,
+        }))}
+        onMerge={(ids) => canvas.edit.merge(ids)}
+        onNest={(componentId, parentId) =>
+          canvas.edit.nest(componentId, parentId)
+        }
+        onUnNest={(componentId) => canvas.edit.nest(componentId, null)}
+        // ---- Phase 9 (HIGH-2): the shell Draw tool arms drag-to-draw ----
+        canvasMode={canvas.mode}
+        // ---- Phase 9 (HIGH-1/WR-01): relationship model on the PDF ----
+        activeParentId={canvas.activeParentId}
+        showUnrelated={showUnrelated}
+        confirmDenyComponentIds={confirmDenyComponentIds}
+        autoDetectedComponentIds={autoDetectedComponentIds}
+        onConfirmField={roleMutations.confirmField}
+        onDenyField={roleMutations.denyField}
+        onRestoreField={roleMutations.restoreField}
+      />
+    ) : (
+      <div className="flex h-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
+        No document open. Select an attachment to preview it.
+      </div>
+    );
+
+  return (
+    <main className="flex flex-col h-full">
+      {/* Header row: back link, subject, status badge, reprocess button */}
+      <header className="flex flex-wrap items-center gap-4 border-b px-4 py-3 shrink-0">
+        <Link
+          href="/"
+          className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+        >
+          ← Back to inbox
+        </Link>
+        <h1
+          ref={h1Ref}
+          className="text-lg font-semibold tracking-tight outline-none truncate flex-1"
+          tabIndex={-1}
+        >
+          {subject}
+        </h1>
+        <Badge variant={parseStatusVariant(email.parseStatus)}>
+          {email.parseStatus}
+        </Badge>
+        <Button
+          variant="outline"
+          size="sm"
+          aria-label="Reprocess this email"
+          disabled={reprocessMutation.isPending}
+          onClick={() => setReprocessDialogOpen(true)}
+        >
+          Reprocess Email
+        </Button>
+      </header>
+
+      <ReprocessDialog
+        open={reprocessDialogOpen}
+        onOpenChange={setReprocessDialogOpen}
+        onConfirm={() => {
+          reprocessMutation.mutate({ emailId });
+          setReprocessDialogOpen(false);
+        }}
+      />
+
+      {/* The four-zone canvas editor (D-06) */}
+      <div className="flex-1 min-h-0">
+        <CanvasShell
+          state={canvas}
+          showRegions={showRegions}
+          onShowRegionsChange={setShowRegions}
+          showHistory={showHistory}
+          onShowHistoryChange={setShowHistory}
+          showUnrelated={showUnrelated}
+          onShowUnrelatedChange={setShowUnrelated}
+          onClose={() => setActiveAttachmentId(null)}
+          layers={
+            <LayersPanel
+              components={layersComponents}
+              selectedId={selectedId}
+              activeParentId={canvas.activeParentId}
+              showUnrelated={showUnrelated}
+              onSelect={handleSelectRow}
+              onConfirmField={roleMutations.confirmField}
+              onDenyField={roleMutations.denyField}
+            />
+          }
+          inspector={
+            <InspectorPanel
+              selected={inspectorSelected}
+              parentOptions={parentOptions}
+              entityTypeLabel={inspectorEntityTypeLabel}
+              autofillPhase={inspectorAutofillPhase}
+              onSetRole={roleMutations.setRole}
+              onSetEntityTypeSlug={handleSetEntityTypeSlug}
+              onSetFieldRelationship={roleMutations.setFieldRelationship}
+              onAutofillFields={autofill.autofillFields}
+              onConfirmAllFields={autofill.confirmAllFields}
+              onConfirmField={roleMutations.confirmField}
+              onUnconfirmField={roleMutations.unconfirmField}
+            />
+          }
+          summary={
+            <ExtractionSummaryPanel
+              components={layersComponents}
+              onConfirmEntity={roleMutations.confirmField}
+            />
+          }
+          banner={
+            canvas.activeParentId !== null ? (
+              <ActiveParentBanner
+                label={activeParentLabel}
+                onClear={() => {
+                  canvas.clearActiveParent();
+                  canvas.clearSelection();
+                }}
+              />
+            ) : undefined
+          }
+          canvas={canvasZone}
+        />
+      </div>
+    </main>
+  );
+}

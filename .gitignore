@@ -1,0 +1,48 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+uv.lock
+
+# Node
+node_modules/
+
+# Env
+.env
+.env.local
+.env.*.local
+.env.staging
+.env.production
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+terraform.tfvars
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local context & examples (not part of the service)
+context/
+examples/
+
+# Dev logs
+.dev-logs/
+tfplan*
+
+.vercel
+
+# Build artifacts
+apps/web/.next/
+packages/api-client/dist/
+*.tsbuildinfo

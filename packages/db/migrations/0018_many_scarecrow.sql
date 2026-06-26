@@ -1,0 +1,3 @@
+ALTER TABLE "component_entity_candidate_links" ADD COLUMN "was_dismissed" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "entity_instances" ADD COLUMN "merged_into" uuid;--> statement-breakpoint
+ALTER TABLE "entity_instances" ADD CONSTRAINT "entity_instances_merged_into_entity_instances_id_fk" FOREIGN KEY ("merged_into") REFERENCES "public"."entity_instances"("id") ON DELETE no action ON UPDATE no action;

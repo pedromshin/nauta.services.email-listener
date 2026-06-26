@@ -1,0 +1,50 @@
+name: CI — Email Listener
+
+on:
+  pull_request:
+    paths:
+      - "apps/email-listener/**"
+      - ".github/workflows/ci-email-listener.yml"
+  push:
+    branches: [main, dev]
+    paths:
+      - "apps/email-listener/**"
+      - ".github/workflows/ci-email-listener.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint, typecheck, architecture, tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/email-listener
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+
+      - name: Mypy
+        run: uv run mypy app
+
+      - name: Import linter (Clean Architecture layers)
+        run: uv run lint-imports
+
+      - name: Bandit security scan
+        run: uv run bandit -c pyproject.toml -r app
+
+      - name: Tests (80% coverage gate)
+        run: uv run pytest

@@ -1,0 +1,8 @@
+aws_region        = "us-east-1"
+aws_profile       = "default"
+project           = "nauta-services"
+github_repository = "your-org/nauta.services.email-listener"
+
+# Optional: Secrets Manager ARNs for the service API key
+# api_key_secret_arn_prod    = "arn:aws:secretsmanager:us-east-1:123456789012:secret:prod/nauta-services/API_KEY-xxxxxx"
+# api_key_secret_arn_staging = "arn:aws:secretsmanager:us-east-1:123456789012:secret:staging/nauta-services/API_KEY-xxxxxx"

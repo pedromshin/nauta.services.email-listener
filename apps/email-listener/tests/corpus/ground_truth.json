@@ -1,0 +1,59 @@
+{
+  "hard_cases/multi-invoice-in-one-pdf.pdf": {
+    "description": "Two commercial invoices on separate pages in one PDF",
+    "expected": {
+      "min_region_count": 2,
+      "entity_types": ["invoice", "invoice"],
+      "key_identifiers": {
+        "invoice_numbers": ["INV-2024-10001", "INV-2024-10002"],
+        "container_numbers": ["TCKU3456789", "MSCU9876543"],
+        "booking_refs": ["BKG-10001", "BKG-10002"]
+      },
+      "assertions": {
+        "multi_invoice": "ProposeRegionsUseCase must return >= 2 Components with entity_type_hint containing 'invoice'"
+      }
+    }
+  },
+  "hard_cases/nested-entities-on-one-page.pdf": {
+    "description": "Single page with BL header, container status table, and inline invoice reference",
+    "expected": {
+      "min_region_count": 1,
+      "entity_types": ["bill_of_lading", "container_status", "invoice"],
+      "key_identifiers": {
+        "bl_number": "MSCU2024-00551",
+        "container_number": "TCKU3001234",
+        "invoice_ref": "INV-NEST-0099",
+        "booking_ref": "BKG-2024-00551"
+      },
+      "assertions": {
+        "parent_linkage": "At least one region Component must have parent_component_id set (not null) — denoting a child/nested entity"
+      }
+    }
+  },
+  "hard_cases/junk-corrupt.pdf": {
+    "description": "Truncated/corrupt PDF — no readable content",
+    "expected": {
+      "parse_behavior": "error_or_empty",
+      "min_region_count": 0,
+      "entity_types": [],
+      "key_identifiers": {},
+      "assertions": {
+        "no_raise": "PdfParser.parse() must not raise — must return a parse-error Component",
+        "zero_or_unknown_regions": "ProposeRegionsUseCase must return 0 regions or only regions with entity_type_hint=null/unknown"
+      }
+    }
+  },
+  "hard_cases/photo-of-screen.pdf": {
+    "description": "Image-only PDF simulating a photographed screen — no text layer",
+    "expected": {
+      "parse_behavior": "ocr_required",
+      "has_text_layer": false,
+      "entity_types": [],
+      "key_identifiers": {},
+      "assertions": {
+        "no_text_layer": "detect_text_layer() must return False for this page",
+        "no_raise": "PdfParser.parse() must not raise — routes through OCR path (mocked in unit tests)"
+      }
+    }
+  }
+}

@@ -1,0 +1,92 @@
+[
+  {
+    "file": "scan_noise/rvl_cdip_invoice_001.pdf",
+    "layer": "scan_noise",
+    "provenance": "Synthetic image-only PDF modelled after the RVL-CDIP invoice class (Harley et al. 2015). Full dataset: https://www.cs.cmu.edu/~aharley/rvl-cdip/ (License: RVL-CDIP terms — research use). This file: programmatically generated white-page JPEG-in-PDF for CI reproducibility.",
+    "content_type": "application/pdf",
+    "expected_entity_types": [],
+    "has_text_layer": false,
+    "notes": "Image-only page; PdfParser should route through OCR path (no text layer). Asserted as non-zero bytes; real OCR requires live Textract (integration marker)."
+  },
+  {
+    "file": "scan_noise/doclaynet_invoice_001.pdf",
+    "layer": "scan_noise",
+    "provenance": "Synthetic image-only PDF modelled after DocLayNet invoice pages (Pfitzmann et al. 2022). Full dataset: https://github.com/DS4SD/DocLayNet (Apache 2.0). This file: programmatically generated for CI reproducibility.",
+    "content_type": "application/pdf",
+    "expected_entity_types": [],
+    "has_text_layer": false,
+    "notes": "Image-only page; tests OCR-path routing."
+  },
+  {
+    "file": "logistics_vocab/bill_of_lading_template.pdf",
+    "layer": "logistics_vocab",
+    "provenance": "Hand-authored logistics format template. Fictional shipper/consignee; realistic BL/container identifiers (MSCU1234567, HLCUSHA230901234). No third-party IP.",
+    "content_type": "application/pdf",
+    "expected_entity_types": ["bill_of_lading"],
+    "has_text_layer": true,
+    "notes": "Text-layer PDF. BL number HLCUSHA230901234, container MSCU1234567."
+  },
+  {
+    "file": "logistics_vocab/commercial_invoice_template.pdf",
+    "layer": "logistics_vocab",
+    "provenance": "Hand-authored commercial invoice template. Fictional parties; realistic HS codes and identifiers.",
+    "content_type": "application/pdf",
+    "expected_entity_types": ["invoice"],
+    "has_text_layer": true,
+    "notes": "Invoice No INV-2024-00892, container MSCU1234567."
+  },
+  {
+    "file": "logistics_vocab/packing_list_template.pdf",
+    "layer": "logistics_vocab",
+    "provenance": "Hand-authored packing list template. Fictional parties; realistic container/seal identifiers.",
+    "content_type": "application/pdf",
+    "expected_entity_types": ["packing_list"],
+    "has_text_layer": true,
+    "notes": "Ref PKL-2024-00892, container MSCU1234567."
+  },
+  {
+    "file": "logistics_vocab/booking_confirmation_template.pdf",
+    "layer": "logistics_vocab",
+    "provenance": "Hand-authored booking confirmation template. Carrier name used nominally for format testing only.",
+    "content_type": "application/pdf",
+    "expected_entity_types": ["booking"],
+    "has_text_layer": true,
+    "notes": "Booking No BKG-2024-44521, container MSCU1234567."
+  },
+  {
+    "file": "hard_cases/multi-invoice-in-one-pdf.pdf",
+    "layer": "hard_cases",
+    "provenance": "Hand-assembled hard case. Two distinct commercial invoices (INV-2024-10001 and INV-2024-10002) on separate pages in one PDF file.",
+    "content_type": "application/pdf",
+    "expected_entity_types": ["invoice", "invoice"],
+    "has_text_layer": true,
+    "notes": "Two pages, each with a full invoice. ProposeRegionsUseCase must yield >= 2 invoice-typed proposed regions (D-17)."
+  },
+  {
+    "file": "hard_cases/nested-entities-on-one-page.pdf",
+    "layer": "hard_cases",
+    "provenance": "Hand-assembled hard case. Single page containing BL header, container status table, and inline invoice reference — simulating a nested/overlapping entity layout.",
+    "content_type": "application/pdf",
+    "expected_entity_types": ["bill_of_lading", "container_status", "invoice"],
+    "has_text_layer": true,
+    "notes": "Nested entities: BL MSCU2024-00551 + container TCKU3001234 status + invoice INV-NEST-0099. Region children should carry parent_component_id linkage (D-17)."
+  },
+  {
+    "file": "hard_cases/junk-corrupt.pdf",
+    "layer": "hard_cases",
+    "provenance": "Programmatically truncated PDF with garbage trailer bytes. Mimics a corrupt/partially-downloaded attachment.",
+    "content_type": "application/pdf",
+    "expected_entity_types": [],
+    "has_text_layer": false,
+    "notes": "Parser must not raise; must degrade to parse-error Component. ProposeRegionsUseCase must yield zero or only unknown-typed regions (D-17, T-04-31)."
+  },
+  {
+    "file": "hard_cases/photo-of-screen.pdf",
+    "layer": "hard_cases",
+    "provenance": "Programmatically generated image-only PDF simulating a photographed screen (JPEG wrapped in PDF). No embedded text layer.",
+    "content_type": "application/pdf",
+    "expected_entity_types": [],
+    "has_text_layer": false,
+    "notes": "Image-only; PdfParser routes through OCR. Real OCR requires live Textract (integration marker). Asserted non-zero bytes (D-17)."
+  }
+]

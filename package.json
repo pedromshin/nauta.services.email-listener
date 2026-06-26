@@ -1,0 +1,45 @@
+{
+  "name": "nauta-services",
+  "private": true,
+  "engines": {
+    "node": ">=20.12.0"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "docker compose -f apps/email-listener/docker-compose.yaml up --build",
+    "dev:watch": "docker compose -f apps/email-listener/docker-compose.yaml up --build --watch",
+    "dev:down": "docker compose -f apps/email-listener/docker-compose.yaml down",
+    "logs": "docker compose -f apps/email-listener/docker-compose.yaml logs -f email-listener",
+    "test": "cd apps/email-listener && uv run pytest",
+    "lint": "cd apps/email-listener && uv run ruff check .",
+    "lint:fix": "cd apps/email-listener && uv run ruff check --fix .",
+    "format": "cd apps/email-listener && uv run ruff format --check .",
+    "format:fix": "cd apps/email-listener && uv run ruff format .",
+    "typecheck": "cd apps/email-listener && uv run mypy app",
+    "architecture": "cd apps/email-listener && uv run lint-imports",
+    "security": "cd apps/email-listener && uv run bandit -c pyproject.toml -r app",
+    "check": "npm run lint && npm run format && npm run typecheck && npm run architecture && npm run test",
+    "infra:tf": "terraform -chdir=infrastructure/aws",
+    "sb:start": "supabase start",
+    "sb:stop": "supabase stop",
+    "sb:status": "supabase status",
+    "sb:reset": "supabase db reset",
+    "db:generate": "npm run migration:generate -w @nauta/db",
+    "db:migrate": "npm run migrate:local -w @nauta/db",
+    "db:migrate:staging": "npm run migrate:staging -w @nauta/db",
+    "db:migrate:prod": "npm run migrate:prod -w @nauta/db",
+    "db:studio": "npm run studio -w @nauta/db",
+    "db:check": "npm run check -w @nauta/db",
+    "web:dev": "npm run dev -w @nauta/web",
+    "web:dev:staging": "npm run dev:staging -w @nauta/web",
+    "web:dev:prod": "npm run dev:prod -w @nauta/web",
+    "web:build": "npm run build -w @nauta/api-client && npm run build -w @nauta/web",
+    "api-client:build": "npm run build -w @nauta/api-client"
+  },
+  "devDependencies": {
+    "supabase": "^2.106.0"
+  }
+}

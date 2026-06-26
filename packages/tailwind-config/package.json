@@ -1,0 +1,17 @@
+{
+  "name": "@nauta/tailwind-config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./web": "./web.ts"
+  },
+  "dependencies": {
+    "postcss": "^8.4.39",
+    "tailwindcss": "^3.4.4",
+    "tailwindcss-animate": "^1.0.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.0"
+  }
+}

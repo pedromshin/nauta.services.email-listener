@@ -1,0 +1,22 @@
+# Local development — run from repo root:
+#   docker compose -f apps/email-listener/docker-compose.yaml up --build
+# or simply: pnpm dev  (see root package.json)
+services:
+  email-listener:
+    build:
+      context: ../..
+      dockerfile: apps/email-listener/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      ENVIRONMENT: development
+      DEBUG: "true"
+      LOG_LEVEL: DEBUG
+    env_file:
+      - path: .env
+        required: false
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./app
+          target: /app/app

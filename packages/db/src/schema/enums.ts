@@ -1,0 +1,61 @@
+/**
+ * Phase 4 — Email Intelligence: shared pgEnum definitions.
+ *
+ * Two enums live here:
+ *   componentSourceTypeEnum — what part of the email the component came from
+ *   extractionStatusEnum    — lifecycle of an extraction_record (D-16)
+ */
+
+import { pgEnum } from "drizzle-orm/pg-core";
+
+// ---------------------------------------------------------------------------
+// component_source_type — where the email_component originates
+// ---------------------------------------------------------------------------
+export const componentSourceTypeEnum = pgEnum("component_source_type", [
+  "email_body",
+  "attachment_page",
+  "attachment_sheet",
+  "attachment_section",
+  "attachment_whole",
+  // Child component proposed by segmentation over an attachment_page (04-11/14).
+  // Emitted by ProposeRegionsUseCase. Added in migration 0012.
+  "region",
+]);
+
+// ---------------------------------------------------------------------------
+// extraction_status — lifecycle of an extraction_record (D-16)
+//
+// superseded MUST be present: it marks records replaced by re-processing
+// the same component (versioned/supersedable reprocessing per D-16).
+// ---------------------------------------------------------------------------
+export const extractionStatusEnum = pgEnum("extraction_status", [
+  "candidate",
+  "auto_confirmed",
+  "review_pending",
+  "confirmed",
+  "rejected",
+  "superseded",
+  // Component lifecycle states (email_components.extraction_status): a freshly
+  // parsed/proposed component is "pending" until extracted; "error" marks a
+  // page/region the parser could not process. Emitted by the PDF parser and
+  // ProposeRegionsUseCase. Added in migration 0010.
+  "pending",
+  "error",
+]);
+
+// ---------------------------------------------------------------------------
+// component_role — Phase 9 (D-01/D-02): the relationship role of a region on
+// email_components. A region is one of:
+//   entity    — a parent document/object (records its type via entity_type_id)
+//   field     — a value of one property of a parent entity (records the
+//               property via entity_type_field_id; nested under the entity via
+//               parent_component_id)
+//   unrelated — explicitly marked not-an-entity-and-not-a-field (D-05)
+// NULL on the email_components.role column = unclassified/standalone (D-01/D-02);
+// "unclassified" is intentionally NOT an enum value — manual override always wins.
+// ---------------------------------------------------------------------------
+export const componentRoleEnum = pgEnum("component_role", [
+  "entity",
+  "field",
+  "unrelated",
+]);

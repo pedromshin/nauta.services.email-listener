@@ -1,0 +1,2 @@
+CREATE UNIQUE INDEX "uniq_entity_types_system_slug" ON "entity_types" USING btree ("slug") WHERE "entity_types"."importer_id" IS NULL;--> statement-breakpoint
+ALTER TABLE "entity_type_fields" ADD CONSTRAINT "entity_type_fields_entity_type_id_slug_unique" UNIQUE("entity_type_id","slug");

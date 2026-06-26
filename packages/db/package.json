@@ -1,0 +1,46 @@
+{
+  "name": "@nauta/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    },
+    "./client": {
+      "default": "./src/client.ts"
+    },
+    "./schema": {
+      "default": "./src/schema/index.ts"
+    }
+  },
+  "scripts": {
+    "with-env": "dotenv -e ../../.env.local --",
+    "with-env:staging": "dotenv -e ../../.env.staging --",
+    "with-env:prod": "dotenv -e ../../.env.production --",
+    "studio": "npm run with-env -- drizzle-kit studio",
+    "check": "npm run with-env -- drizzle-kit check",
+    "migration:generate": "npm run with-env -- drizzle-kit generate",
+    "migration:generate:custom": "npm run with-env -- drizzle-kit generate --custom --name=",
+    "migrate:local": "npm run with-env -- tsx src/migrate.ts",
+    "migrate:staging": "npm run with-env:staging -- tsx src/migrate.ts",
+    "migrate:prod": "npm run with-env:prod -- tsx src/migrate.ts",
+    "push:staging": "npm run with-env:staging -- drizzle-kit push",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@t3-oss/env-core": "^0.13.8",
+    "drizzle-orm": "^0.44.2",
+    "drizzle-zod": "^0.8.2",
+    "pg": "^8.16.0",
+    "postgres": "^3.4.7",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.0",
+    "dotenv-cli": "^8.0.0",
+    "drizzle-kit": "^0.31.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.0"
+  }
+}

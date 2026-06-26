@@ -1,0 +1,177 @@
+"use client";
+
+/**
+ * filter-rail.tsx — 240px frosted filter rail for the /knowledge graph surface.
+ *
+ * UI-SPEC Filter Rail:
+ *   Header "Show" — text-xs font-semibold uppercase tracking-wide text-muted-foreground
+ *   6 node-type checkboxes (color dot + label) with defaults: Entity Types + Fields checked
+ *   Separator
+ *   Switch "Show all instances" + sub-label "May slow rendering with large datasets"
+ *   Footer: "{N} types · {M} fields · {P} instances"
+ *
+ * Presentational: all state + handlers injected via props from knowledge-graph.tsx.
+ * No font-medium (500) — UI-SPEC Note #5.
+ */
+
+import { Separator } from "@nauta/ui/separator";
+import { Switch } from "@nauta/ui/switch";
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/** Node types displayed in the filter rail — order matches UI-SPEC. */
+const NODE_TYPE_ROWS = [
+  {
+    type: "entity_type" as const,
+    label: "Entity Types",
+    dotClass: "bg-primary/80 border-primary/40",
+  },
+  {
+    type: "entity_type_field" as const,
+    label: "Fields",
+    dotClass: "bg-muted-foreground/40 border-border",
+  },
+  {
+    type: "entity_instance" as const,
+    label: "Instances",
+    dotClass: "bg-violet-500/80 border-violet-500/40",
+  },
+  {
+    type: "email" as const,
+    label: "Emails",
+    dotClass: "bg-slate-400/80 border-slate-400/40",
+  },
+  {
+    type: "email_component" as const,
+    label: "Components",
+    dotClass: "bg-amber-500/80 border-amber-500/40",
+  },
+  {
+    type: "knowledge_node" as const,
+    label: "Knowledge Rules",
+    dotClass: "bg-primary/60 border-primary/60",
+  },
+] as const;
+
+export type NodeTypeKey =
+  | "entity_type"
+  | "entity_type_field"
+  | "entity_instance"
+  | "email"
+  | "email_component"
+  | "knowledge_node";
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
+
+interface FilterRailCounts {
+  readonly types: number;
+  readonly fields: number;
+  readonly instances: number;
+}
+
+interface FilterRailProps {
+  readonly visibleTypes: ReadonlySet<NodeTypeKey>;
+  readonly onToggleType: (type: NodeTypeKey) => void;
+  readonly showInstances: boolean;
+  readonly onToggleInstances: (value: boolean) => void;
+  readonly counts: FilterRailCounts;
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export function FilterRail({
+  visibleTypes,
+  onToggleType,
+  showInstances,
+  onToggleInstances,
+  counts,
+}: FilterRailProps): React.ReactElement {
+  return (
+    <div className="flex h-full w-60 flex-col border-r border-border/50 bg-background/70 backdrop-blur-md">
+      {/* Header */}
+      <p className="px-4 pb-2 pt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        Show
+      </p>
+
+      {/* Node type checkboxes */}
+      <div className="flex flex-col">
+        {NODE_TYPE_ROWS.map(({ type, label, dotClass }) => {
+          const checked = visibleTypes.has(type);
+          return (
+            <label
+              key={type}
+              className="flex cursor-pointer items-center gap-2 px-4 py-1.5 text-sm"
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() => onToggleType(type)}
+                className="sr-only"
+                aria-label={label}
+              />
+              {/* Color dot */}
+              <span
+                className={`size-2 shrink-0 rounded-full border ${dotClass}`}
+                aria-hidden
+              />
+              {/* Label */}
+              <span className={checked ? "text-foreground" : "text-muted-foreground"}>
+                {label}
+              </span>
+              {/* Visual checkbox indicator */}
+              <span
+                className={`ml-auto flex size-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                  checked
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-background"
+                }`}
+                aria-hidden
+              >
+                {checked && (
+                  <svg
+                    viewBox="0 0 10 10"
+                    className="size-2.5 fill-current"
+                    aria-hidden
+                  >
+                    <polyline points="1.5,5 4,7.5 8.5,2.5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                )}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+
+      <Separator className="my-3" />
+
+      {/* Show instances toggle */}
+      <div className="px-4">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm">Show all instances</span>
+          <Switch
+            checked={showInstances}
+            onCheckedChange={onToggleInstances}
+            aria-label="Show all instances"
+          />
+        </div>
+        <p className="mt-1 text-xs text-muted-foreground">
+          May slow rendering with large datasets
+        </p>
+      </div>
+
+      {/* Spacer to push footer to bottom */}
+      <div className="flex-1" />
+
+      {/* Footer counts */}
+      <p className="border-t border-border/50 px-4 py-3 text-xs text-muted-foreground">
+        {counts.types} types · {counts.fields} fields · {counts.instances} instances
+      </p>
+    </div>
+  );
+}

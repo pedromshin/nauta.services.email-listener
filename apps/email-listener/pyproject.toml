@@ -1,0 +1,159 @@
+[project]
+name = "email-listener"
+version = "0.1.0"
+description = "Nauta email listener — receives and logs raw inbound emails"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.6.0",
+    "structlog>=25.0.0",
+    "dishka>=1.4.0",
+    "httpx>=0.28.1",
+    "supabase>=2.15.0",
+    "anthropic>=0.40.0",
+    "pypdf>=6.13.2",
+    "pdfminer-six>=20260107",
+    "pdf2image>=1.17.0",
+    "boto3>=1.43.28",
+    "pillow>=12.2.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
+    "httpx>=0.27.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "import-linter>=2.0",
+    "bandit>=1.7.0",
+]
+
+# ──────────────────────────────────────────────
+# Ruff — linting + formatting
+# ──────────────────────────────────────────────
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+src = ["app", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F", "I", "N", "UP", "B", "A", "C4", "DTZ", "T10", "ISC",
+    "PIE", "PT", "Q", "RSE", "RET", "SLF", "SIM", "TID", "TCH", "ARG",
+    "PL", "RUF", "S", "ASYNC",
+]
+ignore = [
+    "E501",    # line too long (handled by formatter)
+    "PLR0913", # too many arguments
+    "PLR2004", # magic value comparison
+    "S101",    # assert used (fine in tests)
+    "B008",    # function call in default arg (FastAPI Depends pattern)
+    "RET504",  # unnecessary assignment before return
+    "ARG001",  # unused function argument (webhook signatures, etc.)
+    "ARG002",  # unused method argument
+    "S104",    # hardcoded-bind-all-interfaces (container requirement)
+    "TC001",   # typing-only-first-party-import
+    "TC002",   # typing-only-third-party-import
+    "TC003",   # typing-only-standard-library-import
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["S101", "ARG001", "PLR2004", "SLF001", "S106", "PLC0415"]
+"app/settings.py" = ["S105"]  # possible hardcoded password (defaults)
+# Lazy imports of heavy/optional PDF backends (pdfminer, pypdf, pdf2image) and a
+# local Component import to avoid a domain-layer cycle — both intentional.
+"app/infrastructure/pdf/pdf_parser.py" = ["PLC0415"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "auto"
+
+# ──────────────────────────────────────────────
+# Mypy — static type checking
+# ──────────────────────────────────────────────
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+check_untyped_defs = true
+ignore_missing_imports = true
+no_implicit_optional = true
+warn_redundant_casts = true
+show_error_codes = true
+plugins = ["pydantic.mypy"]
+
+# ──────────────────────────────────────────────
+# Pytest
+# ──────────────────────────────────────────────
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "-q",
+    "--tb=short",
+    "--cov=app",
+    "--cov-report=term-missing:skip-covered",
+    "--cov-fail-under=80",
+]
+markers = [
+    "unit: pure unit tests (no I/O, no network)",
+    "integration: tests that touch external services",
+]
+
+[tool.coverage.run]
+source = ["app"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if __name__ == .__main__.",
+    "raise NotImplementedError",
+]
+
+# ──────────────────────────────────────────────
+# Bandit — security scanner
+# ──────────────────────────────────────────────
+[tool.bandit]
+exclude_dirs = ["tests"]
+skips = ["B101"]
+
+# ──────────────────────────────────────────────
+# import-linter — Clean Architecture layer enforcement
+# ──────────────────────────────────────────────
+[tool.importlinter]
+root_packages = ["app"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Domain has no external deps"
+type = "forbidden"
+source_modules = ["app.domain"]
+forbidden_modules = [
+    "app.application",
+    "app.infrastructure",
+    "app.presentation",
+    "fastapi",
+]
+
+[[tool.importlinter.contracts]]
+name = "Application does not import infrastructure"
+type = "forbidden"
+source_modules = ["app.application"]
+forbidden_modules = ["app.infrastructure", "app.presentation"]
+
+[[tool.importlinter.contracts]]
+name = "Infrastructure does not import presentation"
+type = "forbidden"
+source_modules = ["app.infrastructure"]
+forbidden_modules = ["app.presentation"]

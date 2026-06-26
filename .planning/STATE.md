@@ -1,0 +1,836 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: milestone_complete
+last_updated: 2026-06-15T16:39:10.019Z
+progress:
+  total_phases: 1
+  completed_phases: 0
+  total_plans: 3
+  completed_plans: 51
+  percent: 0
+stopped_at: Milestone complete (Phase 11 was final phase)
+---
+
+# State
+
+## Project Reference
+
+See: .planning/PROJECT.md (updated 2026-06-10)
+
+**Core value:** Reliably receive every inbound email and make it observable.
+**Current focus:** Milestone complete
+
+## Phase 11 — Knowledge-node graph view (4e knowledge graph) — ✓ COMPLETE 2026-06-15 (3 plans, 3 waves)
+
+- **✓ EXECUTED + VERIFIED + REVIEWED 2026-06-15:** all 3 plans shipped (11-01 backend, 11-02 React Flow
+  foundation, 11-03 graph surface). gsd-verifier: **passed 17/17** must-haves (11-VERIFICATION.md). Adversarial
+  review (11-REVIEW.md, 9 agents): 1 CRITICAL + 3 HIGH + warnings — all confirmed HIGH/CRITICAL **fixed**:
+  edges-not-rendering (c936ea1 setEdges sync), inbox infinite render loop (5e13862 memoized seedItems),
+  inbox entitySummary >max(100) crash (9eb6c5e cap), graph system-default taxonomy exclusion + detail-pane
+  empty sections + dup edge ids + jsonb label (4ab7953), selection re-runs dagre layout (530cb5e overlay),
+  knowledge_node_edges missing RLS (92134fb migration 0020 + applied local). api-client 102/102, web build green.
+- **✓ DEPLOYED 2026-06-15 (staging + prod):** migrate:staging + migrate:prod applied all pending drizzle
+  migrations through **0020** (caught the remotes up incl. prior-pending 0013-0018); `knowledge_node_edges` +
+  deny-all RLS (2 policies) verified live on **both** envs. Code: pushed dev→staging + main→prod; ECS deploys
+  **green** both envs (smoke tests passed). Web `/knowledge` deploys via Vercel git integration on the main push
+  (verify at the Vercel prod domain — not checkable from CLI here). origin/main == origin/dev == a5a1fb9.
+- **Deferred review items (non-blocking, backlog candidates):** WR-03 app-wide `publicProcedure`/no-auth posture
+  (returns all importers' data — architectural, not a phase regression); WR-05 inert `nodeTypes` input; WR-06
+  toolbar layout-toggle placeholder; knowledge-node `content`/`createdAt` + component matched-status detail fields
+  (off-by-default toggles / 0 rows today); IN-01..05 cosmetic nits.
+
+- **Planned:** 3 plans authored (gsd-planner, opus) + verified (gsd-plan-checker PASSED iter 2, 0 blockers
+  after 1 revision). Inputs: existing 11-CONTEXT.md (D-01..D-13) + 11-UI-SPEC.md + generated 11-PATTERNS.md.
+  Research skipped (config research:false). Decision coverage 8/8 trackable. Ready to execute.
+
+- **Scope (D-01):** ship the SIMPLE read-only graph from existing FKs NOW; seam the real "4e knowledge
+  synthesis" moat for later with no rework. `knowledge_node_edges` table ships EMPTY as the 4e write-seam
+  (D-05/D-10). Strictly read-only — no synthesis/LLM write path, no node CRUD (D-09).
+
+- **Plan waves:** W1 `11-01` backend — empty `knowledge_node_edges` table + **[BLOCKING]** migration 0019
+  (generate + apply + assert table exists via information_schema) + `knowledge` tRPC router (graph/list/byId)
+  behind the source-agnostic edge-provider seam (D-11) + tenant-by-data importer scope (D-12) +
+  documented-only Python synthesis-trigger injection point (D-13) → W2 `11-02` frontend foundation —
+  `@xyflow/react` + `@dagrejs/dagre` install (blocking package-legitimacy gate) + `/knowledge` route
+  (dynamic ssr:false island) + dagre TB layout + 6 custom node types + edge styling + sidebar nav flip
+  (D-07/D-08) → W3 `11-03` frontend surface — three-zone shell (filter rail / canvas / detail pane) +
+  toolbar + taxonomy banner + per-type detail deep-links (/entities, /emails) + all states + a11y +
+  browser verify (**autonomous:false** human-verify) (D-02/D-03/D-08).
+
+- **PENDING DEPLOY (from 11-01):** `npm run migrate:staging` / `migrate:prod` (packages/db) to apply
+  migration 0019 (`knowledge_node_edges`) to staging+prod Supabase before the next web+listener deploy.
+
+- **Edge-source note:** the component↔entity_instance edge derives from
+  `component_entity_candidate_links.entity_instance_id` (CONTEXT D-04) — NOT
+  `email_components.entity_instance_id` (UI-SPEC Note #3 was wrong; that column does not exist). Resolved
+  in plans + 11-PATTERNS.md "Schema Discrepancy".
+
+- **11-01 ✓ EXECUTED 2026-06-15:** knowledge_node_edges schema + migration 0019 + tRPC router (graph/list/byId) with D-11 edge-provider seam + D-13 comment. 22 DB-free tests green (102 total), tsc+ruff clean. Commits 2e2a6e9, aa685f7, 92ce4a5. See 11-01-SUMMARY.md.
+
+- **11-02 ✓ EXECUTED 2026-06-15:** @xyflow/react + @dagrejs/dagre installed; /knowledge route (server page + ssr:false island via "use client" wrapper — Next.js 15 constraint); dagre TB layout util; six custom node components per UI-SPEC; Knowledge sidebar nav promoted to live. ReactFlow JSX cast workaround (moduleResolution:bundler named re-export issue). api-client dist rebuilt. tsc + web:build green. Commits aa533f0, ca4e0df, 2de84e1. See 11-02-SUMMARY.md.
+
+- **11-03 ✓ EXECUTED 2026-06-15:** Three-zone ResizablePanelGroup chrome (filter rail 18% / canvas 57% / detail pane 25%) + h-11 toolbar; six per-type node detail sections with /entities + /emails deep-links; dismissible taxonomy banner (localStorage); GraphErrorState + GraphNoSchemaState; Escape/canvas-click deselect; auto-show <50 instances threshold. D-09 read-only invariant + T-11-05 dangerouslySetInnerHTML grep gate both confirmed green. Browser human-verify: approved. tsc + web:build green. Commits e88addf, 6c88196, f2464ea. See 11-03-SUMMARY.md.
+
+- **Next:** Phase 11 implementation complete (all 3 plans executed + browser-verified). Pending: phase-level verification by orchestrator; PENDING DEPLOY — npm run migrate:staging / migrate:prod to apply migration 0019 (knowledge_node_edges) to staging+prod before next deploy.
+
+## Phase 10 — Extracted-entity identity, gallery & detail (4c) — PLANNED 2026-06-14 (6 plans, 5 waves)
+
+- **Planned:** 6 plans authored (gsd-planner, opus) + verified (gsd-plan-checker PASSED iter 2, 0 blockers)
+  + UI-SPEC + PATTERNS generated. Decision coverage 21/21 (D-01..D-21). Commits: 1444bce (UI-SPEC+PATTERNS),
+  b59e929 (plans), 521f767 + ffe968f (review fixes). Ready to execute.
+
+- **Resume file:** .planning/phases/11-knowledge-node-graph-view-4e-knowledge-graph/11-UI-SPEC.md
+- **Architecture locked:** identity = **repurpose `entity_instances`** (nauta_id nullable + `source`
+  col); resolution = **suggest-only, never auto** → **parallel BlendedRAG (dense HNSW + lexical
+  pg_trgm exact/fuzzy) fused by RRF(k=60)**, on-confirm + re-runnable backfill, confirm writes back
+  aliases (flywheel), reranker deferred, degrades to lexical-only without Bedrock. Gallery = table
+  default (+mosaic), full ops rows, "needs review" triage filter. Detail = full relations,
+  conflicting values shown+flagged (human picks), confirm/reject + unmerge.
+
+- **Plan waves:** W1 `10-01` schema reshape (nullable nauta_id + `source` + gallery index) + resolution
+  RPCs + **[BLOCKING]** drizzle generate/apply/types (migrations 0016/0017) → W2 `10-02` BlendedRAG+RRF
+  resolution backend (deterministic 4-type match_type, lexical-only degradation, backfill) → W3 `10-03`
+  curation backend (confirm/reject/unmerge + alias write-back) → W4 `10-04` `entityInstances` tRPC
+  (`list`+`byId` + mutations) → W5 `10-05` gallery `/entities` (table/mosaic, triage filter) ∥ `10-06`
+  detail `/entities/[id]` (4 regions, conflict flagging, entity-chip deep-link; **autonomous:false** human-verify).
+
+- **PENDING DEPLOY (from 10-01):** `npm run migrate:staging` / `migrate:prod` (packages/db) to apply
+  migrations 0016/0017 to staging+prod Supabase before the next web+listener deploy.
+
+- **10-01 ✓ EXECUTED 2026-06-14:** entity_instances schema reshape + resolution RPCs. nauta_id nullable;
+  source='email_extracted' column; partial unique WHERE nauta_id IS NOT NULL; gallery index; migration 0016
+  (DDL) + 0017 (RPCs + trgm GIN indexes incl. immutable_array_to_text wrapper) applied to local Postgres.
+  tsc clean. Commits e7e1f17, 4cb0c6f, d95bc11. See 10-01-SUMMARY.md.
+
+- **10-02 ✓ EXECUTED 2026-06-14:** BlendedRAG+RRF resolution backend. PromoteEntityOnConfirmUseCase (D-02/D-09/D-11), BackfillEntityIdentitiesUseCase (D-10), /v1/entity-instances router (GET /candidates + POST /backfill), DI wiring (container + main). 36 tests green, ruff+mypy clean. Commits d661234, aa25781, 023e1d9. See 10-02-SUMMARY.md.
+
+- **10-03 ✓ EXECUTED 2026-06-14:** Human curation loop (D-20). ConfirmMergeUseCase (D-09 audit + D-11 alias flywheel), RejectMergeUseCase (durable dismiss), UnmergeEntityUseCase (supersede-never-mutate). Port extended with select/dismiss/set_merge_state. Three POST endpoints on /v1/entity-instances. 26 tests green, ruff+mypy clean. Commits cff77df, cd3b311, 1dcbd7f. See 10-03-SUMMARY.md.
+
+- **10-04 ✓ EXECUTED 2026-06-14:** entities tRPC router. gallery.ts (list with pg_trgm search, limit+1, status/sort filters), detail.ts (byId with four D-18 regions + D-19 conflict detection via aggregateEntityFields), mutations.ts (confirmMerge/rejectMerge/unmerge FastAPI proxy, key server-side), entitiesRouter composed into appRouter. 26 tests green, tsc+build clean. Commits f8b54e9, 9dc9f93, 27baf04, 630c27f, ff1aef4, 393b983. See 10-04-SUMMARY.md.
+
+- **10-05 ✓ EXECUTED 2026-06-14:** Entities gallery at /entities. Server-component page wrapper + "use client" gallery shell (view toggle, debounced search, entity-type + status + sort filters, load-more pagination limit+1). 7-column table view (D-15: sortable headers, violet dot accent, amber candidate rows, orange pending-duplicates badge) + responsive mosaic grid (D-14: 4-col xl, card-per-entity). Sidebar Entities item promoted from SOON_NAV_ITEMS → LIVE_NAV_ITEMS (D-21). tsc clean; Next.js build: /entities static 6.96 kB. Commits c860395, cc5f57c. See 10-05-SUMMARY.md.
+
+- **Next:** 10-06 detail page /entities/[id] (4 regions, conflict flagging, entity-chip deep-link; autonomous:false human-verify).
+
+## Status
+
+- Phase 1 (service + scaffold): ✓ Complete — verified in Docker, all quality gates green
+- Phase 2 (infra + CI/CD): ✓ Complete — ECS Fargate live, both pipelines green, /health 200 on staging (:8080) and production (:80)
+- Phase 3 (email connection): ✓ Complete — end-to-end verified live: forward from pedromaschio.shin@gmail.com → agent@magnitudetech.com.br → `email_received` in CloudWatch (2026-06-11T17:14:26Z)
+
+## Phase 4 — Email Intelligence — EXECUTION COMPLETE + LIVE GAP CLOSURE 2026-06-12
+
+- All 14 plans (04-01..04-14) executed with SUMMARYs; gates green (89.95% cov).
+- Verifier: 6/6 success criteria materially met (04-VERIFICATION.md). Status human_needed
+  for ONE item only: live Textract OCR + live Claude segmentation end-to-end (offline tests
+  are credential-gated; text-layer ingest already UAT-confirmed live on prod+staging).
+
+- Code review: 0 CRITICAL; 4 HIGH — 3 fixed (cb5a522), HIGH-4 (trgm key_terms) is a
+  documented follow-up. Retrieval is vector-only until a key_terms extractor lands.
+
+- Open follow-ups: (a) ✓ RESOLVED 2026-06-13 (Phase 08): key_terms extractor activates trgm arm;
+  (b) ✓ RESOLVED 2026-06-13 (Phase 08): confirm-fallback FK fix — skip-and-warn instead of entity_type_id="";
+  (c) Textract analyze_document for table/KV geometry (04-14 deferral) — still open.
+
+### Live gap closure (2026-06-12, verified against real local Supabase)
+
+Running Phase 4 against real Postgres exposed bugs the fake-repo suite hid; all fixed:
+
+- 98cb882: NUL strip (components), enum +pending+error (migration 0010), pdfminer log pin.
+- cf5dd24: NUL strip extended to extraction_records via shared supabase/sanitize.py (22P05).
+- e42ca00: D-18 tenancy — reads/act surfaces no longer hardcode DEFAULT_IMPORTER_ID
+  (real ingested emails were invisible/404; Phase 5 inbox would have been empty).
+
+- 8f9057b: default Bedrock model id -> us.anthropic.claude-sonnet-4-6 (active profile).
+- 5149f12: real-Postgres integration test (env-gated, -m integration) for
+  parse->persist->read-back; first run caught a 4th live bug — extraction_records
+  lacked confidence_breakdown + routing_reason (every live autofill save failed
+  PGRST204) — fixed by migration 0011 (applied local; staging/prod pending migrate).
+
+- pdfminer hang timeout: already present at HEAD (56baa5b) — asyncio.wait_for 60s
+  around _extract_text_layers with pypdf+OCR fallback; briefing claim was stale.
+
+### DEPLOY — DONE 2026-06-13 (staging + production live on current code)
+
+- Migrations 0010/0011/0012 applied to **staging + prod** Supabase (idempotent
+  ADD VALUE/COLUMN IF NOT EXISTS; "12 tables" verified each).
+
+- Pushed `dev` (→ staging deploy) and `main` (→ prod deploy); both GitHub Actions
+  deploys **succeeded**; `/health` 200 on staging (:8080) and prod (:80). CI green
+  after a ruff-format fix (56811c4). Service = email-listener (FastAPI) only — the
+  Next.js web app has no CI/CD pipeline (runs local; deploy separately if needed).
+
+- IAM: NO change needed — ECS task role already wildcards
+  `foundation-model/amazon.titan-embed-*` (covers titan-v1) + `anthropic.claude-*`
+
+  + inference-profile (covers segmentation/autofill). Confirm/embedding works live.
+- Auth verified enforced (401 without the real key; deployed key lives in AWS
+  Secrets Manager, not local .env — correct). For a full authenticated smoke test
+  use the real Secrets Manager API_KEY.
+
+### HUMAN ACTIONS REQUIRED (deploy) — ✓ RESOLVED 2026-06-13 (see DEPLOY above)
+
+1. ~~AWS Bedrock Anthropic use-case form~~ **RESOLVED 2026-06-12**: live Claude
+   segmentation VERIFIED in browser — real token-grounded region overlays rendering
+   over an ingested JUUL commercial invoice on /emails/[id] (user screenshot;
+   importer = gmail-resolved bbef1760…, D-05+D-18 confirmed live). Use-case form
+   submitted + IAM region wildcard fix (5d59b57). This also closes Phase 4's last
+   human_needed verification item (live Claude segmentation end-to-end).
+
+2. **Push + deploy**: main is ~80 commits ahead of origin, unpushed. staging+prod ECS
+   still run pre-04-07 (ingest-only) images; prod deploys on push to main. Push when ready.
+
+3. **Apply migrations 0010+0011+0012 to staging/prod** (npm run migrate:staging /
+   migrate:prod in packages/db) before/with the next deploy — live autofill writes
+   fail without 0011; region source_type fails without 0012.
+
+4. **IAM: permit bedrock:InvokeModel for amazon.titan-embed-text-v1** on the ECS
+   task role (embeddings switched v2→v1 to match the halfvec(1536) schema —
+   facd71d). Local dev uses developer creds; staging/prod policy must allow v1.
+
+5. **apps/web/.env.local needs EMAIL_LISTENER_URL + EMAIL_LISTENER_API_KEY** for
+   the tRPC write-proxy (added locally during UAT; gitignored). Any deployed web
+   app needs both set server-side (never NEXT_PUBLIC_).
+
+### Live UAT fixes (2026-06-13, found by running the review UI end-to-end)
+
+Real bugs the fake-repo suite could not catch — all fixed + tested + gates green:
+
+- 739ea1d: entity_type_fields mapping — repo read data_type/is_identifier but the
+  schema has field_type + config.is_identifier jsonb; every live autofill 500'd
+  (KeyError) until fixed. Autofill now runs end-to-end (cold-start LLM verified).
+
+- facd71d: embedding dim — Titan V2 emits 1024, column is halfvec(1536); confirm
+  500'd (22000) + retrieval arm silently failed. Switched to Titan V1 (1536).
+  Confirm + few-shot retrieval verified live.
+
+- 7c3b017: reprocess replace-not-stack — was duplicating page/region components
+  every run (2-4x in live data); now supersedes prior non-confirmed regions.
+
+- 8627747: overlay/draw z-index — react-pdf .textLayer (z-index:2) covered the
+  boxes; clicking/hovering a box and click-drag draw all silently failed.
+
+- 73696b6: feat — "Classify Page" button (autofill a whole page as one entity).
+- .env.local: missing EMAIL_LISTENER_* made every write-proxy mutation throw.
+
+Note: confirmed-region components are now created via createRegion (candidate) +
+confirm; the autofill→confirm→embed→index flywheel is verified working live.
+
+## Phase 5 — Review UI — EXECUTED 2026-06-12 (pending 3 visual browser checks)
+
+- 4/4 plans executed: emails.detail tRPC + polygonToRect (05-01), signed-URL attachment
+  route (05-02), /emails/[id] detail page with DOMPurify body tabs + entities sidebar
+  (05-03), react-pdf preview + region overlay layer with hover/page sync (05-04).
+
+- Verification: 11/11 machine criteria pass; human_needed = view detail page, PDF
+  preview, inbox navigation in browser (user live-testing during the run).
+
+- Code review: 4 CRITICAL + 5 WARNING — ALL fixed (6928599..d568e6b): DOMPurify
+  useEffect pattern, polygonToRect empty/clamp guards, superseded-record join filter,
+  clear missing-DB-URL error, signed-URL TTL cache, friendly error copy, controlled
+  page navigation.
+
+- Live-UAT bugs fixed during the run: client bundle pulled postgres via api-client
+  barrel (geometry subpath export, 4b364b3 + .next cache clear), pdfjs API/worker
+  version mismatch (pin pdfjs-dist 4.8.69, 8659a7d).
+
+- Overlay empty state is the intended default until the Bedrock use-case form is
+  submitted (see HUMAN ACTIONS above).
+
+## Phase 6 — Region Edit Operations — EXECUTED 2026-06-12 (pending 5 visual browser checks)
+
+- Verification (792e268): 5/5 machine criteria; human_needed = 5 visual checks
+  (add-region draw at zero proposals, accept transition, reject→history, merge,
+  nest round-trip).
+
+- Code review: 5 CRITICAL + 8 WARNING — ALL fixed (60d4271..980bb8c): nest cycle
+  detection, save-before-supersede ordering (no data loss on partial failure),
+  empty-update ValueError→404, UUID-leak in 404 details, persist-failure masking,
+  TOCTOU status guards, UUID path params, aria contracts, readonly fields.
+
+- Gates after fixes: pytest 321 passed 90% cov, ruff/mypy/lint-imports/bandit 0;
+  api-client vitest 14/14 + tsc 0; web tsc 0 + next build green.
+
+- 06-01 ✓ EXECUTED: FastAPI write side complete. Seven use cases
+  (accept/reject/redraw/split/merge/nest/create-region) in edit_region.py;
+  ComponentRepository +update_status/+update_parent/+find_by_page_component_id;
+  seven endpoints in components.py (9 @router.post total) behind X-API-Key with
+  Pydantic polygon validation (4 [x,y] pairs, [0,1], page_index>=0 → 422);
+  seven class-form DI registrations; env-gated real-Postgres accept+redraw
+  round-trip. Gates: pytest 90.54% cov, ruff/mypy/lint-imports/bandit all 0.
+  Commits dbf2dc7, 8b9f15b, 7ecf12c, fa1b3a8, a96199c. See 06-01-SUMMARY.md.
+
+- 06-02 ✓ EXECUTED: TS geometry helpers + server-side tRPC mutation proxy.
+  clientXYToNormalized + normalizedRectToPolygon (pure, immutable, TDD); seven
+  tRPC mutations (accept/reject/redraw/split/merge/nest/createRegion) with zod
+  input validation and server-side env guard; EMAIL_LISTENER_API_KEY never
+  NEXT_PUBLIC_; .env.example created. tsconfig "dom" lib added (auto-fix).
+  Commits 19441d6, 30cf3eb, f644b1f. See 06-02-SUMMARY.md.
+
+- 06-03 ✓ EXECUTED: interactive write surface on the PDF preview. useRegionEdit
+  hook (selection/draw state + accept/reject/redraw/split/createRegion with
+  optimistic setData + snapshot revert + sonner toasts + mutatingIds for
+  aria-busy); DrawOverlay (pointer-capture, min 0.01, live dashed preview);
+  DrawModeBar (exact §6.2 copy); ActionToolbar (six §3.2 buttons, Merge/Nest
+  disabled until 06-04); status-styled clickable overlay boxes
+  (pointer-events-auto fix); showHistory filter + toggle; + Add region works
+  with zero proposals via resolved attachment_page component; Esc/Delete/A
+  shortcuts; Toaster in layout. tsc + next build green.
+  Commits 569e8e0, 0cdfebd, 4dfcb62. See 06-03-SUMMARY.md.
+
+- 06-04 ✓ EXECUTED: AlertDialog reject confirmation, Popover nest picker with eligible-region
+  filter (same page, not rejected/superseded, not selected), checkbox merge multi-select (1
+  selected enters mode, ≥2 fires mutation), §6.6 history badges (rejected=outline+line-through,
+  superseded=secondary+opacity-60), showHistory filter on EntitiesList, "+ Add region" in card
+  header with disabled tooltip. All three 06-03 stubs resolved. Gates: tsc+next build clean,
+  vitest 14/14, pytest 315 passed 90.54% cov, ruff/mypy/lint-imports/bandit clean.
+  Commits 6bc3ddb, 082d076, ba18bd4. See 06-04-SUMMARY.md.
+
+## Phase 7 — Click-to-Autofill UI — COMPLETE 2026-06-13
+
+- 07-01 ✓ EXECUTED: API client data layer complete. Three proxy mutations
+  (autofillComponent/confirmComponent/reprocessEmail) with UUID validation + server-side
+  env guard; entityTypesRouter (Drizzle leftJoin active entity types + fields, grouped by
+  pure helper); emails.detail extended with correctedFields/confidenceBreakdown/extractionRecordStatus.
+  TDD: 8 mutation tests + 5 entity-type tests; 27 total vitest pass; tsc 0.
+  Commits 6e80b51, 96710e8, dd966ee. See 07-01-SUMMARY.md.
+
+- 07-02 ✓ EXECUTED: Autofill panel UI complete. useAutofill hook (7-state machine:
+  idle→picking→extracting→reviewing→confirming→confirmed/failed) wiring autofillComponent +
+  confirmComponent tRPC mutations; EntityTypePicker Popover (api.entityTypes.list, w-72,
+  role=listbox/option, Skeleton loading, empty state); ActionToolbar extended with
+  allDisabled gate + autofill button per UI-SPEC §3.1 (candidate/pending/terminal/confirmed
+  states). api-client dist rebuilt (Phase 7 procedures not in prior dist). tsc + next build green.
+  Commits 7df413a, 4da300d, 47a36d9. See 07-02-SUMMARY.md.
+
+- 07-03 ✓ EXECUTED: FieldsPanel (reviewing editable inputs + per-field confidence,
+  confirmed read-only + badge), ReprocessDialog ("Keep current data" cancel, default
+  variant per D-16), EntitiesList inline panel slot, email-detail full wiring
+  (useAutofill + entityTypeFieldsMap + reprocess). Gates green both stacks.
+  Commits d1d6b14, 4691f9a, 94bb527. See 07-03-SUMMARY.md.
+
+- Verification: 9/9 must-haves; human_needed = 3 live flows (autofill round-trip,
+  confirm-with-corrections, reprocess dialog) — NOW LIVE-TESTABLE: Bedrock unblocked.
+
+- Code review: 4 CRITICAL + 5 WARNING + 3 INFO — all fixed except IN-01 audit note
+  (1ba5836..afc6817): picker race guards, stale-closure closePicker, confirm
+  double-fire guard, corrected-fields diff from extractedFields keys with error
+  toast on lost state, shared status-badge module, immutable grouping.
+
+## Phase 8 — trgm key_terms extractor — COMPLETE 2026-06-13
+
+- 08-01 ✓ EXECUTED: Pure stdlib domain service extract_key_terms (ISO 6346 check-digit validation,
+  BL/BOOKING/PO/INVOICE label-anchored patterns, ReDoS mitigated by bounded regexes + _MAX_SCAN_CHARS
+
+  + _MAX_TERMS cap); wired into AutofillUseCase replacing key_terms=() stub; confirm-fallback FK fix
+  (skip-and-warn, D-15 flywheel preserved). Extended real-Postgres integration test covers no-save +
+  embedding-persisted path. Quality gates: pytest 90.27% cov, ruff/mypy/lint-imports/bandit all clean.
+  Commits 17e548c, d12a3ef, eca4358, f277891. See 08-01-SUMMARY.md.
+
+- Closes: HIGH-4 from Phase 4 code review (trgm arm inert), live FK crash on confirm-fallback path.
+
+## Phase 9 — Entity/Field Region-Relationship Model + Canvas — IN PROGRESS 2026-06-13
+
+- 09-01 ✓ EXECUTED: relationship-model migration (the blocking data-layer foundation, D-01..D-05).
+  enums.ts: new componentRoleEnum pgEnum (component_role = entity|field|unrelated; NULL=unclassified).
+  components.ts: 3 nullable columns on email_components — role (component_role), entity_type_id
+  (FK→entity_types.id), entity_type_field_id (FK→entity_type_fields.id), both ON DELETE SET NULL —
+
+  + indexes idx_email_components_role / idx_email_components_entity_type_id. tsc clean.
+  Migration 0013_fixed_jamie_braddock generated under packages/db/migrations/ (NOT src/migrations/
+  — drizzle.config out=./migrations) AND applied to local Postgres; verified live: 3 columns +
+  component_role enum (3 labels) + 2 indexes + 2 FKs with confdeltype=n (SET NULL).
+  Drift fix: scoped 0013 to the Phase-9 change only — removed drizzle-kit's re-emitted region/pending/
+  error enum values + extraction_records cols (already live via custom 0010/0011/0012, un-snapshotted);
+  added IF NOT EXISTS guards for idempotency. Commits e1c5cc5, c8a1463. See 09-01-SUMMARY.md.
+
+- PENDING DEPLOY FOLLOW-UP (09-01): npm run migrate:staging / migrate:prod (packages/db) to apply
+  0013 to staging+prod Supabase before/with the next web+listener deploy that reads these columns.
+
+- 09-02a ✓ EXECUTED: relationship-write backend (D-10/D-11/D-18), Wave 2, depends on 09-01.
+  Component entity + ComponentRepository gained role/entity_type_id/entity_type_field_id (3 defaulted frozen
+  fields) + four writers (update_role / update_entity_type / update_field_relationship[parent+field in one
+  update] / clear_candidate_fields), each mirroring update_status (ValueError on no-match). Three domain-pure
+  setter use cases (SetComponentRole/EntityType/FieldRelationship) + origin-aware DenyFieldUseCase:
+  auto-detected box → update_status('rejected') + append denied polygon to PARENT content_raw.denied_field_polygons
+  (D-19 memo 09-02b reads); user-drawn box → clear_candidate_fields + supersede_active (keep geometry, D-18).
+  Four endpoints on /v1/components (PATCH /role /entity-type /field-relationship, POST /deny) behind router
+  X-API-Key, ValueError→404, UUID path params, Pydantic Literal role allow-list; tenant-from-row on every path.
+  DI: 4 simple provider.provide registrations. 19 per-use-case AsyncMock tests (-k traceable). Gates: pytest
+  89.84% cov, ruff/mypy(85)/lint-imports(3 kept)/bandit all 0. Commits cef5775, eb6e4a3, dd28be5, 4158003.
+  See 09-02a-SUMMARY.md. NOTE: autofill-fields endpoint deferred to 09-02b (which stamps origin='auto_detected').
+
+- 09-02b ✓ EXECUTED: sub-field autofill backend (D-13/14/15/19), Wave 3, depends on 09-02a. TDD.
+  AutofillFieldsUseCase (domain-pure) — given an ENTITY component: guards role=='entity'+entity_type_id+tenant
+  (D-18), resolves EntityType via new EntityTypeRepository.find_by_id (port+Supabase impl; 09-03 had NOT landed an
+  equivalent), reads the entity's page tokens (_page_tokens), filters to tokens whose bbox-center is inside the
+  entity polygon, segments only those, grounds each proposal via _union_polygon of real token bboxes (never
+  invented), EXCLUDES proposals overlapping the parent content_raw.denied_field_polygons memo (D-19 — positive-area
+  box overlap, not exact match), creates candidate FIELD children stamped content_raw origin='auto_detected'
+  (closes the 09-02a deny forward-dependency), incorporates existing user-drawn field children, and autofills each
+  child as a CANDIDATE (one autofiller.autofill per child — reuses autofill.py cold-start+few-shot verbatim; KB =
+  entity-type description) mapping best-confidence slug -> entity_type_field_id + value + confidence, persisting
+  ExtractionRecord(status=candidate) + update_field_relationship. POST /v1/components/{id}/autofill-fields
+  (@inject FromDishka, ValueError->404, UUID path, router X-API-Key) returns the per-field list;
+  _provide_autofill_fields_use_case factory mirrors _provide_autofill_use_case (explicit embedder/retrieval +
+  segmenter). 12 AsyncMock/fake-repo tests (RED confirmed via ModuleNotFoundError, then GREEN). Gates: pytest
+  401 passed 89.06% cov, ruff/format/mypy(86)/lint-imports(3 kept)/bandit all 0. Commits ccff306, a74742f.
+  See 09-02b-SUMMARY.md.
+
+- 09-05 ✓ EXECUTED: app-shell primitives (D-21), Wave 1, pure presentation, no backend.
+  packages/ui/src/sidebar.tsx — canonical shadcn sidebar block hand-vendored (resizable.tsx
+  precedent; no shadcn CLI init, NO new npm dependency — T-09-40/T-09-SC satisfied), cn from the
+  @nauta/ui barrel + sibling primitives via relative imports, inline useIsMobile hook, full sidebar
+  family exported (SidebarProvider/Sidebar/SidebarInset/SidebarTrigger/Content/Header/Footer/Menu/
+  MenuItem/MenuButton/useSidebar + …). Reuses the existing --sidebar-* HSL tokens (already mapped to
+  the sidebar.* color family in packages/ui/tailwind.config.ts) — ZERO new design tokens.
+  apps/web/src/components/theme-provider.tsx — typed next-themes wrapper (ThemeProvider as
+  NextThemesProvider, forwards ComponentProps), layout.tsx untouched (09-06 wires it). Consumed via
+  the @nauta/ui/* subpath wildcard (@nauta/ui/sidebar) — barrel index.ts keeps exporting only cn
+  (Rule-3 alignment: no component is ever re-exported from the barrel, contrary to the plan's literal
+  "add to index.ts" wording). Gates: packages/ui tsc 0, apps/web tsc 0, api-client build 0.
+  Commits 4311d42, f97371b. See 09-05-SUMMARY.md.
+
+- 09-03 ✓ EXECUTED: entity-type/field management backend (D-26/D-27), Wave 4, depends on 09-01/09-02b. TDD (Task 2).
+  EntityTypeRepository made write-capable (EXTENDED 09-02b's find_by_id, not duplicated): create/update entity types;
+  create/update/delete/reorder fields; deactivate_field; count_confirmed_references (exact count on email_components
+  filtered to entity_type_field_id + extraction_status='confirmed' — the D-27 delete-guard). Postgres unique-violation
+  (23505 off postgrest APIError.code) -> 'slug exists' ValueError marker -> 409. is_identifier kept in config jsonb.
+  manage_entity_types.py (domain-pure) — 6 use cases with ALLOWED_FIELD_TYPES={string,number,date,array,object}
+  allowlist + per-type slug pre-check + delete-guard (CHOSE soft-deactivate on confirmed refs > 0, never orphans the
+  D-04 FK; zero -> hard delete; outcome via DeleteFieldResult). NEW /v1/entity-types router (X-API-Key at router level):
+  POST / PATCH /{id} POST /{id}/fields PATCH /fields/{id} DELETE /fields/{id} POST /{id}/fields/reorder; field_type
+  Pydantic field_validator (defense in depth); ValueError->409(slug)/404 via NoReturn helper. Mounted in main.py;
+  6 use cases registered in container.py (auto-inject EntityTypeRepository). 14 use-case tests (TDD RED->GREEN) +
+  9 router integration tests (mock-DI test client, lifts entity_types.py 68%->90%). Gates: pytest 424 passed/8 skipped
+  87.06% cov, ruff/format/mypy(88)/lint-imports(3 kept)/bandit all 0. Commits f2216cd, cde58b6, 0cf9217, 4d1496f,
+  5f9ea79. See 09-03-SUMMARY.md.
+
+- 09-04 ✓ EXECUTED: TypeScript/tRPC data layer over the 09-01/02/03 backends (D-15/D-23/D-26), Wave 5,
+  depends on 09-01/02a/02b/03. Extracted getListenerConfig + parseErrorDetail out of emails/mutations.ts
+  into a shared router/_listener-config.ts (the "extract to shared" PATTERNS option) — both the new
+  component mutations and the entity-type write mutations import the single definition; EMAIL_LISTENER_API_KEY
+  now lives in exactly one source file (never NEXT_PUBLIC_, T-09-30). emails/detail.ts now surfaces
+  role/entityTypeId/entityTypeFieldId per component (direct column reads, no join change). Six component
+  mutations added (setRole PATCH /role, setEntityType PATCH /entity-type, setFieldRelationship PATCH
+  /field-relationship, autofillFields POST /autofill-fields, denyField POST /deny, confirmField = Phase-9
+  alias over the existing /confirm proxy) — each X-API-Key server-side, ids z.string().uuid()-validated
+  (T-09-31), role/fieldType z.enum allowlists (T-09-32), snake_cased bodies. New emails/entity-summary.ts:
+  entitySummary batch query (input {emailIds}.max(100), T-09-33) using a single parameterized inArray on
+  role='entity' non-rejected/superseded components left-joined to entity_types, aggregated by the pure
+  DB-free aggregateEntitySummary helper to {emailId, entities:[{entityTypeId,label,count}]}[] one-per-id
+  (D-23). New entity-types-write.ts: create/update type + createField/updateField/deleteField/reorderFields
+  proxying /v1/entity-types, spread into entityTypesRouter (list preserved). TDD Task 4: 3 new vitest files
+  (component-relationship-mutations 12, entity-summary 6, entity-types-write 10) — 55/55 api-client tests
+  green. Gates: api-client build 0 (dist rebuilt + new procedures verified present), api-client tsc 0,
+  apps/web tsc 0. Commits 6ae641b, 27e9255, be22a71, 0ca1302. See 09-04-SUMMARY.md.
+
+- 09-06 ✓ EXECUTED: app shell + glassy Gmail inbox (D-20/21/22/23/24), Wave 6, depends on 09-04/09-05. Pure
+  presentation, no backend. layout.tsx rewritten as the app shell — TRPCReactProvider > ThemeProvider(attribute=class
+  defaultTheme=system enableSystem) > SidebarProvider > AppSidebar + SidebarInset({children}); Toaster preserved as a
+  sibling, suppressHydrationWarning on <html> (original provider ordering kept). app-sidebar.tsx: frosted left rail
+  (bg-background/70 backdrop-blur-md border-r border-border/50), Inbox + Entity Types live next/link nav with
+  usePathname active state (bg-primary/10 text-primary + aria-current), Entities + Knowledge disabled "Soon"
+  (secondary Badge, text-muted-foreground/50 cursor-not-allowed), Sun/Moon next-themes toggle gated on a mounted
+  check (no SSR throw). entity-chips.tsx: <=4 violet-family translucent Badge chips (label + ·count) + N overflow,
+  each a next/link deep-link to /emails/{id} (D-24, stopPropagation so chips don't toggle row selection), empty ->
+  null (anti-bloat D-23). inbox-row.tsx: >=64px Gmail row (semibold sender + date, truncated subject, EntityChips),
+  selected bg-primary/10. inbox-three-pane.tsx: ResizablePanelGroup filters(18/min14)·list(42/min28)·preview(40),
+  frosted surfaces, All/Unread/With-entities filter, default-select first item, reading preview =
+  sender/subject/body-snippet + "Open editor →" (attachments live only on emails.detail — preview is data-honest, no
+  stub), single batched emails.entitySummary keyed by the visible page (enabled-guarded, Map-indexed onto rows, never
+  per-row), Load-more appends pages via a second enabled:false emails.list refetch (hasMore/nextOffset preserved).
+  page.tsx keeps the emails.list query + isError useEffect, drops the centered max-w-3xl wrapper, renders
+  <InboxThreePane> in an h-svh slot. Gates: apps/web tsc 0 (x3); npm run web:build (api-client tsc + next build) EXIT
+  0 — / static, all 4 routes compiled. Commits 4f66e64, d7a9820, 7ee0cad. See 09-06-SUMMARY.md.
+
+- 09-07 ✓ EXECUTED: entity-type & property management surface at /entity-types (D-25/26/27), Wave 6, depends on
+  09-04/09-05. Pure UI consuming the existing Phase-9 write mutations — no new backend, no new npm packages.
+  EXTENDED entityTypes.list (the plan's preferred id-exposure fix over a new byId query): additively returns type
+  id/isActive + per-field id/sortOrder/isIdentifier (is_identifier read from config jsonb via COALESCE(... ->>
+  'is_identifier')::boolean), grouping switched slug->id (slug not unique with inactive rows), + an includeInactive
+  flag (default false keeps the Phase-7 pickers active-only; the page passes true). The two list consumers
+  (entity-type-picker, email-detail) read only preserved keys -> compile untouched. use-entity-type-admin hook wraps
+  the six write mutations (create/update type + create/update/delete/reorder field) with use-region-edit optimistic
+  snapshot/revert against the {includeInactive:true} cache + sonner toasts; deleteField AWAITS mutateAsync and
+  resolves the FastAPI DeleteFieldView {hard_deleted, soft_deactivated} outcome, toasting the honest D-27 result
+  (never mis-reports a soft-deactivate as a hard delete). field-row-dialog: controlled create/edit Dialog, field_type
+  Select constrained to exactly string|number|date|array|object + Zod z.enum re-check (T-09-60), is_required/
+  is_identifier checkboxes, Zod slug regex; Delete behind an AlertDialog whose copy + confirm variant are
+  reference-aware (referenced -> "Deactivate this field?" + variant=secondary, never destructive; D-27). page.tsx
+  master list (w-72 border-r, frosted +New type header, active/inactive Badges, Skeleton/error/empty, default-select
+  first) + create-type dialog; entity-type-detail: name/description save-on-blur -> updateType, active Switch
+  (non-destructive deactivate), Fields table (Label/Slug/Type/Required/Identifier/order/edit) with add/edit via the
+  dialog + up/down reorder -> reorderFields. No fetch/X-API-Key/NEXT_PUBLIC under entity-types (T-09-61). Gates:
+  api-client build 0 + vitest 56/56 (updated groupEntityTypeRows fixtures), apps/web tsc 0 (x3), npm run web:build
+  EXIT 0 (/entity-types 27.9 kB static, all 6 routes). Commits bbda632, 9863d72, 03085e6. See 09-07-SUMMARY.md.
+
+- 09-08 ✓ EXECUTED: canvas editor STRUCTURAL layer (D-06/07/08/09/10/12), Wave 6, depends on 09-04 + Phase 6 redraw.
+  Pure UI, additive/back-compat — the existing /emails/[id] editor still typechecks + builds (critical-no-break honored).
+  EXTENDED 3 primitives: region-overlay-box gained optional role/isActiveParent/showConfirmDeny props + 4 palette maps
+  (ROLE_BORDER/HOVER/SELECTED_RING/CHIP; entity=violet, field=amber, unrelated=slate, unclassified=primary) — roleClass
+  replaces statusClasses only when classified+non-terminal, active-parent ring-4 ring-violet-400/40, inline ✓/✗ slot at
+  -top-3 right-0 z-30; overlay-layer gained roleFilter/activeParentId/showUnrelated + a pure isRoleVisible D-12 rule
+  (entity/unclassified always, field only when parentComponentId===activeParentId, unrelated hidden unless toggled, history
+  bypasses); pdf-preview-pane zoom 0.25-4.0 (was 0.5-3.0) + {N}% reset + Fit width/Fit page + Cmd/Ctrl+scroll zoom-to-cursor
+  (rAF re-anchor) + Space-drag pan (pointer capture, cursor-grab/grabbing) + zoom keybindings, page-sync/display:none overlay
+  intact. NEW canvas-toolbar (h-11 role=toolbar: Select/Draw armed bg-primary/10 text-primary border border-primary/30,
+  aria-pressed+aria-keyshortcuts v s/d + V/S/D window keybinding skipping form fields; nav aria-live; zoom group;
+  Regions/History/Unrelated switches, Unrelated default off D-12; X close). NEW canvas-shell (four-zone: h-11 toolbar /
+  w-64 LAYERS / flex-1 min-w-0 CANVAS / w-72 INSPECTOR, panels as ReactNode slots — 09-09 plugs them). NEW use-canvas-state
+  (mode select/draw + selectedIds single/shift + activeParentId; onBoxGeometryChange routes move/resize to the EXISTING
+  Phase-6 edit.redraw = D-09 supersede, NO new geometry mutation; onDrawComplete -> createRegion; immutable as const). NEW
+  use-role-mutations (setRole/setEntityType/setFieldRelationship/confirmField/denyField OPTIMISTIC snapshot-patch-revert +
+  6000ms toast via the use-region-edit literal-in-map idiom; autofillFields NON-optimistic phase machine + invalidate + exact
+  'AI autofill is unavailable — model access is pending.' 6000ms toast; mutatingComponentIds). canvas-shell + the two hooks
+  are intentionally UNWIRED (09-09 composes + rewires the page). Gates: apps/web tsc 0 (x4), npm run web:build EXIT 0
+  (/emails/[id] still 141 kB, all 6 routes). Commits 21eb350, 1f55670, 3430a1d. See 09-08-SUMMARY.md.
+
+- 09-09 ✓ EXECUTED (code-complete; Task 4 human-verify pending): canvas editor COMPOSITION (D-06/10/11/12/13/14/15/16/17/18),
+  Wave 7, depends on 09-08. Pure UI. NEW layers-panel + layers-tree-row = the entities-first LAYERS tree
+  (role=navigation > role=tree; D-12 visibility: entity/unclassified always, field rows only under an expanded/selected
+  parent, unrelated behind the toggle, populated/related fields only via isPopulatedField; 36px role=treeitem rows, role
+  chips violet/amber/slate, inline h-4 ✓/✗ on candidate field rows, exact "No regions yet" empty state; Square icon used —
+  lucide SquareDashed not exported). NEW role-picker (static segmented entity|field|unrelated + Clear role, no fetch), NEW
+  field-relationship-picker (parent-entity + field-property Popovers, property disabled until parent chosen, lazy
+  entityTypes.list, exact empty copy → setFieldRelationship), NEW confirm-deny-controls (canonical inline floating ✓/✗
+  z-30, origin-aware ✗: auto-detected → deny + toast.info "Field value cleared." Undo 3000ms; user-drawn → deny only),
+  NEW active-parent-banner (violet role=status aria-live, exact D-10 copy "Active entity: {label} — next drawn boxes become
+  fields" + Clear). NEW inspector-panel (role=complementary; no-selection "Select a region"; single-selection Region
+  Identity + RolePicker + EntityTypePicker (role=entity|field) + FieldRelationshipPicker (role=field) + Autofill Fields
+  Sparkles/Loader2 gated on entity+entityTypeId + Confirm All Fields + Candidate Value <0.5 destructive). NEW
+  use-autofill-fields (per-entity phase machine idle/extracting/reviewing/confirmed/failed; non-optimistic
+  autofillFields invalidate-on-success; exact 6000ms degrade toast; confirmAllFields delegates to role-mutations
+  confirmField). REWIRED email-detail.tsx to render <CanvasShell> (LAYERS=LayersPanel, INSPECTOR=InspectorPanel,
+  canvas=PdfPreviewPane composed verbatim, banner=ActiveParentBanner) driven by use-canvas-state + use-role-mutations +
+  use-autofill-fields; parentOptions 06-04 same-page-entity pattern; slug→id entity-type resolution; D-10 active-parent
+  draw routes a drawn box through a dedicated createRegion → setRole=field → setFieldRelationship(activeParentId) (reads
+  new component_id off the ApiResponse envelope) vs standalone unclassified region; Bedrock degradation + reprocess +
+  signed-URL TTL preserved. Auto-fixes (Rule 3/Rule 1): SquareDashed→Square (not exported), readonly Polygon→mutable copy
+  at createRegion boundary, EntityTypePicker open-state controlled (was permanently closed). No new npm packages; no
+  dangerouslySetInnerHTML (T-09-80); no client X-API-Key (T-09-82). Gates: apps/web tsc 0 (x6), npm run web:build EXIT 0
+  (/emails/[id] 135 kB / 310 kB first load, all 5 routes). Commits e1391d2, 65ac814, 8062fe9. See 09-09-SUMMARY.md.
+  Task 4 (browser human-verify of the 3 surfaces + canvas review loop) is AWAITING and NOT fabricated.
+
+- 09-GAP BUNDLE A ✓ FIXED 2026-06-14 (adversarial-review correctness defects, backend + tRPC data shape).
+  See 09-REVIEW-FIX.md "Bundle A". Four orchestrator-verified defects closed:
+
+  - CRIT-1: EntityTypeField now carries its uuid id (frozen-dataclass field); _field_from_row populates it
+    and AutofillFieldsUseCase._best_field_mapping returns the field uuid (not the slug), so
+    update_field_relationship writes a valid uuid into the email_components.entity_type_field_id FK — the
+    slug write would have failed every property mapping against real Postgres (the mock-repo suite missed it).
+
+  - CRIT-2: _field_is_active filters config.is_active=False fields out of the active read paths
+    (find_by_id/find_by_slug/list_active) in _from_row, so soft-deactivated fields no longer leak into
+    EntityType.fields, the autofill system prompt, or the management UI (row kept for the D-04 FK + ref count).
+
+  - HIGH-3: FieldView gains id + _to_field_view surfaces it, so /v1/entity-types reads return the field uuid;
+    the tRPC entityTypes.list already exposes it (bbda632) → field id obtainable end-to-end (FastAPI→tRPC→UI).
+
+  - WR-03: UpdateFieldUseCase now mirrors CreateFieldUseCase's per-type slug-uniqueness pre-check (excluding
+    self) via a new find_entity_type_by_field_id port method → clean 409 instead of a raw DB-constraint 500.
+  Commits 1e2d4c6 (CRIT-1+CRIT-2), e7bf27b (HIGH-3), 6f1ecbc (WR-03). Gates green: pytest 432 passed/8 skipped
+  86.87% cov, ruff/format/mypy(88)/lint-imports(3 kept)/bandit all 0; api-client build 0 + vitest 56/56,
+  apps/web tsc 0. OUT OF BUNDLE A: HIGH-1 (canvas OverlayLayer props inert on PDF), HIGH-2 (drag-to-draw not
+  wired), WR-01/02/04/05 (UI warnings) — separate bundle(s). Migration 0013 staging/prod push must land WITH
+  the CRIT-1 fix (column already uuid; these were code-only fixes).
+
+- 09-GAP BUNDLE B FIXED 2026-06-14 (adversarial-review canvas defects, frontend). See 09-REVIEW-FIX.md
+  "Bundle B". Five defects closed - the Phase-9 canvas review loop now works ON THE PDF:
+
+  - HIGH-1: PdfPreviewPane.Component gains role; PdfPreviewPaneProps gains the Phase-9 props
+    (activeParentId/showUnrelated/confirmDenyComponentIds/autoDetectedComponentIds + onConfirm/onDeny/
+    onRestoreField), all threaded from email-detail THROUGH PdfPreviewPane INTO OverlayLayer (which 09-08
+    already forwards to RegionOverlayBox). Role colors + D-10 active-parent ring + D-12 anti-bloat hiding +
+    D-16 inline confirm/deny now render on the document, not only the LAYERS tree. email-detail computes
+    confirmDenyComponentIds (candidate FIELD boxes w/ a resolved value) + autoDetectedComponentIds (origin marker).
+
+  - HIGH-2: PdfPreviewPane takes canvasMode; drawArmed = legacy drawMode OR canvas.mode==='draw' now mounts
+    the DrawOverlay, so the shell Draw toggle actually arms drag-to-draw (was decorative). Legacy redraw/split/add
+    still wins (DrawModeBar exclusive to it); the D-10 active-parent drawn-box -> FIELD child chain is preserved.
+
+  - WR-01: region-overlay-box renders the canonical ConfirmDenyControls (duplicate inline confirm/deny block
+    deleted - converged); overlay-layer threads isAutoDetected + onRestore; use-role-mutations adds restoreField
+    (optimistic un-reject + re-invalidate) wired into the undo toast. (LAYERS-tree inline confirm/deny is a
+    separate UI-SPEC surface, kept.) Full server-side restore (un-reject + drop D-19 memo) is a follow-up endpoint.
+
+  - WR-02: getCandidateValue(extractedFields, fieldKey) selects the value by the mapped property's slug
+    (entity_type_field_id uuid -> entity_type_fields.slug via new fieldIdToKey/fieldKeyFor), never
+    Object.entries(...)[0]; unmapped boxes fall back only to a single-entry blob.
+
+  - WR-05: emails.detail now exposes content_raw; denyField.onMutate is origin-aware - auto-detected box
+    soft-rejects (leaves view), user-drawn box keeps geometry + status and only clears entity_type_field_id +
+    extractedFields ("your boxes never disappear"). isAutoDetectedOrigin mirrors the server's DenyFieldUseCase check.
+  Commits 07c0921 (WR-05 + restoreField), 035d877 (WR-02), e15eae0 (WR-01), 35819e2 (HIGH-1), e805c03 (HIGH-2).
+  Gates green: apps/web tsc 0 (after each fix), npm run web:build EXIT 0 (/emails/[id] renders the wired canvas),
+  api-client build 0 + vitest 56/56 (detail.ts content_raw exposure). OUT OF BUNDLE B: INFO-1..4 + dual-toolbar
+  deferral remain documented non-blocking follow-ups; the 09-09 Task 4 browser human-verify is now unblocked.
+
+- 09-GAP BUNDLE C ✓ FIXED 2026-06-14 (the 2 non-blocking residuals from the gap-fix re-verification CLEARED
+  verdict). See 09-REVIEW-FIX.md "Bundle C". Two defects closed:
+
+  - MED (dead toolbar + broken Show-regions, D-06): the CanvasShell CanvasToolbar was rendered with
+    numPages=null / scale=1 / no-op zoom·fit·page-nav handlers (perpetual "Loading…", permanently-disabled Next,
+    dead zoom/Fit) — a non-functional duplicate of PdfPreviewPane's OWN working PDF toolbar. Removed the
+    page-nav/zoom/Fit groups from canvas-toolbar (+ their props + unused ChevronLeft/Right/ZoomIn/Out icons),
+    keeping only the controls that genuinely work at the shell level: the Select/Draw tool toggle and the
+    Regions/History/Unrelated view toggles. Single source of truth for overlay visibility: lifted to the shell's
+    showRegions state, passed down to PdfPreviewPane as the controlled read-only showOverlays prop; deleted the
+    pane-local showOverlays useState AND the pane's duplicate "Show regions" toggle — the shell Regions switch now
+    actually hides the on-PDF overlays. Unrelated toggle still drives OverlayLayer showUnrelated (Bundle B),
+    unchanged; the working pane zoom/draw/page-sync + the Bundle-B canvas overlay were not regressed (net −210/+31).
+
+  - LOW (UUID boundary, D-04): FieldRelationshipRequest.entity_type_field_id + parent_component_id retyped
+    str|None → UUID|None so a malformed value → 422 at the Pydantic boundary instead of reaching the
+    email_components uuid FK columns in Postgres; the route coerces UUID→str for the (still str-typed) use case,
+    null clears (D-11) unchanged. TDD: malformed field_id/parent_id → 422 (use case not called); valid pair → 200
+    str-coerced; null pair clears.
+  Commits 548ef41 (LOW UUID boundary), a139aaf (MED dead toolbar). Gates green: apps/web tsc 0 + npm run web:build
+  EXIT 0 (/emails/[id] renders); pytest 436 passed/8 skipped 86.97% cov, ruff/format/mypy(88)/lint-imports(3 kept)/
+  bandit all 0. ZERO dead/no-op controls remain in the editor toolbars. OUT OF BUNDLE C: INFO-1..4 + the
+  pre-existing unused CanvasShell emailId prop remain documented non-blocking follow-ups.
+
+- 09-GAP BUNDLE D1 ✓ FIXED 2026-06-14 (the 2 confirmed HIGH + genuine MEDIUM/LOW backend defects + test-debt from
+  the FULL final review, 09-FINAL-REVIEW.md). See 09-REVIEW-FIX.md "Bundle D1". Six items closed:
+
+  - HIGH-1 (autofill double-processes auto-detected children, autofill_fields.py): dedupe all_children by child.id
+    (order-preserving) before the autofill loop + exclude just-persisted ids AND origin=='auto_detected' rows from
+    _existing_field_children — so a REFLECTING find_by_page_component_id never autofills a box twice (was 2x LLM
+    cost + duplicate ExtractionRecords/relationship writes; the static mock masked it). Regression test with a
+    reflecting mock asserts exactly one autofill/save/relationship-write per child (FAILS on pre-fix code).
+
+  - HIGH-2 (CreateEntityTypeUseCase system-slug uniqueness inoperative): app-level find_by_slug(None, slug) pre-check
+    → 409 + partial unique index uniq_entity_types_system_slug ON entity_types (slug) WHERE importer_id IS NULL
+    (migration 0014, the real backstop since DB UNIQUE(importer_id,slug) never collides on NULL); stale
+    entity-types.ts NULLS-NOT-DISTINCT comment corrected. Test: duplicate-system-slug pre-check fires (no insert).
+
+  - MEDIUM-3 (field slug no DB constraint, TOCTOU): UNIQUE(entity_type_id, slug) on entity_type_fields (migration
+    0014, same file); app-level pre-checks kept for the friendly 409.
+
+  - MEDIUM-4 (denial-memo full-row read-modify-upsert lost-update): new ComponentRepository.append_denied_polygon
+    atomic server-side jsonb append RPC (migration 0015 append_denied_polygon) replaces the read-modify-save_many;
+    DenyFieldUseCase no longer re-reads the parent. Verified 2 parallel appends both survive (count=2).
+
+  - LOW-5 (_coerce_page_index float 2.0 → 0): coerce numerically (int(float)) before the digit check.
+  - TEST-DEBT: real-row-shape tests for the new ComponentRepository write methods (assert exact payload column
+    keys / RPC params, the CRIT-1 fake-repo-hides-a-real-row class) + thin-integration tests for the 4 new FastAPI
+    routes (/role, /entity-type, /deny, /autofill-fields: 200 + ValueError→404 + malformed-uuid→422).
+  Commits 7373d53 (HIGH-1+LOW-5), 74d3a9e (HIGH-2+MEDIUM-3, migration 0014), 618c399 (MEDIUM-4, migration 0015),
+  6016e7c (route test-debt). Gates green: pytest 458 passed/8 skipped 87.96% cov, ruff/format/mypy(88)/
+  lint-imports(3 kept)/bandit all 0; packages/db tsc 0. Migrations 0014/0015 LOCAL-ONLY — push WITH 0013 to
+  staging/prod before deploy (verify no duplicate system/field slugs first). OUT OF BUNDLE D1: frontend HIGH-3
+  (apps/web has zero tests) remains the top documented follow-up; no AWS touched.
+
+- 09-GAP BUNDLE D2 ✓ FIXED 2026-06-14 (the genuine frontend MEDIUM + LOW defects from the FULL final review,
+  09-FINAL-REVIEW.md). See 09-REVIEW-FIX.md "Bundle D2". Six items closed, 6 atomic fix(09-gap) commits:
+
+  - MEDIUM-A (nested interactive, inbox-row.tsx): InboxRow was a <button> wrapping the EntityChips <a>
+    deep-links (invalid HTML + nested-interactive a11y dev-console error). Converted to <div role="button"
+    tabIndex={0}> with Enter/Space keyboard activation (target-guarded so chip keystrokes pass through);
+    chips stay a sibling with stopPropagation. Commit 4be8c62.
+
+  - MEDIUM-B (silent draw no-op, email-detail.tsx handleRectDrawn): a draw on a page with no resolvable
+    attachment_page component was silently dropped (Draw looked dead). Added the else branch — cancel the
+    draw + toast.warning explaining the page has no recognized document page to attach to (the preferred
+    toast option; Draw NOT gated). Redraw/split/active-parent/standalone routing unchanged. Commit 4eac97e.
+
+  - MEDIUM-C (dead deactivate-vs-delete copy, field-row-dialog.tsx): referenceCount was never passed, so the
+    pre-delete AlertDialog always showed destructive "permanently removed" copy even when the server
+    soft-deactivates (D-27). Made referenceCount tri-state — undefined (count not known pre-delete, the live
+    path) → NEUTRAL "Remove this field?" + secondary variant + copy that never promises permanent deletion
+    (server may deactivate; honest post-action toast reports which). count>0 deactivate; count===0 hard delete.
+    No backend count query added (out of surgical scope). Commit c868596.
+
+  - MEDIUM-D (emails.list over-fetch, api-client emails/index.ts): SELECT * pulled bodyHtml + raw storage key
+    for every inbox row that renders neither. Explicit column projection — inbox-needed columns only + a
+    bodyText snippet truncated server-side via left(body_text, 2000) (the reading-preview slice length).
+    api-client build 0 + vitest 56/56; apps/web consumes the narrowed shape (tsc 0). Commit 0ef8662.
+
+  - MEDIUM-E (confirm-all N×N invalidations, use-role-mutations + use-autofill-fields): confirmAllFields
+    looped confirmField(id) and each onSuccess invalidated emails.detail (N refetches for one action). Added
+    roleMutations.confirmFields(ids) = one optimistic patch + N confirms via a no-onSuccess bulk mutation,
+    awaited together, then ONE trailing invalidate; use-autofill-fields delegates to it. Commit 0f62c8f.
+
+  - LOW (dead-code cleanup, divergence traps): removed the dead duplicate autofill machine from
+    use-role-mutations (AutofillFieldsPhase/autofillPhases/autofillFieldsMutation/autofillFields + unused
+    useState; canonical path is use-autofill-fields, 09-09); deleted the dead use-canvas-state API (liveRect/
+    onDrawComplete/onBoxGeometryChange + the now-unused resolvePageComponentId param/NormalizedRect/Polygon/
+    normalizedRectToPolygon — email-detail drives draw/redraw through canvas.edit); removed the unused
+    CanvasShell emailId prop + its call site. Commits 0f62c8f, 4577282.
+  Gates green: apps/web tsc 0 (after each fix), npm run web:build EXIT 0 (/, /entity-types, /emails/[id] all
+  render, 5/5 static pages); api-client build 0 + vitest 56/56 (MEDIUM-D touched it). DEFERRED: the OPTIONAL
+  layers-tree inline-deny undo-toast (would require threading isAutoDetected/onRestore + the origin marker
+  through LayersTreeRow→LayersPanel→email-detail — scope creep, left a documented follow-up). OUT OF BUNDLE D2
+  (DEFER, per objective): canvas hover-rerender/OverlayLayer memoization; email-detail god-component split; the
+  apps/web test harness (frontend HIGH-3 — top separate follow-up). No git push; no AWS touched.
+
+## Phase 4 (original CONTEXT) — gathered 2026-06-11
+
+- **Reshaped during discussion** from "Supabase schema + ingestion" into a
+  region-selection + AI-autofill **backend** (UI is a later phase).
+
+- Robust **PDF** processing (only format this phase): text-layer + OCR fallback
+  + LLM segmentation. Parser registry + Protocol seam for future formats.
+- Region child model: normalized polygon + text-anchor + content + halfvec embedding
+  (Textract/Document AI standard). Supabase + pgvector + pg_trgm.
+
+- Auto-segment proposes / human overrides; cold-start autofill from entity-type
+  defaults; confirmed regions → S4–S6 few-shot retrieval (learning flywheel).
+
+- Versioned/supersedable reprocessing; multi-tenant by importer (forwarding-sender
+  → importer, no auth yet); layered test corpus as a deliverable.
+
+- One phase, many plans. ROADMAP.md still lacks a Phase 4 entry — record it at plan time.
+- See `.planning/phases/04-email-intelligence/04-CONTEXT.md` + `04-RESEARCH.md`.
+
+## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 5 added (2026-06-12): Review UI — inbox email detail with document preview and entity-region overlays. Frontend slice consuming Phase 4's data model read-only (research §8 EmailView shape); preview is the core user surface. Degrades gracefully until 04-11 segmentation dispatch writes region Components.
+- Phase 6 added (2026-06-12): Region edit ops on the preview (accept/redraw/split/merge/nest/reject) wired to email_components — versioned, supersede-safe (D-16), human regions are source of truth (D-09).
+- Phase 7 added (2026-06-12): Click-to-autofill UI — region click → POST /v1/components/{id}/autofill → candidate fields + confidence → human confirm (POST /confirm) with corrections; process/reprocess controls. Closes the flywheel loop from the browser.
+- Phase 8 added (2026-06-12): trgm key_terms extractor (PO/BL/booking/container identifiers) activating the dormant pg_trgm retrieval arm; includes the confirm-fallback entity_type_id="" NOT NULL FK fix.
+
+## Decisions Log
+
+- 2026-06-10: ECS Fargate (user-confirmed) over App Runner; generic webhook over SES-shaped; full 4-layer skeleton; shared ALB with staging on :8080
+- 2026-06-12 (04-07): D-14 structural: region in user turn only, system prompt never contains document content
+- 2026-06-12 (04-07): Cold-start: entity_type.description as KB, examples=() always (Plan 04-08 adds retrieval)
+- 2026-06-12 (04-07): T-04-25: AutofillUseCase inserts status=candidate only, nothing auto-confirms
+- 2026-06-12 (04-07): T-04-26: find_by_slug falls back importer_id -> None for system-default entity types
+- 2026-06-12 (04-09): D-17 corpus PDFs generated via raw PDF bytes without reportlab/fpdf external dependency
+- 2026-06-12 (04-09): asyncio.run() + nested _inner() coroutine used in _run_propose to fix Python 3.13 event loop removal
+- 2026-06-12 (04-09): forwarding_harness wraps IngestInboundEmailUseCase (live production entry point) not DecomposeEmailUseCase
+- 2026-06-12 (04-08): learning flywheel closed — confirm→embed(Titan v2, dim 1536, Bedrock)→index; autofill few-shot via hybrid RRF k=60; cold-start (D-13) preserved on empty retrieval
+- 2026-06-12 (04-08): retrieval RPCs (match_components_by_embedding/_trgm) were missing — authored migration 0009 (user: fix-now); applied local+staging+prod, migrator back in sync (10)
+- 2026-06-12 (04-08): trigram retrieval arm inert (key_terms=()) — vector-only hybrid until a PO/BL/container key_terms extractor lands; RPC+GIN index already live
+- 2026-06-12 (04-08): reconciled email_attachments push-drift — made 0008 idempotent (ADD COLUMN IF NOT EXISTS) + committed attachments.ts file_ext/parent_attachment_id columns
+- 2026-06-12 (04-13): PDF parser retains per-token geometry in content_raw (text-layer pdfminer bbox Y-flipped + OCR per-word); text-layer page polygon = union of element bboxes (non-breaking, no migration)
+- 2026-06-12 (04-14): segmenter seam takes coordinate-bearing tokens; ProposedRegion carries token_indices (not invented polygon); use case grounds region polygon = union of selected token bboxes; D-14/retry/cost-guard preserved
+- 2026-06-12 (04-14): Textract analyze_document evaluated, DEFERRED — 04-13 per-word geometry suffices to ground polygons; revisit for table/KV extraction
+- 2026-06-12 (gap closure): D-18 tenancy — X-API-Key is an installation-wide principal; importer_id is data partitioning (D-05 sender resolution), NOT an auth boundary until real auth lands. Reads list across importers (optional ?importer_id= filter); detail/download/reprocess resolve by id; autofill/confirm derive tenant from the component row (explicit mismatch 404s = future auth seam)
+- 2026-06-12 (05-01): Three-query pattern for emails.detail — no cartesian join; leftJoin for optional extraction records (candidate components have none); polygonToRect collapses any polygon to min/max bounding box
+- 2026-06-12 (05-03): DOMPurify client-only guard (typeof window check) — prevents SSR crash; plain-text is always default tab; detected-regions empty state is non-alarming by design (Bedrock-blocked is the normal Phase 5 state)
+- 2026-06-12 (05-04): polygonToRect imported from @nauta/api-client/geometry subpath (not barrel) to prevent postgres from entering the client bundle
+- 2026-06-12 (05-04): Overlay layer hidden via CSS display:none (not unmounted) to preserve bidirectional sync state per §7.3
+- 2026-06-12 (05-04): NEXT_PHASE=phase-production-build added to skipValidation in db/client.ts for build-time env-less builds
+- 2026-06-12 (06-01): supersede-not-mutate implemented as dataclasses.replace + _merge_lineage immutable helper; lineage (origin/supersedes/superseded_by) lives in content_raw JSON — no schema migration
+- 2026-06-12 (06-01): merge IDOR guard (T-06-03) — MergeRegionsUseCase requires identical email_id AND attachment_id across all inputs; violation → ValueError → generic 404 (T-06-04)
+- 2026-06-12 (06-01): geometry validated once at the Pydantic boundary (4 [x,y] pairs, coords [0,1], page_index>=0); use cases degrade to empty text capture rather than failing on token-less pages
+- 2026-06-12 (06-01): pre-existing mime_parser B101 typing assert annotated nosec (settings.py precedent) so the bandit-exit-0 gate stays meaningful
+- 2026-06-12 (06-02): getListenerConfig reads process.env at call time (not module scope) so Next.js build succeeds without env vars — mirrors attachments/[id]/route.ts pattern
+- 2026-06-12 (06-02): polygonSchema defined once and shared across all 4 polygon-bearing mutations; parseErrorDetail helper extracts FastAPI {detail} uniformly
+- 2026-06-12 (06-02): added "dom" to api-client tsconfig lib — DOMRect not in es2022-only lib (auto-fix, Rule 3)
+- 2026-06-12 (06-03): region-edit state machine owned by one useRegionEdit hook; components stay presentational — handlers injected via props
+- 2026-06-12 (06-03): RegionOverlayBox needs pointer-events-auto — children inherit OverlayLayer's pointer-events-none, clicks never reached boxes (Rule 1)
+- 2026-06-12 (06-03): mutatingIds derived from mutation.isPending + variables (no extra state) to satisfy spec §7 aria-busy on in-flight mutations (Rule 2)
+- 2026-06-12 (06-03): Reject fires directly (no dialog) and Merge/Nest stay disabled per plan — 06-04 swaps in AlertDialog + handlers
+- 2026-06-12 (06-03): bg-primary/[0.08] arbitrary value — Tailwind v3.4 opacity modifiers only support steps of 5, pattern map's /8 would not generate
+- 2026-06-12 (06-04): AlertDialog opened via controlled state (rejectDialogOpen in useRegionEdit) — satisfies T-06-17 (Repudiation mitigation); Delete key also routes through dialog not direct reject
+- 2026-06-12 (06-04): eligibleRegions computed in email-detail (not the hook) so hook stays data-agnostic; filtered to same page_index, not selected id, not rejected/superseded
+- 2026-06-12 (06-04): NestPicker trigger kept inside the component for Popover focus management; onNest/onUnNest injected from email-detail via entitiesList.shiftToggle pattern
+- 2026-06-12 (06-04): shiftToggle passed as onToggleSelect to EntitiesList so merge multi-select unifies with overlay shift-click selection
+- 2026-06-12 (07-01): EMAIL_LISTENER_API_KEY read only in getListenerConfig() at call time — never NEXT_PUBLIC_ (T-07-01; mirrors 06-02 pattern)
+- 2026-06-12 (07-01): z.string().uuid() validates componentId/emailId before URL path interpolation — prevents path-segment injection (T-07-02)
+- 2026-06-12 (07-01): groupEntityTypeRows exported as pure function enabling unit testing without DB; immutable spread on every output object (CLAUDE.md immutability requirement)
+- 2026-06-12 (07-01): SKIP_ENV_VALIDATION=true in vitest.config.ts prevents db/client.ts createEnv() from throwing on POSTGRES_URL during tests — same guard already used in CI/lint
+- 2026-06-12 (07-02): allDisabled = disabled || autofillExtracting gates all ActionToolbar buttons during AI extraction (07-UI-SPEC §3.4); existing disabled props replaced
+- 2026-06-12 (07-02): EntityTypePicker receives trigger as ReactNode for flexible popover anchor — same pattern as NestPicker but with api.entityTypes.list internal query
+- 2026-06-12 (07-02): correctedFields diff sends null (not empty object) when no user edits; discardFields clears local state only — no API call (D-16)
+- 2026-06-13 (07-03): D-16: ReprocessDialog uses buttonVariants({variant:"default"}) not "destructive" — reprocess supersedes, never deletes confirmed data
+- 2026-06-13 (07-03): Component.extractedFields/correctedFields/confidenceScore/confidenceBreakdown typed as unknown in entities-list; narrowed at FieldsPanel callsite
+- 2026-06-13 (07-03): getStatusBadge copied from entities-list into fields-panel to maintain consistency without shared util (avoids premature abstraction)
+- 2026-06-13 (08-01): ISO 6346 letter-value map uses A=10, B=12 (skipping 11, 22, 33 per standard); Wikipedia CSQU3054187 example appears to have a typo (algorithm gives 8); verified correct via MSCU1234566 + TCNU1234565
+- 2026-06-13 (08-01): Precision over recall — bare container validates check digit; label-anchored (BL/BOOKING/PO/INVOICE) accepts any alphanumeric (no check digit required for reference numbers)
+- 2026-06-13 (08-01): D-15 flywheel preserved in confirm-fallback: embed + update_embedding always runs regardless of ExtractionRecord save; skip-and-warn with confirm_region_no_candidate_record_skipped log event
+- 2026-06-13 (09-01): D-01/D-02 role column is nullable (NULL = unclassified/standalone); "unclassified" intentionally NOT an enum value — manual override always wins
+- 2026-06-13 (09-01): D-03/D-04 entity_type_id / entity_type_field_id are declared FKs with onDelete: set null — deleting a referenced entity-type/field nulls the component link, never cascade-deletes components (hard deletes guarded in 09-03 per D-27)
+- 2026-06-13 (09-01): migration path is packages/db/migrations/ (drizzle.config out=./migrations + migrate.ts migrationsFolder="migrations"), NOT src/migrations/ — latest 0012 → new 0013
+- 2026-06-13 (09-01): 0013 scoped to the Phase-9 change only — drizzle-kit re-emitted drift (region/pending/error enum values + extraction_records.confidence_breakdown/routing_reason) from the un-snapshotted custom migrations 0010/0011/0012; removed those statements + added IF NOT EXISTS guards (mirrors the prior custom-migration idempotency pattern)
+- 2026-06-13 (09-05): D-21 sidebar block hand-vendored from canonical shadcn (resizable.tsx precedent), NOT via shadcn CLI init — no new npm dependency added (T-09-40/T-09-SC); reuses existing --sidebar-* HSL tokens (already mapped to sidebar.* in packages/ui/tailwind.config.ts), zero new design tokens
+- 2026-06-13 (09-05): @nauta/ui components are consumed via the per-file subpath wildcard ("./*" export → @nauta/ui/sidebar); the barrel index.ts exports ONLY cn, so sidebar is NOT re-exported from index.ts despite the plan's literal wording (Rule-3 alignment; avoids pulling a client component into the cn-only barrel)
+- 2026-06-13 (09-05): next-themes resolves from apps/web via workspace hoisting (declared dep of @nauta/ui; also used by packages/ui/src/theme.tsx) — apps/web theme-provider imports it directly without adding it to apps/web/package.json
+- 2026-06-13 (09-02a): D-19 memo mechanism (Claude's Discretion) — denied_field_polygons stored as a list under the PARENT entity component.content_raw (Phase-6 lineage convention; content_raw is the metadata sidecar), re-persisted via save_many mutating content_raw only (supersede-never-mutate); 09-02b's AutofillFieldsUseCase reads it to exclude overlapping re-proposals
+- 2026-06-13 (09-02a): D-18 origin-aware deny — auto-detected box (content_raw lineage origin=='auto_detected', read at both nested content_raw.lineage.origin and flat content_raw.origin) → update_status('rejected') + parent memo; absent/other lineage → user-drawn: clear_candidate_fields + ExtractionRepository.supersede_active (the existing D-16 primitive), geometry untouched, never rejected ("your boxes never disappear")
+- 2026-06-13 (09-02a): FieldRelationshipRequest uses parent_component_id + entity_type_field_id (PLAN.md Task 3 spec, set in one update_field_relationship write), NOT the 09-PATTERNS draft's entity_type_id field
+- 2026-06-13 (09-02a): new Component relationship fields are defaulted (= None) so existing constructors (propose_regions/classify_document/edit_region) keep working untouched; setter use cases follow the NestRegionUseCase single-writer shape (load→tenant-guard→one repo writer→refreshed entity)
+- 2026-06-13 (09-02a): use-case tests placed under tests/application/ (new subpackage + __init__.py, mirroring tests/corpus/) per PLAN.md; AsyncMock repos used (project convention over the plan's "fake repo" wording); autofill-fields endpoint intentionally NOT added (09-02b owns it + stamps the auto_detected origin)
+- 2026-06-13 (09-02b): EntityTypeRepository.find_by_id added (port + Supabase impl) — 09-03 had not landed find_entity_type_by_id; lookup is global (not importer-scoped) because tenant isolation lives on the entity component row carrying entity_type_id (D-18)
+- 2026-06-13 (09-02b): LLM-call structure (Claude's Discretion, D-CONTEXT) = one autofiller.autofill call PER field child, reusing AutofillUseCase's per-component cold-start+few-shot contract verbatim (no new prompt surface); constraint satisfied (token-grounded boxes + property mapping + per-field confidence)
+- 2026-06-13 (09-02b): property identity = the extracted field SLUG (EntityType.fields exposes slug, not a per-row id) — the same identity the FieldRelationship setter persists; entity_type_field_id carries the highest per-field-confidence slug; token containment = bbox-center-in-polygon-bounds (matches geometry.ts polygonToRect bounding-box semantics)
+- 2026-06-13 (09-02b): D-19 exclusion = positive-area axis-aligned overlap of the proposal's grounded bounds vs each denied_field_polygons bounds (real geometry test, not exact match), per the plan's explicit constraint; segmenter constructor param typed `object` (Protocol-introspection accommodation), DI factory passes the SegmenterProtocol-resolved instance
+- 2026-06-13 (09-03): D-27 delete-guard policy (Claude's Discretion) = SOFT-DEACTIVATE (config.is_active=False) when count_confirmed_references > 0, never hard-delete a field a confirmed component still points at (preserves the D-04 entity_type_field_id FK); zero refs -> hard delete; outcome surfaced via DeleteFieldResult/DeleteFieldView so the UI explains the guard
+- 2026-06-13 (09-03): slug-conflict signalling = Postgres unique-violation SQLSTATE 23505 read off postgrest APIError.code -> ValueError carrying a 'slug exists' marker -> 409 at the endpoint (T-09-22); the CreateFieldUseCase ALSO pre-checks per-entity-type field-slug uniqueness against the loaded entity type's fields for a clean 409 before the insert (DB UNIQUE(importer_id, slug) is the entity-type-slug backstop)
+- 2026-06-13 (09-03): EXTENDED 09-02b's EntityTypeRepository.find_by_id (kept) rather than duplicating it; added find_entity_type_by_id as a delegating alias (09-03 plan naming) so the management use cases load the field schema before a write; is_identifier kept in entity_type_fields.config jsonb (D-27 Claude's Discretion, not promoted to a column)
+- 2026-06-13 (09-03): field_type allowlist enforced twice (defense in depth, T-09-21) — Pydantic field_validator at the /v1/entity-types boundary + ALLOWED_FIELD_TYPES re-check in CreateField/UpdateField use cases; manage_entity_types.py stays domain-pure (imports only app.domain.*, lint-imports clean)
+- 2026-06-13 (09-04): getListenerConfig + parseErrorDetail extracted from emails/mutations.ts into router/_listener-config.ts (the "extract to shared" PATTERNS option) — both the emails component mutations and entity-types-write import the single definition; EMAIL_LISTENER_API_KEY now read in exactly one source file, never NEXT_PUBLIC_ (T-09-30); _listener-config is underscore-prefixed and is NOT a router (exports only the two server-side helpers, pulled in transitively by the mutation modules only)
+- 2026-06-13 (09-04): confirmField reuses the existing Phase-7 /confirm proxy — confirmComponent already POSTs /v1/components/{id}/confirm with {corrected_fields}, so confirmField is a thin Phase-9-named alias (correctedFields optional/nullable) for review-loop symmetry with denyField, NOT a second divergent proxy (plan's "reuse rather than duplicate" guidance)
+- 2026-06-13 (09-04): emails.entitySummary uses the role/entityTypeId DIRECT path (cheaper, preferred now 09-01 added the columns) — role='entity' + entity_type_id components left-joined to entity_types for the label, rejected/superseded excluded so denied/redrawn boxes never produce chips; single parameterized inArray batch keyed by the visible page of email ids (.max(100), T-09-33), no per-row fetch
+- 2026-06-13 (09-04): aggregateEntitySummary is a pure DB-free exported helper (mirrors groupEntityTypeRows testability) returning one row per REQUESTED email id in request order (empty entities for entity-less emails) so the inbox can zip the rollup onto its visible page without a second lookup; immutable outputs throughout
+- 2026-06-13 (09-04): rebuilt packages/api-client/dist (gitignored artifact) before web tsc — Phase 6/7 hit stale-dist gaps; verified entitySummary/setFieldRelationship/reorderFields + _listener-config present in dist so apps/web typechecks against the new surface
+- 2026-06-13 (09-06): D-20/D-21 app shell preserves the original provider ordering — TRPCReactProvider outermost, Toaster a body sibling; ThemeProvider + SidebarProvider wrap children; suppressHydrationWarning on <html> + a mounted-gate on the theme toggle prevent the next-themes SSR/hydration mismatch (toggle never reads resolvedTheme before mount)
+- 2026-06-13 (09-06): D-22 Load-more keeps page.tsx as the emails.list query owner (acceptance criterion) — the three-pane appends further pages via a SECOND api.emails.list query (enabled:false, refetch on click) accumulated into local extraItems with nextOffset tracked; hasMore/nextOffset preserved verbatim (chose this over lifting the seed query or a useInfiniteQuery rewrite)
+- 2026-06-13 (09-06): D-22 reading preview is data-honest — emails.list returns only the Emails row (attachments live on emails.detail), so the preview shows sender/subject/body-snippet + "Open editor →" deep-link rather than a stubbed empty attachment summary; no second per-row fetch (would break the D-23 single-batch invariant); aligns with the project's depth-first/no-stubs preference
+- 2026-06-13 (09-06): D-23/D-24 entity chips stopPropagation on click so a chip's /emails/{id} deep-link never also toggles the row's reading-preview selection; entitySummary fetched ONCE for the visible page (Map-indexed onto rows), never per row
+- 2026-06-13 (09-07): id-exposure fix = EXTEND entityTypes.list (plan's preferred option over a new byId query) — additively returns type id/isActive + per-field id/sortOrder/isIdentifier; is_identifier read from config jsonb via COALESCE((config ->> 'is_identifier')::boolean, false); grouping switched slug->id (slug not unique once inactive rows are included); an includeInactive flag (default false) keeps the Phase-7 pickers active-only while the management page passes true. entity-type-picker + email-detail (the only list consumers) read only preserved keys and compile untouched (additive)
+- 2026-06-13 (09-07): D-27 delete-guard surfaced honestly — deleteField AWAITS mutateAsync and resolves the FastAPI DeleteFieldView {hard_deleted, soft_deactivated}, then toasts the actual outcome; the dialog's referenceCount prop drives PRE-emptive copy (referenced -> "Deactivate this field?" + variant=secondary, never destructive) but the SERVER response is the authority, so a soft-deactivate is never mis-presented as a hard delete even when the count is unknown
+- 2026-06-13 (09-07): field_type allowlist enforced twice client-side (T-09-60) — a Select limited to the 5 values + a Zod z.enum re-check before the mutation (defense-in-depth with the api-client z.enum and the 09-03 Pydantic validator); reorder = up/down buttons (plan discretion over drag) with optimistic sort_order reindex; deactivate = active Switch via updateType isActive, never a destructive control (mirrors D-16)
+- 2026-06-13 (09-08): back-compat strategy = OPTIONAL new props with safe defaults (role?/isActiveParent?/showConfirmDeny? on region-overlay-box; roleFilter?/activeParentId?/showUnrelated? on overlay-layer) — the existing email-detail→PdfPreviewPane→OverlayLayer caller passes none, so Phase 6/7 boxes keep the primary statusClasses and the whole app still typechecks+builds (09-08 = structural layer; rewire onto canvas-shell is 09-09)
+- 2026-06-13 (09-08): ComponentRole ('entity'|'field'|'unrelated'|null) exported from region-overlay-box as the single role-union source reused by overlay-layer + both hooks; null = unclassified (matches D-01, no enum value). Role-color override applies only when role!=null AND status not rejected/superseded (terminal boxes keep the muted ghost); active-parent adds ring-4 ring-violet-400/40 (D-10)
+- 2026-06-13 (09-08): D-12 field visibility = reveal-on-select (field renders only when activeParentId!=null && parentComponentId===activeParentId) in a pure isRoleVisible helper layered after the Phase-6 filters; explicit roleFilter overrides to show ONLY that role; unrelated hidden unless showUnrelated (toolbar toggle default off, D-05); history view bypasses role-hiding so nothing is lost
+- 2026-06-13 (09-08): D-09 move/resize REUSES the existing Phase-6 redraw — use-canvas-state.onBoxGeometryChange normalizes the rect → edit.redraw (supersede-never-mutate); NO new geometry mutation authored (hook calls only edit.redraw / edit.createRegion)
+- 2026-06-13 (09-08): use-role-mutations patches emails.detail with LITERAL statuses ('confirmed'/'rejected' as const) in the setData map (exactly use-region-edit's idiom) — a generic Partial patch widened extractionStatus/role to string and broke the inferred tRPC union; autofillFields is the only NON-optimistic mutation (inserts candidate field children server-side → phase machine + invalidate + exact 6000ms 'model access is pending' toast); denyField optimistically marks 'rejected' then lets the origin-aware server (D-18) reconcile via invalidate
+- 2026-06-13 (09-08): zoom-to-cursor re-anchors scrollLeft/Top by the zoom factor inside requestAnimationFrame (after re-layout); Space-drag pan via pointer capture on the scroll viewport; zoom range ZOOM_MIN/MAX/STEP=0.25/4.0/0.25; canvas-shell owns no PDF state (renders CanvasToolbar wired to use-canvas-state, LAYERS/INSPECTOR/canvas/banner as ReactNode slots) — panels + page wiring deferred to 09-09
+- 2026-06-13 (09-09): PdfPreviewPane is COMPOSED (not decomposed) into the CanvasShell canvas slot — it is a self-contained Phase 5/6 component with its own working toolbar (page/zoom/draw/overlay) + intricate zoom-to-cursor/Space-pan; making it fully controlled by the shell's separate toolbar is a large high-risk change under the no-break constraint, so both toolbars currently render (shell drives view toggles + tool mode + LAYERS; the pane's toolbar is the functional PDF surface). Documented as a Task-4 follow-up
+- 2026-06-13 (09-09): candidate FIELD value = the FIRST entry of the field component's extractedFields (autofill writes one value per field child), rendered as an auto-escaped React text node — NO dangerouslySetInnerHTML anywhere in the panels (T-09-80 mitigated)
+- 2026-06-13 (09-09): isAutoDetected on confirm-deny-controls is a CLIENT affordance only (drives the Undo toast); the server is authoritative for the origin-aware soft-reject vs clear-value outcome (09-02a/09-08 design) — the detail query exposes no content_raw/origin, so the LAYERS-row + inspector deny paths route through roleMutations.denyField and let the server decide; the standalone control exposes the prop + Undo for callers (canvas overlay) that know the origin
+- 2026-06-13 (09-09): D-10 active-parent drawing uses a DEDICATED createRegion mutation in email-detail that reads the new component_id from the ApiResponse envelope on success, then chains setRole=field + setFieldRelationship(activeParentId) — the existing useRegionEdit.createRegion (which discards the returned id) is left untouched (no-break); a draw with no active parent creates a standalone unclassified region
+- 2026-06-13 (09-09): EntityTypePicker emits a SLUG but setEntityType takes an entityTypeId — email-detail resolves slug→id via a memoized slugToId map; entity-type LABELS in the tree/inspector are resolved from the component's OWN entityTypeId via idToLabel (the detail entityTypeLabel join is off the extraction record's entity type, a different column)
+- 2026-06-13 (09-09): use-autofill-fields (the plan's dedicated per-entity hook + Confirm All Fields) is what email-detail consumes for the inspector autofill state; the 09-08 inline autofillFields machine in use-role-mutations is left in place but unused by the new composition (avoids touching the 09-08 hook); confirmAllFields delegates to roleMutations.confirmField (single optimistic path)
+- 2026-06-13 (09-09): auto-fixes — SquareDashed not exported by the installed lucide-react → Square (in the UI-SPEC lucide allowlist) with reduced opacity for the muted UNCLASSIFIED row; readonly Polygon copied into fresh mutable tuples at the createRegion zod boundary (immutable source preserved); EntityTypePicker open-state made controlled via local inspector state (initial open={false} left it permanently closed)
+- 2026-06-14 (09-gap CRIT-1): entity_type_field_id is a uuid FK, so the autofill property mapping persists the field's uuid id (added to the frozen EntityTypeField + _field_from_row), NOT the slug — this REVERSES the 09-02b "property identity = slug" decision (the slug-as-identity assumption silently failed against real Postgres; the mock-repo suite could not catch a uuid-column type mismatch). The slug remains the LLM schema/value-lookup key; only the persisted FK identity changed
+- 2026-06-14 (09-gap CRIT-2): soft-deactivated fields (config.is_active=False) are dropped from EntityType.fields in _from_row via a _field_is_active filter — a single chokepoint hides them from ALL active read paths at once (find_by_id/find_by_slug/list_active) and therefore from the autofill system prompt (autofill_adapter enumerates entity_type.fields) and the management UI; the row is preserved so count_confirmed_references + the D-04 FK still work (deactivate_field's own return is not an active read path)
+- 2026-06-14 (09-gap HIGH-3): field uuid surfaced through FieldView + _to_field_view; pairs with the CRIT-1 EntityTypeField.id. The tRPC entityTypes.list shape already exposed the field id (bbda632), so this backend fix completes the end-to-end path (Postgres → FastAPI FieldView → tRPC list → admin UI/field-relationship picker), making the write router's existing fieldId z.string().uuid() validation addressable
+- 2026-06-14 (09-gap WR-03): UpdateFieldUseCase per-type slug-uniqueness pre-check mirrors CreateFieldUseCase, excluding the field being updated by id (self-rename is a no-op, never a false 409); added find_entity_type_by_field_id to the EntityTypeRepository port (reads the field row's entity_type_id → find_by_id) so the use case stays domain-pure; when the owning type cannot be resolved, the DB UNIQUE constraint remains the backstop (no false positive)
+- 2026-06-14 (09-gap C MED): RESOLVED the 09-09 dual-toolbar deferral via the minimal remove-dead-controls path (not full single-toolbar consolidation) — PdfPreviewPane keeps its own working page/zoom/Fit toolbar as the single PDF control surface; the shell CanvasToolbar drops the page-nav/zoom/Fit controls that were dead (numPages=null/scale=1/no-op handlers) and keeps only the shell-level Select/Draw + Regions/History/Unrelated controls. This reverses the 09-09 "both toolbars render" decision (the shell copy was non-functional, not a deliberate split). Lower-risk than lifting page/zoom state up under the no-break constraint; gates stayed green
+- 2026-06-14 (09-gap C MED): overlay visibility (Show regions) made a SINGLE source of truth — the shell owns showRegions and passes it DOWN to PdfPreviewPane as a controlled read-only showOverlays prop; the pane's own showOverlays useState + its duplicate toggle are deleted. No onShowOverlaysChange setter is threaded (would be a dead prop — the shell toolbar owns the only toggle), so the pane is purely controlled. Unrelated stays a single source of truth via the existing showUnrelated path (Bundle B)
+- 2026-06-14 (09-gap C LOW): FieldRelationshipRequest ids typed UUID|None at the Pydantic boundary (422 on malformed) while SetComponentFieldRelationshipUseCase keeps str|None ids — the route coerces UUID→str (and passes None through for the D-11 clear). Tightened only this request (the one D-04 uuid-FK boundary the residual flagged); EntityTypeRequest.entity_type_id left as str|None (out of the stated scope, not a confirmed defect)
+
+## Performance Metrics
+
+| Phase | Plan | Duration | Notes |
+|-------|------|----------|-------|
+| Phase 03 P02 | 3h | 5 tasks | 2 files |
+| Phase 04 P10 | 15m | 1 task | 1 file |
+| Phase 04 P07 | 45m | 2 tasks | 9 files |
+| Phase 04 P09 | 90m | 2 tasks | 16 files |
+| Phase 05 P01 | 35m | 2 tasks | 7 files |
+| Phase 04 P08 | resumed | 4 tasks | retrieval schema + flywheel + RPCs; applied 3 envs |
+| Phase 04 P13 | ~30m | 2 tasks | retain token bbox geometry (text+OCR) |
+| Phase 04 P14 | ~40m | 2 tasks | ground region polygons in token coords |
+| Phase 05 P03 | ~30m | 3 tasks | email detail route + DOMPurify body tabs + entities list |
+| Phase 05 P04 | ~35m | 3 tasks | react-pdf PdfPreviewPane + RegionOverlayBox + OverlayLayer |
+| Phase 06 P01 | resumed | 3 tasks | 9 files — 7 use cases + 7 endpoints + DI + 45 new tests |
+| Phase 06 P02 | 6m | 2 tasks | 6 files — geometry helpers (TDD) + 7 tRPC mutations + .env.example |
+| Phase 06 P03 | ~25m | 3 tasks | 9 files — useRegionEdit + draw surface + action toolbar wired end-to-end |
+| Phase 06 P04 | ~35m | 3 tasks | 8 files — reject dialog + nest picker + merge multi-select + history badges |
+| Phase 07 P01 | ~20m | 3 tasks | 7 files — 3 mutations + entityTypesRouter + groupEntityTypeRows + detail extension |
+| Phase 07 P02 | ~25m | 3 tasks | 3 files — useAutofill hook + EntityTypePicker + ActionToolbar autofill integration |
+| Phase 07 P03 | ~45m | 3 tasks | 5 files — FieldsPanel + ReprocessDialog + EntitiesList inline panel + email-detail wiring |
+| Phase 08 P01 | ~45m | 3 tasks | 7 files — extract_key_terms domain service (TDD) + autofill wiring + confirm-fallback FK fix + integration test |
+| Phase 09 P01 | ~4m | 2 tasks | 5 files — component_role enum + 3 relationship columns/2 indexes + migration 0013 generated & applied local |
+| Phase 09 P05 | ~3m | 2 tasks | 2 files — @nauta/ui shadcn sidebar block (no new dep) + next-themes ThemeProvider wrapper (D-21) |
+| Phase 09 P02a | ~10m | 4 tasks | 10 files — Component+repo relationship writers + 3 setters + origin-aware DenyField + 4 endpoints/DI + 19 tests |
+| Phase 09 P02b | ~25m | 3 tasks | 6 files — AutofillFieldsUseCase (TDD, token-grounded sub-field detect + D-19 exclusion) + EntityTypeRepository.find_by_id + /autofill-fields endpoint/DI + 12 tests |
+| Phase 09 P03 | ~14m | 4 tasks | 8 files — EntityTypeRepository write methods + manage_entity_types use cases (TDD) + /v1/entity-types router/mount/DI + 23 tests (14 unit + 9 router) |
+| Phase 09 P04 | ~7m | 4 tasks | 10 files — shared _listener-config + 6 component relationship mutations + detail.role/entityTypeId/entityTypeFieldId + emails.entitySummary (D-23) + entity-types write mutations (D-26) + 28 new vitest (55/55 green) |
+| Phase 09 P06 | ~12m | 3 tasks | 6 files — app-shell layout + frosted AppSidebar (D-20/21) + entity-chips/inbox-row (D-23/24) + resizable glassy three-pane inbox (D-22); tsc 0 + web:build EXIT 0 |
+| Phase 09 P07 | ~16m | 3 tasks | 6 files — entityTypes.list id exposure + use-entity-type-admin optimistic CRUD hook (D-26) + field-row-dialog (field_type allowlist + D-27 delete-guard) + /entity-types master/detail page+fields table (D-25); api-client 56/56, tsc 0, web:build EXIT 0 |
+| Phase 09 P08 | ~30m | 3 tasks | 7 files — role-color overlay box + D-12 role-filtering overlay-layer + pdf zoom 0.25-4.0/zoom-to-cursor/Space-pan/fit + canvas-toolbar + canvas-shell (4-zone) + use-canvas-state (D-09 redraw reuse) + use-role-mutations (optimistic + autofill); additive/back-compat, tsc 0 (x4), web:build EXIT 0 |
+| Phase 09 P09 | ~12m | 3 tasks | 9 files — LAYERS tree (panel+row, D-12) + role/field-relationship pickers + inline confirm/deny + active-parent banner + INSPECTOR (D-11) + use-autofill-fields (D-13/14/15) + email-detail CanvasShell composition (D-10 active-parent draw); tsc 0 (x6), web:build EXIT 0 (Task 4 human-verify pending) |
+| Phase 09 GAP-A | ~35m | 4 defects | 16 files — CRIT-1 EntityTypeField.id + autofill writes field uuid into FK; CRIT-2 hide soft-deactivated fields from active reads + autofill prompt; HIGH-3 FieldView id end-to-end; WR-03 update-field per-type slug uniqueness; 3 commits, full Python+api-client+web gates green |
+| Phase 09 GAP-C | ~25m | 2 defects | 6 files — MED remove dead canvas-shell toolbar controls (page-nav/zoom/Fit) + unify Show-regions to one source of truth (shell→pane controlled showOverlays); LOW field-relationship ids UUID|None at the Pydantic boundary (422 on malformed) + TDD; 2 commits, apps/web tsc 0 + web:build EXIT 0, pytest 436 passed 86.97% cov, full Python gate green |
+| Phase 09 GAP-D2 | ~30m | 6 defects | 8 files — MEDIUM-A InboxRow no nested interactive (div role=button + keys); MEDIUM-B toast.warning on unanchorable drag-to-draw; MEDIUM-C neutral deactivate-vs-delete pre-delete copy; MEDIUM-D emails.list explicit projection (drop bodyHtml/raw + truncated bodyText); MEDIUM-E Confirm All Fields = N confirms + ONE invalidate; LOW dead autofill machine + dead use-canvas-state API + CanvasShell emailId removed; 6 commits, apps/web tsc 0 + web:build EXIT 0, api-client build 0 + vitest 56/56 |

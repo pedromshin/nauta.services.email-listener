@@ -1,0 +1,210 @@
+"""Tests for SupabaseImporterRepository and slug_for_sender helper.
+
+Uses unittest.mock to assert table/op/filter call shapes — no live DB.
+"""
+
+from __future__ import annotations
+
+import asyncio
+from unittest.mock import MagicMock
+
+DEFAULT_IMPORTER_ID = "00000000-0000-0000-0000-000000000001"
+NEW_IMPORTER_ID = "aaaaaaaa-0000-0000-0000-000000000002"
+
+
+# ---------------------------------------------------------------------------
+# Helpers (mirror test_supabase_repositories.py style)
+# ---------------------------------------------------------------------------
+
+
+def _make_chain_mock(return_data: list[dict] | None = None) -> MagicMock:
+    """Build a chainable mock for PostgREST-style supabase calls."""
+    execute_result = MagicMock()
+    execute_result.data = return_data or []
+    chain = MagicMock()
+    chain.execute.return_value = execute_result
+    chain.eq.return_value = chain
+    chain.upsert.return_value = chain
+    chain.insert.return_value = chain
+    chain.select.return_value = chain
+    return chain
+
+
+def _make_client_mock(return_data: list[dict] | None = None) -> MagicMock:
+    """Build a mock supabase Client that chains table().op().execute()."""
+    client = MagicMock()
+    chain = _make_chain_mock(return_data)
+    client.table.return_value = chain
+    return client
+
+
+# ---------------------------------------------------------------------------
+# slug_for_sender helper
+# ---------------------------------------------------------------------------
+
+
+def test_slug_for_sender_normalizes_domain() -> None:
+    from app.infrastructure.supabase.importer_repository import slug_for_sender
+
+    assert slug_for_sender("maria@exporter.com") == "exporter-com"
+
+
+def test_slug_for_sender_is_case_insensitive() -> None:
+    from app.infrastructure.supabase.importer_repository import slug_for_sender
+
+    assert slug_for_sender("Maria@Exporter.COM") == "exporter-com"
+
+
+def test_slug_for_sender_returns_none_for_no_at_sign() -> None:
+    from app.infrastructure.supabase.importer_repository import slug_for_sender
+
+    assert slug_for_sender("noatsign") is None
+
+
+def test_slug_for_sender_returns_none_for_empty_string() -> None:
+    from app.infrastructure.supabase.importer_repository import slug_for_sender
+
+    assert slug_for_sender("") is None
+
+
+def test_slug_for_sender_returns_none_for_empty_domain() -> None:
+    from app.infrastructure.supabase.importer_repository import slug_for_sender
+
+    assert slug_for_sender("user@") is None
+
+
+# ---------------------------------------------------------------------------
+# SupabaseImporterRepository.resolve — known sender (slug already in DB)
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_returns_existing_id_without_inserting() -> None:
+    """When a slug row exists, resolve returns the id without any upsert."""
+    from app.infrastructure.supabase.importer_repository import SupabaseImporterRepository
+
+    existing_row = {"id": NEW_IMPORTER_ID, "slug": "exporter-com", "name": "exporter.com"}
+    client = _make_client_mock(return_data=[existing_row])
+    repo = SupabaseImporterRepository(client=client, default_importer_id=DEFAULT_IMPORTER_ID)
+
+    result = asyncio.run(repo.resolve("maria@exporter.com"))
+
+    assert result == NEW_IMPORTER_ID
+    # upsert must NOT have been called
+    chain = client.table.return_value
+    chain.upsert.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# SupabaseImporterRepository.resolve — unknown sender (must upsert then re-select)
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_creates_new_importer_for_unknown_sender() -> None:
+    """For an unknown sender, resolve upserts a new row and returns its id."""
+    from app.infrastructure.supabase.importer_repository import SupabaseImporterRepository
+
+    new_row = {"id": NEW_IMPORTER_ID, "slug": "exporter-com", "name": "exporter.com"}
+
+    # First select returns empty (unknown slug)
+    first_select_result = MagicMock()
+    first_select_result.data = []
+    # upsert execute result (return value unused)
+    upsert_result = MagicMock()
+    upsert_result.data = []
+    # Re-select after upsert returns the new row
+    second_select_result = MagicMock()
+    second_select_result.data = [new_row]
+
+    chain = MagicMock()
+    chain.eq.return_value = chain
+    chain.upsert.return_value = chain
+    chain.select.return_value = chain
+    # Three execute() calls: initial select, upsert, re-select
+    chain.execute.side_effect = [first_select_result, upsert_result, second_select_result]
+
+    client = MagicMock()
+    client.table.return_value = chain
+
+    repo = SupabaseImporterRepository(client=client, default_importer_id=DEFAULT_IMPORTER_ID)
+    result = asyncio.run(repo.resolve("maria@exporter.com"))
+
+    assert result == NEW_IMPORTER_ID
+    # upsert must be called with on_conflict="slug"
+    upsert_calls = chain.upsert.call_args_list
+    assert len(upsert_calls) == 1
+    call_args = upsert_calls[0]
+    payload = call_args.args[0] if call_args.args else {}
+    assert payload.get("slug") == "exporter-com"
+    # on_conflict must be "slug"
+    all_vals = list(call_args.args) + list(call_args.kwargs.values())
+    assert any("slug" in str(v) for v in all_vals), f"on_conflict='slug' expected in: {call_args}"
+
+
+# ---------------------------------------------------------------------------
+# SupabaseImporterRepository.resolve — idempotency (same result on second call)
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_is_idempotent_for_same_sender() -> None:
+    """Second resolve for the same sender returns the same id (upsert on_conflict guarantees no dup)."""
+    from app.infrastructure.supabase.importer_repository import SupabaseImporterRepository
+
+    existing_row = {"id": NEW_IMPORTER_ID, "slug": "exporter-com", "name": "exporter.com"}
+    client = _make_client_mock(return_data=[existing_row])
+    repo = SupabaseImporterRepository(client=client, default_importer_id=DEFAULT_IMPORTER_ID)
+
+    first = asyncio.run(repo.resolve("maria@exporter.com"))
+    second = asyncio.run(repo.resolve("maria@exporter.com"))
+
+    assert first == second == NEW_IMPORTER_ID
+
+
+# ---------------------------------------------------------------------------
+# SupabaseImporterRepository.resolve — case insensitivity
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_case_insensitive_same_slug() -> None:
+    """Upper-case sender resolves to the same slug/id as lower-case."""
+    from app.infrastructure.supabase.importer_repository import SupabaseImporterRepository
+
+    row = {"id": NEW_IMPORTER_ID, "slug": "exporter-com", "name": "exporter.com"}
+    client = _make_client_mock(return_data=[row])
+    repo = SupabaseImporterRepository(client=client, default_importer_id=DEFAULT_IMPORTER_ID)
+
+    lower_result = asyncio.run(repo.resolve("maria@exporter.com"))
+    upper_result = asyncio.run(repo.resolve("Maria@Exporter.COM"))
+
+    assert lower_result == upper_result == NEW_IMPORTER_ID
+
+
+# ---------------------------------------------------------------------------
+# SupabaseImporterRepository.resolve — malformed sender fallback (no row created)
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_malformed_sender_falls_back_to_default_no_row_created() -> None:
+    """Malformed senders (no domain) fall back to default_importer_id without any DB write."""
+    from app.infrastructure.supabase.importer_repository import SupabaseImporterRepository
+
+    client = _make_client_mock()
+    repo = SupabaseImporterRepository(client=client, default_importer_id=DEFAULT_IMPORTER_ID)
+
+    result = asyncio.run(repo.resolve("noatsign"))
+
+    assert result == DEFAULT_IMPORTER_ID
+    # No table operations must occur
+    client.table.assert_not_called()
+
+
+def test_resolve_empty_sender_falls_back_to_default_no_row_created() -> None:
+    """Empty sender string falls back to default_importer_id without any DB write."""
+    from app.infrastructure.supabase.importer_repository import SupabaseImporterRepository
+
+    client = _make_client_mock()
+    repo = SupabaseImporterRepository(client=client, default_importer_id=DEFAULT_IMPORTER_ID)
+
+    result = asyncio.run(repo.resolve(""))
+
+    assert result == DEFAULT_IMPORTER_ID
+    client.table.assert_not_called()
