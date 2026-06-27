@@ -72,14 +72,24 @@ Plans:
 **Goal:** A tRPC procedure accepts an intent and returns a validated, safety-checked spec via Bedrock Haiku 4.5 — with dual-LLM quarantine ensuring raw untrusted content never reaches the generator, three allowlists enforcing the component/procedure/action surface, a bounded repair loop on invalid output, and cost controls active from the first call.
 **Depends on:** Phase 12 (catalog, spec schema, and registry must exist before generation can target them)
 **Requirements:** GEN-01, GEN-02, GEN-03, GEN-04, GEN-05, GEN-06, SAFE-01, SAFE-02, SAFE-03, SAFE-04, SAFE-05, SAFE-06, COST-01, SEAM-02
-**Status:** Not started
+**Status:** Planned (4 plans, 3 waves -- 2026-06-27; D-01 honored: Bedrock generation lives in the FastAPI Python service, web genui tRPC router proxies. W1 TS contract/allowlists/artifacts + audit table (parallel) -> W2 Python quarantine+generator+repair+fallback+audit+endpoint -> W3 web proxy + Zod re-validation + ActionRegistry binding (mutate empty seam). Security gate ON: every plan carries a STRIDE <threat_model>; dual-LLM quarantine, three allowlists, repair-loop+fallback, cost controls, audit log each a verifiable acceptance criterion. 14/14 reqs + 26/26 decisions covered.)
 **Success Criteria** (what must be TRUE):
   1. Submitting an intent via the tRPC procedure triggers a Bedrock Haiku 4.5 call constrained to the registry schema via `Output.object`; if output is invalid Zod `safeParse` triggers a repair loop (max 3 attempts feeding the error back), and on persistent failure the procedure returns a safe fallback spec — never raw model output.
   2. Untrusted content (e.g. email body) passes through a separate quarantine Bedrock call with an enum-constrained extraction schema before any structured data reaches the generator; the generator never sees raw prose.
   3. A spec referencing an unregistered component type, a non-allowlisted tRPC procedure, or a non-relative action href fails Zod validation and is rejected before reaching the renderer.
   4. Every Bedrock call carries an explicit `max_tokens` limit and an `AbortController` timeout; every generation event (intent, model, tokens, outcome) is written to the audit log; spec tree depth and node count are bounded by the schema.
   5. The system prompt (catalog + examples) is cached via Bedrock `cachePoint` so per-request input carries only intent + data-shape; the binding/action layer schema has both query and mutation paths defined (v1.1 wires queries only; the mutation path exists but is empty).
-**Plans:** TBD
+**Plans:** 4 plans
+
+Plans:
+**Wave 1**
+- [ ] 13-01-PLAN.md -- TS contract layer: three allowlists at the Zod schema level (component-type/D-12, procedure-enum+no-UUID/D-13/13a, action discriminated-union relative-href + empty-mutate seam/D-14) + SAFE_FALLBACK_SPEC (D-07) + Bedrock artifact emit (spec.schema.json + compact-catalog/procedures, D-03/D-22) with CI drift gate (SAFE-02/03/04/06, SEAM-02, GEN-03, COST-01/03)
+- [ ] 13-02-PLAN.md -- Audit foundation: genui_generation_events Drizzle table + migration 0021 (D-19) + GenerationAuditRepository port + best-effort Supabase adapter (GEN-05)
+**Wave 2** *(depends on 13-01, 13-02)*
+- [ ] 13-03-PLAN.md -- Python generation service: dual-LLM quarantine (Call A enum-extraction) + generator adapter (emit_ui_spec forced tool-use, cache_control, max_tokens/timeout/temp0, Haiku->Sonnet 4.6 escalation) + GenerateUiSpecUseCase (repair <=3 -> SAFE_FALLBACK -> audit) + POST /v1/genui/generate (X-API-Key) + DI + settings (GEN-01/02/03/06, SAFE-01/05, COST-01)
+**Wave 3** *(depends on 13-01, 13-03)*
+- [ ] 13-04-PLAN.md -- Web wiring: genui tRPC router proxy + SpecRootSchema.safeParse at the web boundary -> SAFE_FALLBACK (D-08) + ActionRegistry binding layer (query/setState/navigate wired with runtime relative-href re-check; mutate left unregistered = SEAM-02) + vitest (GEN-03/04, SAFE-02/03/04, SEAM-02)
+**UI hint**: yes
 
 ---
 
@@ -118,6 +128,6 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 12. Catalog, Spec Schema, and Trusted Interpreter | 4/4 | Complete   | 2026-06-27 |
-| 13. Generation Layer and Guardrails | 0/TBD | Not started | - |
+| 13. Generation Layer and Guardrails | 0/4 | Planned | - |
 | 14. Exact Cache and Template Store | 0/TBD | Not started | - |
 | 15. Studio Surface | 0/TBD | Not started | - |
