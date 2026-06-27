@@ -35,32 +35,9 @@ import {
 } from "@nauta/ui/card";
 
 import { NAUTA_CATALOG } from "@nauta/genui/catalog";
-import { describePropsSchema } from "@nauta/genui/studio";
-import type { SpecRoot } from "@nauta/genui/schema";
+import { buildCatalogExampleSpec, describePropsSchema } from "@nauta/genui/studio";
 
 import { SpecRendererIsland } from "./spec-renderer-island";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Builds a minimal SpecRoot to render the catalog entry's example prop set.
- * Shape per UI-SPEC §14: { v:1, root: { type, props: example, children:[] } }
- */
-function buildWrappedExample(
-  type: string,
-  example: Record<string, unknown>,
-): SpecRoot {
-  return {
-    v: 1,
-    root: {
-      type,
-      props: example,
-      children: [],
-    },
-  } as unknown as SpecRoot;
-}
 
 // ---------------------------------------------------------------------------
 // Sub-components (named exports, immutable patterns, <50 lines each)
@@ -88,13 +65,12 @@ function EntryCardHeader({
 
 /** Facet 2 — Live rendered example via the shared SpecRendererIsland. */
 function EntryLiveExample({
-  type,
-  example,
+  entry,
 }: {
-  readonly type: string;
-  readonly example: Record<string, unknown>;
+  readonly entry: (typeof NAUTA_CATALOG)[keyof typeof NAUTA_CATALOG];
 }): React.ReactElement {
-  const spec = buildWrappedExample(type, example);
+  const { type } = entry;
+  const spec = buildCatalogExampleSpec(entry);
   return (
     <CardContent className="pb-2">
       <div
@@ -200,10 +176,7 @@ function CatalogEntryCard({
   return (
     <Card className="flex flex-col">
       <EntryCardHeader type={entry.type} description={entry.description} />
-      <EntryLiveExample
-        type={entry.type}
-        example={entry.example as Record<string, unknown>}
-      />
+      <EntryLiveExample entry={entry} />
       <EntryPropTable
         type={entry.type}
         propsSchema={entry.propsSchema}

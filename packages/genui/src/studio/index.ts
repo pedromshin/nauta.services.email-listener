@@ -19,3 +19,7 @@ export { deriveGenerationState } from "./derive-generation-state";
 export type { PropDescriptor } from "./describe-props-schema";
 
 export { describePropsSchema } from "./describe-props-schema";
+
+export type { CatalogExampleSource } from "./build-catalog-example-spec";
+
+export { buildCatalogExampleSpec } from "./build-catalog-example-spec";
