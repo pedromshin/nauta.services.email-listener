@@ -47,7 +47,8 @@ def load_spec_schema() -> dict[str, Any]:
     """Load and cache spec.schema.json from the genui artifacts directory.
 
     Raises RuntimeError if the file is missing (startup guard — not deferred
-    to first request to avoid silent misconfig in production).
+    to first request to avoid silent misconfig in production) or if the schema
+    root is not a Bedrock-valid object schema (see _assert_bedrock_input_schema).
     """
     artifacts_dir = _get_artifacts_dir()
     schema_path = artifacts_dir / "spec.schema.json"
@@ -57,7 +58,36 @@ def load_spec_schema() -> dict[str, Any]:
             "Set GENUI_ARTIFACTS_DIR to the directory containing spec.schema.json."
         )
     with schema_path.open(encoding="utf-8") as f:
-        return json.load(f)  # type: ignore[no-any-return]
+        schema = json.load(f)
+    _assert_bedrock_input_schema(schema, schema_path)
+    return schema  # type: ignore[no-any-return]
+
+
+def _assert_bedrock_input_schema(schema: Any, schema_path: Path) -> None:
+    """Guard that the spec schema is a valid Bedrock/Anthropic tool input_schema.
+
+    Anthropic/Bedrock requires the forced-tool ``input_schema`` root to carry a
+    top-level ``"type": "object"``. A zod-to-json-schema wrapper root of the form
+    ``{"$ref": "#/definitions/SpecRoot", "definitions": {...}}`` has NO root
+    ``type`` and makes EVERY live generation fail at the API boundary with the
+    cryptic ``tools.0.custom.input_schema.type: Field required`` 400 (BUG-B).
+
+    We fail fast here with a clear, actionable error instead of letting that
+    surface as an opaque Bedrock 400 inside the request path.
+    """
+    if not isinstance(schema, dict):
+        raise RuntimeError(
+            f"GenUI spec schema at {schema_path} must be a JSON object, "
+            f"got {type(schema).__name__}."
+        )
+    root_type = schema.get("type")
+    if root_type != "object":
+        raise RuntimeError(
+            f"GenUI spec schema at {schema_path} has an invalid root for a Bedrock "
+            f'tool input_schema: expected top-level "type": "object", got '
+            f"{root_type!r}. Re-run `npm run gen:artifacts -w @nauta/genui` so the "
+            "SpecRoot definition is inlined at the schema root (BUG-B)."
+        )
 
 
 @lru_cache(maxsize=1)
