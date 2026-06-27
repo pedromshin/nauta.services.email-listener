@@ -39,6 +39,17 @@ Haiku 4.5 runtime / Sonnet 4.6 escalation via Bedrock IAM; reuse pgvector + Tita
 > never formally run, so Phase directories `02–11` remain under `.planning/phases/` (not archived). The
 > Phase-11 and prior notes below are retained as history.
 
+## GenUI v-next (post-v1.1) — PLANNING / research done 2026-06-27 (local+sandbox only)
+
+User direction after v1.1: keep LOCAL + `/studio` sandbox (no deploy/convergence). **Tier A** = more authentic/custom-styled layouts (escape generic shadcn), richer catalog, assembly intelligence. **Tier B** (harder) = real interactive apps — state, API calls, business rules, calendars/tables/forms with customizable form business logic; wants a brutally-rigorous research-driven process for Opus 4.8. Generator prompt already tuned (build-concrete/no-placeholders + catalog payload injected, commit 57028cb).
+
+- **Deep research done (partial — account rate-limit, resets ~18:50 America/Sao_Paulo).** `wqh16m5tl` = architecture+process (9 claims 3-0 verified; synthesis authored in-context). `wme3xqszz` = real-prompt corpus + history/ideas UX → **stalled at 0 bytes (rate-limited), still PENDING**. Full synthesis: `.planning/research/GENUI-VNEXT-RESEARCH.md`.
+- **ARCHITECTURE DECIDED = HYBRID** (matches Google A2UI + sandboxed MCP-App islands; v0/Bolt = code-emit + AST-repair + sandbox + self-heal): keep declarative spec for layout; **forms/business-logic via a declarative JSON-Schema form engine** (RJSF/JSONForms/Formily — no eval); **sandboxed code-islands** (iframe/Sandpack/WebContainer) only for truly custom/interactive widgets (safety no-eval→jailed-eval; that phase needs user sign-off).
+- **Tier A method:** ground generation in an explicit design-system + design tokens (W3C DTCG JSON), varied per gen ("style packs") + assembly RAG — v0's "registry" approach.
+- **Process:** eval-driven development (Anthropic/OpenAI) — build the eval harness FIRST (golden prompt set from the real corpus + LLM-as-judge UI-quality rubric, UI-Bench-style), gate every GSD phase on it.
+- **Proposed v1.2 phases:** (1) eval harness, (2) Tier-A token/theme + style packs + assembly RAG, (3) catalog expansion (avatar/feed-item/nav/tabs/inputs), (4) declarative form engine, (5) sandboxed code-island [SPIKE→phase, user sign-off]. History + page-ideas tabs = small early phase (data already in ui_spec_templates / genui_generation_events; ideas seeded from the pending real corpus).
+- **DEFERRED until rate-limit resets / user back:** formal `/gsd:new-milestone v1.2` + plan-phase + all builds (they spawn agents → fail under the active session limit). Did NOT write feature code ahead of the GSD plan (preserve the rigor the user asked for). Re-run the research verify pass after 18:50 to harden the ~16 rate-abstained claims.
+
 ## Phase 12 — Catalog, Spec Schema, and Trusted Interpreter — ✓ EXECUTED 2026-06-27 (4 plans, 4 waves; human visual verify deferred)
 
 - **✓ EXECUTED 2026-06-27 (autonomous run):** all 4 plans shipped sequentially on the main tree (W1 scaffold+schema → W2 catalog+registry+CTLG-04 → W3 trusted interpreter → W4 demo+/studio/preview). 27 files, ~2,400 LOC source + ~1,150 LOC tests. genui + web typecheck clean; Next.js prod build green (`/studio/preview` static 3.92 kB); **no-eval grep gate clean** (zero real eval/Function/dangerouslySetInnerHTML on the renderer path — GR-01/SPEC-02). Commits e65a23c..20c0d2d.
