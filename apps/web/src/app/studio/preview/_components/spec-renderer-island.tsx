@@ -19,6 +19,7 @@
  * default prop `registry = COMPONENT_REGISTRY` handles it automatically.
  */
 
+import React from "react";
 import dynamic from "next/dynamic";
 
 import type { SpecRoot } from "@nauta/genui/schema";
