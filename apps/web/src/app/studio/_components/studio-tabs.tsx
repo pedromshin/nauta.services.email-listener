@@ -20,6 +20,7 @@ import { ExternalLink } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@nauta/ui/tabs";
 
 import { CatalogBrowserIsland } from "./catalog-browser-island";
+import { GenerationSandboxIsland } from "./generation-sandbox-island";
 
 export function StudioTabs(): React.ReactElement {
   return (
@@ -62,15 +63,13 @@ export function StudioTabs(): React.ReactElement {
         <CatalogBrowserIsland />
       </TabsContent>
 
-      {/* Sandbox tab — placeholder; Plan 15-03 replaces this with GenerationSandboxIsland */}
+      {/* Sandbox tab — GenerationSandboxIsland (Plan 15-03 / STDO-02/03/04) */}
       <TabsContent
         value="sandbox"
         aria-label="Generation sandbox"
-        className="flex-1 overflow-y-auto m-0 border-0"
+        className="flex flex-col flex-1 min-h-0 m-0 border-0"
       >
-        <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
-          Sandbox — coming in 15-03
-        </div>
+        <GenerationSandboxIsland />
       </TabsContent>
     </Tabs>
   );
