@@ -7,7 +7,7 @@
  *   - TabsList with "Catalog" + "Sandbox" TabsTriggers
  *   - A next/link "Showcase" affordance (link to /studio/preview, NOT a TabsContent)
  *   - TabsContent "catalog" (aria-label="Component catalog") → CatalogBrowserIsland
- *   - TabsContent "sandbox" (aria-label="Generation sandbox") → placeholder (15-03 fills it)
+ *   - TabsContent "sandbox" (aria-label="Generation sandbox") → GenerationSandboxIsland
  *
  * "use client" because Tabs require useState for active tab state internally (shadcn).
  * REGISTRY_VERSION is NOT imported here — it must stay server-side (T-12-15, Node crypto).
