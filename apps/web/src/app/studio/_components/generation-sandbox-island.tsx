@@ -44,7 +44,7 @@ import {
 } from "@nauta/ui/resizable";
 import { ScrollArea } from "@nauta/ui/scroll-area";
 
-import { api } from "@/trpc/react";
+import { api } from "~/trpc/react";
 import { buildActionRegistry } from "@nauta/genui/renderer";
 
 import { SpecRendererIsland } from "./spec-renderer-island";
