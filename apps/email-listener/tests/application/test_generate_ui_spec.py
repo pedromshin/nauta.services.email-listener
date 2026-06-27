@@ -1,4 +1,4 @@
-"""Tests for GenerateUiSpecUseCase (Task 3 TDD RED).
+"""Tests for GenerateUiSpecUseCase (Task 3 + Task 14-03 TDD RED).
 
 Verifies:
 - quarantine → generator pipeline orchestration
@@ -7,6 +7,14 @@ Verifies:
 - audit failure is swallowed, never propagates (T-13-10)
 - SAFE_FALLBACK_SPEC returned when both calls degrade gracefully
 - use_case imports NO infrastructure (lint-imports contract)
+
+Cache tests (Phase 14-03, CACHE-01..04):
+- D-02: Cache CHECK is step-0 BEFORE quarantine/generator/audit
+- D-03: Cache hit returns cached spec; no quarantine/generator/audit calls
+- D-11: Never persist when outcome == 'fallback' (SAFE_FALLBACK_SPEC)
+- D-13: Registry-version in key → new version yields a miss (cold regen)
+- D-17: Template persist errors never propagate
+- cache_hit=True in result on cache hit; cache_hit=False on cold regen
 """
 
 from __future__ import annotations
@@ -18,9 +26,9 @@ import pytest
 
 from app.application.use_cases.generate_ui_spec import GenerateUiSpecResult, GenerateUiSpecUseCase
 from app.domain.ports.generation_audit_repository import GenerationEvent
+from app.domain.ports.ui_spec_template_repository import CachedTemplate
 from app.infrastructure.llm.genui_generator_adapter import SAFE_FALLBACK_SPEC, GeneratorResult
 from app.infrastructure.llm.genui_quarantine_adapter import QuarantineExtraction
-
 
 # ---------------------------------------------------------------------------
 # Helpers / fixtures
@@ -72,15 +80,27 @@ def mock_audit() -> MagicMock:
 
 
 @pytest.fixture
+def mock_templates() -> MagicMock:
+    """Mock UiSpecTemplateRepository — default: cache miss on find_by_cache_key."""
+    templates = MagicMock()
+    templates.find_by_cache_key = AsyncMock(return_value=None)  # default: cache miss
+    templates.persist = AsyncMock(return_value=None)
+    templates.increment_use_count = AsyncMock(return_value=None)
+    return templates
+
+
+@pytest.fixture
 def use_case(
     mock_quarantine: MagicMock,
     mock_generator: MagicMock,
     mock_audit: MagicMock,
+    mock_templates: MagicMock,
 ) -> GenerateUiSpecUseCase:
     return GenerateUiSpecUseCase(
         quarantine=mock_quarantine,
         generator=mock_generator,
         audit=mock_audit,
+        templates=mock_templates,
     )
 
 
@@ -89,8 +109,8 @@ def use_case(
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.unit()
-@pytest.mark.asyncio()
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_execute_calls_quarantine_with_intent_and_content(
     use_case: GenerateUiSpecUseCase,
     mock_quarantine: MagicMock,
@@ -107,8 +127,8 @@ async def test_execute_calls_quarantine_with_intent_and_content(
     )
 
 
-@pytest.mark.unit()
-@pytest.mark.asyncio()
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_execute_calls_generator_with_extraction(
     use_case: GenerateUiSpecUseCase,
     mock_generator: MagicMock,
@@ -129,8 +149,8 @@ async def test_execute_calls_generator_with_extraction(
     )
 
 
-@pytest.mark.unit()
-@pytest.mark.asyncio()
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_execute_returns_spec_and_metadata(
     use_case: GenerateUiSpecUseCase,
     mock_generator: MagicMock,
@@ -150,8 +170,8 @@ async def test_execute_returns_spec_and_metadata(
     assert result.spec == expected_spec
 
 
-@pytest.mark.unit()
-@pytest.mark.asyncio()
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_execute_records_one_audit_event_per_call(
     use_case: GenerateUiSpecUseCase,
     mock_audit: MagicMock,
@@ -165,8 +185,8 @@ async def test_execute_records_one_audit_event_per_call(
     assert mock_audit.record.call_count == 1
 
 
-@pytest.mark.unit()
-@pytest.mark.asyncio()
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_audit_event_uses_sha256_hash_not_raw_intent(
     use_case: GenerateUiSpecUseCase,
     mock_audit: MagicMock,
@@ -186,8 +206,8 @@ async def test_audit_event_uses_sha256_hash_not_raw_intent(
     assert raw_intent not in event.intent_hash  # hash is not the literal string
 
 
-@pytest.mark.unit()
-@pytest.mark.asyncio()
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_audit_event_outcome_ok_on_valid_spec(
     use_case: GenerateUiSpecUseCase,
     mock_audit: MagicMock,
@@ -207,8 +227,8 @@ async def test_audit_event_outcome_ok_on_valid_spec(
     assert event.outcome == "ok"
 
 
-@pytest.mark.unit()
-@pytest.mark.asyncio()
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_audit_event_outcome_fallback_when_generator_returns_fallback(
     use_case: GenerateUiSpecUseCase,
     mock_audit: MagicMock,
@@ -228,8 +248,8 @@ async def test_audit_event_outcome_fallback_when_generator_returns_fallback(
     assert event.outcome == "fallback"
 
 
-@pytest.mark.unit()
-@pytest.mark.asyncio()
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_audit_failure_is_swallowed_not_propagated(
     use_case: GenerateUiSpecUseCase,
     mock_audit: MagicMock,
@@ -247,8 +267,8 @@ async def test_audit_failure_is_swallowed_not_propagated(
     assert result.spec is not None
 
 
-@pytest.mark.unit()
-@pytest.mark.asyncio()
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_execute_returns_fallback_spec_when_quarantine_returns_unknown(
     use_case: GenerateUiSpecUseCase,
     mock_quarantine: MagicMock,
@@ -271,8 +291,8 @@ async def test_execute_returns_fallback_spec_when_quarantine_returns_unknown(
     mock_generator.generate.assert_called_once()
 
 
-@pytest.mark.unit()
-@pytest.mark.asyncio()
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_audit_event_registry_version_matches_input(
     use_case: GenerateUiSpecUseCase,
     mock_audit: MagicMock,
@@ -287,8 +307,8 @@ async def test_audit_event_registry_version_matches_input(
     assert event.registry_version == "catalog-v3.5.1"
 
 
-@pytest.mark.unit()
-@pytest.mark.asyncio()
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_audit_event_model_id_is_set(
     use_case: GenerateUiSpecUseCase,
     mock_audit: MagicMock,
@@ -307,8 +327,8 @@ async def test_audit_event_model_id_is_set(
     assert len(event.model_id) > 0
 
 
-@pytest.mark.unit()
-@pytest.mark.asyncio()
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_audit_event_tokens_reflect_quarantine_extraction(
     use_case: GenerateUiSpecUseCase,
     mock_audit: MagicMock,
@@ -330,8 +350,8 @@ async def test_audit_event_tokens_reflect_quarantine_extraction(
     assert event.output_tokens >= 50
 
 
-@pytest.mark.unit()
-@pytest.mark.asyncio()
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_use_case_no_infrastructure_import() -> None:
     """Verify use case module does not import infrastructure at module level (lint-imports)."""
     import importlib
@@ -340,13 +360,174 @@ async def test_use_case_no_infrastructure_import() -> None:
 
     # Reload module to inspect its own imports
     mod_name = "app.application.use_cases.generate_ui_spec"
-    if mod_name in sys.modules:
-        mod = sys.modules[mod_name]
-    else:
-        mod = importlib.import_module(mod_name)
+    mod = sys.modules[mod_name] if mod_name in sys.modules else importlib.import_module(mod_name)
 
     src = inspect.getsource(mod)
     # Must NOT have a top-level infra import
     assert "from app.infrastructure" not in src, (
         "use case must not import app.infrastructure — domain-pure (lint-imports contract)"
     )
+
+
+# ---------------------------------------------------------------------------
+# Cache tests (Phase 14-03, CACHE-01..04)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_cache_hit_skips_quarantine_generator_and_audit(
+    mock_quarantine: MagicMock,
+    mock_generator: MagicMock,
+    mock_audit: MagicMock,
+    mock_templates: MagicMock,
+) -> None:
+    """D-02/D-03: Cache hit must skip quarantine, generator, and audit entirely (zero-Bedrock-on-hit)."""
+    cached_spec = {"v": 1, "root": {"type": "card", "title": "Cached Card"}}
+    mock_templates.find_by_cache_key = AsyncMock(
+        return_value=CachedTemplate(id="cached-id-123", spec_json=cached_spec)
+    )
+    use_case = GenerateUiSpecUseCase(
+        quarantine=mock_quarantine,
+        generator=mock_generator,
+        audit=mock_audit,
+        templates=mock_templates,
+    )
+
+    result = await use_case.execute(
+        intent="Show invoice",
+        raw_content="Invoice #123",
+        registry_version="v1",
+        importer_id=None,
+        catalog_id="global",
+    )
+
+    assert result.spec == cached_spec
+    assert result.cache_hit is True
+    mock_quarantine.extract.assert_not_called()
+    mock_generator.generate.assert_not_called()
+    mock_audit.record.assert_not_called()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_cache_hit_increments_use_count(
+    mock_quarantine: MagicMock,
+    mock_generator: MagicMock,
+    mock_audit: MagicMock,
+    mock_templates: MagicMock,
+) -> None:
+    """D-03: On cache hit, increment_use_count is called with the template id."""
+    cached_spec = {"v": 1, "root": {"type": "card", "title": "Hit"}}
+    mock_templates.find_by_cache_key = AsyncMock(
+        return_value=CachedTemplate(id="tmpl-abc", spec_json=cached_spec)
+    )
+    use_case = GenerateUiSpecUseCase(
+        quarantine=mock_quarantine,
+        generator=mock_generator,
+        audit=mock_audit,
+        templates=mock_templates,
+    )
+
+    await use_case.execute(
+        intent="Show invoice",
+        raw_content="Invoice #123",
+        registry_version="v1",
+        importer_id=None,
+        catalog_id="global",
+    )
+
+    mock_templates.increment_use_count.assert_called_once_with("tmpl-abc")
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_cache_miss_runs_pipeline_and_cache_hit_is_false(
+    use_case: GenerateUiSpecUseCase,
+    mock_quarantine: MagicMock,
+    mock_generator: MagicMock,
+    mock_templates: MagicMock,
+) -> None:
+    """On cache miss, the full pipeline runs and result.cache_hit is False."""
+    # Default mock_templates has find_by_cache_key returning None (miss)
+    result = await use_case.execute(
+        intent="Show invoice",
+        raw_content="Invoice #123",
+        registry_version="v1",
+        importer_id=None,
+        catalog_id="global",
+    )
+
+    assert result.cache_hit is False
+    mock_quarantine.extract.assert_called_once()
+    mock_generator.generate.assert_called_once()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_persist_called_after_validated_spec(
+    use_case: GenerateUiSpecUseCase,
+    mock_templates: MagicMock,
+    mock_generator: MagicMock,
+) -> None:
+    """D-11: persist is called when outcome != 'fallback' (validated spec)."""
+    mock_generator.generate = AsyncMock(
+        return_value=GeneratorResult(spec=_valid_spec(), attempts=1, escalated=False)
+    )
+
+    await use_case.execute(
+        intent="Show details",
+        raw_content="content",
+        registry_version="v1",
+        importer_id=None,
+        catalog_id="global",
+    )
+
+    assert mock_templates.persist.call_count == 1
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_persist_not_called_when_outcome_is_fallback(
+    use_case: GenerateUiSpecUseCase,
+    mock_templates: MagicMock,
+    mock_generator: MagicMock,
+) -> None:
+    """D-11: persist must NOT be called when generator returns SAFE_FALLBACK_SPEC."""
+    mock_generator.generate = AsyncMock(
+        return_value=GeneratorResult(spec=SAFE_FALLBACK_SPEC, attempts=3, escalated=True)
+    )
+
+    await use_case.execute(
+        intent="Show details",
+        raw_content="content",
+        registry_version="v1",
+        importer_id=None,
+        catalog_id="global",
+    )
+
+    mock_templates.persist.assert_not_called()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_persist_error_is_swallowed(
+    use_case: GenerateUiSpecUseCase,
+    mock_templates: MagicMock,
+    mock_generator: MagicMock,
+) -> None:
+    """D-17: persist failure must be swallowed — execute() must not raise."""
+    mock_generator.generate = AsyncMock(
+        return_value=GeneratorResult(spec=_valid_spec(), attempts=1, escalated=False)
+    )
+    mock_templates.persist = AsyncMock(side_effect=RuntimeError("DB down"))
+
+    # Must not raise — persist is best-effort (D-17)
+    result = await use_case.execute(
+        intent="Show details",
+        raw_content="content",
+        registry_version="v1",
+        importer_id=None,
+        catalog_id="global",
+    )
+    assert result.spec == _valid_spec()
