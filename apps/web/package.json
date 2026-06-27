@@ -17,6 +17,7 @@
     "@dagrejs/dagre": "^3.0.0",
     "@nauta/api-client": "*",
     "@nauta/db": "*",
+    "@nauta/genui": "*",
     "@nauta/ui": "*",
     "@supabase/supabase-js": "^2",
     "@tanstack/react-query": "^5.62.0",
