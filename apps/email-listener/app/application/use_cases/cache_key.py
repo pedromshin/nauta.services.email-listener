@@ -6,7 +6,7 @@ Architecture contract (lint-imports):
   and must remain infra-free so the use case stays lint-imports-clean (13-03 contract).
 
 Functions exported:
-  canonicalize_intent  — NFC normalize + strip + lower + collapse whitespace (D-05)
+  canonicalize_intent  — NFC normalize + strip + casefold + collapse whitespace (D-05)
   compute_data_shape_hash — SHA-256 over VALUE-FREE structural shape (D-06)
   compute_cache_key    — SHA-256 over 0x1f-delimited fixed-order fields (D-04/D-08)
 
@@ -50,7 +50,8 @@ def canonicalize_intent(intent: str) -> str:
     Steps (in order):
       1. NFC Unicode normalization — ensures NFC-equivalent codepoints are equal.
       2. strip() — remove leading/trailing whitespace.
-      3. lower() — case-fold to ASCII-compatible lowercase.
+      3. casefold() — aggressive Unicode case-folding (e.g. 'ß' → 'ss', 'SS' → 'ss').
+         Preferred over lower() for non-ASCII correctness (CR-03 / CACHE-02).
       4. Collapse all internal Unicode whitespace runs to a single ASCII space.
 
     Args:
@@ -62,9 +63,10 @@ def canonicalize_intent(intent: str) -> str:
     Examples:
         "  Show   Invoice  " → "show invoice"
         "Show invoice" == canonicalize_intent("show  Invoice")
+        "ß Invoice" == canonicalize_intent("SS Invoice")  # casefold, not lower
     """
     normalized = unicodedata.normalize("NFC", intent)
-    stripped = normalized.strip().lower()
+    stripped = normalized.strip().casefold()
     return re.sub(r"\s+", " ", stripped)
 
 
