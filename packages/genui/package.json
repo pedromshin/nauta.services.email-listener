@@ -10,7 +10,8 @@
     "./registry": "./src/registry/index.ts",
     "./renderer": "./src/renderer/index.ts",
     "./demo": "./src/demo/index.ts",
-    "./studio": "./src/studio/index.ts"
+    "./studio": "./src/studio/index.ts",
+    "./eval": "./src/eval/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

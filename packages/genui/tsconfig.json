@@ -10,6 +10,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
     "paths": {
       "@nauta/genui": ["./src/index.ts"],
       "@nauta/genui/*": ["./src/*"]
