@@ -39,7 +39,7 @@ const LIVE_NAV_ITEMS: ReadonlyArray<LiveNavItem> = [
   { href: "/entity-types", label: "Entity Types", icon: Shapes },
   { href: "/entities", label: "Entities", icon: Boxes },
   { href: "/knowledge", label: "Knowledge", icon: Share2 }, // ← promoted Phase 11
-  { href: "/studio/preview", label: "Studio", icon: FlaskConical }, // ← Phase 12 (UI-SPEC §7)
+  { href: "/studio", label: "Studio", icon: FlaskConical }, // ← Phase 15: repointed to /studio landing (D-14)
 ];
 
 const SOON_NAV_ITEMS: ReadonlyArray<SoonNavItem> = []; // Knowledge removed
