@@ -3,11 +3,18 @@
 All tests are marked @pytest.mark.unit and operate on fixed in-memory specs.
 No Bedrock, no Supabase, no filesystem dependencies.
 
+Integration smoke tests (offline, mocked) are marked @pytest.mark.integration
+and test the full pipeline wiring in run_eval.run() without live infrastructure.
+
 RED phase: these tests are written before the implementation exists.
 They must fail until rubric.py is created (GREEN phase).
 """
 
 from __future__ import annotations
+
+import json
+from pathlib import Path
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -96,14 +103,13 @@ SHALLOW_SPEC = {
 # ---------------------------------------------------------------------------
 
 from scripts.genui_eval.rubric import (  # noqa: E402
-    CriterionResult,
     WEIGHTS,
-    aggregate,
+    CriterionResult,
     a11y,
+    aggregate,
     composed_not_placeholder,
     valid_spec,
 )
-
 
 # ---------------------------------------------------------------------------
 # CriterionResult — basic shape
@@ -318,3 +324,118 @@ def test_aggregate_returns_one_for_all_pass() -> None:
     ]
     score = aggregate(sub_scores)
     assert abs(score - 1.0) < 1e-6
+
+
+# ---------------------------------------------------------------------------
+# Integration smoke test (offline/mocked)
+# ---------------------------------------------------------------------------
+
+# Minimal golden-set fixture: one prompt that produces a good composed spec.
+_SMOKE_GOLDEN_ENTRY: dict = {
+    "id": "smoke-01",
+    "prompt": "Show me a list of invoices",
+    "category": "data-display",
+    "complexity": "simple",
+    "tier": "A",
+}
+
+# The spec the mocked use-case returns: a well-composed spec that passes rubric.
+_SMOKE_SPEC: dict = {
+    "v": 1,
+    "root": {
+        "type": "stack",
+        "children": [
+            {
+                "type": "card",
+                "children": [
+                    {"type": "text", "value": "Invoice #001"},
+                    {"type": "badge", "label": "Paid"},
+                    {"type": "button", "label": "Download", "aria-label": "Download invoice"},
+                ],
+            },
+            {
+                "type": "table",
+                "caption": "Invoice list",
+                "children": [
+                    {"type": "text", "value": "row 1"},
+                    {"type": "text", "value": "row 2"},
+                ],
+            },
+        ],
+    },
+}
+
+
+@pytest.mark.integration
+def test_run_eval_offline_writes_report(tmp_path: Path) -> None:
+    """Integration smoke: run_eval.run() wires rubric + report writer correctly.
+
+    Patches out all live infrastructure (create_container, golden-set path,
+    registry-version loader, settings). Verifies that:
+      - run() completes without error
+      - JSON + Markdown report files are written to out_dir
+      - JSON contains at least one prompt_report with overall_score in [0, 1]
+      - Markdown header is present
+    No Bedrock, no Supabase, no network calls.
+    """
+    from app.application.use_cases.generate_ui_spec import GenerateUiSpecResult
+
+    # Build a mock result that the mocked use-case will return.
+    mock_result = GenerateUiSpecResult(spec=_SMOKE_SPEC, cache_hit=False, outcome="ok")
+
+    # Mock use-case with async execute()
+    mock_use_case = MagicMock()
+    mock_use_case.execute = AsyncMock(return_value=mock_result)
+
+    # Mock container: get() returns the use-case; close() is a no-op coroutine.
+    mock_container = MagicMock()
+    mock_container.get = AsyncMock(return_value=mock_use_case)
+    mock_container.close = AsyncMock(return_value=None)
+
+    # Mock settings
+    mock_settings = MagicMock()
+    mock_settings.genui_model_id = "smoke-model"
+    mock_settings.genui_escalation_model_id = "smoke-judge"
+    mock_settings.GENUI_TIMEOUT_SECONDS = 15.0
+
+    # Patch targets inside run_eval (imports are deferred, so patch the module they
+    # are imported from, not the local name).
+    with (
+        patch("scripts.genui_eval.run_eval._load_golden_set", return_value=[_SMOKE_GOLDEN_ENTRY]),
+        patch("scripts.genui_eval.run_eval._get_registry_version", return_value="v1-smoke"),
+        patch("app.container.create_container", return_value=mock_container),
+        patch("app.settings.get_settings", return_value=mock_settings),
+    ):
+        import asyncio
+
+        from scripts.genui_eval.run_eval import run
+
+        json_path, md_path = asyncio.run(
+            run(
+                limit=1,
+                no_judge=True,
+                label="smoke",
+                out_dir=tmp_path,
+            )
+        )
+
+    # Both files must exist
+    assert json_path.exists(), f"JSON report not written: {json_path}"
+    assert md_path.exists(), f"Markdown report not written: {md_path}"
+
+    # JSON must be valid and contain at least one prompt report
+    report = json.loads(json_path.read_text(encoding="utf-8"))
+    assert report["label"] == "smoke"
+    assert report["total_prompts"] == 1
+    assert report["completed_prompts"] == 1
+    assert report["failed_prompts"] == 0
+    prompt_reports = report["prompt_reports"]
+    assert len(prompt_reports) == 1
+    pr = prompt_reports[0]
+    assert pr["prompt_id"] == "smoke-01"
+    assert 0.0 <= pr["overall_score"] <= 1.0
+    assert pr["error"] is None
+
+    # Markdown must contain the report header
+    md_content = md_path.read_text(encoding="utf-8")
+    assert "# GenUI Eval Report: smoke" in md_content
