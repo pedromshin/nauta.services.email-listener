@@ -13,7 +13,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { SAFE_FALLBACK_SPEC } from "@nauta/genui";
+import { SAFE_FALLBACK_SPEC } from "@nauta/genui/schema";
 import { appRouter } from "../../../root";
 
 // ---------------------------------------------------------------------------
