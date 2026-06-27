@@ -57,21 +57,27 @@ const GenerateInput = z.object({
 });
 
 // ---------------------------------------------------------------------------
-// Output schema — union of ok / fallback shapes
+// Output schema — flat shape carrying outcome, spec, cacheHit, optional reason
+//
+// D-05: outcome and cacheHit are now threaded from the FastAPI envelope so the
+// web/studio layer can distinguish cache-hit from cold and escalated from ok.
+//
+// SpecRootSchema.safeParse is the authoritative web-boundary gate (D-08 / D-15):
+// if it fails, outcome is ALWAYS overridden to "fallback" regardless of what
+// FastAPI reported. A safeParse failure means the spec is invalid — we must
+// never return it.
 // ---------------------------------------------------------------------------
 
-const GenerateOutputSchema = z.discriminatedUnion("outcome", [
-  z.object({
-    outcome: z.literal("ok"),
-    spec: SpecRootSchema,
-  }),
-  z.object({
-    outcome: z.literal("fallback"),
-    spec: SpecRootSchema,
-    /** Friendly, non-leaking reason shown to the caller. */
-    reason: z.string(),
-  }),
-]);
+const GenerateOutputSchema = z.object({
+  /** Generation outcome as reported by FastAPI (or overridden to "fallback" on web re-validation failure). */
+  outcome: z.enum(["ok", "fallback", "escalated"]),
+  /** Validated SpecRoot JSON — always SAFE_FALLBACK_SPEC when outcome="fallback". */
+  spec: SpecRootSchema,
+  /** True when the spec was served from the server-side cache (D-14). */
+  cacheHit: z.boolean(),
+  /** Friendly, non-leaking reason — present only when outcome="fallback". */
+  reason: z.string().optional(),
+});
 
 export type GenerateOutput = z.infer<typeof GenerateOutputSchema>;
 
@@ -108,6 +114,7 @@ export const generateProcedure = publicProcedure
       return {
         outcome: "fallback" as const,
         spec: SAFE_FALLBACK_SPEC,
+        cacheHit: false,
         reason: "The generation service is temporarily unavailable.",
       };
     }
@@ -127,6 +134,7 @@ export const generateProcedure = publicProcedure
       return {
         outcome: "fallback" as const,
         spec: SAFE_FALLBACK_SPEC,
+        cacheHit: false,
         reason: "Could not generate a view for this request. Please try again.",
       };
     }
@@ -140,33 +148,57 @@ export const generateProcedure = publicProcedure
       return {
         outcome: "fallback" as const,
         spec: SAFE_FALLBACK_SPEC,
+        cacheHit: false,
         reason: "Received an unreadable response from the generation service.",
       };
     }
 
-    // CR-02: Extract spec from the nested ApiResponse envelope:
-    //   { success: bool, data: { spec: {...} } | null, error: str | null }
+    // CR-02: Extract spec, cache_hit, and outcome from the nested ApiResponse envelope:
+    //   { success: bool, data: { spec: {...}, cache_hit: bool, outcome: str } | null, error: str | null }
     // Read body.data.spec — NOT body.spec (the old flat assumption was wrong).
-    const rawSpec =
+    const dataField =
       body !== null &&
       typeof body === "object" &&
       "data" in body &&
       (body as Record<string, unknown>)["data"] !== null &&
-      typeof (body as Record<string, unknown>)["data"] === "object" &&
-      "spec" in ((body as Record<string, unknown>)["data"] as Record<string, unknown>)
-        ? ((body as Record<string, unknown>)["data"] as Record<string, unknown>)["spec"]
+      typeof (body as Record<string, unknown>)["data"] === "object"
+        ? ((body as Record<string, unknown>)["data"] as Record<string, unknown>)
         : undefined;
+
+    const rawSpec = dataField !== undefined && "spec" in dataField
+      ? dataField["spec"]
+      : undefined;
 
     if (rawSpec === undefined) {
       console.error("[genui.generate] FastAPI response missing data.spec field", body);
       return {
         outcome: "fallback" as const,
         spec: SAFE_FALLBACK_SPEC,
+        cacheHit: false,
         reason: "Received an unexpected response structure from the generation service.",
       };
     }
 
-    // D-08: Re-validate at web boundary — NEVER trust model output blindly
+    // D-05: Read cache_hit and outcome from the FastAPI envelope.
+    // These are informational — outcome will be overridden to "fallback" if safeParse fails (D-08).
+    const fastApiCacheHit: boolean =
+      dataField !== undefined &&
+      "cache_hit" in dataField &&
+      typeof dataField["cache_hit"] === "boolean"
+        ? dataField["cache_hit"]
+        : false;
+
+    const fastApiOutcome: "ok" | "fallback" | "escalated" =
+      dataField !== undefined &&
+      "outcome" in dataField &&
+      (dataField["outcome"] === "ok" ||
+        dataField["outcome"] === "fallback" ||
+        dataField["outcome"] === "escalated")
+        ? (dataField["outcome"] as "ok" | "fallback" | "escalated")
+        : "ok";
+
+    // D-08: Re-validate at web boundary — NEVER trust model output blindly.
+    // SpecRootSchema.safeParse is authoritative: a failure overrides outcome to "fallback" (D-15).
     const parsed = SpecRootSchema.safeParse(rawSpec);
 
     if (!parsed.success) {
@@ -178,13 +210,15 @@ export const generateProcedure = publicProcedure
       return {
         outcome: "fallback" as const,
         spec: SAFE_FALLBACK_SPEC,
+        cacheHit: false,
         reason: "The generated view could not be verified. Showing a safe fallback.",
       };
     }
 
-    // Spec passed re-validation — safe to return
+    // Spec passed re-validation — safe to return with envelope-sourced outcome and cacheHit
     return {
-      outcome: "ok" as const,
+      outcome: fastApiOutcome,
       spec: parsed.data,
+      cacheHit: fastApiCacheHit,
     };
   });

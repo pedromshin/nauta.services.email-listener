@@ -374,3 +374,100 @@ describe("genui.generate — env guard", () => {
     ).rejects.toThrow();
   });
 });
+
+// ---------------------------------------------------------------------------
+// D-05: outcome + cacheHit fields threaded from FastAPI envelope (Phase 15-01)
+// ---------------------------------------------------------------------------
+
+describe("genui.generate — D-05: outcome + cacheHit from FastAPI envelope", () => {
+  beforeEach(() => {
+    process.env.EMAIL_LISTENER_URL = URL;
+    process.env.EMAIL_LISTENER_API_KEY = API_KEY;
+  });
+
+  afterEach(() => {
+    delete process.env.EMAIL_LISTENER_URL;
+    delete process.env.EMAIL_LISTENER_API_KEY;
+    vi.restoreAllMocks();
+  });
+
+  it("D-05.1: cache-hit response sets cacheHit=true and outcome='ok'", async () => {
+    const cacheHitEnvelope = {
+      success: true,
+      data: { spec: VALID_SPEC, cache_hit: true, outcome: "ok" },
+      error: null,
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse(cacheHitEnvelope)));
+
+    const caller = makeCaller();
+    const result = await caller.genui.generate({ intent: "Show summary" });
+
+    expect(result.outcome).toBe("ok");
+    expect(result.cacheHit).toBe(true);
+  });
+
+  it("D-05.2: cold response (no cache_hit) sets cacheHit=false", async () => {
+    const coldEnvelope = {
+      success: true,
+      data: { spec: VALID_SPEC, cache_hit: false, outcome: "ok" },
+      error: null,
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse(coldEnvelope)));
+
+    const caller = makeCaller();
+    const result = await caller.genui.generate({ intent: "Show summary" });
+
+    expect(result.outcome).toBe("ok");
+    expect(result.cacheHit).toBe(false);
+  });
+
+  it("D-05.3: escalated outcome from FastAPI is forwarded as outcome='escalated'", async () => {
+    const escalatedEnvelope = {
+      success: true,
+      data: { spec: VALID_SPEC, cache_hit: false, outcome: "escalated" },
+      error: null,
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse(escalatedEnvelope)));
+
+    const caller = makeCaller();
+    const result = await caller.genui.generate({ intent: "Show summary" });
+
+    expect(result.outcome).toBe("escalated");
+    expect(result.cacheHit).toBe(false);
+  });
+
+  it("D-05.4: safeParse failure overrides outcome to 'fallback' even when FastAPI says outcome='ok'", async () => {
+    // FastAPI claims ok but returns an invalid spec — web boundary must override to fallback (D-08)
+    const badSpecEnvelope = {
+      success: true,
+      data: {
+        spec: { v: 1, root: { type: "unregistered-widget" } },
+        cache_hit: false,
+        outcome: "ok",
+      },
+      error: null,
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockResponse(badSpecEnvelope)));
+
+    const caller = makeCaller();
+    const result = await caller.genui.generate({ intent: "Show summary" });
+
+    // safeParse failure must override — outcome becomes "fallback" not "ok"
+    expect(result.outcome).toBe("fallback");
+    expect(result.spec).toEqual(SAFE_FALLBACK_SPEC);
+    expect(result.cacheHit).toBe(false);
+  });
+
+  it("D-05.5: fallback returns include cacheHit=false (transport error path)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(mockResponse({ detail: "error" }, 500)),
+    );
+
+    const caller = makeCaller();
+    const result = await caller.genui.generate({ intent: "Test" });
+
+    expect(result.outcome).toBe("fallback");
+    expect(result.cacheHit).toBe(false);
+  });
+});
