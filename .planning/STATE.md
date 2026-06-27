@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Generative UI Engine
 status: in_progress
-last_updated: "2026-06-27T06:20:00.000Z"
+last_updated: "2026-06-27T06:39:58.175Z"
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 3
-  percent: 0
+  completed_plans: 4
+  percent: 50
 ---
 
 # State
@@ -66,7 +66,11 @@ Haiku 4.5 runtime / Sonnet 4.6 escalation via Bedrock IAM; reuse pgvector + Tita
 
 - **12-03 ✓ EXECUTED 2026-06-27:** Recursive `renderNode`→`createElement` (zero eval, GR-01/SPEC-02 grep gate: 0 functional matches) + per-node `NodeErrorBoundary` class component (`getDerivedStateFromError`, D-14) + `useDeclaredState` useReducer (5-mutation enum: toggle/set/reset/increment/decrement, all branches return new objects via spread, D-11) + `resolveDataRef` dotted-path resolver (FORBIDDEN_KEYS: __proto__/constructor/prototype, D-12) + `SpecRenderer` entry component (`"use client"` line 1, D-20) + empty `ActionRegistryContext` seam (`React.createContext<ActionRegistry>({})`, SEAM-02) + `src/index.ts` package root barrel. safeParse-only render path (SPEC-03). Structural-position keys (D-15). Named slots + positional children (D-16). Control-flow nodes (conditional/list) handled before registry dispatch. 30 new tests, 60/60 green; tsc clean. Security grep gate: 0 functional matches. Commits 27a10d7, 76f13bd. See 12-03-SUMMARY.md.
 
-- **Next:** 12-04 SHOWCASE_SPEC + MALFORMED_SPEC fixtures + /studio/preview route (render + JSON island, ssr:false) + live Studio sidebar nav + browser human-verify (SPEC-06; D-17..20).
+- **12-04 ✓ EXECUTED 2026-06-27:** SHOWCASE_SPEC (all 12 node types + state/action/dataRef, D-17) + MALFORMED_SPEC (one broken node among valid siblings, D-18) exported from @nauta/genui/demo; 25 TDD tests (RED 859da3a, GREEN 350632e) validate schema conformance, node-type coverage, state/action presence, and dataRef usage. /studio/preview server component (page.tsx) + dynamic(ssr:false) SpecRendererIsland (spec-renderer-island.tsx) — 55/45 ResizablePanelGroup render+JSON split (D-19/D-20). REGISTRY_VERSION server-side only (T-12-15). Studio live sidebar nav item (FlaskConical, /studio/preview, LIVE_NAV_ITEMS — UI-SPEC §7). Auto-fixed: (1) removed aria-label/aria-hidden/label from strict Zod schemas; (2) removed COMPONENT_REGISTRY from server→client prop (Next.js serialization boundary). 85/85 tests green; tsc clean; web:build green (/studio/preview static 3.92 kB). Browser visual verification deferred (autonomous overnight run, user asleep — see 12-04-SUMMARY.md). Commits 859da3a, 350632e, a06f124, 450e092. See 12-04-SUMMARY.md.
+
+- **Phase 12 ✓ ALL 4 PLANS EXECUTED 2026-06-27.** Pending: phase-level verification + browser visual check (12-04 Task 4). Next phase: 13 (LLM generation layer).
+
+- **Decisions:** COMPONENT_REGISTRY must never cross Next.js server→client boundary (Zod classes unserializable); dynamic(ssr:false) island imports it directly via default prop. REGISTRY_VERSION consumed server-side only (Node.js crypto module, T-12-15).
 
 ## Phase 11 — Knowledge-node graph view (4e knowledge graph) — ✓ COMPLETE 2026-06-15 (3 plans, 3 waves)
 

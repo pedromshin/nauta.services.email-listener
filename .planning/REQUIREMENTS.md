@@ -53,7 +53,7 @@ catalog — safely (no eval, no injection) and reusably (cache good specs). Rese
 - [x] **SPEC-03**: Each rendered node is wrapped in an error boundary so one malformed node cannot crash the surface
 - [x] **SPEC-04**: Declared state primitives (name/type/initial/actions) are materialized into a store by the interpreter; the spec contains no executable code
 - [x] **SPEC-05**: Data/state references resolve via safe dotted-path lookup against a provided scope (no `eval`)
-- [ ] **SPEC-06**: A hardcoded sample spec renders correctly end-to-end, proving the interpreter before generation is wired
+- [x] **SPEC-06**: A hardcoded sample spec renders correctly end-to-end, proving the interpreter before generation is wired
 
 ### Generation Layer (GEN)
 
