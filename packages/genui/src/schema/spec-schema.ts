@@ -26,6 +26,9 @@
 
 import { z } from "zod";
 
+import { DataBindingSchema } from "./data-binding-schema";
+import { ActionSchema } from "./action-schema";
+
 // ===========================================================================
 // SECTION 1: Bound constants (D-24 / SAFE-06 seam)
 // ===========================================================================
@@ -77,7 +80,13 @@ const BadgeNodeSchema = z
   })
   .strict();
 
-/** button — `action` is a declared string ID — never executable code. (SPEC-04/05) */
+/**
+ * button — `action` is a declared string ID for the Phase-12 ActionRegistry (SPEC-04/05).
+ * `onClick` is the Phase-13 ActionSchema union (D-14/D-23):
+ *   - Uses a NEW field name to avoid breaking existing renderer code that reads `action`
+ *     as an ActionRegistry key string.
+ *   - onClick: ActionSchema (navigate/setState/mutate) — validated at the Zod layer (D-15)
+ */
 const ButtonNodeSchema = z
   .object({
     type: z.literal("button"),
@@ -88,6 +97,9 @@ const ButtonNodeSchema = z
       .optional(),
     size: z.enum(["sm", "md", "lg"]).optional(),
     action: z.string().optional(),
+    // Phase-13 action binding (D-14/D-23): validated ActionSchema union, NOT the Phase-12
+    // string ActionRegistry key. New field to preserve backward compat with existing renderer.
+    onClick: ActionSchema.optional(),
     disabled: z.boolean().optional(),
   })
   .strict();
@@ -317,11 +329,15 @@ export type StateDeclaration = z.infer<typeof StateDeclarationSchema>;
  * SpecRootSchema — the top-level spec envelope.
  *
  * Fields:
- *   _plan  — reserved reasoning field, stripped before renderNode in Phase 13 (D-22)
- *   v      — schema version literal 1 (SEAM-01 / D-10)
- *   data   — named data bindings injected at render time
- *   state  — declared state primitives materialised by useDeclaredState
- *   root   — the component tree (SpecNode, recursive via z.lazy)
+ *   _plan    — reserved reasoning field, stripped before renderNode in Phase 13 (D-22)
+ *   v        — schema version literal 1 (SEAM-01 / D-10)
+ *   data     — static data injected at render time (existing Phase-12 field)
+ *   bindings — named DataBinding queries resolved at render time via allowlisted tRPC
+ *              procedures (D-13/D-23). Each key is a binding name; each value is a
+ *              DataBindingSchema { procedure, params? }. Live IDs are NOT embedded here
+ *              (GR-15 / D-13a) — they resolve from session/route context at render time.
+ *   state    — declared state primitives materialised by useDeclaredState
+ *   root     — the component tree (SpecNode, recursive via z.lazy)
  *
  * Bound refinements (D-24 / SAFE-06): countNodes <= MAX_SPEC_NODES,
  * specDepth <= MAX_SPEC_DEPTH.
@@ -331,6 +347,7 @@ export const SpecRootSchema = z
     _plan: z.string().optional(),
     v: z.literal(1),
     data: z.record(z.string(), z.unknown()).optional(),
+    bindings: z.record(z.string(), DataBindingSchema).optional(),
     state: z.array(StateDeclarationSchema).optional(),
     root: z.lazy(lazySpecNode) as z.ZodTypeAny,
   })
