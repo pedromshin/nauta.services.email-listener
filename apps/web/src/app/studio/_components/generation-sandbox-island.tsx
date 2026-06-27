@@ -31,7 +31,7 @@
  *   - All mutation of state via immutable spread/new objects (CLAUDE.md).
  */
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
@@ -67,15 +67,41 @@ interface GenerationResult {
 // Component
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
+
+export interface GenerationSandboxIslandProps {
+  /**
+   * Optional prompt pre-seeded from the Page Ideas tab (D-21 / D-06).
+   *
+   * D-06: This prop seeds the intent textarea ONLY; it NEVER auto-triggers
+   * generation. The user must still click the Generate button manually.
+   */
+  readonly initialIntent?: string;
+}
+
 /**
  * GenerationSandboxIsland — wires the intent textarea, Generate button,
  * GenerationStateChrome, and 55/45 render / spec-JSON panel group.
  *
  * "use client" — tRPC hooks + router + local state require client context.
  */
-export function GenerationSandboxIsland(): React.ReactElement {
+export function GenerationSandboxIsland({
+  initialIntent,
+}: GenerationSandboxIslandProps): React.ReactElement {
   // Local input state (controlled Textarea)
-  const [intent, setIntent] = useState<string>("");
+  // Seeded from initialIntent prop if provided; empty otherwise.
+  const [intent, setIntent] = useState<string>(() => initialIntent ?? "");
+
+  // D-06: When initialIntent changes (e.g. user picks a new Page Idea),
+  // update the textarea WITHOUT triggering generation.
+  // The user must still manually click Generate.
+  useEffect(() => {
+    if (initialIntent !== undefined) {
+      setIntent(initialIntent);
+    }
+  }, [initialIntent]);
 
   // Last generation result (undefined = no generation started yet)
   const [lastResult, setLastResult] = useState<GenerationResult | undefined>(

@@ -1,19 +1,30 @@
 "use client";
 
 /**
- * studio-tabs.tsx — Client Tabs shell for /studio landing (D-01).
+ * studio-tabs.tsx — Client Tabs shell for /studio landing (D-01 / D-21).
+ *
+ * 16-04 lift (D-21): minimal controlled-Tabs refactor.
+ *   - `activeTab` replaces `defaultValue` (controlled; no global store).
+ *   - `pendingIntent` state: string set when user picks a Page Idea,
+ *     cleared to undefined once seeded into GenerationSandboxIsland.
+ *     NEVER auto-triggers generation (D-06).
+ *   - Four tabs: Catalog | Sandbox | History | Page Ideas
+ *   - History TabsContent is a placeholder slot (16-05 will drop its island in).
  *
  * Contains:
- *   - TabsList with "Catalog" + "Sandbox" TabsTriggers
+ *   - TabsList with four TabsTriggers: Catalog, Sandbox, History, Page Ideas
  *   - A next/link "Showcase" affordance (link to /studio/preview, NOT a TabsContent)
- *   - TabsContent "catalog" (aria-label="Component catalog") → CatalogBrowserIsland
- *   - TabsContent "sandbox" (aria-label="Generation sandbox") → GenerationSandboxIsland
+ *   - TabsContent "catalog"    → CatalogBrowserIsland
+ *   - TabsContent "sandbox"    → GenerationSandboxIsland (receives pendingIntent)
+ *   - TabsContent "history"    → placeholder slot (16-05 will fill)
+ *   - TabsContent "page-ideas" → PageIdeasIsland (onUseIdea seeds pendingIntent)
  *
- * "use client" because Tabs require useState for active tab state internally (shadcn).
- * REGISTRY_VERSION is NOT imported here — it must stay server-side (T-12-15, Node crypto).
+ * "use client" — controlled Tabs + useState require client context.
+ * REGISTRY_VERSION is NOT imported here (T-12-15, Node crypto).
+ * No eval / Function / dangerouslySetInnerHTML (D-15 / GR-01).
  */
 
-import React from "react";
+import React, { useCallback, useState } from "react";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 
@@ -21,11 +32,59 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@nauta/ui/tabs";
 
 import { CatalogBrowserIsland } from "./catalog-browser-island";
 import { GenerationSandboxIsland } from "./generation-sandbox-island";
+import { PageIdeasIsland } from "./page-ideas-island";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type TabValue = "catalog" | "sandbox" | "history" | "page-ideas";
+
+// ---------------------------------------------------------------------------
+// History placeholder (16-05 will replace this with its island)
+// ---------------------------------------------------------------------------
+
+function HistoryPlaceholder(): React.ReactElement {
+  return (
+    <div
+      className="flex h-full items-center justify-center text-sm text-muted-foreground"
+      aria-live="polite"
+    >
+      Generation history will appear here (coming in Phase 16-05).
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// StudioTabs
+// ---------------------------------------------------------------------------
 
 export function StudioTabs(): React.ReactElement {
+  // D-21: Controlled Tabs — minimal lift, no global store.
+  const [activeTab, setActiveTab] = useState<TabValue>("catalog");
+
+  // D-21 / D-06: pendingIntent is set by onUseIdea (from PageIdeasIsland),
+  // passed as initialIntent to GenerationSandboxIsland. NEVER auto-generates.
+  // Navigating away from sandbox and back will retain the seeded text (by design).
+  const [pendingIntent, setPendingIntent] = useState<string | undefined>(
+    undefined,
+  );
+
+  // Called by PageIdeasIsland when user picks an idea.
+  // Seeds the sandbox intent textarea and switches to the Sandbox tab.
+  const handleUseIdea = useCallback((prompt: string): void => {
+    setPendingIntent(prompt);
+    setActiveTab("sandbox");
+  }, []);
+
+  const handleTabChange = useCallback((value: string): void => {
+    setActiveTab(value as TabValue);
+  }, []);
+
   return (
     <Tabs
-      defaultValue="catalog"
+      value={activeTab}
+      onValueChange={handleTabChange}
       className="flex flex-1 min-h-0 flex-col"
     >
       {/* Tab strip — shrink-0, does not scroll */}
@@ -41,6 +100,18 @@ export function StudioTabs(): React.ReactElement {
           className="rounded-none border-b-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none"
         >
           Sandbox
+        </TabsTrigger>
+        <TabsTrigger
+          value="history"
+          className="rounded-none border-b-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+        >
+          History
+        </TabsTrigger>
+        <TabsTrigger
+          value="page-ideas"
+          className="rounded-none border-b-2 border-transparent data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+        >
+          Page Ideas
         </TabsTrigger>
 
         {/* Showcase affordance — a next/link, NOT a TabsContent (D-01) */}
@@ -63,13 +134,31 @@ export function StudioTabs(): React.ReactElement {
         <CatalogBrowserIsland />
       </TabsContent>
 
-      {/* Sandbox tab — GenerationSandboxIsland (Plan 15-03 / STDO-02/03/04) */}
+      {/* Sandbox tab — GenerationSandboxIsland seeded with pendingIntent (D-21/D-06) */}
       <TabsContent
         value="sandbox"
         aria-label="Generation sandbox"
         className="flex flex-col flex-1 min-h-0 m-0 border-0"
       >
-        <GenerationSandboxIsland />
+        <GenerationSandboxIsland initialIntent={pendingIntent} />
+      </TabsContent>
+
+      {/* History tab — placeholder slot (16-05 will replace HistoryPlaceholder) */}
+      <TabsContent
+        value="history"
+        aria-label="Generation history"
+        className="flex flex-col flex-1 min-h-0 m-0 border-0"
+      >
+        <HistoryPlaceholder />
+      </TabsContent>
+
+      {/* Page Ideas tab — browse + filter 76-entry corpus; onUseIdea → sandbox */}
+      <TabsContent
+        value="page-ideas"
+        aria-label="Page idea browser"
+        className="flex flex-col flex-1 min-h-0 m-0 border-0"
+      >
+        <PageIdeasIsland onUseIdea={handleUseIdea} />
       </TabsContent>
     </Tabs>
   );
