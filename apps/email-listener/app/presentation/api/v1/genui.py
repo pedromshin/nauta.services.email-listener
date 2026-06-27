@@ -1,7 +1,13 @@
-"""GenUI generation endpoint — POST /v1/genui/generate.
+"""GenUI endpoints — POST /v1/genui/generate, GET /v1/genui/history, GET /v1/genui/history/{id}.
 
 Accepts an intent + raw document content and returns a validated SpecRoot JSON
 via the dual-LLM quarantine->generate pipeline (D-09, SAFE-01/SAFE-02).
+
+Phase 16-03 (STDO-05/STDO-06): adds read-only history spine:
+  - GET /v1/genui/history: paginated list of TemplateSummary (no spec_json, D-14)
+  - GET /v1/genui/history/{template_id}: single TemplateDetail with spec_json (D-14)
+  Both endpoints use the UiSpecTemplateRepository port (D-16: only ui_spec_templates).
+  Best-effort (D-15): 404 when find_by_id returns None; list returns [] not 5xx.
 
 Security:
   - X-API-Key auth: all routes protected via require_api_key (T-13-auth)
@@ -19,10 +25,11 @@ from typing import Any, Literal
 
 import structlog
 from dishka.integrations.fastapi import FromDishka, inject
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from app.application.use_cases.generate_ui_spec import GenerateUiSpecUseCase
+from app.domain.ports.ui_spec_template_repository import UiSpecTemplateRepository
 from app.presentation.api.response import ApiResponse
 from app.presentation.middleware.auth import require_api_key
 
@@ -76,6 +83,36 @@ class GenerateUiSpecView(BaseModel):
     outcome: Literal["ok", "fallback", "escalated"] = "ok"
 
 
+class HistoryRowView(BaseModel):
+    """Lightweight summary row for the history list endpoint (D-14: no spec_json).
+
+    Intentionally omits spec_json to keep the list payload small.
+    Use GET /v1/genui/history/{id} to retrieve the full detail with spec_json.
+    """
+
+    id: str
+    intent_text: str
+    created_at: str
+    registry_version: str
+    use_count: int
+    validation_status: str
+
+
+class HistoryDetailView(BaseModel):
+    """Full detail view for a single history entry (D-14: includes spec_json).
+
+    Returned by GET /v1/genui/history/{id}.
+    """
+
+    id: str
+    intent_text: str
+    created_at: str
+    registry_version: str
+    use_count: int
+    validation_status: str
+    spec_json: dict[str, Any]
+
+
 # ---------------------------------------------------------------------------
 # Endpoint
 # ---------------------------------------------------------------------------
@@ -105,3 +142,66 @@ async def generate_ui_spec(
     )
 
     return ApiResponse.ok(GenerateUiSpecView(spec=result.spec, cache_hit=result.cache_hit, outcome=result.outcome))
+
+
+# ---------------------------------------------------------------------------
+# History endpoints (STDO-05 / STDO-06)
+# ---------------------------------------------------------------------------
+
+
+@router.get("/history")
+@inject
+async def list_history(
+    repo: FromDishka[UiSpecTemplateRepository],
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    importer_id: str | None = Query(default=None),
+) -> ApiResponse[list[HistoryRowView]]:
+    """Paginated list of recent UI spec template history entries (STDO-05).
+
+    Returns HistoryRowView rows WITHOUT spec_json (D-14 — lightweight list).
+    Use GET /v1/genui/history/{id} to retrieve the full spec_json for a single entry.
+
+    D-15 best-effort: returns [] (not 5xx) on repository errors.
+    D-16: surfaces only ui_spec_templates rows, never genui_generation_events.
+    """
+    summaries = await repo.list_recent(limit=limit, offset=offset, importer_id=importer_id)
+    rows = [
+        HistoryRowView(
+            id=s.id,
+            intent_text=s.intent_text,
+            created_at=s.created_at,
+            registry_version=s.registry_version,
+            use_count=s.use_count,
+            validation_status=s.validation_status,
+        )
+        for s in summaries
+    ]
+    return ApiResponse.ok(rows)
+
+
+@router.get("/history/{template_id}")
+@inject
+async def get_history_detail(
+    template_id: str,
+    repo: FromDishka[UiSpecTemplateRepository],
+) -> ApiResponse[HistoryDetailView]:
+    """Return a single UI spec template history entry with full spec_json (STDO-06).
+
+    D-14: includes spec_json in the response — full detail payload.
+    D-15 best-effort: returns 404 when the repository returns None.
+    D-16: surfaces only ui_spec_templates rows, never genui_generation_events.
+    """
+    detail = await repo.find_by_id(template_id)
+    if detail is None:
+        raise HTTPException(status_code=404, detail="Template not found")
+    view = HistoryDetailView(
+        id=detail.id,
+        intent_text=detail.intent_text,
+        created_at=detail.created_at,
+        registry_version=detail.registry_version,
+        use_count=detail.use_count,
+        validation_status=detail.validation_status,
+        spec_json=detail.spec_json,
+    )
+    return ApiResponse.ok(view)
