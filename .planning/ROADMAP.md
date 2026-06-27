@@ -34,7 +34,7 @@ COST-04) are explicitly out of this milestone.
 ## Phases
 
 - [x] **Phase 12: Catalog, Spec Schema, and Trusted Interpreter** — The vocabulary contract plus a hardcoded end-to-end render — the first demoable artifact before generation exists (completed 2026-06-27)
-- [ ] **Phase 13: Generation Layer and Guardrails** — Bedrock Haiku 4.5 generation pipeline with dual-LLM quarantine, three allowlists, repair loop, and cost controls wired together
+- [x] **Phase 13: Generation Layer and Guardrails** — Bedrock Haiku 4.5 generation pipeline with dual-LLM quarantine, three allowlists, repair loop, and cost controls wired together (completed 2026-06-27)
 - [ ] **Phase 14: Exact Cache and Template Store** — SHA-256 exact-match cache backed by Drizzle/Postgres, with auto-invalidation on registry version change
 - [ ] **Phase 15: Studio Surface** — `/studio` route: catalog browser, generation sandbox, spec inspector, and generation-state indicators
 
@@ -79,7 +79,7 @@ Plans:
   3. A spec referencing an unregistered component type, a non-allowlisted tRPC procedure, or a non-relative action href fails Zod validation and is rejected before reaching the renderer.
   4. Every Bedrock call carries an explicit `max_tokens` limit and an `AbortController` timeout; every generation event (intent, model, tokens, outcome) is written to the audit log; spec tree depth and node count are bounded by the schema.
   5. The system prompt (catalog + examples) is cached via Bedrock `cachePoint` so per-request input carries only intent + data-shape; the binding/action layer schema has both query and mutation paths defined (v1.1 wires queries only; the mutation path exists but is empty).
-**Plans:** 3/4 plans executed
+**Plans:** 4/4 plans complete
 
 Plans:
 **Wave 1**
@@ -88,7 +88,7 @@ Plans:
 **Wave 2** *(depends on 13-01, 13-02)*
 - [x] 13-03-PLAN.md -- Python generation service: dual-LLM quarantine (Call A enum-extraction) + generator adapter (emit_ui_spec forced tool-use, cache_control, max_tokens/timeout/temp0, Haiku->Sonnet 4.6 escalation) + GenerateUiSpecUseCase (repair <=3 -> SAFE_FALLBACK -> audit) + POST /v1/genui/generate (X-API-Key) + DI + settings (GEN-01/02/03/06, SAFE-01/05, COST-01)
 **Wave 3** *(depends on 13-01, 13-03)*
-- [ ] 13-04-PLAN.md -- Web wiring: genui tRPC router proxy + SpecRootSchema.safeParse at the web boundary -> SAFE_FALLBACK (D-08) + ActionRegistry binding layer (query/setState/navigate wired with runtime relative-href re-check; mutate left unregistered = SEAM-02) + vitest (GEN-03/04, SAFE-02/03/04, SEAM-02)
+- [x] 13-04-PLAN.md -- Web wiring: genui tRPC router proxy + SpecRootSchema.safeParse at the web boundary -> SAFE_FALLBACK (D-08) + ActionRegistry binding layer (query/setState/navigate wired with runtime relative-href re-check; mutate left unregistered = SEAM-02) + vitest (GEN-03/04, SAFE-02/03/04, SEAM-02)
 **UI hint**: yes
 
 ---
@@ -128,6 +128,6 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 12. Catalog, Spec Schema, and Trusted Interpreter | 4/4 | Complete   | 2026-06-27 |
-| 13. Generation Layer and Guardrails | 3/4 | In Progress|  |
+| 13. Generation Layer and Guardrails | 4/4 | Complete   | 2026-06-27 |
 | 14. Exact Cache and Template Store | 0/TBD | Not started | - |
 | 15. Studio Surface | 0/TBD | Not started | - |
