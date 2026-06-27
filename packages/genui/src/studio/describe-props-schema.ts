@@ -60,21 +60,30 @@ type PropsEntry = {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
-/** Unwrap ZodOptional / ZodDefault layers, returning { inner, required }. */
+/**
+ * Unwrap ZodOptional / ZodDefault layers, returning { inner, required }.
+ * IN-03: loops until no more wrapper layers remain so that double-wrapped
+ * schemas like z.string().optional().default("x")
+ * (ZodDefault(ZodOptional(ZodString))) resolve to their true inner type.
+ */
 const unwrapOptional = (
   schema: ZodTypeAny,
 ): { inner: ZodTypeAny; required: boolean } => {
-  const typeName = (schema as { _def?: { typeName?: string } })._def
-    ?.typeName;
+  let inner: ZodTypeAny = schema;
+  let required = true;
 
-  if (typeName === "ZodOptional" || typeName === "ZodDefault") {
-    const inner = (
-      schema as { _def: { innerType: ZodTypeAny } }
-    )._def.innerType;
-    return { inner, required: false };
+  // peel all ZodOptional / ZodDefault layers
+  while (true) {
+    const typeName = (inner as { _def?: { typeName?: string } })._def?.typeName;
+    if (typeName === "ZodOptional" || typeName === "ZodDefault") {
+      inner = (inner as { _def: { innerType: ZodTypeAny } })._def.innerType;
+      required = false;
+    } else {
+      break;
+    }
   }
 
-  return { inner: schema, required: true };
+  return { inner, required };
 };
 
 /** Resolve a (possibly-unwrapped) Zod type to a human-readable label. */

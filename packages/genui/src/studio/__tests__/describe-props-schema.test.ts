@@ -146,6 +146,33 @@ describe("describePropsSchema — ZodOptional unwrapping (§12)", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Double-wrapped optional unwrapping (IN-03 regression guard)
+// ---------------------------------------------------------------------------
+
+describe("describePropsSchema — double-wrapped optional (IN-03)", () => {
+  it("ZodDefault(ZodOptional(ZodString)) → required:false, typeLabel:'string'", () => {
+    // z.string().optional().default("x") produces ZodDefault wrapping ZodOptional wrapping ZodString.
+    // The loop-based unwrapOptional must peel both layers to reach ZodString.
+    const entry = makeEntry({ label: z.string().optional().default("x") });
+    const rows = describePropsSchema(entry);
+    expect(rows).toHaveLength(1);
+    const [row] = rows;
+    expect(row.typeLabel).toBe("string");
+    expect(row.required).toBe(false);
+  });
+
+  it("ZodOptional(ZodDefault(ZodString)) → required:false, typeLabel:'string'", () => {
+    // z.string().default("x").optional() produces ZodOptional wrapping ZodDefault wrapping ZodString.
+    const entry = makeEntry({ label: z.string().default("x").optional() });
+    const rows = describePropsSchema(entry);
+    expect(rows).toHaveLength(1);
+    const [row] = rows;
+    expect(row.typeLabel).toBe("string");
+    expect(row.required).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // lockedProps
 // ---------------------------------------------------------------------------
 
