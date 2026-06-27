@@ -3,14 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Generative UI Engine
 status: planning
-last_updated: 2026-06-27T00:00:00.000Z
+last_updated: "2026-06-27T04:22:34.729Z"
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
   percent: 0
-stopped_at: Milestone v1.1 roadmapped (Phases 12–15) — ready to plan Phase 12
 ---
 
 # State
@@ -43,11 +42,13 @@ Haiku 4.5 runtime / Sonnet 4.6 escalation via Bedrock IAM; reuse pgvector + Tita
   inbox entitySummary >max(100) crash (9eb6c5e cap), graph system-default taxonomy exclusion + detail-pane
   empty sections + dup edge ids + jsonb label (4ab7953), selection re-runs dagre layout (530cb5e overlay),
   knowledge_node_edges missing RLS (92134fb migration 0020 + applied local). api-client 102/102, web build green.
+
 - **✓ DEPLOYED 2026-06-15 (staging + prod):** migrate:staging + migrate:prod applied all pending drizzle
   migrations through **0020** (caught the remotes up incl. prior-pending 0013-0018); `knowledge_node_edges` +
   deny-all RLS (2 policies) verified live on **both** envs. Code: pushed dev→staging + main→prod; ECS deploys
   **green** both envs (smoke tests passed). Web `/knowledge` deploys via Vercel git integration on the main push
   (verify at the Vercel prod domain — not checkable from CLI here). origin/main == origin/dev == a5a1fb9.
+
 - **Deferred review items (non-blocking, backlog candidates):** WR-03 app-wide `publicProcedure`/no-auth posture
   (returns all importers' data — architectural, not a phase regression); WR-05 inert `nodeTypes` input; WR-06
   toolbar layout-toggle placeholder; knowledge-node `content`/`createdAt` + component matched-status detail fields
@@ -93,7 +94,7 @@ Haiku 4.5 runtime / Sonnet 4.6 escalation via Bedrock IAM; reuse pgvector + Tita
   + UI-SPEC + PATTERNS generated. Decision coverage 21/21 (D-01..D-21). Commits: 1444bce (UI-SPEC+PATTERNS),
   b59e929 (plans), 521f767 + ffe968f (review fixes). Ready to execute.
 
-- **Resume file:** .planning/phases/11-knowledge-node-graph-view-4e-knowledge-graph/11-UI-SPEC.md
+- **Resume file:** .planning/phases/12-catalog-spec-schema-and-trusted-interpreter/12-CONTEXT.md
 - **Architecture locked:** identity = **repurpose `entity_instances`** (nauta_id nullable + `source`
   col); resolution = **suggest-only, never auto** → **parallel BlendedRAG (dense HNSW + lexical
   pg_trgm exact/fuzzy) fused by RRF(k=60)**, on-confirm + re-runnable backfill, confirm writes back
