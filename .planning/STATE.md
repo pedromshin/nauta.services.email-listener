@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Generative UI Engine
-status: planning
-last_updated: "2026-06-27T05:10:06.521Z"
+status: in_progress
+last_updated: "2026-06-27T05:35:38.701Z"
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 4
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -19,7 +19,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-27)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** v1.1 Generative UI Engine — defining requirements (research complete; roadmap pending)
+**Current focus:** Phase 12 — catalog-spec-schema-and-trusted-interpreter
 
 ## Milestone v1.1 — Generative UI Engine — ◆ PLANNING (started 2026-06-27)
 
@@ -60,7 +60,9 @@ Haiku 4.5 runtime / Sonnet 4.6 escalation via Bedrock IAM; reuse pgvector + Tita
 - **Deferred (honored, no leakage):** LLM/Bedrock generation → Phase 13; exact cache + `ui_spec_templates` store → Phase 14;
   full `/studio` browser/sandbox + Nauta-flavored real demo → Phase 15. This phase's demo is a generic showcase (D-17).
 
-- **Next:** `/gsd:execute-phase 12` (4 plans; W4 ends in a browser human-verify checkpoint).
+- **12-01 ✓ EXECUTED 2026-06-27:** @nauta/genui workspace package scaffold + catalog/types.ts (SpecNodeType 12-key union, ManifestEntry<TProps> readonly interface, ComponentRegistry) + schema/spec-schema.ts (full 12-node ZodDiscriminatedUnion, z.lazy proxy recursion, ChildrenSchema:z.ZodType<SpecNode[]> explicit annotation, StateDeclarationSchema 5-mutation restricted enum, SpecRootSchema v:z.literal(1) + _plan + .strict() + MAX_SPEC_NODES=200/MAX_SPEC_DEPTH=8 bound refinements, countNodes/specDepth walkers). Zod v3 only (Bedrock-compatible, D-09). All z.object() .strict() (D-22/COST-02). tsc clean. Commits e65a23c, 1d84766, bef6dbc. See 12-01-SUMMARY.md.
+
+- **Next:** 12-02 catalog entries + COMPONENT_REGISTRY + SHA-256 content-hash + CTLG-04 manifest CI test.
 
 ## Phase 11 — Knowledge-node graph view (4e knowledge graph) — ✓ COMPLETE 2026-06-15 (3 plans, 3 waves)
 

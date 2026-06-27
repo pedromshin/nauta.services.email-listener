@@ -48,11 +48,11 @@ catalog — safely (no eval, no injection) and reusably (cache good specs). Rese
 
 ### Spec Schema & Interpreter (SPEC)
 
-- [ ] **SPEC-01**: A typed (Zod) discriminated-union spec describes a UI tree (layout, leaf components, lists, conditionals) referencing only registry components
+- [x] **SPEC-01**: A typed (Zod) discriminated-union spec describes a UI tree (layout, leaf components, lists, conditionals) referencing only registry components
 - [ ] **SPEC-02**: A recursive interpreter renders a valid spec into live `@nauta/ui` components via `createElement` with no `eval`/`Function`/`dangerouslySetInnerHTML` on model output
 - [ ] **SPEC-03**: Each rendered node is wrapped in an error boundary so one malformed node cannot crash the surface
-- [ ] **SPEC-04**: Declared state primitives (name/type/initial/actions) are materialized into a store by the interpreter; the spec contains no executable code
-- [ ] **SPEC-05**: Data/state references resolve via safe dotted-path lookup against a provided scope (no `eval`)
+- [x] **SPEC-04**: Declared state primitives (name/type/initial/actions) are materialized into a store by the interpreter; the spec contains no executable code
+- [x] **SPEC-05**: Data/state references resolve via safe dotted-path lookup against a provided scope (no `eval`)
 - [ ] **SPEC-06**: A hardcoded sample spec renders correctly end-to-end, proving the interpreter before generation is wired
 
 ### Generation Layer (GEN)
@@ -90,14 +90,14 @@ catalog — safely (no eval, no injection) and reusably (cache good specs). Rese
 ### Cost & Token Efficiency (COST)
 
 - [ ] **COST-01**: The catalog/system prompt is cached via Bedrock prompt caching (`cachePoint`); per-request input carries only the intent + data-shape
-- [ ] **COST-02**: The spec JSON schema is kept stable (no recursion / external `$ref`) so Bedrock reuses its compiled grammar across requests, raising first-pass validity and cutting repair loops
+- [x] **COST-02**: The spec JSON schema is kept stable (no recursion / external `$ref`) so Bedrock reuses its compiled grammar across requests, raising first-pass validity and cutting repair loops
 - [ ] **COST-03**: The catalog is encoded compactly for the model, with candidate-component subsetting once the catalog exceeds a size threshold (send relevant components, not all of them)
 
 ### Future-proofing seams (build empty, document — v1.1)
 
 These are *design constraints* on the above, not extra build — they keep v1.2 (interactivity, API-write, tenant catalogs, the flywheel) a drop-in rather than a refactor:
 
-- [ ] **SEAM-01**: The spec envelope carries a `v` (version) field so the node grammar can grow without breaking cached specs
+- [x] **SEAM-01**: The spec envelope carries a `v` (version) field so the node grammar can grow without breaking cached specs
 - [ ] **SEAM-02**: The binding/action layer is shaped for both **queries and mutations** from day one (v1.1 wires queries only; the mutation allowlist path exists but is empty)
 - [ ] **SEAM-03**: The catalog + cache key are **per-catalog-id capable** (one global catalog in v1.1; tenant/importer-scoped catalogs later)
 
@@ -144,9 +144,9 @@ These are *design constraints* on the above, not extra build — they keep v1.2 
 | EMAIL-01..02 | Phase 3 | Complete (verified live end-to-end 2026-06-11) |
 | CTLG-01..05 | Phase 12 | Pending |
 | SPEC-01..06 | Phase 12 | Pending |
-| SEAM-01 | Phase 12 | Pending |
+| SEAM-01 | Phase 12 | Complete |
 | SEAM-03 | Phase 12 | Pending |
-| COST-02 | Phase 12 | Pending |
+| COST-02 | Phase 12 | Complete |
 | COST-03 | Phase 12 | Pending |
 | GEN-01..06 | Phase 13 | Pending |
 | SAFE-01..06 | Phase 13 | Pending |
