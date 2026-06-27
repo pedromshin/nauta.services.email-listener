@@ -23,3 +23,5 @@ export { describePropsSchema } from "./describe-props-schema";
 export type { CatalogExampleSource } from "./build-catalog-example-spec";
 
 export { buildCatalogExampleSpec } from "./build-catalog-example-spec";
+
+export { weightFor, pickPageIdea, CURVEBALL_WEIGHT, TIER_B_WEIGHT, TIER_A_WEIGHT } from "./pick-page-idea";
