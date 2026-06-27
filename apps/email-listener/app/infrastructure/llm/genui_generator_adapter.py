@@ -30,7 +30,10 @@ from typing import TYPE_CHECKING, Any, cast
 import jsonschema
 import structlog
 
-from app.infrastructure.llm.genui_artifacts import load_spec_schema
+from app.infrastructure.llm.genui_artifacts import (
+    load_prompt_payload,
+    load_spec_schema,
+)
 from app.infrastructure.llm.genui_quarantine_adapter import QuarantineExtraction
 
 if TYPE_CHECKING:
@@ -94,20 +97,78 @@ _SYSTEM_PROMPT_TEXT = (
     "  - confidence: classification confidence level\n\n"
     "Rules:\n"
     "- Output ONLY via the emit_ui_spec tool — no prose.\n"
-    "- The spec must conform strictly to the SpecRoot schema.\n"
-    "- Use only the allowed component types and procedure names from the schema.\n"
+    "- The spec must conform strictly to the SpecRoot schema; use only the allowed "
+    "component types and procedure names.\n"
     "- Do NOT include raw document content or user-supplied prose in the spec.\n"
-    "- Keep the spec minimal and focused on the stated intent.\n"
+    "- BUILD a concrete, composed UI that actually represents the requested interface — "
+    "do NOT merely describe it. Compose multiple real components with `stack` and `grid`: "
+    "e.g. a homepage = a `grid` of section `card`s; a feed/list = a `stack` of several "
+    "representative item `card`s, each with real-looking heading/body text, `badge`s, and "
+    "`button`s.\n"
+    "- NEVER emit placeholder or meta-commentary content. Do NOT produce specs whose text "
+    'says things like "this is a placeholder", "consider breaking this into components", or '
+    '"to build this, design each component separately". Emit the actual UI, populated with '
+    "concise, realistic, representative copy for the requested domain.\n"
+    "- Use the component catalog below (descriptions, slot/children rules) to choose and "
+    "compose components well; render layout containers (`stack`, `grid`, `card`) with real "
+    "child components rather than leaving them empty.\n"
+    "- Stay within bounds: at most ~200 total nodes and ~8 levels of nesting. Favor a clear, "
+    "complete layout over exhaustive detail.\n"
     "Call emit_ui_spec with a valid SpecRoot JSON object."
 )
 
 
+def _format_catalog_reference() -> str:
+    """Build a deterministic, cache-stable catalog reference from the prompt payload.
+
+    Injects each component's description + slot/children rules, the action rules, and
+    the allowed binding procedures so the model composes with full vocabulary context.
+    The payload is trusted static content (the committed genui-prompt.json artifact) —
+    never user input — so it is safe in the system prompt. Deterministic ordering keeps
+    the prompt prefix stable for cache_control hits (COST-01 / D-21).
+    """
+    payload = load_prompt_payload()
+    lines: list[str] = ["Component catalog (use ONLY these component types):"]
+    for comp in payload.get("components", []):
+        type_name = comp.get("type", "?")
+        description = comp.get("description", "")
+        accepts_children = comp.get("acceptsChildren", False)
+        slots = comp.get("slots", []) or []
+        traits: list[str] = []
+        if accepts_children:
+            traits.append("accepts children")
+        if slots:
+            traits.append("slots: " + ", ".join(slots))
+        suffix = f" ({'; '.join(traits)})" if traits else ""
+        lines.append(f"- {type_name}: {description}{suffix}")
+
+    action_rules = payload.get("actionRules", {})
+    if action_rules:
+        rule_text = " ".join(str(v) for v in action_rules.values())
+        lines.append(f"\nAction rules: {rule_text}")
+
+    procedures = payload.get("allowedProcedures", [])
+    if procedures:
+        lines.append("Allowed binding procedures: " + ", ".join(procedures))
+
+    return "\n".join(lines)
+
+
 def _build_system_blocks() -> list[dict[str, Any]]:
-    """System prompt as list-of-blocks with cache_control ephemeral (D-21)."""
+    """System prompt (rules + injected component catalog) as a single cached block.
+
+    The catalog reference (genui-prompt.json) was previously unused — wiring it here
+    gives the generator full component-vocabulary context (descriptions, slot/children
+    rules, action rules, allowed procedures) instead of only the bare tool schema, which
+    is what made it emit placeholder/meta specs. It is static trusted content, so the
+    whole block stays cache_control ephemeral (COST-01 / D-21): the big prefix is cached
+    and per-request input carries only the DATA_SECTION.
+    """
+    text = f"{_SYSTEM_PROMPT_TEXT}\n\n{_format_catalog_reference()}"
     return [
         {
             "type": "text",
-            "text": _SYSTEM_PROMPT_TEXT,
+            "text": text,
             "cache_control": {"type": "ephemeral"},
         }
     ]
@@ -186,7 +247,7 @@ class GeneratorResult:
     """The validated SpecRoot dict, or SAFE_FALLBACK_SPEC on total failure."""
 
     attempts: int
-    """Number of repair-loop attempts made (1–3)."""
+    """Number of repair-loop attempts made (1-3)."""
 
     escalated: bool
     """True when the Sonnet escalation model was used on attempt 3."""
