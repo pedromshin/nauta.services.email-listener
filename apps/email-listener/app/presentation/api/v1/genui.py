@@ -72,6 +72,7 @@ class GenerateUiSpecView(BaseModel):
     """Response view wrapping the validated SpecRoot JSON."""
 
     spec: dict[str, Any]
+    cache_hit: bool = False
 
 
 # ---------------------------------------------------------------------------
@@ -102,4 +103,4 @@ async def generate_ui_spec(
         importer_id=body.importer_id,
     )
 
-    return ApiResponse.ok(GenerateUiSpecView(spec=result.spec))
+    return ApiResponse.ok(GenerateUiSpecView(spec=result.spec, cache_hit=result.cache_hit))

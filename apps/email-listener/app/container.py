@@ -72,6 +72,7 @@ from app.domain.ports.parser_registry_port import ParserRegistryPort
 from app.domain.ports.raw_email_store import RawEmailStore
 from app.domain.ports.retrieval_port import RetrievalPort
 from app.domain.ports.segmenter_protocol import SegmenterProtocol
+from app.domain.ports.ui_spec_template_repository import UiSpecTemplateRepository
 from app.infrastructure.llm.anthropic_client import get_anthropic_client
 from app.infrastructure.llm.autofill_adapter import AnthropicAutofiller
 from app.infrastructure.llm.embedding_adapter import EmbeddingAdapter
@@ -95,6 +96,7 @@ from app.infrastructure.supabase.extraction_repository import SupabaseExtraction
 from app.infrastructure.supabase.importer_repository import SupabaseImporterRepository
 from app.infrastructure.supabase.retrieval_repository import SupabaseRetrievalRepository
 from app.infrastructure.supabase.supabase_generation_audit_repository import SupabaseGenerationAuditRepository
+from app.infrastructure.supabase.supabase_ui_spec_template_repository import SupabaseUiSpecTemplateRepository
 from app.settings import get_settings
 
 
@@ -396,16 +398,23 @@ def _provide_generation_audit_repository(client: Client) -> GenerationAuditRepos
     return SupabaseGenerationAuditRepository(client=client)
 
 
+def _provide_ui_spec_template_repository(client: Client) -> UiSpecTemplateRepository:
+    """SupabaseUiSpecTemplateRepository — exact-match cache for validated UI specs (CACHE-01, D-17)."""
+    return SupabaseUiSpecTemplateRepository(client=client)
+
+
 def _provide_generate_ui_spec_use_case(
     quarantine: GenuiQuarantineAdapter,
     generator: GenuiGeneratorAdapter,
     audit: GenerationAuditRepository,
+    templates: UiSpecTemplateRepository,
 ) -> GenerateUiSpecUseCase:
-    """Factory for GenerateUiSpecUseCase — orchestrates the quarantine→generate→audit pipeline."""
+    """Factory for GenerateUiSpecUseCase — orchestrates the cache→quarantine→generate→audit pipeline."""
     return GenerateUiSpecUseCase(
         quarantine=quarantine,
         generator=generator,
         audit=audit,
+        templates=templates,
     )
 
 
@@ -511,7 +520,9 @@ def _build_provider() -> Provider:  # noqa: PLR0915
     provider.provide(_provide_genui_generator_adapter, provides=GenuiGeneratorAdapter)
     # GenerationAuditRepository: Protocol port → SupabaseGenerationAuditRepository adapter.
     provider.provide(_provide_generation_audit_repository, provides=GenerationAuditRepository)
-    # GenerateUiSpecUseCase factory: quarantine + generator + audit all resolved first.
+    # UiSpecTemplateRepository: Protocol port → SupabaseUiSpecTemplateRepository adapter (CACHE-01).
+    provider.provide(_provide_ui_spec_template_repository, provides=UiSpecTemplateRepository)
+    # GenerateUiSpecUseCase factory: quarantine + generator + audit + templates all resolved first.
     provider.provide(_provide_generate_ui_spec_use_case, provides=GenerateUiSpecUseCase)
 
     return provider
