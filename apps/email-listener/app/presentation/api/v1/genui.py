@@ -49,9 +49,13 @@ class GenerateUiSpecRequest(BaseModel):
         description="Trusted user intent: what should be displayed.",
     )
     raw_content: str = Field(
-        ...,
-        min_length=1,
-        description="Untrusted raw document content to render (quarantined in Call A).",
+        default="",
+        description=(
+            "Untrusted raw document content to render (quarantined in Call A). "
+            "Optional — when empty, the quarantine step runs with no document content "
+            "and the generator uses the intent alone (intent-only generation mode). "
+            "Phase 15 studio UI will supply real content."
+        ),
     )
     registry_version: str = Field(
         ...,

@@ -19,9 +19,20 @@
  *
  *   GEN-04: Non-streaming — buffer the full FastAPI response, run
  *     safeParse on the complete spec, then return. No streaming.
+ *
+ *   CR-01: Request body includes raw_content (default ""), registry_version
+ *     (from REGISTRY_VERSION.version), and importer_id so FastAPI receives
+ *     all required GenerateUiSpecRequest fields. raw_content is optional —
+ *     empty string enables intent-only generation mode (Phase 15 will supply
+ *     real document content).
+ *
+ *   CR-02: FastAPI wraps responses in ApiResponse envelope:
+ *     { success: bool, data: { spec: {...} } | null, error: str | null }
+ *     Spec extraction must read body.data.spec, not body.spec.
  */
 
 import { SAFE_FALLBACK_SPEC, SpecRootSchema } from "@nauta/genui/schema";
+import { REGISTRY_VERSION } from "@nauta/genui/registry";
 import { z } from "zod";
 
 import { publicProcedure } from "../../trpc";
@@ -34,6 +45,15 @@ import { getListenerConfig } from "../_listener-config";
 const GenerateInput = z.object({
   /** Free-text prompt that describes the user's intent for the UI view. */
   intent: z.string().min(1).max(4096),
+  /**
+   * Untrusted raw document content to quarantine and render (Call A).
+   * Optional: when omitted, the quarantine step runs with empty content,
+   * and the generator uses the intent alone (intent-only generation mode).
+   * Phase 15 studio UI will supply this field with actual document content.
+   */
+  rawContent: z.string().default(""),
+  /** Optional importer context forwarded to the audit row (D-19). */
+  importerId: z.string().optional(),
 });
 
 // ---------------------------------------------------------------------------
@@ -66,6 +86,7 @@ export const generateProcedure = publicProcedure
     const { url, apiKey } = getListenerConfig();
 
     // GEN-04: Proxy to FastAPI (non-streaming — buffer full response)
+    // CR-01: Send all required FastAPI fields (raw_content + registry_version)
     let res: Response;
     try {
       res = await fetch(`${url}/v1/genui/generate`, {
@@ -74,7 +95,12 @@ export const generateProcedure = publicProcedure
           "Content-Type": "application/json",
           "X-API-Key": apiKey,
         },
-        body: JSON.stringify({ intent: input.intent }),
+        body: JSON.stringify({
+          intent: input.intent,
+          raw_content: input.rawContent,
+          registry_version: REGISTRY_VERSION.version,
+          importer_id: input.importerId ?? null,
+        }),
       });
     } catch (networkErr) {
       // Network failure — return fallback (T-13-19: no leaked detail)
@@ -118,13 +144,27 @@ export const generateProcedure = publicProcedure
       };
     }
 
-    // Extract the spec field from the FastAPI response envelope
+    // CR-02: Extract spec from the nested ApiResponse envelope:
+    //   { success: bool, data: { spec: {...} } | null, error: str | null }
+    // Read body.data.spec — NOT body.spec (the old flat assumption was wrong).
     const rawSpec =
       body !== null &&
       typeof body === "object" &&
-      "spec" in body
-        ? (body as Record<string, unknown>)["spec"]
-        : body;
+      "data" in body &&
+      (body as Record<string, unknown>)["data"] !== null &&
+      typeof (body as Record<string, unknown>)["data"] === "object" &&
+      "spec" in ((body as Record<string, unknown>)["data"] as Record<string, unknown>)
+        ? ((body as Record<string, unknown>)["data"] as Record<string, unknown>)["spec"]
+        : undefined;
+
+    if (rawSpec === undefined) {
+      console.error("[genui.generate] FastAPI response missing data.spec field", body);
+      return {
+        outcome: "fallback" as const,
+        spec: SAFE_FALLBACK_SPEC,
+        reason: "Received an unexpected response structure from the generation service.",
+      };
+    }
 
     // D-08: Re-validate at web boundary — NEVER trust model output blindly
     const parsed = SpecRootSchema.safeParse(rawSpec);
