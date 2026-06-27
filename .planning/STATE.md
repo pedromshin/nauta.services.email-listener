@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: "Generative UI: Realism & Interactivity"
 status: planning
-last_updated: "2026-06-28T07:28:00.000Z"
+last_updated: "2026-06-27T23:59:00.000Z"
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -967,3 +967,4 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 14 (all) | ~2h | 3 plans | exact-match cache (ui_spec_templates migration 0022) + cache-key module (TDD) + GenerateUiSpecUseCase cache integration; 87/87 Python tests green; see 14-01..14-03 SUMMARYs |
 | Phase 15 P01 | ~120m | 3 tasks | 13 files — outcome signal thread-through (Python use-case + FastAPI view + tRPC schema, D-05) + deriveGenerationState + describePropsSchema studio helpers + @nauta/genui/studio subpath; 38 new tests (6 Python + 5 api-client + 27 studio); typecheck + no-eval gate clean |
 | Phase 16-03 | ~45m | 3 tasks | 8 files — read-only history spine: UiSpecTemplateRepository list_recent+find_by_id + GET /v1/genui/history + GET /v1/genui/history/{id} FastAPI endpoints + tRPC historyList+historyById procedures; TDD RED/GREEN per task (6 commits); D-14/D-15/D-16/D-17/WR-06/WR-02 all honored; 42 new tests; tsc+ruff clean |
+| Phase 16-02 | ~60m | 3 tasks | 9 files — pure deterministic rubric (valid-spec/composed/a11y, weights 0.30/0.30/0.25/0.15) + LLM-as-judge adapter (escalation model, forced tool-use) + eval runner (create_container(), golden-set, Semaphore(3)) + report writer (JSON+MD) + compare helper; 21 tests (20 unit + 1 integration smoke, gated RUN_GENUI_EVAL=1); 87% coverage gate holds; ruff clean; Task 4 (live Bedrock baseline) deferred to connected env |
