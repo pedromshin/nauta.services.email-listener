@@ -230,6 +230,7 @@ async def test_happy_path_returns_valid_spec(
     assert result.spec["v"] == 1
     assert result.spec["root"]["type"] == "alert"
     assert mock_bedrock_client.messages.create.call_count == 1
+    assert result.is_fallback is False, "Happy path must return is_fallback=False (CR-02)"
 
 
 @pytest.mark.unit()
@@ -253,6 +254,7 @@ async def test_invalid_spec_retries_up_to_3(
     assert result.spec == SAFE_FALLBACK_SPEC
     assert result.attempts == 3
     assert result.escalated is True
+    assert result.is_fallback is True, "All-attempts-exhausted path must set is_fallback=True (CR-02)"
     assert mock_bedrock_client.messages.create.call_count == 3, "Must attempt exactly 3 times"
 
 
@@ -390,6 +392,7 @@ async def test_timeout_returns_fallback(
 
     assert result.spec == SAFE_FALLBACK_SPEC
     assert result.escalated is False
+    assert result.is_fallback is True, "Timeout path must set is_fallback=True (CR-02)"
 
 
 @pytest.mark.unit()
@@ -405,6 +408,7 @@ async def test_exception_returns_fallback(
 
     assert result.spec == SAFE_FALLBACK_SPEC
     assert result.escalated is False
+    assert result.is_fallback is True, "Exception path must set is_fallback=True (CR-02)"
 
 
 # ---------------------------------------------------------------------------

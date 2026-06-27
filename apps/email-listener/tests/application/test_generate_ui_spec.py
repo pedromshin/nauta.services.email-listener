@@ -236,7 +236,7 @@ async def test_audit_event_outcome_fallback_when_generator_returns_fallback(
 ) -> None:
     """GenerationEvent.outcome must be 'fallback' when SAFE_FALLBACK_SPEC is returned."""
     mock_generator.generate = AsyncMock(
-        return_value=GeneratorResult(spec=SAFE_FALLBACK_SPEC, attempts=3, escalated=True)
+        return_value=GeneratorResult(spec=SAFE_FALLBACK_SPEC, attempts=3, escalated=True, is_fallback=True)
     )
 
     await use_case.execute(
@@ -278,7 +278,7 @@ async def test_execute_returns_fallback_spec_when_quarantine_returns_unknown(
     empty_extraction = QuarantineExtraction()  # entity_type='unknown', confidence='low'
     mock_quarantine.extract = AsyncMock(return_value=empty_extraction)
     mock_generator.generate = AsyncMock(
-        return_value=GeneratorResult(spec=SAFE_FALLBACK_SPEC, attempts=3, escalated=True)
+        return_value=GeneratorResult(spec=SAFE_FALLBACK_SPEC, attempts=3, escalated=True, is_fallback=True)
     )
 
     result = await use_case.execute(
@@ -495,7 +495,7 @@ async def test_persist_not_called_when_outcome_is_fallback(
 ) -> None:
     """D-11: persist must NOT be called when generator returns SAFE_FALLBACK_SPEC."""
     mock_generator.generate = AsyncMock(
-        return_value=GeneratorResult(spec=SAFE_FALLBACK_SPEC, attempts=3, escalated=True)
+        return_value=GeneratorResult(spec=SAFE_FALLBACK_SPEC, attempts=3, escalated=True, is_fallback=True)
     )
 
     await use_case.execute(
@@ -507,6 +507,69 @@ async def test_persist_not_called_when_outcome_is_fallback(
     )
 
     mock_templates.persist.assert_not_called()
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_legitimate_alert_spec_with_fallback_title_is_cached_not_dropped(
+    mock_quarantine: MagicMock,
+    mock_generator: MagicMock,
+    mock_audit: MagicMock,
+    mock_templates: MagicMock,
+) -> None:
+    """CR-02 regression: legitimate alert spec with title starting 'Unable to generate'
+    must NOT be misclassified as a fallback. It must be cached and outcome='ok'.
+
+    This covers the false-positive that the old content-sniffing approach in
+    _determine_outcome() would have introduced: any alert spec with a matching
+    title fragment would be silently dropped from cache.
+    """
+    # A real business component — e.g. an error-state card for a failed fetch.
+    # The title happens to start with the same text as SAFE_FALLBACK_SPEC, but
+    # this spec is NOT a fallback — is_fallback is False (default).
+    legitimate_alert_spec = {
+        "v": 1,
+        "root": {
+            "type": "alert",
+            "title": "Unable to generate report: data source unavailable",
+            "severity": "warning",
+        },
+    }
+    mock_generator.generate = AsyncMock(
+        return_value=GeneratorResult(
+            spec=legitimate_alert_spec,
+            attempts=1,
+            escalated=False,
+            is_fallback=False,  # NOT a fallback — explicitly set (CR-02)
+        )
+    )
+    use_case = GenerateUiSpecUseCase(
+        quarantine=mock_quarantine,
+        generator=mock_generator,
+        audit=mock_audit,
+        templates=mock_templates,
+    )
+
+    result = await use_case.execute(
+        intent="Show error state when data source fails",
+        raw_content="{}",
+        registry_version="v1",
+        importer_id=None,
+        catalog_id="global",
+    )
+
+    # Spec is returned correctly
+    assert result.spec == legitimate_alert_spec
+    assert result.cache_hit is False
+
+    # MUST persist — not misclassified as fallback
+    mock_templates.persist.assert_called_once()
+
+    # Outcome must be 'ok', not 'fallback'
+    event: GenerationEvent = mock_audit.record.call_args[0][0]
+    assert event.outcome == "ok", (
+        f"Legitimate alert spec must have outcome='ok', not 'fallback'. Got: {event.outcome!r}"
+    )
 
 
 @pytest.mark.unit

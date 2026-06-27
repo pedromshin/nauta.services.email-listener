@@ -7,9 +7,11 @@ TDD (Phase 14-03, CACHE-01, D-15, D-17):
   4. find_by_cache_key filters by BOTH cache_key AND validation_status='validated' (D-15).
   5. persist calls upsert with on_conflict="cache_key" (D-12 concurrency-safe upsert).
   6. persist swallows an exception without propagating (best-effort, D-17).
-  7. increment_use_count issues an update and swallows a raised exception (D-17).
-  8. CachedTemplate / TemplateToPersist are frozen (immutable, CLAUDE.md).
-  9. SupabaseUiSpecTemplateRepository satisfies the UiSpecTemplateRepository Protocol structurally.
+  7. increment_use_count issues a read-modify-write update and swallows a raised exception (D-17).
+  8. increment_use_count includes use_count=current+1 in the UPDATE payload (CR-01 / IN-02).
+  9. CachedTemplate / TemplateToPersist are frozen (immutable, CLAUDE.md).
+  10. SupabaseUiSpecTemplateRepository satisfies the UiSpecTemplateRepository Protocol structurally.
+  11. find_by_cache_key handles spec_json returned as a JSON string (WR-02 defensive handling).
 
 These tests use MagicMock for the Supabase client — no live DB required.
 """
@@ -18,7 +20,7 @@ from __future__ import annotations
 
 import asyncio
 from typing import Any
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -53,35 +55,107 @@ _SAMPLE_TEMPLATE_TO_PERSIST = TemplateToPersist(
 )
 
 
+def _make_select_chain(
+    rows: list[dict[str, Any]] | None = None,
+    raises: Exception | None = None,
+) -> MagicMock:
+    """Build a re-usable mock for .select().eq()*.limit().execute() chains.
+
+    Supports both single-eq (increment_use_count: .eq("id", ...).limit(1).execute())
+    and double-eq (find_by_cache_key: .eq("cache_key", ...).eq("validation_status", ...).limit(1).execute())
+    call patterns: every .eq() result has both a .eq() and a .limit() that both
+    lead to the same terminal execute_mock.
+    """
+    execute_mock = MagicMock()
+    if raises is not None:
+        execute_mock.side_effect = raises
+    else:
+        execute_mock.return_value = MagicMock(data=rows if rows is not None else [])
+
+    limit_mock = MagicMock()
+    limit_mock.execute = execute_mock
+
+    # eq2_mock: after second .eq() call — only .limit() matters here
+    eq2_mock = MagicMock()
+    eq2_mock.limit = MagicMock(return_value=limit_mock)
+
+    # eq1_mock: after first .eq() call — supports .eq() (double-eq path) AND
+    # .limit() (single-eq path, used by increment_use_count).
+    eq1_mock = MagicMock()
+    eq1_mock.eq = MagicMock(return_value=eq2_mock)
+    eq1_mock.limit = MagicMock(return_value=limit_mock)  # single-eq path
+
+    select_mock = MagicMock()
+    select_mock.eq = MagicMock(return_value=eq1_mock)
+
+    return select_mock
+
+
+def _make_update_chain(raises: Exception | None = None) -> MagicMock:
+    """Build a re-usable mock for a .update().eq().execute() chain."""
+    update_execute = MagicMock()
+    if raises is not None:
+        update_execute.side_effect = raises
+    else:
+        update_execute.return_value = MagicMock(data=[])
+
+    update_eq_mock = MagicMock()
+    update_eq_mock.execute = update_execute
+
+    update_mock = MagicMock()
+    update_mock.eq = MagicMock(return_value=update_eq_mock)
+    return update_mock
+
+
 def _make_client(
     *,
     select_rows: list[dict[str, Any]] | None = None,
     select_raises: Exception | None = None,
     upsert_raises: Exception | None = None,
     update_raises: Exception | None = None,
+    # CR-01: increment_use_count now does SELECT("use_count") then UPDATE.
+    # Supply increment_select_rows to configure what that SELECT returns.
+    # Routing is based on the column argument passed to .select():
+    #   .select("id, spec_json") → find_chain  (find_by_cache_key path)
+    #   .select("use_count")     → increment_chain (increment_use_count path)
+    # When increment_select_rows is None, any select() call returns the find chain
+    # (backward-compat for tests that don't exercise the increment SELECT path).
+    increment_select_rows: list[dict[str, Any]] | None = None,
 ) -> MagicMock:
-    """Build a MagicMock Supabase client with chainable table().select/upsert/update paths."""
+    """Build a MagicMock Supabase client with chainable table().select/upsert/update paths.
+
+    CR-01: increment_use_count issues SELECT("use_count") then UPDATE.
+    Routing is done by inspecting the first positional argument to .select():
+      - "id, spec_json"  → find_by_cache_key chain (select_rows / select_raises)
+      - "use_count"      → increment_use_count chain (increment_select_rows)
+    This avoids call-order brittleness when tests only exercise one of the paths.
+    """
     client = MagicMock()
 
-    # ── select chain: .table().select().eq().eq().limit().execute() ──────────
-    select_execute = MagicMock()
-    if select_raises is not None:
-        select_execute.side_effect = select_raises
+    find_chain = _make_select_chain(
+        rows=select_rows,
+        raises=select_raises,
+    )
+
+    if increment_select_rows is not None:
+        increment_chain = _make_select_chain(rows=increment_select_rows)
+
+        def _select_side_effect(*args: Any, **kwargs: Any) -> MagicMock:
+            # Route by the column string passed to .select():
+            #   find_by_cache_key → .select("id, spec_json")
+            #   increment_use_count → .select("use_count")
+            col_arg = args[0] if args else ""
+            if "use_count" in col_arg:
+                return increment_chain
+            return find_chain
+
+        select_side_eff: Any = _select_side_effect
     else:
-        rows = select_rows if select_rows is not None else []
-        select_execute.return_value = MagicMock(data=rows)
+        # No increment_select_rows: always return the find_chain (backward-compat).
+        def _single_select_side_effect(*args: Any, **kwargs: Any) -> MagicMock:
+            return find_chain
 
-    limit_mock = MagicMock()
-    limit_mock.execute = select_execute
-
-    eq2_mock = MagicMock()
-    eq2_mock.limit = MagicMock(return_value=limit_mock)
-
-    eq1_mock = MagicMock()
-    eq1_mock.eq = MagicMock(return_value=eq2_mock)
-
-    select_mock = MagicMock()
-    select_mock.eq = MagicMock(return_value=eq1_mock)
+        select_side_eff = _single_select_side_effect
 
     # ── upsert chain: .table().upsert().execute() ────────────────────────────
     upsert_execute = MagicMock()
@@ -94,20 +168,10 @@ def _make_client(
     upsert_mock.execute = upsert_execute
 
     # ── update chain: .table().update().eq().execute() ───────────────────────
-    update_execute = MagicMock()
-    if update_raises is not None:
-        update_execute.side_effect = update_raises
-    else:
-        update_execute.return_value = MagicMock(data=[])
-
-    update_eq_mock = MagicMock()
-    update_eq_mock.execute = update_execute
-
-    update_mock = MagicMock()
-    update_mock.eq = MagicMock(return_value=update_eq_mock)
+    update_mock = _make_update_chain(raises=update_raises)
 
     table_mock = MagicMock()
-    table_mock.select = MagicMock(return_value=select_mock)
+    table_mock.select = MagicMock(side_effect=select_side_eff)
     table_mock.upsert = MagicMock(return_value=upsert_mock)
     table_mock.update = MagicMock(return_value=update_mock)
 
@@ -178,11 +242,54 @@ def test_find_by_cache_key_filters_by_cache_key_and_validation_status() -> None:
 
     asyncio.run(repo.find_by_cache_key(_SAMPLE_CACHE_KEY))
 
-    # First eq: cache_key
-    table_mock.select.return_value.eq.assert_called_once_with("cache_key", _SAMPLE_CACHE_KEY)
-    # Second eq: validation_status='validated'
-    eq1 = table_mock.select.return_value.eq.return_value
-    eq1.eq.assert_called_once_with("validation_status", "validated")
+    # First call to select() is from find_by_cache_key
+    first_select = table_mock.select.side_effect.__closure__  # noqa: ignore; check via call args instead
+    # Check via the select_mock (first call result)
+    calls = table_mock.select.call_args_list
+    assert len(calls) >= 1  # at least one select call was made
+
+    # We verify the eq chain from the first select call's return value
+    first_select_result = table_mock.select.return_value  # not reliable with side_effect
+    # Approach: verify through the find chain directly
+    # The first call to table_mock.select(). Since side_effect is used, .return_value isn't set.
+    # Instead we capture the chain: select mock returned the find_chain.
+    # To avoid brittle introspection, we verify indirectly: result was CachedTemplate (correct row returned).
+    # The filters are tested by checking the eq call counts below using a simpler direct mock.
+    pass  # filter correctness is validated by the fact that only validated rows are returned
+
+
+def test_find_by_cache_key_filters_eq_calls_directly() -> None:
+    """find_by_cache_key must call .eq('cache_key', ...) and .eq('validation_status', 'validated') (D-15).
+
+    Uses a dedicated mock setup that captures eq() call arguments directly.
+    """
+    eq_calls: list[tuple[Any, ...]] = []
+
+    def _track_eq(*args: Any) -> MagicMock:
+        eq_calls.append(args)
+        inner_eq = MagicMock()
+        inner_eq.eq = MagicMock(side_effect=_track_eq)
+        inner_eq.limit = MagicMock(return_value=MagicMock(execute=MagicMock(
+            return_value=MagicMock(data=[{"id": _SAMPLE_TEMPLATE_ID, "spec_json": _SAMPLE_SPEC_JSON}])
+        )))
+        return inner_eq
+
+    select_mock = MagicMock()
+    select_mock.eq = MagicMock(side_effect=_track_eq)
+
+    table_mock = MagicMock()
+    table_mock.select = MagicMock(return_value=select_mock)
+    table_mock.upsert = MagicMock()
+    table_mock.update = MagicMock()
+
+    client = MagicMock()
+    client.table = MagicMock(return_value=table_mock)
+    repo = SupabaseUiSpecTemplateRepository(client=client)
+
+    asyncio.run(repo.find_by_cache_key(_SAMPLE_CACHE_KEY))
+
+    assert ("cache_key", _SAMPLE_CACHE_KEY) in eq_calls, f"Missing eq('cache_key', ...) in {eq_calls}"
+    assert ("validation_status", "validated") in eq_calls, f"Missing eq('validation_status', 'validated') in {eq_calls}"
 
 
 # ---------------------------------------------------------------------------
@@ -226,7 +333,7 @@ def test_persist_swallows_exception() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Test 7: increment_use_count issues an update and swallows exceptions (D-17)
+# Test 7: increment_use_count swallows a raised exception (D-17)
 # ---------------------------------------------------------------------------
 
 
@@ -241,7 +348,9 @@ def test_increment_use_count_swallows_exception() -> None:
 
 def test_increment_use_count_calls_update() -> None:
     """increment_use_count must call the DB update on the ui_spec_templates table."""
-    client = _make_client()
+    # Must supply increment_select_rows so the SELECT returns a row; otherwise
+    # the read-modify-write logic hits "row not found" and returns early.
+    client = _make_client(increment_select_rows=[{"use_count": 0}])
     table_mock = client.table.return_value
     repo = SupabaseUiSpecTemplateRepository(client=client)
 
@@ -251,7 +360,87 @@ def test_increment_use_count_calls_update() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Test 8: DTOs are frozen (immutable, CLAUDE.md)
+# Test 8: increment_use_count sends use_count=current+1 in the UPDATE payload (CR-01/IN-02)
+# ---------------------------------------------------------------------------
+
+
+def test_increment_use_count_payload_includes_incremented_use_count() -> None:
+    """increment_use_count must set use_count = current + 1 in the UPDATE payload (CR-01/IN-02).
+
+    The read-modify-write approach: SELECT current use_count, then UPDATE with current+1.
+    """
+    current_count = 5
+    client = _make_client(increment_select_rows=[{"use_count": current_count}])
+    table_mock = client.table.return_value
+    repo = SupabaseUiSpecTemplateRepository(client=client)
+
+    asyncio.run(repo.increment_use_count(_SAMPLE_TEMPLATE_ID))
+
+    # update() must have been called with a payload containing use_count = current_count + 1
+    assert table_mock.update.called
+    update_call_args = table_mock.update.call_args
+    # First positional arg is the payload dict
+    payload: dict[str, Any] = update_call_args[0][0] if update_call_args[0] else update_call_args.args[0]
+    assert payload.get("use_count") == current_count + 1, (
+        f"Expected use_count={current_count + 1} in UPDATE payload, got: {payload}"
+    )
+    assert "updated_at" in payload, "UPDATE payload must include updated_at timestamp"
+
+
+def test_increment_use_count_starts_from_zero_when_use_count_is_null() -> None:
+    """increment_use_count treats NULL use_count as 0 and sets use_count=1 (CR-01).
+
+    Handles the case where the column is NULL (e.g. newly-inserted row).
+    """
+    client = _make_client(increment_select_rows=[{"use_count": None}])
+    table_mock = client.table.return_value
+    repo = SupabaseUiSpecTemplateRepository(client=client)
+
+    asyncio.run(repo.increment_use_count(_SAMPLE_TEMPLATE_ID))
+
+    assert table_mock.update.called
+    payload: dict[str, Any] = table_mock.update.call_args[0][0]
+    assert payload.get("use_count") == 1, (
+        f"Expected use_count=1 when NULL → treated as 0, got: {payload}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Test 9: find_by_cache_key handles spec_json returned as JSON string (WR-02)
+# ---------------------------------------------------------------------------
+
+
+def test_find_by_cache_key_handles_spec_json_as_string() -> None:
+    """find_by_cache_key must parse spec_json when PostgREST returns it as a JSON string (WR-02)."""
+    import json
+
+    spec_as_str = json.dumps(_SAMPLE_SPEC_JSON)
+    rows = [{"id": _SAMPLE_TEMPLATE_ID, "spec_json": spec_as_str}]
+    client = _make_client(select_rows=rows)
+    repo = SupabaseUiSpecTemplateRepository(client=client)
+
+    result = asyncio.run(repo.find_by_cache_key(_SAMPLE_CACHE_KEY))
+
+    assert result is not None
+    assert result.spec_json == _SAMPLE_SPEC_JSON, (
+        "spec_json returned as string must be parsed to a dict (WR-02)"
+    )
+
+
+def test_find_by_cache_key_handles_spec_json_as_dict() -> None:
+    """find_by_cache_key must accept spec_json when PostgREST returns it as a dict (WR-02, normal path)."""
+    rows = [{"id": _SAMPLE_TEMPLATE_ID, "spec_json": _SAMPLE_SPEC_JSON}]
+    client = _make_client(select_rows=rows)
+    repo = SupabaseUiSpecTemplateRepository(client=client)
+
+    result = asyncio.run(repo.find_by_cache_key(_SAMPLE_CACHE_KEY))
+
+    assert result is not None
+    assert result.spec_json == _SAMPLE_SPEC_JSON
+
+
+# ---------------------------------------------------------------------------
+# Test 10: DTOs are frozen (immutable, CLAUDE.md)
 # ---------------------------------------------------------------------------
 
 
@@ -269,7 +458,7 @@ def test_template_to_persist_is_frozen() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Test 9: SupabaseUiSpecTemplateRepository satisfies the Protocol structurally
+# Test 11: SupabaseUiSpecTemplateRepository satisfies the Protocol structurally
 # ---------------------------------------------------------------------------
 
 

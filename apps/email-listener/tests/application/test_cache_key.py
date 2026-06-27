@@ -56,6 +56,25 @@ def test_canonicalize_intent_nfc_normalization_makes_equivalent_unicode_equal() 
     assert canonicalize_intent(nfc_form) == canonicalize_intent(nfd_form)
 
 
+@pytest.mark.unit()
+def test_canonicalize_intent_casefold_handles_german_sharp_s() -> None:
+    """casefold() must map U+00DF LATIN SMALL LETTER SHARP S to 'ss' (CR-03 / CACHE-02).
+
+    str.lower() does NOT fold the sharp-s to 'ss'; str.casefold() does.
+    A cache entry created with one spelling must be a hit for the other.
+    """
+    # sharp-s casefolded -> "ss"; "SS" casefolded -> "ss"
+    result_sharp_s = canonicalize_intent("ß Invoice")
+    result_ss = canonicalize_intent("SS Invoice")
+    assert result_sharp_s == result_ss, (
+        "casefold must map sharp-s to 'ss' so the two spellings share a cache key (CR-03). "
+        f"Got: {result_sharp_s!r} vs {result_ss!r}"
+    )
+    assert result_sharp_s == "ss invoice", (
+        f"Canonical form of sharp-s Invoice must be 'ss invoice', got: {result_sharp_s!r}"
+    )
+
+
 # ---------------------------------------------------------------------------
 # 4. compute_data_shape_hash — same shape, different values → same hash (CACHE-03)
 # ---------------------------------------------------------------------------
