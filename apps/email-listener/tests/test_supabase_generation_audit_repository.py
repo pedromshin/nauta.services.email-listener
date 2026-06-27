@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import asyncio
 from typing import Any
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -114,8 +114,9 @@ def test_record_swallows_insert_exception() -> None:
 
 def test_generation_event_is_frozen() -> None:
     """GenerationEvent dataclass must be frozen (immutable, D-19)."""
-    with pytest.raises((AttributeError, TypeError)):
-        object.__setattr__(_SAMPLE_EVENT, "intent_hash", "mutated")
+    with pytest.raises(AttributeError):
+        # Direct attribute assignment must raise FrozenInstanceError (subclass of AttributeError)
+        _SAMPLE_EVENT.intent_hash = "mutated"  # type: ignore[misc]
 
 
 # ---------------------------------------------------------------------------
