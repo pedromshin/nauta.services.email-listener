@@ -12,7 +12,7 @@ Pipeline (D-02, D-09, SAFE-01/SAFE-02, CACHE-01):
              → QuarantineExtraction (enum-constrained, raw prose quarantined)
   2. Call B: GenuiGeneratorAdapter.generate(extraction, registry_version)
              → validated SpecRoot dict (or SAFE_FALLBACK_SPEC on total failure)
-  3. Cache PERSIST: persist template if outcome != 'fallback' (D-11, best-effort D-17).
+  3. Cache PERSIST: persist template if not result.is_fallback (D-11, best-effort D-17).
   4. Audit:  GenerationAuditRepository.record(GenerationEvent) — best-effort (T-13-10)
 
 Security:
@@ -40,11 +40,6 @@ from app.domain.ports.generation_audit_repository import GenerationAuditReposito
 from app.domain.ports.ui_spec_template_repository import TemplateToPersist, UiSpecTemplateRepository
 
 logger = structlog.get_logger(__name__)
-
-# Constant for the SAFE_FALLBACK_SPEC check — mirrors the hardcoded shape in the adapter.
-# We only need to check the root.type to determine if fallback was used.
-_FALLBACK_ROOT_TYPE = "alert"
-_FALLBACK_TITLE_FRAGMENT = "Unable to generate"
 
 # Default catalog_id for v1.1 (D-08 / SEAM-03).
 _DEFAULT_CATALOG_ID = "global"
@@ -123,6 +118,10 @@ class GenerateUiSpecUseCase:
         # ── Step 0: Exact-match cache CHECK (D-02, CACHE-01) ────────────────────
         # Must be the FIRST step — before quarantine, generator, and audit.
         # Best-effort: find_by_cache_key swallows errors and returns None on failure.
+        # Pre-compute canonical + shape_hash once so they can be reused on the
+        # persist path without a redundant SHA-256 call (WR-03).
+        canonical_intent = canonicalize_intent(intent)
+        data_shape_hash = compute_data_shape_hash(raw_content)
         cache_key = compute_cache_key(
             intent=intent,
             raw_content=raw_content,
@@ -172,24 +171,31 @@ class GenerateUiSpecUseCase:
             escalated=gen_result.escalated,
         )
 
-        # ── Determine outcome for persist + audit (D-19, T-13-11, WR-04) ────────
+        # ── Determine outcome for persist + audit (D-19, T-13-11, CR-02) ────────
         # Priority: fallback > escalated > ok
-        outcome = _determine_outcome(gen_result.spec, escalated=gen_result.escalated)
+        # CR-02: use the structural is_fallback flag from GeneratorResult — never
+        # content-sniff the spec (eliminates false-positive for legitimate alert specs).
+        outcome = _determine_outcome(escalated=gen_result.escalated, is_fallback=gen_result.is_fallback)
 
         latency_ms = int(time.monotonic() * 1000) - start_ms
 
         # ── Step 3: Cache PERSIST — only on validated specs (D-11) ──────────────
-        # Never persist SAFE_FALLBACK_SPEC (D-11 gate: outcome != 'fallback').
+        # CR-02: gate on the structural flag, not the outcome string, so a legitimate
+        # alert spec with a title that happens to match the fallback pattern is cached.
         # Best-effort: errors are swallowed + logged (D-17).
-        if outcome != "fallback":
+        if not gen_result.is_fallback:
+            # WR-04: compute spec node count + depth from the spec tree (D-10 metadata).
+            spec_node_count, spec_depth = _count_spec_nodes(gen_result.spec)
             template = TemplateToPersist(
                 cache_key=cache_key,
-                intent_text=canonicalize_intent(intent),
-                data_shape_hash=compute_data_shape_hash(raw_content),
+                intent_text=canonical_intent,        # WR-03: reuse pre-computed value
+                data_shape_hash=data_shape_hash,     # WR-03: reuse pre-computed value
                 registry_version=registry_version,
                 catalog_id=catalog_id,
                 spec_json=gen_result.spec,
                 validation_status="validated",
+                spec_node_count=spec_node_count,     # WR-04: populate metadata columns
+                spec_depth=spec_depth,               # WR-04: populate metadata columns
                 importer_id=importer_id,
             )
             try:
@@ -221,34 +227,79 @@ class GenerateUiSpecUseCase:
 
 
 def _determine_outcome(
-    spec: dict[str, Any],
     *,
     escalated: bool,
+    is_fallback: bool,
 ) -> Literal["ok", "fallback", "escalated"]:
-    """Derive the Literal['ok','fallback','escalated'] outcome from the spec + escalation flag.
+    """Derive the Literal['ok','fallback','escalated'] outcome from the structural flags.
 
     Priority order:
-      1. "fallback" — spec matches SAFE_FALLBACK_SPEC shape (pipeline total failure).
-      2. "escalated" — Sonnet escalation was used AND spec is valid.
+      1. "fallback" — generator set is_fallback=True (SAFE_FALLBACK_SPEC returned).
+      2. "escalated" — Sonnet escalation was used AND spec is valid (not fallback).
       3. "ok" — Haiku produced a valid spec on attempt 1 or 2.
 
+    CR-02: uses the explicit is_fallback flag from GeneratorResult — never
+    content-sniffs the spec dict, so a legitimate alert spec with a title
+    starting with "Unable to generate" is NOT misclassified as fallback.
+
     Args:
-        spec: The SpecRoot dict returned by the generator.
         escalated: True when the Sonnet escalation model was used on the final attempt
                    (passed through from GeneratorResult.escalated — WR-04/WR-05).
+        is_fallback: True when the generator itself set SAFE_FALLBACK_SPEC (CR-02).
     """
-    root = spec.get("root", {})
-    is_fallback = (
-        isinstance(root, dict)
-        and root.get("type") == _FALLBACK_ROOT_TYPE
-        and isinstance(root.get("title"), str)
-        and root["title"].startswith(_FALLBACK_TITLE_FRAGMENT)
-    )
     if is_fallback:
         return "fallback"
     if escalated:
         return "escalated"
     return "ok"
+
+
+def _count_spec_nodes(spec: dict[str, Any]) -> tuple[int, int]:
+    """Return (node_count, max_depth) for the root node of a SpecRoot dict (WR-04, D-10).
+
+    Mirrors the _count_nodes walker in genui_generator_adapter so that
+    spec_node_count and spec_depth columns are populated on the persist path.
+
+    Args:
+        spec: The validated SpecRoot dict from GeneratorResult.spec.
+
+    Returns:
+        (node_count, max_depth) tuple; (0, 0) if root is absent or not a dict.
+    """
+    root = spec.get("root")
+    if not isinstance(root, dict):
+        return (0, 0)
+    return _walk_nodes(root, depth=0)
+
+
+def _walk_nodes(node: Any, depth: int) -> tuple[int, int]:
+    """Recursively count nodes and compute max depth in a spec node tree (WR-04).
+
+    Args:
+        node: A spec node dict (or any value — non-dicts return (0, depth)).
+        depth: Current depth level (root = 0).
+
+    Returns:
+        (total_nodes, max_depth) tuple.
+    """
+    if not isinstance(node, dict):
+        return (0, depth)
+
+    total = 1
+    max_d = depth
+
+    for key, value in node.items():
+        if key == "children" and isinstance(value, list):
+            for child in value:
+                child_count, child_depth = _walk_nodes(child, depth + 1)
+                total = total + child_count
+                max_d = max(max_d, child_depth)
+        elif isinstance(value, dict):
+            child_count, child_depth = _walk_nodes(value, depth + 1)
+            total = total + child_count
+            max_d = max(max_d, child_depth)
+
+    return (total, max_d)
 
 
 def _resolve_model_id(*, escalated: bool) -> str:

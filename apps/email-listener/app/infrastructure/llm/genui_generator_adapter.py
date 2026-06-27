@@ -176,9 +176,10 @@ def _validate_spec(candidate: dict[str, Any]) -> str | None:
 class GeneratorResult:
     """Immutable result of a GenuiGeneratorAdapter.generate() call.
 
-    Exposes the actual spec, number of attempts made, and whether the
-    escalation model (Sonnet) was used on the final attempt — enabling the
-    use case to record accurate audit data (WR-03/04/05).
+    Exposes the actual spec, number of attempts made, whether the
+    escalation model (Sonnet) was used on the final attempt, and an
+    explicit is_fallback flag — enabling the use case to record accurate
+    audit data and make reliable persist/cache decisions (CR-02, WR-03/04/05).
     """
 
     spec: dict[str, Any]
@@ -189,6 +190,11 @@ class GeneratorResult:
 
     escalated: bool
     """True when the Sonnet escalation model was used on attempt 3."""
+
+    is_fallback: bool = False
+    """True when spec is SAFE_FALLBACK_SPEC (timeout, exception, or all attempts
+    exhausted). Set structurally by the adapter — never inferred from spec content
+    (CR-02: eliminates false-positive for legitimate alert specs)."""
 
 
 # ---------------------------------------------------------------------------
@@ -247,7 +253,7 @@ class GenuiGeneratorAdapter:
                 registry_version=registry_version,
                 exc_info=True,
             )
-            return GeneratorResult(spec=SAFE_FALLBACK_SPEC, attempts=1, escalated=False)
+            return GeneratorResult(spec=SAFE_FALLBACK_SPEC, attempts=1, escalated=False, is_fallback=True)
 
     async def _repair_loop(
         self,
@@ -352,7 +358,7 @@ class GenuiGeneratorAdapter:
             "genui_generator_all_attempts_failed",
             max_attempts=_max_attempts,
         )
-        return GeneratorResult(spec=SAFE_FALLBACK_SPEC, attempts=_max_attempts, escalated=True)
+        return GeneratorResult(spec=SAFE_FALLBACK_SPEC, attempts=_max_attempts, escalated=True, is_fallback=True)
 
     def _parse_response(self, response: Any) -> dict[str, Any] | None:
         """Extract the spec dict from the emit_ui_spec tool_use block.
