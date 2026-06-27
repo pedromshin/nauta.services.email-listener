@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Generative UI Engine
 status: in_progress
-last_updated: "2026-06-27T12:00:00.000Z"
+last_updated: "2026-06-27T08:38:11.959Z"
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 8
-  completed_plans: 6
-  percent: 31
+  completed_plans: 7
+  percent: 25
 ---
 
 # State
@@ -82,7 +82,9 @@ Haiku 4.5 runtime / Sonnet 4.6 escalation via Bedrock IAM; reuse pgvector + Tita
 
 - **13-01 ✓ EXECUTED 2026-06-27:** @nauta/genui TypeScript contract layer. Three allowlists at Zod schema level: RegisteredTypeSchema (D-12, component-type enum), AllowedProcedureSchema (D-13, 9 tRPC queries), ActionSchema (D-14, navigate/setState/mutate discriminated-union with relative-href enforcement + no-UUID params). ALLOWED_MUTATIONS=[]=const seam (SEAM-02, z.never() mutate branch). DataBindingSchema (D-13a UUID rejection via RFC-4122 regex .refine()), SAFE_FALLBACK_SPEC (D-07, Object.freeze alert spec, GEN-03). ButtonNodeSchema extended with onClick:ActionSchema.optional(); SpecRootSchema extended with bindings:z.record(DataBindingSchema).optional(). Bedrock artifact emit: spec.schema.json (22x additionalProperties:false, no external $ref) + genui-prompt.json (compact catalog + 9 allowedProcedures + REGISTRY_VERSION + actionRules). CI drift gate (TDD): 12 artifact freshness tests + 40 allowlist unit tests; 148/148 tests green; tsc clean (genui). Commits 56fedca (Task 1), b511caa (Task 2 RED), 37da20a (Task 2 GREEN). See 13-01-SUMMARY.md.
 
-- **Decisions:** COMPONENT_REGISTRY must never cross Next.js server→client boundary (Zod classes unserializable); dynamic(ssr:false) island imports it directly via default prop. REGISTRY_VERSION consumed server-side only (Node.js crypto module, T-12-15).
+- **13-02 ✓ EXECUTED 2026-06-27:** Audit-log foundation. Drizzle `genui_generation_events` table (D-19 column set: intent_hash, model_id, tokens, attempts, outcome, spec_validation, node/depth count, registry_version, latency_ms, importer_id) + migration 0021 with outcome CHECK constraint (ok|fallback|escalated, T-13-11) + IF NOT EXISTS guards. Applied to local Postgres (14 columns verified via information_schema); staging+prod PENDING DEPLOY. Python `GenerationAuditRepository` Protocol port + frozen `GenerationEvent` dataclass (D-19 privacy, CLAUDE.md immutability) + `SupabaseGenerationAuditRepository` best-effort adapter (swallows insert exceptions, logs `generation_audit_record_failed` via structlog, T-13-10). TDD: 4/4 tests green; ruff/mypy/bandit/lint-imports clean. Commits 11afb5d (task 1), 2ee7cb4 (RED), ad0ed0a (GREEN). See 13-02-SUMMARY.md.
+
+- **Decisions:** COMPONENT_REGISTRY must never cross Next.js server→client boundary (Zod classes unserializable); dynamic(ssr:false) island imports it directly via default prop. REGISTRY_VERSION consumed server-side only (Node.js crypto module, T-12-15). Migration 0021 staging+prod deploy is DEFERRED — apply before Phase 14 W1 executes (ui_spec_templates table depends on same migration chain).
 
 ## Phase 11 — Knowledge-node graph view (4e knowledge graph) — ✓ COMPLETE 2026-06-15 (3 plans, 3 waves)
 

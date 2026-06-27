@@ -61,7 +61,7 @@ catalog — safely (no eval, no injection) and reusably (cache good specs). Rese
 - [ ] **GEN-02**: Model output is validated with Zod `safeParse`; invalid output triggers a bounded repair loop (≤3 attempts) that feeds the validation error back
 - [x] **GEN-03**: On repeated failure the engine returns a safe fallback spec — never raw model output
 - [ ] **GEN-04**: Generation streams partial specs for progressive preview
-- [ ] **GEN-05**: Every generation (intent, model, tokens, outcome) is recorded to an audit log
+- [x] **GEN-05**: Every generation (intent, model, tokens, outcome) is recorded to an audit log
 - [ ] **GEN-06**: Generation can escalate to Sonnet 4.6 when the runtime model cannot produce a valid spec
 
 ### Safety & Guardrails (SAFE)
