@@ -27,14 +27,25 @@ from typing import Any
 # Default: walk up from this file to find the monorepo root (packages/genui/artifacts/).
 # In Docker the env var GENUI_ARTIFACTS_DIR overrides this.
 _THIS_FILE = Path(__file__).resolve()
-_DEFAULT_ARTIFACTS_DIR = _THIS_FILE.parents[5] / "packages" / "genui" / "artifacts"
 
 
 def _get_artifacts_dir() -> Path:
     env_override = os.environ.get("GENUI_ARTIFACTS_DIR", "").strip()
     if env_override:
         return Path(env_override)
-    return _DEFAULT_ARTIFACTS_DIR
+    # Dev/host fallback: walk up to the monorepo root
+    # (repo_root/packages/genui/artifacts). Bounded so it never IndexErrors in a
+    # container layout where this file sits shallower than the monorepo root —
+    # containers/production MUST set GENUI_ARTIFACTS_DIR (see the Dockerfile),
+    # which short-circuits this branch entirely.
+    parents = _THIS_FILE.parents
+    if len(parents) > 5:
+        return parents[5] / "packages" / "genui" / "artifacts"
+    raise RuntimeError(
+        "GENUI_ARTIFACTS_DIR is not set and the monorepo root could not be located "
+        f"from {_THIS_FILE}. In Docker/production set GENUI_ARTIFACTS_DIR to the "
+        "directory containing spec.schema.json (see apps/email-listener/Dockerfile)."
+    )
 
 
 # ---------------------------------------------------------------------------

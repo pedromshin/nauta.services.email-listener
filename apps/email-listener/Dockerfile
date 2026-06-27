@@ -28,12 +28,21 @@ COPY --from=builder --chown=appuser:appuser /root/.local /home/appuser/.local
 COPY --chown=appuser:appuser apps/email-listener/app ./app
 COPY --chown=appuser:appuser apps/email-listener/pyproject.toml .
 
+# GenUI artifacts (spec.schema.json + genui-prompt.json) are a RUNTIME dependency
+# of the generation layer (Phase 13). The build context is the repo root (see
+# docker-compose build.context), so the monorepo package is available to COPY.
+# Without these the service can load no Bedrock tool input_schema and every
+# generation 400s. GENUI_ARTIFACTS_DIR points the loader straight at them so it
+# never walks the (container-invalid) monorepo path.
+COPY --chown=appuser:appuser packages/genui/artifacts ./genui-artifacts
+
 USER appuser
 
 ENV PATH=/home/appuser/.local/bin:$PATH \
     PYTHONPATH=/app \
     PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    GENUI_ARTIFACTS_DIR=/app/genui-artifacts
 
 EXPOSE 8000
 

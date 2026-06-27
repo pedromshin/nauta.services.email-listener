@@ -13,6 +13,7 @@ the artifact level and at the loader-guard level.
 
 from __future__ import annotations
 
+import shutil
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +22,7 @@ import pytest
 
 from app.infrastructure.llm.genui_artifacts import (
     _assert_bedrock_input_schema,
+    _get_artifacts_dir,
     load_spec_schema,
 )
 
@@ -90,3 +92,51 @@ def test_guard_rejects_non_dict_schema() -> None:
     """The guard rejects a non-object JSON top-level value."""
     with pytest.raises(RuntimeError, match=r"must be a JSON object"):
         _assert_bedrock_input_schema([1, 2, 3], Path("spec.schema.json"))
+
+
+# ---------------------------------------------------------------------------
+# Artifacts-dir resolution (packaging contract — Docker/ECS)
+#
+# The email-listener container packages packages/genui/artifacts at
+# /app/genui-artifacts and sets GENUI_ARTIFACTS_DIR (see the Dockerfile). The
+# host walk-up (parents[5]) is INVALID inside the container — these tests guard
+# both that the env override wins and that the container-style load works.
+# ---------------------------------------------------------------------------
+
+
+def test_artifacts_dir_prefers_env_override(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """GENUI_ARTIFACTS_DIR (set in the Dockerfile) takes precedence over the host walk-up."""
+    monkeypatch.setenv("GENUI_ARTIFACTS_DIR", str(tmp_path))
+    assert _get_artifacts_dir() == tmp_path
+
+
+def test_artifacts_dir_host_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Without the env var, resolve to repo_root/packages/genui/artifacts (host/dev)."""
+    monkeypatch.delenv("GENUI_ARTIFACTS_DIR", raising=False)
+    resolved = _get_artifacts_dir()
+    assert resolved.name == "artifacts"
+    assert resolved.parent.name == "genui"
+    assert resolved.parent.parent.name == "packages"
+
+
+def test_load_spec_schema_via_env_override_container_layout(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Container path: the schema loads + passes the guard when read via GENUI_ARTIFACTS_DIR."""
+    # Resolve the committed artifact via the host fallback, copy it into a flat
+    # tmp dir (mirroring /app/genui-artifacts), then load through the env-override
+    # branch — exactly how the Docker image serves it.
+    monkeypatch.delenv("GENUI_ARTIFACTS_DIR", raising=False)
+    src = _get_artifacts_dir() / "spec.schema.json"
+    shutil.copy(src, tmp_path / "spec.schema.json")
+
+    monkeypatch.setenv("GENUI_ARTIFACTS_DIR", str(tmp_path))
+    load_spec_schema.cache_clear()
+    try:
+        schema = load_spec_schema()
+        assert schema["type"] == "object"
+        assert "$ref" not in schema
+    finally:
+        load_spec_schema.cache_clear()
