@@ -75,9 +75,19 @@ describe("spec.schema.json (Bedrock JSON Schema artifact)", () => {
     expect(JSON.parse(JSON.stringify(committed))).toEqual(JSON.parse(JSON.stringify(fresh)));
   });
 
-  it("root has additionalProperties:false (Bedrock requirement, D-22)", () => {
-    const schema = readCommittedJson(SPEC_SCHEMA_PATH) as Record<string, unknown>;
-    expect(schema["additionalProperties"]).toBe(false);
+  it("root SpecRoot definition has additionalProperties:false (Bedrock requirement, D-22)", () => {
+    // The top-level schema is { "$ref": "#/definitions/SpecRoot", "definitions": { "SpecRoot": {...} } }
+    // The actual schema object to check is inside definitions.SpecRoot.
+    const schema = readCommittedJson(SPEC_SCHEMA_PATH) as {
+      definitions?: { SpecRoot?: Record<string, unknown> };
+      additionalProperties?: unknown;
+    };
+    // Either the top-level wrapper has it, or the SpecRoot definition does (zod-to-json-schema wraps in definitions)
+    const specRootDef = schema.definitions?.["SpecRoot"];
+    const hasIt =
+      schema["additionalProperties"] === false ||
+      (specRootDef !== undefined && specRootDef["additionalProperties"] === false);
+    expect(hasIt).toBe(true);
   });
 
   it("contains additionalProperties:false on at least 2 objects (root + nested, D-22)", () => {

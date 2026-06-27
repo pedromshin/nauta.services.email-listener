@@ -1,0 +1,102 @@
+{
+  "registryVersion": {
+    "catalogId": "global",
+    "version": "f84f065d1ca6f162a0b96b62dc891a49ae5f026c361a83cb22a9a43e8c853a36"
+  },
+  "components": [
+    {
+      "type": "text",
+      "description": "Renders a block of text with optional visual variant (body, label, caption, heading) and muted styling.",
+      "acceptsChildren": false,
+      "slots": [],
+      "lockedProps": []
+    },
+    {
+      "type": "badge",
+      "description": "Inline badge chip for status labels, tags, or counts. Variant controls color (default, secondary, destructive, outline).",
+      "acceptsChildren": false,
+      "slots": [],
+      "lockedProps": []
+    },
+    {
+      "type": "button",
+      "description": "Clickable action button. aria-label is required for accessibility. action is an ActionRegistry key dispatched by the interpreter — never inline code.",
+      "acceptsChildren": false,
+      "slots": [],
+      "lockedProps": [
+        "type",
+        "onClick"
+      ]
+    },
+    {
+      "type": "card",
+      "description": "Container card with optional title, description, and named header/footer slots. Accepts positional children for body content.",
+      "acceptsChildren": true,
+      "slots": [
+        "header",
+        "footer"
+      ],
+      "lockedProps": []
+    },
+    {
+      "type": "key-value-list",
+      "description": "Renders a definition list (<dl>) of key–value pairs. label is required as the accessible aria-label for the list.",
+      "acceptsChildren": false,
+      "slots": [],
+      "lockedProps": []
+    },
+    {
+      "type": "separator",
+      "description": "Decorative horizontal or vertical dividing line. aria-hidden is always true (locked) because this is a purely visual element.",
+      "acceptsChildren": false,
+      "slots": [],
+      "lockedProps": [
+        "aria-hidden"
+      ]
+    },
+    {
+      "type": "alert",
+      "description": "Alert banner for status messages. title is required for accessibility (acts as the accessible label). variant controls color (default or destructive).",
+      "acceptsChildren": false,
+      "slots": [],
+      "lockedProps": []
+    },
+    {
+      "type": "table",
+      "description": "Data table with column headers and row data. caption is required for accessibility and provides a summary of the table contents.",
+      "acceptsChildren": false,
+      "slots": [],
+      "lockedProps": []
+    },
+    {
+      "type": "stack",
+      "description": "Flex column or row layout container. Accepts positional children. Use aria-label when the stack acts as a landmark region.",
+      "acceptsChildren": true,
+      "slots": [],
+      "lockedProps": []
+    },
+    {
+      "type": "grid",
+      "description": "CSS grid layout container. cols sets the number of equal columns (1–12). Accepts positional children. Use aria-label when acting as a landmark.",
+      "acceptsChildren": true,
+      "slots": [],
+      "lockedProps": []
+    }
+  ],
+  "allowedProcedures": [
+    "emails.list",
+    "emails.byId",
+    "emails.detail",
+    "entities.list",
+    "entities.byId",
+    "entityTypes.list",
+    "knowledge.graph",
+    "knowledge.list",
+    "knowledge.byId"
+  ],
+  "actionRules": {
+    "navigateHref": "href MUST start with '/' and MUST NOT contain a scheme (e.g. https://) or protocol-relative URL (//). Use relative paths only.",
+    "mutateSeam": "ALLOWED_MUTATIONS is empty in v1.1 (SEAM-02). Do not emit mutate actions.",
+    "note": "All actions are validated by ActionSchema before render. Invalid actions cause render to fall back to SAFE_FALLBACK_SPEC."
+  }
+}

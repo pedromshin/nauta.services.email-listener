@@ -10,3 +10,4 @@ export * from "./catalog/index";
 export * from "./schema/index";
 export * from "./registry/index";
 export * from "./renderer/index";
+export * from "./generation/index";
