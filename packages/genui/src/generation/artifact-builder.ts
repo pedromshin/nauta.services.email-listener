@@ -85,6 +85,63 @@ export function ensureAdditionalPropertiesFalse(schema: unknown): unknown {
 }
 
 // ---------------------------------------------------------------------------
+// addHrefAbsoluteSchemeGuard — post-processor (CR-03 / SAFE-04)
+// ---------------------------------------------------------------------------
+
+/**
+ * Recursively walks a JSON Schema and strengthens any href field that only has
+ * `"pattern": "^\\/"` (startsWith guard) to also reject protocol-relative URLs
+ * (//) and absolute schemes (javascript:, data:, https:, etc.).
+ *
+ * Why needed: zod-to-json-schema translates `.startsWith("/")` into the
+ * JSON Schema pattern `^\/`, but it cannot translate the `.refine(noAbsoluteScheme)`
+ * predicate — Zod refinements are not JSON Schema constructs. Without the guard,
+ * `//evil.com` satisfies `^\/` and passes Bedrock constrained-decoding validation.
+ *
+ * The guard added: `"not": { "pattern": "^(//|[a-zA-Z][a-zA-Z0-9+\\-.]*:)" }`
+ * This rejects any string starting with `//` (protocol-relative) or matching
+ * `scheme:` (any letter-based URI scheme), mirroring the ABSOLUTE_OR_SCHEME_PATTERN
+ * regex used by the Zod refinement in action-schema.ts.
+ *
+ * This function is immutable: it returns a new object rather than mutating input.
+ */
+export function addHrefAbsoluteSchemeGuard(schema: unknown): unknown {
+  if (schema === null || typeof schema !== "object") {
+    return schema;
+  }
+
+  if (Array.isArray(schema)) {
+    return schema.map(addHrefAbsoluteSchemeGuard);
+  }
+
+  const obj = schema as Record<string, unknown>;
+
+  // Detect the href field: string type with only startsWith pattern guard
+  // Pattern: { "type": "string", "pattern": "^\\/" } (no existing `not` key)
+  if (
+    obj["type"] === "string" &&
+    obj["pattern"] === "^\\/" &&
+    !("not" in obj)
+  ) {
+    // This is the navigate-action href field (the only string field with this exact pattern).
+    // Add the absolute-scheme rejection guard.
+    return {
+      ...obj,
+      not: {
+        pattern: "^(//|[a-zA-Z][a-zA-Z0-9+\\-.]*:)",
+      },
+    };
+  }
+
+  // Recursively process child nodes (returns new objects — immutable)
+  const processed: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    processed[key] = addHrefAbsoluteSchemeGuard(value);
+  }
+  return processed;
+}
+
+// ---------------------------------------------------------------------------
 // buildSpecSchema — derive JSON Schema from Zod SpecRootSchema (D-03)
 // ---------------------------------------------------------------------------
 
@@ -96,6 +153,13 @@ export function ensureAdditionalPropertiesFalse(schema: unknown): unknown {
  *   - $refStrategy: "none" — inline all sub-schemas; Bedrock forbids external $ref
  *   - target: "jsonSchema7" — safe baseline; Bedrock accepts JSON Schema draft 7
  *
+ * Post-processing steps (applied in order):
+ *   1. ensureAdditionalPropertiesFalse — Bedrock requires additionalProperties:false
+ *      on every object (D-22 / CURRENCY-2026 §2).
+ *   2. addHrefAbsoluteSchemeGuard — adds `not: { pattern }` to the navigate-action
+ *      href field to reject protocol-relative URLs (//) and absolute schemes
+ *      (javascript:, https:, etc.) — CR-03 / SAFE-04.
+ *
  * Returns the processed schema as a plain object (not a string).
  */
 export function buildSpecSchema(): Record<string, unknown> {
@@ -105,7 +169,8 @@ export function buildSpecSchema(): Record<string, unknown> {
     target: "jsonSchema7",
   });
 
-  return ensureAdditionalPropertiesFalse(rawSchema) as Record<string, unknown>;
+  const withAdditionalProps = ensureAdditionalPropertiesFalse(rawSchema);
+  return addHrefAbsoluteSchemeGuard(withAdditionalProps) as Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------
