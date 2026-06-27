@@ -12,6 +12,10 @@ services:
       ENVIRONMENT: development
       DEBUG: "true"
       LOG_LEVEL: DEBUG
+      # Inside the container, the host's Supabase (published on the host) is reached
+      # via host.docker.internal. This overrides .env (which uses localhost:54321 so
+      # the listener also works when run directly on the host via `uv run uvicorn`).
+      SUPABASE_URL: http://host.docker.internal:54321
     env_file:
       - path: .env
         required: false
