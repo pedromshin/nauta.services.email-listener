@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: "Generative UI: Realism & Interactivity"
 status: planning
-last_updated: "2026-06-27T23:58:00Z"
+last_updated: "2026-06-28T00:12:38.930Z"
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
   completed_plans: 5
   percent: 20
@@ -51,7 +51,7 @@ User direction after v1.1: keep LOCAL + `/studio` sandbox (no deploy/convergence
 - **Process:** eval-driven development (Anthropic/OpenAI) — build the eval harness FIRST (golden prompt set from the real corpus + LLM-as-judge UI-quality rubric, UI-Bench-style), gate every GSD phase on it.
 - **Proposed v1.2 phases:** (1) eval harness, (2) Tier-A token/theme + style packs + assembly RAG, (3) catalog expansion (avatar/feed-item/nav/tabs/inputs), (4) declarative form engine, (5) sandboxed code-island [SPIKE→phase, user sign-off]. History + page-ideas tabs = small early phase (data already in ui_spec_templates / genui_generation_events; ideas seeded from the pending real corpus).
 - **PROGRESS (rate limit recovered):** real-prompt corpus gathered (`.planning/research/REAL-PROMPT-CORPUS.md`, 76 real prompts w/ provenance); v1.2 milestone formalized (roadmap phases 16-20 + requirements, commit cc6ab1a); **Phase 16 CONTEXT authored** (21 decisions, commit 7fd8dc1) and **PLANNED — 5 plans / 3 waves (commit 5600181)**: 16-01 eval+page-ideas assets, 16-02 eval runner/rubric/judge/baseline, 16-03 History backend+tRPC, 16-04 Page-Ideas tab, 16-05 History UI.
-- **CURRENT POSITION / NEXT:** Phase 16 plans authored + planner-self-audited (full source coverage, frontmatter/structure valid) but the **independent gsd-plan-checker was NOT yet run** — run it, then `/gsd:execute-phase 16`. Then phases 17 (Tier-A tokens/style-packs/RAG) → 18 (catalog expansion) → 19 (declarative form engine) → 20 (sandboxed code-island, USER SIGN-OFF GATE). Keep local/sandbox; eval-gate later phases on the Phase-16 baseline. Optionally re-run the rate-abstained research verify pass to harden the ~16 claims. The `wme3xqszz` history/ideas research stalled at 0 bytes (superseded by the corpus agent — can be ignored).
+- **CURRENT POSITION / NEXT:** Phase 16 plans 16-01..16-05 ALL EXECUTED (autonomous run 2026-06-27/28). 16-03 (history spine), 16-02 (eval harness), 16-04 (page-ideas tab + controlled tabs lift), 16-05 (history tab UI) committed. Deferred to connected env: 16-02 Task 4 live Bedrock baseline; 16-05 Task 3 browser-verify; any plans for 16-01 (eval+page-ideas assets). **Next phase: 17 (Tier-A tokens/style-packs/RAG).** Then 18 (catalog expansion) → 19 (declarative form engine) → 20 (sandboxed code-island, USER SIGN-OFF GATE). Keep local/sandbox; eval-gate later phases on Phase-16 baseline.
 
 ## Phase 12 — Catalog, Spec Schema, and Trusted Interpreter — ✓ EXECUTED 2026-06-27 (4 plans, 4 waves; human visual verify deferred)
 
@@ -968,3 +968,4 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 15 P01 | ~120m | 3 tasks | 13 files — outcome signal thread-through (Python use-case + FastAPI view + tRPC schema, D-05) + deriveGenerationState + describePropsSchema studio helpers + @nauta/genui/studio subpath; 38 new tests (6 Python + 5 api-client + 27 studio); typecheck + no-eval gate clean |
 | Phase 16-03 | ~45m | 3 tasks | 8 files — read-only history spine: UiSpecTemplateRepository list_recent+find_by_id + GET /v1/genui/history + GET /v1/genui/history/{id} FastAPI endpoints + tRPC historyList+historyById procedures; TDD RED/GREEN per task (6 commits); D-14/D-15/D-16/D-17/WR-06/WR-02 all honored; 42 new tests; tsc+ruff clean |
 | Phase 16-02 | ~60m | 3 tasks | 9 files — pure deterministic rubric (valid-spec/composed/a11y, weights 0.30/0.30/0.25/0.15) + LLM-as-judge adapter (escalation model, forced tool-use) + eval runner (create_container(), golden-set, Semaphore(3)) + report writer (JSON+MD) + compare helper; 21 tests (20 unit + 1 integration smoke, gated RUN_GENUI_EVAL=1); 87% coverage gate holds; ruff clean; Task 4 (live Bedrock baseline) deferred to connected env |
+| Phase 16-05 | ~10m | 2 tasks | 2 files — history-island.tsx (474 lines: HistoryMasterList + HistoryDetailView + 7 sub-components + offset pager + parseSpecSafe safe-fallback) + studio-tabs.tsx slot swap (HistoryPlaceholder → HistoryIsland); STDO-02 reuse contract intact (one dynamic SpecRenderer); D-18 read-only; tsc+next build green; Task 3 browser-verify deferred (autonomous, no backend) |
