@@ -257,11 +257,15 @@ function FallbackNotice(): React.ReactElement {
 interface MasterListProps {
   readonly selectedId: string | undefined;
   readonly onSelect: (id: string) => void;
+  /** WR-03: called whenever the user navigates to a different page so the
+   *  parent can clear the stale selectedId. */
+  readonly onPageChange: () => void;
 }
 
 function HistoryMasterList({
   selectedId,
   onSelect,
+  onPageChange,
 }: MasterListProps): React.ReactElement {
   const [offset, setOffset] = useState<number>(0);
 
@@ -273,11 +277,16 @@ function HistoryMasterList({
   const hasPrevPage = offset > 0;
   const hasNextPage = rows !== undefined && rows.length === PAGE_SIZE;
 
+  // WR-03: reset selectedId in parent before changing page so a stale cross-
+  // page selection can never occur. onPageChange() must be called BEFORE
+  // setOffset() so the detail panel dismisses immediately.
   const handlePrev = (): void => {
+    onPageChange();
     setOffset((prev) => Math.max(0, prev - PAGE_SIZE));
   };
 
   const handleNext = (): void => {
+    onPageChange();
     setOffset((prev) => prev + PAGE_SIZE);
   };
 
@@ -463,6 +472,12 @@ export function HistoryIsland(): React.ReactElement {
     setSelectedId(id);
   };
 
+  // WR-03: reset selection when the user navigates to a different page so
+  // the detail panel never shows a row that is not visible in the current list.
+  const handlePageChange = (): void => {
+    setSelectedId(undefined);
+  };
+
   return (
     <div className="flex flex-1 min-h-0 h-full">
       {/* Master list — left panel (fixed width, scrollable) */}
@@ -475,7 +490,7 @@ export function HistoryIsland(): React.ReactElement {
           <h2 className="text-sm font-semibold">Generation History</h2>
           <p className="text-xs text-muted-foreground mt-0.5">Newest first</p>
         </div>
-        <HistoryMasterList selectedId={selectedId} onSelect={handleSelect} />
+        <HistoryMasterList selectedId={selectedId} onSelect={handleSelect} onPageChange={handlePageChange} />
       </div>
 
       {/* Detail view — right panel, flex-1 */}
