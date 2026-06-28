@@ -28,6 +28,7 @@ import { z } from "zod";
 
 import { DataBindingSchema } from "./data-binding-schema";
 import { ActionSchema } from "./action-schema";
+import { StylePackIdSchema } from "./token-props-schema";
 
 // ===========================================================================
 // SECTION 1: Bound constants (D-24 / SAFE-06 seam)
@@ -346,6 +347,9 @@ export const SpecRootSchema = z
   .object({
     _plan: z.string().optional(),
     v: z.literal(1),
+    // Style pack selection (D-08/STYLE-04): optional — defaults to "nauta-teal" at render time.
+    // Only known StylePackId strings are accepted (enforced by StylePackIdSchema).
+    style_pack_id: StylePackIdSchema.optional(),
     data: z.record(z.string(), z.unknown()).optional(),
     bindings: z.record(z.string(), DataBindingSchema).optional(),
     state: z.array(StateDeclarationSchema).optional(),

@@ -46,13 +46,18 @@ export type {
 } from "./action-schema";
 
 // Phase 13: Allowlist surface (D-12/D-13/D-14/D-15)
+// Phase 17: Allowlist 4 — token aliases + style pack ids (D-06/STYLE-03/D-08/STYLE-04)
 export {
   RegisteredTypeSchema,
   REGISTERED_TYPES,
   AllowedProcedureSchema,
   ALLOWED_PROCEDURES,
+  TokenAliasSchema,
+  StylePackIdSchema,
+  TokenPropsSchema,
+  TOKEN_ALIAS_VALUES,
 } from "./allowlists";
-export type { AllowedProcedure } from "./allowlists";
+export type { AllowedProcedure, TokenAlias, StylePackId, TokenProps } from "./allowlists";
 
 // Phase 13: Safe fallback spec (GEN-03 / D-07)
 export { SAFE_FALLBACK_SPEC } from "./safe-fallback-spec";
