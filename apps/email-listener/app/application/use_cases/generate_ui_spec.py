@@ -5,20 +5,22 @@ Architecture contract (lint-imports):
   No infrastructure imports permitted at module level OR under TYPE_CHECKING.
   Adapters are accepted as constructor arguments typed via the domain port Protocol.
 
-Pipeline (D-02, D-09, SAFE-01/SAFE-02, CACHE-01):
+Pipeline (D-02, D-09, SAFE-01/SAFE-02, CACHE-01, RAG-01/RAG-02):
   0. Cache CHECK: find_by_cache_key → CachedTemplate or None (D-02, FIRST step).
      On HIT: return cached spec + increment use_count; skip steps 1-3.
-  1. Call A: GenuiQuarantineAdapter.extract(intent, raw_content)
+  1. [17-04] Retrieve: retrieval_provider.retrieve(intent, top_k, style_pack_id) on MISS.
+             → RetrievalResult carrying exemplars for pack-grounded generation (RAG-01).
+  2. Call A: GenuiQuarantineAdapter.extract(intent, raw_content)
              → QuarantineExtraction (enum-constrained, raw prose quarantined)
-  2. Call B: GenuiGeneratorAdapter.generate(extraction, registry_version)
+  3. Call B: GenuiGeneratorAdapter.generate(extraction, registry_version, style_pack_id, retrieval)
              → validated SpecRoot dict (or SAFE_FALLBACK_SPEC on total failure)
-  3. Cache PERSIST: persist template if not result.is_fallback (D-11, best-effort D-17).
-  4. Audit:  GenerationAuditRepository.record(GenerationEvent) — best-effort (T-13-10)
+  4. Cache PERSIST: persist template if not result.is_fallback (D-11, best-effort D-17).
+  5. Audit:  GenerationAuditRepository.record(GenerationEvent) — best-effort (T-13-10)
 
 Security:
   - intent_hash is SHA-256 of raw intent prose — NEVER the raw string (D-19)
   - Raw prose never crosses to the generator; only the structured extraction does (SAFE-02)
-  - Cache key includes importer_id + catalog_id for cross-tenant isolation (D-08, T-14-05)
+  - Cache key includes importer_id + catalog_id + style_pack_id for isolation (D-08, T-14-05, T-17-20)
   - Cache key prefix (8 chars) only ever reaches logs — never the raw intent (D-03)
 """
 
@@ -52,6 +54,9 @@ class GenerateUiSpecResult:
     spec: dict[str, Any]
     cache_hit: bool = False
     outcome: Literal["ok", "fallback", "escalated"] = "ok"
+    # Phase 17-04: pack-aware + RAG-grounded result fields (D-08/D-14)
+    style_pack_id: str | None = None
+    retrieved_ids: tuple[str, ...] = ()
 
 
 class GenerateUiSpecUseCase:
@@ -62,6 +67,7 @@ class GenerateUiSpecUseCase:
         generator: GenuiGeneratorAdapter — Call B (emit_ui_spec repair loop)
         audit: GenerationAuditRepository — best-effort event persistence (D-19)
         templates: UiSpecTemplateRepository — exact-match cache (CACHE-01, D-02)
+        retrieval_provider: RetrievalProvider | None — RAG retrieval before generate (RAG-01, 17-04)
 
     Security (lint-imports contract): this class imports no infrastructure at
     module level — it accepts adapters as constructor arguments so the domain
@@ -75,11 +81,13 @@ class GenerateUiSpecUseCase:
         generator: Any,
         audit: GenerationAuditRepository,
         templates: UiSpecTemplateRepository,
+        retrieval_provider: Any = None,
     ) -> None:
         self._quarantine = quarantine
         self._generator = generator
         self._audit = audit
         self._templates = templates
+        self._retrieval_provider = retrieval_provider
 
     async def execute(
         self,
@@ -89,11 +97,12 @@ class GenerateUiSpecUseCase:
         registry_version: str,
         importer_id: str | None = None,
         catalog_id: str = _DEFAULT_CATALOG_ID,
+        style_pack_id: str | None = None,
     ) -> GenerateUiSpecResult:
-        """Run the cache-check → generation pipeline and return the resulting SpecRoot.
+        """Run the cache-check → retrieval → generation pipeline and return the resulting SpecRoot.
 
-        Step 0 (D-02): cache lookup is performed FIRST — before quarantine, generator,
-        or audit. A hit short-circuits the entire pipeline (zero-Bedrock-on-hit).
+        Step 0 (D-02): cache lookup is performed FIRST — before retrieval, quarantine,
+        generator, or audit. A hit short-circuits the entire pipeline (zero-Bedrock-on-hit).
 
         Args:
             intent: Trusted user intent string (what to display).
@@ -101,6 +110,7 @@ class GenerateUiSpecUseCase:
             registry_version: Catalog/registry version string for audit (GEN-05).
             importer_id: Optional importer UUID for cross-tenant cache isolation (D-08).
             catalog_id: Catalog identifier; defaults to 'global' in v1.1 (D-08/SEAM-03).
+            style_pack_id: Optional style pack identifier; None resolves to default pack (D-08/T-17-20).
 
         Returns:
             GenerateUiSpecResult wrapping the validated SpecRoot dict.
@@ -114,6 +124,7 @@ class GenerateUiSpecUseCase:
         log = logger.bind(
             intent_hash=intent_hash,
             registry_version=registry_version,
+            style_pack_id=style_pack_id,
         )
 
         # ── Step 0: Exact-match cache CHECK (D-02, CACHE-01) ────────────────────
@@ -121,6 +132,7 @@ class GenerateUiSpecUseCase:
         # Best-effort: find_by_cache_key swallows errors and returns None on failure.
         # Pre-compute canonical + shape_hash once so they can be reused on the
         # persist path without a redundant SHA-256 call (WR-03).
+        # T-17-20: style_pack_id is the 5th dimension of the cache key.
         canonical_intent = canonicalize_intent(intent)
         data_shape_hash = compute_data_shape_hash(raw_content)
         cache_key = compute_cache_key(
@@ -129,6 +141,7 @@ class GenerateUiSpecUseCase:
             registry_version=registry_version,
             importer_id=importer_id,
             catalog_id=catalog_id,
+            style_pack_id=style_pack_id,
         )
         cached = await self._templates.find_by_cache_key(cache_key)
         if cached is not None:
@@ -145,6 +158,29 @@ class GenerateUiSpecUseCase:
 
         log.info("genui_generate_start")
 
+        # ── Step 1: RAG retrieval (RAG-01, 17-04) ───────────────────────────────
+        # On cache MISS: retrieve exemplars BEFORE quarantine + generate.
+        # retrieval_provider is optional — degrades gracefully when None.
+        retrieval_result = None
+        retrieved_ids: tuple[str, ...] = ()
+        if self._retrieval_provider is not None:
+            try:
+                retrieval_result = await self._retrieval_provider.retrieve(
+                    intent=intent,
+                    top_k=8,
+                    style_pack_id=style_pack_id,
+                )
+                retrieved_ids = retrieval_result.retrieved_ids
+                log.info(
+                    "genui_retrieval_done",
+                    retrieved_count=len(retrieved_ids),
+                    retrieved_ids=list(retrieved_ids),  # RAG-02: log for proof
+                )
+            except Exception:
+                log.warning("genui_retrieval_failed", exc_info=True)
+                retrieval_result = None
+                retrieved_ids = ()
+
         # ── Call A: quarantine (SAFE-01, D-09) ──────────────────────────────────
         # raw_content is placed ONLY in the user turn of Call A inside delimiters.
         # The adapter's extract() never raises — returns empty extraction on error.
@@ -158,12 +194,15 @@ class GenerateUiSpecUseCase:
             confidence=extraction.confidence,
         )
 
-        # ── Call B: generate (SAFE-02, D-02/D-06/D-07) ──────────────────────────
+        # ── Call B: generate (SAFE-02, D-02/D-06/D-07, RAG-01) ─────────────────
         # Only the structured QuarantineExtraction crosses to the generator.
+        # style_pack_id + retrieval_result passed for pack-aware + RAG-grounded gen.
         # generate() never raises — returns GeneratorResult with SAFE_FALLBACK_SPEC on total failure.
         gen_result = await self._generator.generate(
             extraction=extraction,
             registry_version=registry_version,
+            style_pack_id=style_pack_id,
+            retrieval=retrieval_result,
         )
         log.info(
             "genui_generate_done",
@@ -204,9 +243,16 @@ class GenerateUiSpecUseCase:
             except Exception:
                 log.warning("genui_template_persist_failed", exc_info=True)
 
-        # ── Audit (GEN-05, D-19, T-13-10, WR-03/04/05) ─────────────────────────
+        # ── Audit (GEN-05, D-19, T-13-10, WR-03/04/05, RAG-02) ─────────────────
         # Best-effort: audit failure is swallowed + logged, never propagated.
+        # RAG-02: record retrieved_ids + overlap in GenerationEvent for traceability.
         model_id = _resolve_model_id(escalated=gen_result.escalated)
+        retrieved_overlap_count = _count_retrieved_overlap(gen_result.spec, retrieved_ids)
+        log.info(
+            "genui_retrieved_overlap",
+            retrieved_overlap_count=retrieved_overlap_count,
+            retrieved_ids=list(retrieved_ids),
+        )
         event = GenerationEvent(
             intent_hash=intent_hash,
             model_id=model_id,
@@ -218,13 +264,22 @@ class GenerateUiSpecUseCase:
             registry_version=registry_version,
             latency_ms=latency_ms,
             importer_id=importer_id,
+            style_pack_id=style_pack_id,
+            retrieved_ids=retrieved_ids,
+            retrieved_overlap_count=retrieved_overlap_count,
         )
         try:
             await self._audit.record(event)
         except Exception:
             log.warning("genui_audit_failed", exc_info=True)
 
-        return GenerateUiSpecResult(spec=gen_result.spec, cache_hit=False, outcome=outcome)
+        return GenerateUiSpecResult(
+            spec=gen_result.spec,
+            cache_hit=False,
+            outcome=outcome,
+            style_pack_id=style_pack_id,
+            retrieved_ids=retrieved_ids,
+        )
 
 
 def _determine_outcome(
@@ -301,6 +356,49 @@ def _walk_nodes(node: Any, depth: int) -> tuple[int, int]:
             max_d = max(max_d, child_depth)
 
     return (total, max_d)
+
+
+def _count_retrieved_overlap(spec: dict[str, Any], retrieved_ids: tuple[str, ...]) -> int:
+    """Count how many retrieved_ids appear as node types in the generated spec (RAG-02).
+
+    This is a best-effort structural overlap check: it collects all "type" values
+    from the spec tree and counts how many of the retrieved item IDs appear in that
+    set. A non-zero overlap is evidence that retrieval influenced the generated output.
+
+    Args:
+        spec: The validated SpecRoot dict from GeneratorResult.spec.
+        retrieved_ids: Tuple of retrieved item IDs from the RetrievalResult.
+
+    Returns:
+        Number of retrieved IDs that appear as node types in the spec (0 if none match).
+    """
+    if not retrieved_ids:
+        return 0
+
+    spec_types = _collect_node_types(spec.get("root", {}))
+    return sum(1 for rid in retrieved_ids if rid in spec_types)
+
+
+def _collect_node_types(node: Any) -> set[str]:
+    """Recursively collect all 'type' values from a spec node tree."""
+    if not isinstance(node, dict):
+        return set()
+
+    types: set[str] = set()
+    node_type = node.get("type")
+    if isinstance(node_type, str):
+        types.add(node_type)
+
+    children = node.get("children")
+    if isinstance(children, list):
+        for child in children:
+            types.update(_collect_node_types(child))
+
+    for key, value in node.items():
+        if key not in ("type", "children") and isinstance(value, dict):
+            types.update(_collect_node_types(value))
+
+    return types
 
 
 def _resolve_model_id(*, escalated: bool) -> str:

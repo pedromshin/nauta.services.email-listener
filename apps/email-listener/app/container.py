@@ -71,6 +71,7 @@ from app.domain.ports.importer_resolver import ImporterResolver
 from app.domain.ports.parser_registry_port import ParserRegistryPort
 from app.domain.ports.raw_email_store import RawEmailStore
 from app.domain.ports.retrieval_port import RetrievalPort
+from app.domain.ports.retrieval_provider import RetrievalProvider
 from app.domain.ports.segmenter_protocol import SegmenterProtocol
 from app.domain.ports.ui_spec_template_repository import UiSpecTemplateRepository
 from app.infrastructure.llm.anthropic_client import get_anthropic_client
@@ -79,6 +80,7 @@ from app.infrastructure.llm.embedding_adapter import EmbeddingAdapter
 from app.infrastructure.llm.entity_type_classifier_adapter import AnthropicEntityTypeClassifier
 from app.infrastructure.llm.genui_generator_adapter import GenuiGeneratorAdapter
 from app.infrastructure.llm.genui_quarantine_adapter import GenuiQuarantineAdapter
+from app.infrastructure.llm.genui_retrieval_provider import LexicalRetrievalProvider
 from app.infrastructure.llm.segmentation_adapter import AnthropicSegmenter
 from app.infrastructure.ocr.textract_adapter import TextractOcrAdapter
 from app.infrastructure.pdf.parser_registry import get_parser, register
@@ -403,11 +405,17 @@ def _provide_ui_spec_template_repository(client: Client) -> UiSpecTemplateReposi
     return SupabaseUiSpecTemplateRepository(client=client)
 
 
+def _provide_lexical_retrieval_provider() -> RetrievalProvider:
+    """LexicalRetrievalProvider bound to RetrievalProvider port (17-04, RAG-01)."""
+    return LexicalRetrievalProvider()
+
+
 def _provide_generate_ui_spec_use_case(
     quarantine: GenuiQuarantineAdapter,
     generator: GenuiGeneratorAdapter,
     audit: GenerationAuditRepository,
     templates: UiSpecTemplateRepository,
+    retrieval_provider: RetrievalProvider,
 ) -> GenerateUiSpecUseCase:
     """Factory for GenerateUiSpecUseCase — orchestrates the cache→quarantine→generate→audit pipeline."""
     return GenerateUiSpecUseCase(
@@ -415,6 +423,7 @@ def _provide_generate_ui_spec_use_case(
         generator=generator,
         audit=audit,
         templates=templates,
+        retrieval_provider=retrieval_provider,
     )
 
 
@@ -522,7 +531,9 @@ def _build_provider() -> Provider:  # noqa: PLR0915
     provider.provide(_provide_generation_audit_repository, provides=GenerationAuditRepository)
     # UiSpecTemplateRepository: Protocol port → SupabaseUiSpecTemplateRepository adapter (CACHE-01).
     provider.provide(_provide_ui_spec_template_repository, provides=UiSpecTemplateRepository)
-    # GenerateUiSpecUseCase factory: quarantine + generator + audit + templates all resolved first.
+    # LexicalRetrievalProvider: deterministic/lexical RAG bound to RetrievalProvider port (17-04).
+    provider.provide(_provide_lexical_retrieval_provider, provides=RetrievalProvider)
+    # GenerateUiSpecUseCase factory: quarantine + generator + audit + templates + retrieval all resolved first.
     provider.provide(_provide_generate_ui_spec_use_case, provides=GenerateUiSpecUseCase)
 
     return provider

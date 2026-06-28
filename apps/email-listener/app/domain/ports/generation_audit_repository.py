@@ -38,6 +38,10 @@ class GenerationEvent:
     spec_depth: int | None = None
     latency_ms: int | None = None
     importer_id: str | None = None
+    # Phase 17-04: pack-aware generation + RAG audit fields (D-08/RAG-02)
+    style_pack_id: str | None = None
+    retrieved_ids: tuple[str, ...] = ()
+    retrieved_overlap_count: int = 0
 
 
 class GenerationAuditRepository(Protocol):

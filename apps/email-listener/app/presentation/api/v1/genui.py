@@ -26,10 +26,11 @@ from typing import Any, Literal
 import structlog
 from dishka.integrations.fastapi import FromDishka, inject
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.application.use_cases.generate_ui_spec import GenerateUiSpecUseCase
 from app.domain.ports.ui_spec_template_repository import UiSpecTemplateRepository
+from app.infrastructure.llm.genui_style_packs import STYLE_PACK_IDS
 from app.presentation.api.response import ApiResponse
 from app.presentation.middleware.auth import require_api_key
 
@@ -73,6 +74,26 @@ class GenerateUiSpecRequest(BaseModel):
         default=None,
         description="Optional importer context for audit rows (D-19).",
     )
+    style_pack_id: str | None = Field(
+        default=None,
+        description=(
+            "Optional style pack identifier. Must be one of the known pack IDs: "
+            f"{', '.join(STYLE_PACK_IDS)}. "
+            "Unknown values are rejected with HTTP 422 (T-17-04 spoofing guard). "
+            "Defaults to the nauta-teal pack when omitted."
+        ),
+    )
+
+    @field_validator("style_pack_id")
+    @classmethod
+    def validate_style_pack_id(cls, v: str | None) -> str | None:
+        """Reject unknown style_pack_id values (T-17-04: spoofing guard)."""
+        if v is not None and v not in STYLE_PACK_IDS:
+            raise ValueError(
+                f"Unknown style_pack_id '{v}'. "
+                f"Must be one of: {', '.join(STYLE_PACK_IDS)}"
+            )
+        return v
 
 
 class GenerateUiSpecView(BaseModel):
@@ -81,6 +102,8 @@ class GenerateUiSpecView(BaseModel):
     spec: dict[str, Any]
     cache_hit: bool = False
     outcome: Literal["ok", "fallback", "escalated"] = "ok"
+    style_pack_id: str | None = None
+    retrieved_ids: tuple[str, ...] = ()
 
 
 class HistoryRowView(BaseModel):
@@ -139,9 +162,18 @@ async def generate_ui_spec(
         raw_content=body.raw_content,
         registry_version=body.registry_version,
         importer_id=body.importer_id,
+        style_pack_id=body.style_pack_id,
     )
 
-    return ApiResponse.ok(GenerateUiSpecView(spec=result.spec, cache_hit=result.cache_hit, outcome=result.outcome))
+    return ApiResponse.ok(
+        GenerateUiSpecView(
+            spec=result.spec,
+            cache_hit=result.cache_hit,
+            outcome=result.outcome,
+            style_pack_id=result.style_pack_id,
+            retrieved_ids=result.retrieved_ids,
+        )
+    )
 
 
 # ---------------------------------------------------------------------------
