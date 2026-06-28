@@ -40,6 +40,12 @@ class PromptReport:
     a11y_score: float
     judge_rationale: str
     error: str | None = None
+    # Additive style fields (D-15: must not alter the 4 core mean_* aggregates)
+    style_pack_id: str | None = None
+    a11y_contrast_passed: bool | None = None
+    brand_score: float | None = None
+    distinctiveness: float | None = None
+    retrieval_overlap: float | None = None
 
 
 @dataclass(frozen=True)
@@ -51,6 +57,10 @@ class EvalReport:
     prevents field reassignment but cannot prevent mutation of a mutable
     container stored in a field — using tuple eliminates that loophole.
     Tuple is fully JSON-serialisable via asdict() (produces a list in JSON).
+
+    D-15: The five core aggregate fields (mean_overall, mean_valid_spec,
+    mean_composed, mean_on_intent, mean_a11y) MUST NOT change semantics.
+    Additive style aggregate fields are appended after them.
     """
 
     label: str
@@ -65,6 +75,10 @@ class EvalReport:
     mean_on_intent: float | None
     mean_a11y: float
     prompt_reports: tuple[PromptReport, ...]
+    # Additive style aggregates (D-15: do not alter core 4 mean_* semantics)
+    mean_brand_score: float | None = None
+    mean_distinctiveness: float | None = None
+    mean_retrieval_overlap: float | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -141,6 +155,10 @@ def build_report(
         mean_on_intent=_optional_mean([r.on_intent_score for r in completed]),
         mean_a11y=_mean([r.a11y_score for r in completed]),
         prompt_reports=reports_tuple,
+        # Additive style aggregates (D-15: additive only, core fields unchanged)
+        mean_brand_score=_optional_mean([r.brand_score for r in completed]),
+        mean_distinctiveness=_optional_mean([r.distinctiveness for r in completed]),
+        mean_retrieval_overlap=_optional_mean([r.retrieval_overlap for r in completed]),
     )
 
 

@@ -201,7 +201,10 @@ def composed_not_placeholder(spec: dict[str, Any]) -> CriterionResult:
     return CriterionResult(name="composed", score=1.0, passed=True)
 
 
-def a11y(spec: dict[str, Any]) -> CriterionResult:
+def a11y(
+    spec: dict[str, Any],
+    pack_token_values: dict[str, str] | None = None,
+) -> CriterionResult:
     """Check that interactive/structural nodes carry required accessibility props.
 
     A11y prop map:
@@ -211,12 +214,36 @@ def a11y(spec: dict[str, Any]) -> CriterionResult:
       key-value-list -> label
       separator     -> aria-hidden
 
+    When pack_token_values is provided, also checks WCAG-AA contrast for all
+    resolved token-driven text/surface pairs in the spec (D-09 HARD no-regression).
+    Any contrast failure causes score=0.0 / passed=False regardless of required-props.
+
     Scoring: proportion of nodes that satisfy their a11y requirement.
     If no a11y-relevant nodes exist, score=1.0 (nothing to check).
+    Contrast failure always returns score=0.0 (HARD gate, D-09).
+
+    Args:
+        spec: The GenUI spec dict to evaluate.
+        pack_token_values: Optional dict of token alias -> HSL triplet. When
+            provided, any contrast-failing pair causes an immediate fail.
+            Default None = baseline pack / backward-compatible skip.
     """
+    from scripts.genui_eval.style_metrics import (  # noqa: PLC0415
+        passes_aa,
+        resolve_node_contrast_pairs,
+    )
+
     root = spec.get("root")
     if root is None:
         return CriterionResult(name="a11y", score=1.0, passed=True)
+
+    # D-09 HARD contrast gate — checked before required-props so any contrast
+    # failure immediately fails the criterion regardless of prop completeness.
+    if pack_token_values is not None:
+        pairs = resolve_node_contrast_pairs(spec, pack_token_values)
+        for fg_hsl, bg_hsl in pairs:
+            if not passes_aa(fg_hsl, bg_hsl):
+                return CriterionResult(name="a11y", score=0.0, passed=False)
 
     all_nodes = _collect_all_nodes(root)
     relevant: list[dict[str, Any]] = [

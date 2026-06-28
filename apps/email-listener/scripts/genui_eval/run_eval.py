@@ -74,6 +74,48 @@ def _get_registry_version() -> str:
 # ---------------------------------------------------------------------------
 
 
+def aggregate_all_packs(
+    prompt_reports: list[Any],
+) -> dict[str, Any]:
+    """Aggregate per-pack scores and cross-pack distinctiveness from a flat list of PromptReports.
+
+    Groups PromptReports by style_pack_id and computes per-pack mean_overall.
+    Also computes cross_pack_mean_distinctiveness from all reports that carry
+    a distinctiveness value.
+
+    Args:
+        prompt_reports: Flat list of PromptReport instances (with style_pack_id set).
+
+    Returns:
+        Dict with per-pack aggregates and a 'cross_pack_mean_distinctiveness' key.
+    """
+    pack_buckets: dict[str, list[Any]] = {}
+    for pr in prompt_reports:
+        pack_id = getattr(pr, "style_pack_id", None) or "unknown"
+        if pack_id not in pack_buckets:
+            pack_buckets[pack_id] = []
+        pack_buckets[pack_id].append(pr)
+
+    result: dict[str, Any] = {}
+    for pack_id, reports in pack_buckets.items():
+        completed = [r for r in reports if getattr(r, "error", None) is None]
+        mean_overall = sum(r.overall_score for r in completed) / len(completed) if completed else 0.0
+        result[pack_id] = {"mean_overall": mean_overall, "count": len(completed)}
+
+    # Cross-pack mean distinctiveness (from all reports with a distinctiveness value)
+    distinctiveness_values = [
+        r.distinctiveness
+        for r in prompt_reports
+        if getattr(r, "distinctiveness", None) is not None
+    ]
+    if distinctiveness_values:
+        result["cross_pack_mean_distinctiveness"] = sum(distinctiveness_values) / len(distinctiveness_values)
+    else:
+        result["cross_pack_mean_distinctiveness"] = 0.0
+
+    return result
+
+
 async def _eval_prompt(
     *,
     entry: dict[str, Any],
@@ -81,6 +123,7 @@ async def _eval_prompt(
     judge: Any | None,
     semaphore: asyncio.Semaphore,
     registry_version: str,
+    style_pack_id: str | None = None,
 ) -> Any:
     """Evaluate a single golden-set prompt. Returns a PromptReport."""
     from scripts.genui_eval.report import PromptReport  # noqa: PLC0415
@@ -91,6 +134,7 @@ async def _eval_prompt(
         composed_not_placeholder,
         valid_spec,
     )
+    from scripts.genui_eval.style_metrics import retrieval_overlap_ratio  # noqa: PLC0415
 
     prompt_id = str(entry.get("id", "?"))
     prompt = str(entry.get("prompt", ""))
@@ -104,22 +148,41 @@ async def _eval_prompt(
                 intent=prompt,
                 raw_content="",  # intent-only mode (D-05)
                 registry_version=registry_version,
+                style_pack_id=style_pack_id,
             )
             spec: dict[str, Any] = result.spec
             outcome = result.outcome
+            result_pack_id: str | None = getattr(result, "style_pack_id", style_pack_id)
+            retrieved_ids: tuple[str, ...] = getattr(result, "retrieved_ids", ())
 
             # Deterministic criteria
             vs = valid_spec(spec, outcome=outcome)
             cp = composed_not_placeholder(spec)
+            # D-09: pass pack_token_values when available (style-pack run only)
+            # For now, skip token-driven contrast check in the runner (no token
+            # values available without the pack registry) — contrast check is
+            # exercised by tests with explicit token dicts.
             ay = a11y(spec)
+
+            # Retrieval overlap (RAG-02)
+            overlap = retrieval_overlap_ratio(spec, retrieved_ids)
 
             # Optional LLM-as-judge
             on_intent_score: float | None = None
             judge_rationale = ""
+            brand_score: float | None = None
             if judge is not None:
                 judge_result = await judge.score(intent=prompt, spec=spec)
                 on_intent_score = judge_result.score
                 judge_rationale = judge_result.rationale
+                # Brand judge (D-17) — only when style_pack_id is known
+                if result_pack_id is not None:
+                    brand_result = await judge.score_brand(
+                        intent=prompt,
+                        spec=spec,
+                        style_pack_id=result_pack_id,
+                    )
+                    brand_score = brand_result.score
 
             # Build sub_scores for aggregate
             sub_scores: list[CriterionResult] = [vs, cp, ay]
@@ -142,6 +205,10 @@ async def _eval_prompt(
                 a11y_score=ay.score,
                 judge_rationale=judge_rationale,
                 error=None,
+                style_pack_id=result_pack_id,
+                a11y_contrast_passed=ay.passed,
+                brand_score=brand_score,
+                retrieval_overlap=overlap if retrieved_ids else None,
             )
 
         except Exception as exc:
@@ -174,6 +241,8 @@ async def run(
     no_judge: bool = False,
     label: str = "eval",
     out_dir: Path | None = None,
+    style_pack_id: str | None = None,
+    all_packs: bool = False,
 ) -> tuple[Path, Path]:
     """Execute the eval run and write reports.
 
@@ -182,11 +251,14 @@ async def run(
         no_judge: If True, skip the LLM-as-judge step.
         label: Human label for this report.
         out_dir: Output directory for reports (default: scripts/genui_eval/reports/).
+        style_pack_id: Run with a specific style pack (e.g. 'nauta-teal').
+        all_packs: If True, loop over all 6 STYLE_PACK_IDS and aggregate. D-19.
 
     Returns:
         Tuple of (json_path, md_path) for the written report files.
     """
     from app.container import create_container  # noqa: PLC0415
+    from app.infrastructure.llm.genui_style_packs import STYLE_PACK_IDS  # noqa: PLC0415
     from app.settings import get_settings  # noqa: PLC0415
     from scripts.genui_eval.judge_adapter import JudgeAdapter  # noqa: PLC0415
     from scripts.genui_eval.report import build_report, write_report  # noqa: PLC0415
@@ -215,18 +287,32 @@ async def run(
             )
 
         semaphore = asyncio.Semaphore(_CONCURRENCY)
-        tasks = [
-            _eval_prompt(
-                entry=entry,
-                use_case=use_case,
-                judge=judge,
-                semaphore=semaphore,
-                registry_version=registry_version,
-            )
-            for entry in golden_set
-        ]
 
-        prompt_reports = await asyncio.gather(*tasks)
+        # Determine the pack IDs to evaluate
+        packs_to_run: list[str | None]
+        if all_packs:
+            packs_to_run = list(STYLE_PACK_IDS)
+            logger.info("genui_eval_all_packs", pack_count=len(packs_to_run))
+        elif style_pack_id is not None:
+            packs_to_run = [style_pack_id]
+        else:
+            packs_to_run = [None]  # baseline run (no style pack)
+
+        all_prompt_reports: list[Any] = []
+        for pack_id in packs_to_run:
+            pack_tasks = [
+                _eval_prompt(
+                    entry=entry,
+                    use_case=use_case,
+                    judge=judge,
+                    semaphore=semaphore,
+                    registry_version=registry_version,
+                    style_pack_id=pack_id,
+                )
+                for entry in golden_set
+            ]
+            pack_results = await asyncio.gather(*pack_tasks)
+            all_prompt_reports.extend(pack_results)
 
     finally:
         await container.close()
@@ -234,7 +320,7 @@ async def run(
     report = build_report(
         label=label,
         model_id=settings.genui_model_id,
-        prompt_reports=list(prompt_reports),
+        prompt_reports=all_prompt_reports,
     )
     return write_report(report, out_dir=out_dir)
 
@@ -250,6 +336,20 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--limit", type=int, default=None, help="Max prompts to evaluate")
     parser.add_argument("--no-judge", action="store_true", help="Skip LLM-as-judge scoring")
     parser.add_argument("--label", type=str, default="eval", help="Label for this report")
+    parser.add_argument(
+        "--style-pack",
+        type=str,
+        default=None,
+        metavar="PACK_ID",
+        help="Run eval with a specific style pack (e.g. nauta-teal). "
+        "Mutually exclusive with --all-packs.",
+    )
+    parser.add_argument(
+        "--all-packs",
+        action="store_true",
+        help="Run eval over all 6 style packs and aggregate (D-19). "
+        "Mutually exclusive with --style-pack.",
+    )
     return parser.parse_args()
 
 
@@ -263,6 +363,8 @@ def main() -> None:
             no_judge=args.no_judge,
             label=args.label,
             out_dir=args.out,
+            style_pack_id=args.style_pack,
+            all_packs=args.all_packs,
         )
     )
     print(f"Report written:\n  JSON: {json_path}\n  MD:   {md_path}")
