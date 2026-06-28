@@ -349,13 +349,26 @@ interface DetailViewProps {
 }
 
 function HistoryDetailView({ selectedId }: DetailViewProps): React.ReactElement {
-  const { data: detail, isLoading } = api.genui.historyById.useQuery(
+  const { data: detail, isLoading, isError } = api.genui.historyById.useQuery(
     { id: selectedId },
     { enabled: selectedId.length > 0 },
   );
 
   if (isLoading) {
     return <DetailSkeleton />;
+  }
+
+  // WR-01: surface network/5xx failures as an explicit error state so the user
+  // can distinguish a transient failure from a genuine 404 "not found".
+  if (isError) {
+    return (
+      <div
+        role="alert"
+        className="flex flex-1 items-center justify-center text-sm text-destructive px-4 text-center"
+      >
+        Could not load generation details. Please try again.
+      </div>
+    );
   }
 
   if (detail === null || detail === undefined) {
