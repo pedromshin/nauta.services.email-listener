@@ -285,8 +285,12 @@ as a **SPIKE** (prove the sandbox + repair loop in isolation) before being commi
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 16. Studio Foundation — Eval Harness + History & Page-Ideas Tabs | 5/5 | Complete   | 2026-06-28 |
+| 16. Studio Foundation — Eval Harness + History & Page-Ideas Tabs | 5/5 | Complete    | 2026-06-28 |
 | 17. Tier A — Design-Token/Theme Layer + Style Packs + Assembly RAG | 0/0 | Not started | - |
 | 18. Tier A — Catalog Expansion | 0/0 | Not started | - |
 | 19. Tier B-1 — Declarative JSON-Schema Form Engine | 0/0 | Not started | - |
 | 20. Tier B-2 — Sandboxed Code-Island (SPIKE → phase, USER SIGN-OFF GATE) | 0/0 | Not started (blocked: user sign-off) | - |
+
+## Backlog
+
+- **999.1 — GenUI history per-importer authorization** (from Phase 16 code review, CR-01): `GET /v1/genui/history` returns all importers' rows when `importer_id` is omitted. Accepted for the current single-shared-key local/sandbox posture (auth enforced via `X-API-Key`; mirrors `/v1/genui/generate`). Enforce per-importer scoping (require `importer_id` or derive from auth context) if real multi-tenancy is introduced. Source: `.planning/phases/16-.../16-REVIEW.md`.

@@ -2,14 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: "Generative UI: Realism & Interactivity"
-status: planning
-last_updated: "2026-06-28T00:12:38.930Z"
+status: ready_to_plan
+last_updated: 2026-06-28T00:53:36.355Z
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 5
-  completed_plans: 5
+  completed_plans: 70
   percent: 20
+stopped_at: Phase 16 complete (5/5) — ready to discuss Phase 17
 ---
 
 # State
@@ -19,7 +20,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-27)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** Phase 16 — studio-foundation-eval-harness-history-page-ideas-tabs
+**Current focus:** Phase 17 — tier a — design token/theme layer + style packs + assembly rag
 
 ## Milestone v1.1 — Generative UI Engine — 🎉 COMPLETE 2026-06-27 (4 phases, 15 plans; autonomous run)
 
