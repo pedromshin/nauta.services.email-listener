@@ -215,3 +215,117 @@ def test_cache_key_same_shape_different_values_hit_same_key() -> None:
     args_500 = {**_BASE_ARGS, "raw_content": '{"amount": 500, "vendor": "Acme"}'}
     args_9 = {**_BASE_ARGS, "raw_content": '{"amount": 9, "vendor": "Nauta"}'}
     assert compute_cache_key(**args_500) == compute_cache_key(**args_9)  # type: ignore[arg-type]
+
+
+# ---------------------------------------------------------------------------
+# 17-04: style_pack_id as a cache-key dimension (D-08 / T-17-20)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit()
+def test_cache_key_style_pack_id_change_yields_different_key() -> None:
+    """Changing only style_pack_id must produce a different key (D-08 / T-17-20).
+
+    Two packs -> two distinct cache entries. A nauta-teal spec must never be served
+    for a linear-clean request.
+    """
+    args_nauta = {**_BASE_ARGS, "style_pack_id": "nauta-teal"}
+    args_linear = {**_BASE_ARGS, "style_pack_id": "linear-clean"}
+    assert compute_cache_key(**args_nauta) != compute_cache_key(**args_linear)  # type: ignore[arg-type]
+
+
+@pytest.mark.unit()
+def test_cache_key_style_pack_id_none_is_deterministic() -> None:
+    """style_pack_id=None must produce the same key on repeated calls."""
+    args = {**_BASE_ARGS, "style_pack_id": None}
+    key1 = compute_cache_key(**args)  # type: ignore[arg-type]
+    key2 = compute_cache_key(**args)  # type: ignore[arg-type]
+    assert key1 == key2
+    assert re.match(r"^[0-9a-f]{64}$", key1)
+
+
+@pytest.mark.unit()
+def test_cache_key_no_style_pack_differs_from_explicit_pack() -> None:
+    """style_pack_id=None must differ from style_pack_id='nauta-teal' (T-17-20)."""
+    args_none = {**_BASE_ARGS, "style_pack_id": None}
+    args_pack = {**_BASE_ARGS, "style_pack_id": "nauta-teal"}
+    assert compute_cache_key(**args_none) != compute_cache_key(**args_pack)  # type: ignore[arg-type]
+
+
+@pytest.mark.unit()
+def test_cache_key_backward_compatible_without_style_pack_id() -> None:
+    """compute_cache_key must accept calls WITHOUT style_pack_id (backward compat)."""
+    # _BASE_ARGS does NOT include style_pack_id -- existing callers must still work
+    key = compute_cache_key(**_BASE_ARGS)  # type: ignore[arg-type]
+    assert re.match(r"^[0-9a-f]{64}$", key)
+
+
+# ---------------------------------------------------------------------------
+# 17-04: genui_style_packs.py -- Python pack registry (mirrors TS STYLE_PACK_IDS)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit()
+def test_style_pack_ids_contains_expected_packs() -> None:
+    """STYLE_PACK_IDS must contain all 6 curated packs from the TS source of truth."""
+    from app.infrastructure.llm.genui_style_packs import STYLE_PACK_IDS
+
+    expected = {
+        "nauta-teal",
+        "linear-clean",
+        "warm-editorial",
+        "brutalist",
+        "corporate-saas",
+        "playful-rounded",
+    }
+    assert set(STYLE_PACK_IDS) == expected, (
+        f"STYLE_PACK_IDS mismatch. Expected: {expected}, Got: {set(STYLE_PACK_IDS)}"
+    )
+
+
+@pytest.mark.unit()
+def test_style_pack_ids_is_immutable_sequence() -> None:
+    """STYLE_PACK_IDS must be an immutable sequence (tuple or frozenset)."""
+    from app.infrastructure.llm.genui_style_packs import STYLE_PACK_IDS
+
+    # Must be immutable -- tuple, frozenset, or similar non-mutable container
+    assert not isinstance(STYLE_PACK_IDS, list), (
+        "STYLE_PACK_IDS must be immutable (tuple/frozenset), not a mutable list"
+    )
+
+
+@pytest.mark.unit()
+def test_default_pack_id_is_nauta_teal() -> None:
+    """DEFAULT_PACK_ID must equal 'nauta-teal' (mirrors TS DEFAULT_PACK_ID)."""
+    from app.infrastructure.llm.genui_style_packs import DEFAULT_PACK_ID
+
+    assert DEFAULT_PACK_ID == "nauta-teal"
+
+
+@pytest.mark.unit()
+def test_is_known_pack_id_returns_true_for_valid() -> None:
+    """is_known_pack_id must return True for all STYLE_PACK_IDS members."""
+    from app.infrastructure.llm.genui_style_packs import STYLE_PACK_IDS, is_known_pack_id
+
+    for pack_id in STYLE_PACK_IDS:
+        assert is_known_pack_id(pack_id) is True, f"Expected is_known_pack_id({pack_id!r}) to be True"
+
+
+@pytest.mark.unit()
+def test_is_known_pack_id_returns_false_for_unknown() -> None:
+    """is_known_pack_id must return False for unknown or empty pack IDs (T-17-04 spoofing guard)."""
+    from app.infrastructure.llm.genui_style_packs import is_known_pack_id
+
+    assert is_known_pack_id("unknown-pack") is False
+    assert is_known_pack_id("") is False
+    assert is_known_pack_id("nauta") is False  # partial match must NOT be accepted
+
+
+@pytest.mark.unit()
+def test_style_pack_ids_count_equals_ts_source_of_truth() -> None:
+    """STYLE_PACK_IDS must have exactly 6 packs (parity with packages/genui/src/theme/packs.ts)."""
+    from app.infrastructure.llm.genui_style_packs import STYLE_PACK_IDS
+
+    assert len(STYLE_PACK_IDS) == 6, (
+        f"Expected 6 packs (parity with TS), got {len(STYLE_PACK_IDS)}: {list(STYLE_PACK_IDS)}"
+    )
