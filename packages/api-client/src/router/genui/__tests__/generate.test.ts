@@ -471,3 +471,95 @@ describe("genui.generate — D-05: outcome + cacheHit from FastAPI envelope", ()
     expect(result.cacheHit).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// D-08 / T-17-04: stylePackId threading through tRPC → FastAPI (Phase 17-03)
+//
+// stylePackId is Zod-validated at the web boundary via z.enum(STYLE_PACK_IDS).
+// When provided, it is sent as `style_pack_id` (snake_case) in the FastAPI body.
+// When omitted, `style_pack_id: null` is sent (explicit null, not undefined).
+// Unknown ids are rejected by Zod before reaching FastAPI.
+// ---------------------------------------------------------------------------
+
+describe("genui.generate — stylePackId threading (D-08/T-17-04/Phase 17-03)", () => {
+  beforeEach(() => {
+    process.env.EMAIL_LISTENER_URL = URL;
+    process.env.EMAIL_LISTENER_API_KEY = API_KEY;
+  });
+
+  afterEach(() => {
+    delete process.env.EMAIL_LISTENER_URL;
+    delete process.env.EMAIL_LISTENER_API_KEY;
+    vi.restoreAllMocks();
+  });
+
+  it("D-17-01: stylePackId='linear-clean' is sent as style_pack_id in FastAPI body", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(mockResponse(VALID_ENVELOPE_RESPONSE));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const caller = makeCaller();
+    await caller.genui.generate({ intent: "Show me a dashboard", stylePackId: "linear-clean" });
+
+    const [, calledInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const sentBody = JSON.parse(calledInit.body as string) as Record<string, unknown>;
+
+    expect(sentBody).toHaveProperty("style_pack_id", "linear-clean");
+  });
+
+  it("D-17-02: when stylePackId is omitted, style_pack_id=null is sent to FastAPI", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(mockResponse(VALID_ENVELOPE_RESPONSE));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const caller = makeCaller();
+    await caller.genui.generate({ intent: "Show me something" });
+
+    const [, calledInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const sentBody = JSON.parse(calledInit.body as string) as Record<string, unknown>;
+
+    // Explicit null — FastAPI uses default pack when null
+    expect(sentBody).toHaveProperty("style_pack_id", null);
+  });
+
+  it("D-17-03: stylePackId='nauta-teal' (default pack) is forwarded as style_pack_id", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(mockResponse(VALID_ENVELOPE_RESPONSE));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const caller = makeCaller();
+    await caller.genui.generate({ intent: "Dashboard", stylePackId: "nauta-teal" });
+
+    const [, calledInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const sentBody = JSON.parse(calledInit.body as string) as Record<string, unknown>;
+
+    expect(sentBody).toHaveProperty("style_pack_id", "nauta-teal");
+  });
+
+  it("D-17-04: unknown stylePackId is rejected by Zod at web boundary (input validation)", async () => {
+    const caller = makeCaller();
+
+    // Zod should reject unknown pack ids before reaching FastAPI
+    await expect(
+      caller.genui.generate({
+        intent: "Test",
+        // @ts-expect-error intentionally invalid pack id
+        stylePackId: "not-a-valid-pack",
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("D-17-05: all known STYLE_PACK_IDS are accepted by the input schema", async () => {
+    const { STYLE_PACK_IDS } = await import("@nauta/genui/theme");
+
+    for (const packId of STYLE_PACK_IDS) {
+      const fetchMock = vi.fn().mockResolvedValue(mockResponse(VALID_ENVELOPE_RESPONSE));
+      vi.stubGlobal("fetch", fetchMock);
+
+      const caller = makeCaller();
+      // Should not throw
+      await expect(
+        caller.genui.generate({ intent: "Test", stylePackId: packId }),
+      ).resolves.toBeDefined();
+
+      vi.restoreAllMocks();
+    }
+  });
+});
