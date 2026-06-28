@@ -206,7 +206,7 @@ change; Tier B-2 (jailed-eval) is the one new high-risk subsystem and is fenced 
 - [x] **Phase 16: Studio Foundation — Eval Harness + History & Page-Ideas Tabs** — Eval-driven dev: golden prompt set (from the real corpus) + LLM-as-judge UI-quality rubric + a `studio` eval runner that baselines generations, plus History and Page-Ideas tabs over already-persisted data
  (completed 2026-06-28)
 
-- [ ] **Phase 17: Tier A — Design-Token/Theme Layer + Style Packs + Assembly RAG** — Ground generation in an explicit design system + W3C-DTCG design tokens varied per generation + retrieved exemplars (v0's "registry" method), measured as a lift on the golden set
+- [x] **Phase 17: Tier A — Design-Token/Theme Layer + Style Packs + Assembly RAG** — Ground generation in an explicit design system + W3C-DTCG design tokens varied per generation + retrieved exemplars (v0's "registry" method), measured as a lift on the golden set (completed 2026-06-28)
 - [ ] **Phase 18: Tier A — Catalog Expansion** — Real domain components (avatar, list/feed-item, nav, tabs, input primitives) so composition stops reading as generic cards; depth-first, a11y-marked, CI-validated
 - [ ] **Phase 19: Tier B-1 — Declarative JSON-Schema Form Engine** — A `form` node backed by a schema-driven engine (RJSF/JSONForms/Formily-style) for fields, conditional logic, and customizable validation/business rules — fully declarative, no eval
 - [ ] **Phase 20: Tier B-2 — Sandboxed Code-Island (SPIKE → phase, USER SIGN-OFF GATE)** — Emit real code into an isolated sandbox (iframe/Sandpack/WebContainer) with a v0-style AST-validate/autofix/self-heal harness, for truly custom interactive widgets only; CHANGES the safety model from no-eval to jailed-eval — MUST NOT start without explicit user sign-off
@@ -269,7 +269,7 @@ The win is measured: a demonstrable lift on the golden set versus the Phase-16 b
   3. Before generation, relevant exemplars/components are retrieved and injected into the prompt (assembly RAG over the catalog + promoted templates), and the spec the model emits references the retrieved structure.
   4. Re-running the Phase-16 eval shows a measurable lift in the rubric's "composed-not-placeholder" / on-intent / style-distinctiveness scores versus the recorded baseline, with no a11y regression.
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 Plans:
 **Wave 1**
 
@@ -283,7 +283,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 17-05-PLAN.md — Eval extension: AA-contrast in a11y + deterministic distinctiveness + custom-not-generic judge + --all-packs runner + STYLE-04 lift/regression gate
+- [x] 17-05-PLAN.md — Eval extension: AA-contrast in a11y + deterministic distinctiveness + custom-not-generic judge + --all-packs runner + STYLE-04 lift/regression gate
 
 **UI hint**: yes
 
@@ -355,7 +355,7 @@ as a **SPIKE** (prove the sandbox + repair loop in isolation) before being commi
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 16. Studio Foundation — Eval Harness + History & Page-Ideas Tabs | 5/5 | Complete    | 2026-06-28 |
-| 17. Tier A — Design-Token/Theme Layer + Style Packs + Assembly RAG | 4/5 | In Progress|  |
+| 17. Tier A — Design-Token/Theme Layer + Style Packs + Assembly RAG | 5/5 | Complete   | 2026-06-28 |
 | 18. Tier A — Catalog Expansion | 0/0 | Not started | - |
 | 19. Tier B-1 — Declarative JSON-Schema Form Engine | 0/0 | Not started | - |
 | 20. Tier B-2 — Sandboxed Code-Island (SPIKE → phase, USER SIGN-OFF GATE) | 0/0 | Not started (blocked: user sign-off) | - |
