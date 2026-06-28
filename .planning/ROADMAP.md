@@ -167,7 +167,8 @@ change; Tier B-2 (jailed-eval) is the one new high-risk subsystem and is fenced 
 
 ## Phases
 
-- [x] **Phase 16: Studio Foundation — Eval Harness + History & Page-Ideas Tabs** — Eval-driven dev: golden prompt set (from the real corpus) + LLM-as-judge UI-quality rubric + a `studio` eval runner that baselines generations, plus History and Page-Ideas tabs over already-persisted data (completed 2026-06-28)
+- [x] **Phase 16: Studio Foundation — Eval Harness + History & Page-Ideas Tabs** — Eval-driven dev: golden prompt set (from the real corpus) + LLM-as-judge UI-quality rubric + a `studio` eval runner that baselines generations, plus History and Page-Ideas tabs over already-persisted data
+ (completed 2026-06-28)
 - [ ] **Phase 17: Tier A — Design-Token/Theme Layer + Style Packs + Assembly RAG** — Ground generation in an explicit design system + W3C-DTCG design tokens varied per generation + retrieved exemplars (v0's "registry" method), measured as a lift on the golden set
 - [ ] **Phase 18: Tier A — Catalog Expansion** — Real domain components (avatar, list/feed-item, nav, tabs, input primitives) so composition stops reading as generic cards; depth-first, a11y-marked, CI-validated
 - [ ] **Phase 19: Tier B-1 — Declarative JSON-Schema Form Engine** — A `form` node backed by a schema-driven engine (RJSF/JSONForms/Formily-style) for fields, conditional logic, and customizable validation/business rules — fully declarative, no eval
@@ -215,13 +216,19 @@ that vary per generation ("style packs"), plus retrieved exemplars injected befo
 The win is measured: a demonstrable lift on the golden set versus the Phase-16 baseline.
 **Depends on:** Phase 16 (the eval harness + baseline must exist to measure the lift; this phase is gated on it)
 **Requirements:** STYLE-01, STYLE-02, STYLE-03, STYLE-04, RAG-01, RAG-02
-**Status:** Not started
+**Status:** Planned (5 plans, 3 waves)
 **Success Criteria** (what must be TRUE):
   1. The generator is conditioned on an explicit, machine-readable design-system + a W3C-DTCG-shaped token set (semantic color/type/spacing tokens, not free-form "navy blue") that the renderer consumes so the output reflects the chosen tokens.
   2. A small library of distinct "style packs" (token sets) exists and the engine can be told which to use (or pick one) so two generations of the same intent visibly differ in look-and-feel rather than both reading as generic shadcn.
   3. Before generation, relevant exemplars/components are retrieved and injected into the prompt (assembly RAG over the catalog + promoted templates), and the spec the model emits references the retrieved structure.
   4. Re-running the Phase-16 eval shows a measurable lift in the rubric's "composed-not-placeholder" / on-intent / style-distinctiveness scores versus the recorded baseline, with no a11y regression.
-**Plans:** TBD
+**Plans:** 5 plans
+Plans:
+- [ ] 17-01-PLAN.md — TS token/theme contract: >=5 DTCG style packs (nauta-teal baseline) + fourth TOKEN allowlist + style_pack_id envelope + re-emit Bedrock artifacts
+- [ ] 17-02-PLAN.md — Python assembly-RAG seam: source-agnostic RetrievalProvider port + deterministic lexical adapter + hand-authored exemplar assets
+- [ ] 17-03-PLAN.md — Themed renderer wrapper + /studio pack dropdown + Auto/Surprise + tRPC style_pack_id threading (human-verify two packs visibly differ)
+- [ ] 17-04-PLAN.md — Pack-aware + RAG-grounded pipeline: style_pack_id in cache key + per-request token-table/RAG injection + use-case wiring + RAG-02 overlap log
+- [ ] 17-05-PLAN.md — Eval extension: AA-contrast in a11y + deterministic distinctiveness + custom-not-generic judge + --all-packs runner + STYLE-04 lift/regression gate
 **UI hint**: yes
 
 ### Phase 18: Tier A — Catalog Expansion
