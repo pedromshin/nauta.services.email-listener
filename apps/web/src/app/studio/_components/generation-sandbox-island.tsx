@@ -5,12 +5,20 @@
  *
  * Layout (15-UI-SPEC §6–§8):
  *   ┌─────────────────────────────────────────────────────────────┐
- *   │  Textarea (intent)  [Generate button]      shrink-0 header  │
+ *   │  Textarea (intent)  [Style Pack dropdown]  [Generate]       │
  *   ├───────────────────────────────────┬─────────────────────────┤
  *   │  [GenerationStateChrome]          │                         │
  *   ├───────────────────────────────────┤                         │
  *   │  SpecRendererIsland (55)          │  Spec JSON (45)         │
  *   └───────────────────────────────────┴─────────────────────────┘
+ *
+ * Style pack selection (D-04 / Phase 17-03):
+ *   - Dropdown lists all 6 curated packs + "Auto / Surprise" sentinel.
+ *   - "Auto / Surprise" sentinel resolves to a concrete pack id via
+ *     pickSurprisePack() before the tRPC call — "auto" is NEVER sent to FastAPI (D-08).
+ *   - Default selection: DEFAULT_PACK_ID ("nauta-teal").
+ *   - Selected pack id threads through tRPC stylePackId → FastAPI style_pack_id.
+ *   - Pack provenance badge shown near the rendered result (which pack was used).
  *
  * Interaction contract (15-UI-SPEC §7 / D-06):
  *   - tRPC query is created with `enabled: false` — never fires automatically.
@@ -31,7 +39,7 @@
  *   - All mutation of state via immutable spread/new objects (CLAUDE.md).
  */
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
@@ -43,13 +51,57 @@ import {
   ResizableHandle,
 } from "@nauta/ui/resizable";
 import { ScrollArea } from "@nauta/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@nauta/ui/select";
+import { Badge } from "@nauta/ui/badge";
 
 import { api } from "~/trpc/react";
 import { buildActionRegistry } from "@nauta/genui/renderer";
+import { STYLE_PACKS, STYLE_PACK_IDS, DEFAULT_PACK_ID } from "@nauta/genui/theme";
 import type { SpecRoot } from "@nauta/genui/schema";
+import type { StylePackId } from "@nauta/genui/theme";
 
 import { SpecRendererIsland } from "./spec-renderer-island";
 import { GenerationStateChrome } from "./generation-state-chrome";
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/** Sentinel value for the "Auto / Surprise" dropdown option. */
+const AUTO_SENTINEL = "auto" as const;
+
+/** All pack options for the dropdown. */
+const PACK_OPTIONS: ReadonlyArray<{ readonly value: string; readonly label: string }> = [
+  { value: AUTO_SENTINEL, label: "Auto / Surprise" },
+  ...STYLE_PACK_IDS.map((id) => ({
+    value: id,
+    label: STYLE_PACKS[id as StylePackId]?.label ?? id,
+  })),
+];
+
+// ---------------------------------------------------------------------------
+// pickSurprisePack — D-04 / D-08
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolves "Auto / Surprise" to a concrete, randomly-selected pack id.
+ *
+ * D-08 contract: "auto" is NEVER sent to FastAPI. This helper always returns
+ * a valid StylePackId from STYLE_PACK_IDS. Callers invoke this before the
+ * tRPC query to obtain a concrete id.
+ *
+ * Distribution: uniform random across all known packs (including nauta-teal).
+ */
+export function pickSurprisePack(): StylePackId {
+  const idx = Math.floor(Math.random() * STYLE_PACK_IDS.length);
+  return STYLE_PACK_IDS[idx] as StylePackId;
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -61,14 +113,12 @@ interface GenerationResult {
   readonly spec: SpecRoot;
   readonly cacheHit: boolean;
   readonly reason?: string;
+  /** The concrete pack id that was used for this generation (never "auto"). */
+  readonly resolvedPackId: StylePackId;
 }
 
 // ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Props
+// Component props
 // ---------------------------------------------------------------------------
 
 export interface GenerationSandboxIslandProps {
@@ -81,9 +131,13 @@ export interface GenerationSandboxIslandProps {
   readonly initialIntent?: string;
 }
 
+// ---------------------------------------------------------------------------
+// GenerationSandboxIsland
+// ---------------------------------------------------------------------------
+
 /**
- * GenerationSandboxIsland — wires the intent textarea, Generate button,
- * GenerationStateChrome, and 55/45 render / spec-JSON panel group.
+ * GenerationSandboxIsland — wires the intent textarea, style-pack dropdown,
+ * Generate button, GenerationStateChrome, and 55/45 render / spec-JSON panel group.
  *
  * "use client" — tRPC hooks + router + local state require client context.
  */
@@ -103,7 +157,11 @@ export function GenerationSandboxIsland({
     }
   }, [initialIntent]);
 
-  // Last generation result (undefined = no generation started yet)
+  // Style pack selection — default to nauta-teal pack (D-04)
+  // Value may be AUTO_SENTINEL or a concrete StylePackId.
+  const [selectedPack, setSelectedPack] = useState<string>(DEFAULT_PACK_ID);
+
+  // Resolved pack id used for the last generation (for provenance badge display)
   const [lastResult, setLastResult] = useState<GenerationResult | undefined>(
     undefined,
   );
@@ -117,28 +175,46 @@ export function GenerationSandboxIsland({
   // tRPC utils for buildActionRegistry (query-refresh handler)
   const utils = api.useUtils();
 
+  // The concrete pack id to use for the CURRENT query (updated on each generate click).
+  // Starts as DEFAULT_PACK_ID; replaced with pickSurprisePack() when AUTO_SENTINEL selected.
+  const [queryPackId, setQueryPackId] = useState<StylePackId>(DEFAULT_PACK_ID);
+
   // D-06: enabled:false — never fires automatically. Manually triggered via refetch().
-  // Pattern mirrors inbox-three-pane.tsx lines 232-246.
+  // stylePackId is validated at web boundary via z.enum(STYLE_PACK_IDS) in generate.ts.
   const q = api.genui.generate.useQuery(
-    { intent: intent.trim() || " " },
+    { intent: intent.trim() || " ", stylePackId: queryPackId },
     { enabled: false },
   );
 
   // Build ActionRegistry for the renderer — minimal declaredState seam (D-08 / SEAM-02).
   // SpecRenderer materialises declared state internally via useDeclaredState;
   // the sandbox does not need to read or write it at this layer.
-  const actions = buildActionRegistry({
-    router,
-    trpcUtils: utils,
-    declaredState: { state: {}, dispatch: () => undefined },
-  });
+  const actions = useMemo(
+    () =>
+      buildActionRegistry({
+        router,
+        trpcUtils: utils,
+        declaredState: { state: {}, dispatch: () => undefined },
+      }),
+    [router, utils],
+  );
 
   // Generate button handler — D-06 manual trigger only
   const handleGenerate = useCallback(async (): Promise<void> => {
     const trimmed = intent.trim();
     if (trimmed.length === 0) return;
+
+    // D-08: resolve "auto" to a concrete pack id BEFORE calling tRPC.
+    // pickSurprisePack() always returns a valid StylePackId — never sends "auto" to FastAPI.
+    const concretePackId: StylePackId =
+      selectedPack === AUTO_SENTINEL ? pickSurprisePack() : (selectedPack as StylePackId);
+
+    // Update query pack id state — triggers query key update for refetch
+    setQueryPackId(concretePackId);
+
     // WR-01: clear any prior error before each attempt
     setLastError(undefined);
+
     const result = await q.refetch();
     if (result.data !== undefined) {
       setLastError(undefined);
@@ -146,13 +222,14 @@ export function GenerationSandboxIsland({
         outcome: result.data.outcome,
         spec: result.data.spec,
         cacheHit: result.data.cacheHit,
+        resolvedPackId: concretePackId,
         ...(result.data.reason !== undefined && { reason: result.data.reason }),
       });
     } else if (result.error !== null && result.error !== undefined) {
       // WR-01: surface transport/query error — no data came back at all
       setLastError("Generation failed. Please try again.");
     }
-  }, [intent, q]);
+  }, [intent, selectedPack, q]);
 
   // Keyboard submit — Enter without Shift submits (§7 interaction contract)
   const handleKeyDown = useCallback(
@@ -173,6 +250,13 @@ export function GenerationSandboxIsland({
   // lastResult.spec is SpecRoot (interface field typed above). No cast needed.
   const specToRender: SpecRoot | undefined = q.data?.spec ?? lastResult?.spec;
 
+  // The resolved pack id to show in the provenance badge.
+  const displayPackId: StylePackId | undefined = lastResult?.resolvedPackId;
+  const displayPackName: string | undefined =
+    displayPackId !== undefined
+      ? (STYLE_PACKS[displayPackId]?.label ?? displayPackId)
+      : undefined;
+
   // Chrome props derived from live query state + lastResult
   const chromeProps = {
     isPending: q.isFetching,
@@ -185,10 +269,11 @@ export function GenerationSandboxIsland({
     <div className="flex h-full flex-col">
       {/* Intent input strip — shrink-0, no scroll */}
       <div
-        className="flex shrink-0 items-start gap-3 border-b border-border/50 p-4"
+        className="flex shrink-0 flex-col gap-3 border-b border-border/50 p-4"
         role="search"
         aria-label="Generate UI specification"
       >
+        {/* Row 1: Textarea */}
         <Textarea
           aria-label="Describe the UI you want to generate"
           placeholder="Describe the view you want to generate — e.g. 'Show top 5 open threads grouped by sender with reply button'"
@@ -196,26 +281,51 @@ export function GenerationSandboxIsland({
           onChange={(e): void => setIntent(e.target.value)}
           onKeyDown={handleKeyDown}
           rows={3}
-          className="flex-1 resize-none text-sm"
+          className="w-full resize-none text-sm"
           disabled={q.isFetching}
           aria-busy={q.isFetching}
           aria-controls="sandbox-output-region"
         />
-        <Button
-          onClick={(): void => { void handleGenerate(); }}
-          disabled={q.isFetching || intent.trim().length === 0}
-          aria-label={q.isFetching ? "Generating, please wait" : "Generate UI"}
-          className="shrink-0"
-        >
-          {q.isFetching ? (
-            <>
-              <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
-              Generating
-            </>
-          ) : (
-            "Generate"
-          )}
-        </Button>
+
+        {/* Row 2: Style pack dropdown + Generate button */}
+        <div className="flex items-center gap-3">
+          {/* D-04: Style pack selector — all 6 packs + Auto/Surprise sentinel */}
+          <Select
+            value={selectedPack}
+            onValueChange={(value): void => setSelectedPack(value)}
+            disabled={q.isFetching}
+          >
+            <SelectTrigger
+              className="w-48 shrink-0 text-sm"
+              aria-label="Select visual theme"
+            >
+              <SelectValue placeholder="Select theme" />
+            </SelectTrigger>
+            <SelectContent>
+              {PACK_OPTIONS.map(({ value, label }) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Button
+            onClick={(): void => { void handleGenerate(); }}
+            disabled={q.isFetching || intent.trim().length === 0}
+            aria-label={q.isFetching ? "Generating, please wait" : "Generate UI"}
+            className="shrink-0"
+          >
+            {q.isFetching ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden />
+                Generating
+              </>
+            ) : (
+              "Generate"
+            )}
+          </Button>
+        </div>
       </div>
 
       {/* WR-01: transport/query error alert — shown when generation fails with no spec */}
@@ -255,9 +365,22 @@ export function GenerationSandboxIsland({
                 <div
                   role="region"
                   aria-label="Rendered output"
-                  className="h-full overflow-y-auto p-6"
+                  className="flex h-full flex-col overflow-y-auto"
                 >
-                  <SpecRendererIsland spec={specToRender} actions={actions} />
+                  {/* Pack provenance badge — D-04: shows which pack was used */}
+                  {displayPackName !== undefined && (
+                    <div className="shrink-0 px-6 pt-4 pb-2">
+                      <Badge
+                        variant="secondary"
+                        aria-label={`Visual theme: ${displayPackName}`}
+                      >
+                        Theme: {displayPackName}
+                      </Badge>
+                    </div>
+                  )}
+                  <div className="flex-1 p-6 pt-2">
+                    <SpecRendererIsland spec={specToRender} actions={actions} />
+                  </div>
                 </div>
               </ResizablePanel>
 
