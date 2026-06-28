@@ -27,15 +27,17 @@ import json
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, cast
 
-import jsonschema
 import structlog
 
 from app.domain.ports.retrieval_provider import RetrievalResult
-from app.infrastructure.llm.genui_artifacts import (
-    load_prompt_payload,
-    load_spec_schema,
-)
+from app.infrastructure.llm.genui_artifacts import load_prompt_payload
 from app.infrastructure.llm.genui_quarantine_adapter import QuarantineExtraction
+from app.infrastructure.llm.genui_spec_utils import (
+    MAX_SPEC_DEPTH,
+    MAX_SPEC_NODES,
+    count_nodes as _count_nodes,
+    validate_spec as _validate_spec,
+)
 
 if TYPE_CHECKING:
     from anthropic import AsyncAnthropicBedrock
@@ -44,11 +46,9 @@ if TYPE_CHECKING:
 logger = structlog.get_logger(__name__)
 
 # ---------------------------------------------------------------------------
-# Bounds constants (D-20)
-# ---------------------------------------------------------------------------
-
-MAX_SPEC_NODES = 200
-MAX_SPEC_DEPTH = 8
+# Bounds constants (D-20) — defined in genui_spec_utils, re-imported here
+# for backward compatibility with any code that accesses them via this module.
+# MAX_SPEC_NODES and MAX_SPEC_DEPTH are imported from genui_spec_utils above.
 
 # ---------------------------------------------------------------------------
 # SAFE_FALLBACK_SPEC (D-07) — hardcoded constant, NOT loaded from file.
@@ -280,55 +280,11 @@ def _build_exemplar_section(retrieval: RetrievalResult) -> str:
 # ---------------------------------------------------------------------------
 # Spec validation helpers (D-13, D-20)
 # ---------------------------------------------------------------------------
-
-
-def _count_nodes(node: Any, depth: int = 0) -> tuple[int, int]:
-    """Recursively count nodes and max depth in a spec node tree.
-
-    Returns (total_nodes, max_depth).
-    """
-    if not isinstance(node, dict):
-        return (0, depth)
-
-    total = 1
-    max_d = depth
-
-    for key, value in node.items():
-        if key == "children" and isinstance(value, list):
-            for child in value:
-                child_count, child_depth = _count_nodes(child, depth + 1)
-                total += child_count
-                max_d = max(max_d, child_depth)
-        elif isinstance(value, dict):
-            child_count, child_depth = _count_nodes(value, depth + 1)
-            total += child_count
-            max_d = max(max_d, child_depth)
-
-    return (total, max_d)
-
-
-def _validate_spec(candidate: dict[str, Any]) -> str | None:
-    """Validate candidate against spec schema and bounds.
-
-    Returns None if valid, or an error string describing the first violation.
-    """
-    spec_schema = load_spec_schema()
-    validator = jsonschema.Draft7Validator(spec_schema)
-    errors = list(validator.iter_errors(candidate))
-    if errors:
-        # Return the first error message (clean, for repair feedback)
-        return errors[0].message
-
-    # Bounds check (D-20)
-    root_node = candidate.get("root")
-    if root_node is not None:
-        node_count, node_depth = _count_nodes(root_node)
-        if node_count > MAX_SPEC_NODES:
-            return f"Spec exceeds MAX_SPEC_NODES={MAX_SPEC_NODES} (found {node_count} nodes)"
-        if node_depth > MAX_SPEC_DEPTH:
-            return f"Spec exceeds MAX_SPEC_DEPTH={MAX_SPEC_DEPTH} (found depth {node_depth})"
-
-    return None
+# _count_nodes and _validate_spec are imported from genui_spec_utils (WR-02).
+# The underscore-prefixed aliases are kept here so that existing call-sites
+# inside this module continue to work without change.
+# rubric.py and any other external callers should import the PUBLIC names
+# (count_nodes / validate_spec) from genui_spec_utils directly.
 
 
 # ---------------------------------------------------------------------------

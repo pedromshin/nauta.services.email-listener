@@ -19,9 +19,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from app.infrastructure.llm.genui_generator_adapter import (
-    _count_nodes,
-    _validate_spec,
+from app.infrastructure.llm.genui_spec_utils import (
+    count_nodes as _count_nodes,
+    validate_spec as _validate_spec,
 )
 
 # ---------------------------------------------------------------------------
