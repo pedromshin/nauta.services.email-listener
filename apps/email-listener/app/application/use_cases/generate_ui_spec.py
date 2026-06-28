@@ -130,8 +130,9 @@ class GenerateUiSpecUseCase:
         # ── Step 0: Exact-match cache CHECK (D-02, CACHE-01) ────────────────────
         # Must be the FIRST step — before quarantine, generator, and audit.
         # Best-effort: find_by_cache_key swallows errors and returns None on failure.
-        # Pre-compute canonical + shape_hash once so they can be reused on the
-        # persist path without a redundant SHA-256 call (WR-03).
+        # Pre-compute canonical + shape_hash once and pass them directly to
+        # compute_cache_key so the function skips its own internal computation
+        # (WR-05: avoids double SHA-256; the same values are reused on the persist path).
         # T-17-20: style_pack_id is the 5th dimension of the cache key.
         canonical_intent = canonicalize_intent(intent)
         data_shape_hash = compute_data_shape_hash(raw_content)
@@ -142,6 +143,8 @@ class GenerateUiSpecUseCase:
             importer_id=importer_id,
             catalog_id=catalog_id,
             style_pack_id=style_pack_id,
+            _canonical_intent=canonical_intent,
+            _data_shape_hash=data_shape_hash,
         )
         cached = await self._templates.find_by_cache_key(cache_key)
         if cached is not None:

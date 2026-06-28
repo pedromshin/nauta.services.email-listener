@@ -123,6 +123,8 @@ def compute_cache_key(
     importer_id: str | None,
     catalog_id: str,
     style_pack_id: str | None = None,
+    _canonical_intent: str | None = None,
+    _data_shape_hash: str | None = None,
 ) -> str:
     """Return the SHA-256 exact-match cache key for a generation request (D-04/D-08/17-04).
 
@@ -141,18 +143,26 @@ def compute_cache_key(
     A nauta-teal spec can never be served for a linear-clean request.
 
     Args:
-        intent: Raw intent string (will be canonicalized internally).
+        intent: Raw intent string (will be canonicalized internally unless
+            ``_canonical_intent`` is supplied).
         raw_content: Raw document content (shape extracted; values excluded -- D-06).
+            Unused when ``_data_shape_hash`` is supplied.
         registry_version: Catalog version string; a change yields a new key (CACHE-04 / D-07).
         importer_id: Tenant scope UUID; None maps to '__system__' sentinel (D-08 / T-14-05).
         catalog_id: Catalog identifier, e.g. 'global' (D-08 / SEAM-03).
         style_pack_id: Active style pack; None maps to '__no_pack__' sentinel (17-04 / T-17-20).
+        _canonical_intent: Optional pre-computed canonical intent from ``canonicalize_intent``.
+            When supplied, the internal canonicalization step is skipped (avoids double SHA work
+            for callers that already hold this value for the persist path -- WR-05).
+        _data_shape_hash: Optional pre-computed data shape hash from ``compute_data_shape_hash``.
+            When supplied, the internal shape-hash step is skipped (avoids double SHA work
+            for callers that already hold this value for the persist path -- WR-05).
 
     Returns:
         A 64-character lowercase hex SHA-256 digest.
     """
-    canonical = canonicalize_intent(intent)
-    shape_hash = compute_data_shape_hash(raw_content)
+    canonical = _canonical_intent if _canonical_intent is not None else canonicalize_intent(intent)
+    shape_hash = _data_shape_hash if _data_shape_hash is not None else compute_data_shape_hash(raw_content)
     context_descriptor = f"{importer_id or _SYSTEM_IMPORTER}|{catalog_id}"
     pack_descriptor = style_pack_id if style_pack_id is not None else _NO_PACK_SENTINEL
 
