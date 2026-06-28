@@ -197,7 +197,11 @@ async def list_history(
     D-15 best-effort: returns [] (not 5xx) on repository errors.
     D-16: surfaces only ui_spec_templates rows, never genui_generation_events.
     """
-    summaries = await repo.list_recent(limit=limit, offset=offset, importer_id=importer_id)
+    try:
+        summaries = await repo.list_recent(limit=limit, offset=offset, importer_id=importer_id)
+    except Exception:
+        logger.warning("genui_list_history_failed", exc_info=True)
+        summaries = []
     rows = [
         HistoryRowView(
             id=s.id,
