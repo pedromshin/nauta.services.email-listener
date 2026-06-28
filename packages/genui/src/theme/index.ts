@@ -24,3 +24,6 @@ export {
   DEFAULT_PACK_ID,
   getStylePack,
 } from "./packs";
+
+export { ThemedRoot } from "./themed-wrapper";
+export type { ThemedRootProps } from "./themed-wrapper";

@@ -148,9 +148,9 @@ describe("ThemedRoot", () => {
   });
 
   it("T-17-04: unknown packId falls back to default pack without throwing", () => {
-    // @ts-expect-error intentionally bad packId to test runtime fallback
+    // ThemedRoot accepts `string` so unknown ids compile fine; getStylePack handles fallback.
     const container = mountTracked(
-      <ThemedRoot packId={"totally-unknown-pack-xyz" as never}>
+      <ThemedRoot packId={"totally-unknown-pack-xyz"}>
         <span data-testid="child-fallback">ok</span>
       </ThemedRoot>,
     );
@@ -237,7 +237,7 @@ const SPEC_WITH_PACK = {
 const SPEC_WITH_DEFAULT_PACK = {
   v: 1 as const,
   root: { type: "alert" as const, title: "Hello" },
-  style_pack_id: DEFAULT_PACK_ID as const,
+  style_pack_id: DEFAULT_PACK_ID,
 };
 
 describe("SpecRenderer + ThemedRoot integration", () => {

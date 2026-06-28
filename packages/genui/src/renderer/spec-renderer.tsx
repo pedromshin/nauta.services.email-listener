@@ -19,6 +19,7 @@ import * as React from "react";
 import { COMPONENT_REGISTRY } from "../registry/component-registry";
 import { useDeclaredState } from "./use-declared-state";
 import { renderNode } from "./render-node";
+import { ThemedRoot } from "../theme/themed-wrapper";
 import type { ComponentRegistry } from "../catalog/types";
 import type { SpecRoot } from "../schema/spec-schema";
 import type { RenderContext } from "./render-node";
@@ -147,15 +148,28 @@ export function SpecRenderer({
 
   const tree = renderNode(spec.root as Parameters<typeof renderNode>[0], ctx, "root");
 
-  // Wrap with ActionRegistryContext.Provider when callers supply live handlers.
-  // When `actions` is undefined, fall through to the default empty-context `{}`.
-  if (actions !== undefined) {
-    return (
+  // Build the inner tree: wrap with ActionRegistryContext.Provider when callers
+  // supply live handlers. When `actions` is undefined, use default empty-context.
+  const innerTree: React.ReactElement = actions !== undefined
+    ? (
       <ActionRegistryContext.Provider value={actions}>
         {tree}
       </ActionRegistryContext.Provider>
+    )
+    : tree;
+
+  // Wrap with ThemedRoot when spec carries a style_pack_id (Phase 17-03 / D-04).
+  // ThemedRoot is the single alias→CSS-var boundary — it sets CSS custom properties
+  // from the curated pack.resolvedVars so shadcn/ui components theme automatically.
+  // ThemedRoot is outermost, ActionRegistryContext.Provider is inside it.
+  // When no style_pack_id, skip the wrapper to avoid an extra DOM element (backward compat).
+  if (spec.style_pack_id !== undefined && spec.style_pack_id !== null) {
+    return (
+      <ThemedRoot packId={spec.style_pack_id}>
+        {innerTree}
+      </ThemedRoot>
     );
   }
 
-  return tree;
+  return innerTree;
 }
