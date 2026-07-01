@@ -44,6 +44,7 @@ import {
 } from "@nauta/ui/table";
 
 import type { AnyManifestEntry, ComponentRegistry } from "./types";
+import { ActionSchema } from "../schema/action-schema";
 
 // ---------------------------------------------------------------------------
 // Prop type declarations (one per catalog entry)
@@ -70,6 +71,7 @@ type ButtonProps = {
   readonly size?: "sm" | "md" | "lg";
   readonly disabled?: boolean;
   readonly action?: string; // ActionRegistry key — resolved by interpreter, never eval
+  readonly onClick?: z.infer<typeof ActionSchema>; // Phase-13 action binding (navigate/setState/mutate) — D-14
 };
 
 /** card — @nauta/ui/card container with named slots */
@@ -420,7 +422,7 @@ export const NAUTA_CATALOG: ComponentRegistry = Object.freeze({
   button: {
     type: "button",
     description:
-      "Clickable action button. aria-label is required for accessibility. action is an ActionRegistry key dispatched by the interpreter — never inline code.",
+      "Clickable action button. aria-label is required for accessibility. Bind clicks declaratively with `onClick` — an action object: {type:'navigate', href:'/relative-path'} for navigation (relative paths only) or {type:'setState', ...}. Alternatively `action` is an ActionRegistry key string. Never inline code / onClick handlers.",
     example: {
       label: "Submit",
       "aria-label": "Submit the form",
@@ -438,9 +440,13 @@ export const NAUTA_CATALOG: ComponentRegistry = Object.freeze({
         size: z.enum(["sm", "md", "lg"]).optional(),
         disabled: z.boolean().optional(),
         action: z.string().optional(), // ActionRegistry key — no eval
+        // Phase-13 action binding (D-14): validated ActionSchema union (navigate/setState/mutate),
+        // relative-href-only. MUST match ButtonNodeSchema in spec-schema.ts so a wire-valid button
+        // also passes render-time propsSchema.safeParse (fixes prop-validation-failed drift).
+        onClick: ActionSchema.optional(),
       })
       .strict(),
-    lockedProps: ["type", "onClick"] as ReadonlyArray<string>, // UI-SPEC §11: type always "button", onClick via ActionRegistry only
+    lockedProps: ["type"] as ReadonlyArray<string>, // UI-SPEC §11: type always "button"; onClick is now an LLM-settable action binding (D-14)
     acceptsChildren: false,
     component: ButtonComponent as AnyManifestEntry["component"],
   },

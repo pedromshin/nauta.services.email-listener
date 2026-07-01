@@ -966,3 +966,40 @@ describe("SpecRenderer page-shell (Phase 17 layout robustness)", () => {
     expect(html).not.toContain("genui-page-shell");
   });
 });
+
+describe("SpecRenderer button onClick action binding (schema-drift fix)", () => {
+  it("renders a button (not the prop-validation fallback) when onClick is a navigate action", () => {
+    const spec: SpecRoot = {
+      v: 1,
+      root: {
+        type: "button",
+        label: "Accounts",
+        "aria-label": "Navigate to Accounts",
+        variant: "outline",
+        onClick: { type: "navigate", href: "/accounts" },
+      },
+    };
+    const html = renderToStaticMarkup(
+      <SpecRenderer spec={spec} registry={COMPONENT_REGISTRY} />,
+    );
+    expect(html).not.toContain("prop validation failed");
+    expect(html).toContain("Accounts");
+  });
+
+  it("still rejects an unsafe absolute-url onClick navigate href", () => {
+    const spec: SpecRoot = {
+      v: 1,
+      root: {
+        type: "button",
+        label: "Evil",
+        "aria-label": "Evil",
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        onClick: { type: "navigate", href: "https://evil.com" } as any,
+      },
+    };
+    const html = renderToStaticMarkup(
+      <SpecRenderer spec={spec} registry={COMPONENT_REGISTRY} />,
+    );
+    expect(html).toContain("prop validation failed");
+  });
+});

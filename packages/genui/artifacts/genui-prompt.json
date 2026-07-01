@@ -1,7 +1,7 @@
 {
   "registryVersion": {
     "catalogId": "global",
-    "version": "40b5d21d845c5f331730dd902be9e951bc6b924f708410a59135be1239b38b0e"
+    "version": "31003cee3ee668641ff34c5b61f87a357b88117d97b6bdac5d5f9dc4e11fa306"
   },
   "components": [
     {
@@ -20,12 +20,11 @@
     },
     {
       "type": "button",
-      "description": "Clickable action button. aria-label is required for accessibility. action is an ActionRegistry key dispatched by the interpreter — never inline code.",
+      "description": "Clickable action button. aria-label is required for accessibility. Bind clicks declaratively with `onClick` — an action object: {type:'navigate', href:'/relative-path'} for navigation (relative paths only) or {type:'setState', ...}. Alternatively `action` is an ActionRegistry key string. Never inline code / onClick handlers.",
       "acceptsChildren": false,
       "slots": [],
       "lockedProps": [
-        "type",
-        "onClick"
+        "type"
       ]
     },
     {
