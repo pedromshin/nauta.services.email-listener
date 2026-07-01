@@ -23,6 +23,11 @@ DEFAULT_BEDROCK_MODEL_ID = "us.anthropic.claude-sonnet-4-6"
 # GenUI generation layer model IDs (D-04, D-05)
 DEFAULT_GENUI_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 DEFAULT_GENUI_ESCALATION_MODEL_ID = "us.anthropic.claude-sonnet-4-6"
+# Code-island (Phase 20/21) emits ARBITRARY UI code — quality- and size-critical, low-volume,
+# NOT cacheable. So it defaults to Sonnet (design quality + reliable tool-calling), NOT Haiku,
+# with a much larger token budget (a full custom design far exceeds the compact-spec budget).
+DEFAULT_GENUI_CODE_MODEL_ID = "us.anthropic.claude-sonnet-4-6"
+DEFAULT_GENUI_CODE_ESCALATION_MODEL_ID = "us.anthropic.claude-sonnet-4-6"
 
 
 def parse_secret_value(value: str | None, key: str, environment: str) -> str:
@@ -103,7 +108,13 @@ class BaseAppSettings(BaseSettings):
     GENUI_ESCALATION_MODEL_ID: str = ""  # generator escalation on attempt 3 (D-05)
     GENUI_TIMEOUT_SECONDS: float = 15.0  # per-call asyncio.timeout (D-17)
     GENUI_QUARANTINE_MAX_TOKENS: int = 1024  # Call A max_tokens (D-16)
-    GENUI_GENERATOR_MAX_TOKENS: int = 3000  # Call B max_tokens (D-16)
+    GENUI_GENERATOR_MAX_TOKENS: int = 3000  # Call B (declarative spec) max_tokens (D-16)
+
+    # --- Code-island (Phase 20/21) — dedicated, larger tier for arbitrary UI code ---
+    GENUI_CODE_MODEL_ID: str = ""  # primary (attempts 1-2); default Sonnet
+    GENUI_CODE_ESCALATION_MODEL_ID: str = ""  # escalation (attempt 3); default Sonnet (set Opus via env if provisioned)
+    GENUI_CODE_MAX_TOKENS: int = 16000  # arbitrary code is large — 3000 truncates → invalid tool call → fallback
+    GENUI_CODE_TIMEOUT_SECONDS: float = 60.0  # large generations take longer than the 15s spec budget
 
     @property
     def api_key(self) -> str:
@@ -151,6 +162,16 @@ class BaseAppSettings(BaseSettings):
     def genui_escalation_model_id(self) -> str:
         """Escalation model for GenUI generator on attempt 3 (D-05)."""
         return (self.GENUI_ESCALATION_MODEL_ID or DEFAULT_GENUI_ESCALATION_MODEL_ID).strip()
+
+    @property
+    def genui_code_model_id(self) -> str:
+        """Primary model for the code-island generator (arbitrary UI code; default Sonnet)."""
+        return (self.GENUI_CODE_MODEL_ID or DEFAULT_GENUI_CODE_MODEL_ID).strip()
+
+    @property
+    def genui_code_escalation_model_id(self) -> str:
+        """Escalation model for the code-island generator on attempt 3."""
+        return (self.GENUI_CODE_ESCALATION_MODEL_ID or DEFAULT_GENUI_CODE_ESCALATION_MODEL_ID).strip()
 
 
 class DevSettings(BaseAppSettings):

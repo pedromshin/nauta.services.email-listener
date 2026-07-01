@@ -105,14 +105,25 @@ export function CodeSandboxIsland(): React.ReactElement {
     if (intent.trim().length === 0) return;
     setGenError(null);
     const res = await gen.refetch();
-    if (res.data && res.data.code.length > 0) {
-      setCode(res.data.code);
-      setActive({ code: res.data.code, heal: liveHealer });
-      setRunId((n) => n + 1);
-      if (res.data.outcome === "fallback") setGenError(res.data.reason ?? "Generation fell back.");
-    } else {
-      setGenError("Generation failed. Check the service and try again.");
+    if (!res.data || res.data.code.length === 0) {
+      setActive(null);
+      setGenError("Generation failed — no response from the service. Is the backend running?");
+      return;
     }
+    // Honest fallback: the model did NOT return a usable widget. Do not run the placeholder
+    // code and mark it "Rendered ✓" — surface the failure clearly instead.
+    if (res.data.outcome === "fallback") {
+      setActive(null);
+      setCode(res.data.code);
+      setGenError(
+        res.data.reason ??
+          "Generation fell back — the model did not return a usable widget (often a token-limit truncation or a hard prompt). Try again or simplify, and check the backend logs.",
+      );
+      return;
+    }
+    setCode(res.data.code);
+    setActive({ code: res.data.code, heal: liveHealer });
+    setRunId((n) => n + 1);
   }, [intent, gen, liveHealer]);
 
   const handlePreset = useCallback((value: string): void => {

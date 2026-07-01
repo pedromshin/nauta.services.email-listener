@@ -400,16 +400,18 @@ def _provide_genui_generator_adapter(client: AsyncAnthropicBedrock) -> GenuiGene
 def _provide_genui_code_generator_adapter(client: AsyncAnthropicBedrock) -> GenuiCodeGeneratorAdapter:
     """GenuiCodeGeneratorAdapter — Call B of the PARALLEL code-island path (D-09, SAFE-02).
 
-    Mirrors _provide_genui_generator_adapter exactly; emits arbitrary JS island code
-    instead of a declarative SpecRoot. Shares the same Bedrock client + model settings.
+    Emits arbitrary JS island code instead of a declarative SpecRoot. Uses a DEDICATED,
+    larger tier (Sonnet + big token budget + longer timeout): arbitrary UI code is
+    quality-/size-critical and non-cacheable, and the compact-spec budget (3000 tokens)
+    truncates a full custom design → invalid tool call → fallback.
     """
     settings = get_settings()
     return GenuiCodeGeneratorAdapter(
         client=client,
-        model_id=settings.genui_model_id,
-        escalation_model_id=settings.genui_escalation_model_id,
-        max_tokens=settings.GENUI_GENERATOR_MAX_TOKENS,
-        timeout_seconds=settings.GENUI_TIMEOUT_SECONDS,
+        model_id=settings.genui_code_model_id,
+        escalation_model_id=settings.genui_code_escalation_model_id,
+        max_tokens=settings.GENUI_CODE_MAX_TOKENS,
+        timeout_seconds=settings.GENUI_CODE_TIMEOUT_SECONDS,
     )
 
 
