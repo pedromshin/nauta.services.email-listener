@@ -1086,6 +1086,115 @@ describe("Phase 18 — SpecNodeType extensions: wire schema round-trip (18-01 Ta
   });
 });
 
+// ===========================================================================
+// Block 9: Phase 18 — colSpan wrapper + section manifest (18-01 Task 2 RED)
+// Tests will fail until render-node.tsx colSpan logic and section manifest entry exist.
+// ===========================================================================
+
+describe("Phase 18 — grid colSpan wrapper and section manifest (18-01 Task 2)", () => {
+  it("grid child with colSpan wraps the child in style.gridColumn span (no eval, GR-01)", () => {
+    const spec: SpecRoot = {
+      v: 1,
+      root: {
+        type: "grid",
+        cols: 3,
+        children: [
+          { type: "text", content: "Normal cell" },
+          // @ts-expect-error — colSpan is not in SpecRoot types yet (added in 18-01 Task 1 wire layer)
+          { type: "text", content: "Wide cell", colSpan: 2 },
+          { type: "text", content: "Another cell" },
+        ],
+      },
+    };
+    const html = renderToStaticMarkup(
+      <SpecRenderer spec={spec} registry={COMPONENT_REGISTRY} />,
+    );
+    // colSpan=2 on the second child → style="grid-column: span 2"
+    expect(html).toContain("span 2");
+    // No eval — colSpan is applied via style prop only
+    expect(html).not.toContain("eval(");
+    expect(html).not.toContain("[!]");
+  });
+
+  it("grid child without colSpan is NOT wrapped in an extra span div", () => {
+    const spec: SpecRoot = {
+      v: 1,
+      root: {
+        type: "grid",
+        cols: 2,
+        children: [
+          { type: "text", content: "Cell A" },
+          { type: "text", content: "Cell B" },
+        ],
+      },
+    };
+    const html = renderToStaticMarkup(
+      <SpecRenderer spec={spec} registry={COMPONENT_REGISTRY} />,
+    );
+    expect(html).not.toContain("grid-column");
+    expect(html).not.toContain("[!]");
+  });
+
+  it("section: renders without NodeErrorFallback (heading + gap + children)", () => {
+    const spec: SpecRoot = {
+      v: 1,
+      root: {
+        // @ts-expect-error — 'section' will be in SpecNodeType after this task
+        type: "section",
+        heading: "Recent Activity",
+        gap: "md",
+        children: [{ type: "text", content: "Item A" }],
+      },
+    };
+    const html = renderToStaticMarkup(
+      <SpecRenderer spec={spec} registry={COMPONENT_REGISTRY} />,
+    );
+    expect(html).not.toContain("[!]");
+    expect(html).toContain("Recent Activity");
+    expect(html).toContain("Item A");
+  });
+
+  it("section: renders without NodeErrorFallback when heading is omitted (all optional)", () => {
+    const spec: SpecRoot = {
+      v: 1,
+      root: {
+        // @ts-expect-error — 'section' will be in SpecNodeType after this task
+        type: "section",
+        children: [{ type: "text", content: "Content" }],
+      },
+    };
+    const html = renderToStaticMarkup(
+      <SpecRenderer spec={spec} registry={COMPONENT_REGISTRY} />,
+    );
+    expect(html).not.toContain("[!]");
+    expect(html).toContain("Content");
+  });
+
+  it("colSpan is NOT passed as a prop to the underlying component (renderer strips it)", () => {
+    // colSpan should NOT appear in the output as a DOM attribute (it's consumed as a wrapper)
+    const spec: SpecRoot = {
+      v: 1,
+      root: {
+        type: "grid",
+        cols: 2,
+        children: [
+          // @ts-expect-error — colSpan added at wire layer
+          { type: "badge", label: "Spanning Badge", colSpan: 2 },
+        ],
+      },
+    };
+    const html = renderToStaticMarkup(
+      <SpecRenderer spec={spec} registry={COMPONENT_REGISTRY} />,
+    );
+    expect(html).not.toContain("[!]");
+    expect(html).toContain("Spanning Badge");
+    // colSpan should appear as style (grid-column: span 2) not as HTML attr
+    expect(html).toContain("span 2");
+    // The colSpan value should NOT be rendered as a raw prop on the child element
+    expect(html).not.toContain('colspan="2"');
+  });
+});
+
 describe("SpecRenderer button onClick action binding (schema-drift fix)", () => {
   it("renders a button (not the prop-validation fallback) when onClick is a navigate action", () => {
     const spec: SpecRoot = {

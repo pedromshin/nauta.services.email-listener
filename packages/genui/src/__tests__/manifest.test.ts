@@ -132,8 +132,8 @@ describe("RegisteredTypeSchema allowlist (D-06)", () => {
     expect(RegisteredTypeSchema.safeParse("").success).toBe(false);
   });
 
-  it("REGISTERED_TYPES has exactly 10 entries", () => {
-    expect(REGISTERED_TYPES.length).toBe(10);
+  it("REGISTERED_TYPES has exactly 11 entries", () => {
+    expect(REGISTERED_TYPES.length).toBe(11);
   });
 });
 

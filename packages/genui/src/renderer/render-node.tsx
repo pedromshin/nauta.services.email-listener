@@ -191,9 +191,21 @@ function renderPositionalChildren(
 ): React.ReactNode {
   if (!Array.isArray(children)) return null;
 
-  return children.map((child: unknown, i: number) =>
-    renderNode(child as SpecNode, ctx, `${keyPrefix}-${i}`),
-  );
+  return children.map((child: unknown, i: number) => {
+    const element = renderNode(child as SpecNode, ctx, `${keyPrefix}-${i}`);
+    // colSpan: bounded integer 1-12, applied via React style — NO eval (GR-01 / Phase 18)
+    const rawChild = child as Record<string, unknown>;
+    const rawColSpan = rawChild["colSpan"];
+    if (typeof rawColSpan === "number") {
+      const colSpan = Math.max(1, Math.min(12, Math.floor(rawColSpan)));
+      return React.createElement(
+        "div",
+        { key: `${keyPrefix}-${i}-span`, style: { gridColumn: `span ${colSpan}` } },
+        element,
+      );
+    }
+    return element;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -317,7 +329,12 @@ export function renderNode(
   const props: Record<string, unknown> = {};
 
   for (const [k, v] of Object.entries(rawNode)) {
-    if (k === "type" || k === "children" || slotKeys.has(k)) continue;
+    // Strip structural keys before propsSchema.safeParse (D-22):
+    //   "type"    — discriminant key, not a prop
+    //   "children" — passed as React children, not props
+    //   slot keys — passed as slotChildren, not props
+    //   "colSpan" — consumed by renderPositionalChildren wrapper (Phase 18), not a prop
+    if (k === "type" || k === "children" || k === "colSpan" || slotKeys.has(k)) continue;
     props[k] = v;
   }
 

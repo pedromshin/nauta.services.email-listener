@@ -1,8 +1,8 @@
 /**
  * catalog/manifest.ts — Hand-authored NAUTA_CATALOG manifest.
  *
- * Contains exactly 10 catalog entries (D-01, D-02):
- *   - 2 layout primitives: stack, grid (house-built, no @nauta/ui import)
+ * Contains exactly 11 catalog entries (D-01, D-02):
+ *   - 3 layout primitives: stack, grid, section (house-built, no @nauta/ui import)
  *   - 8 leaf components: text, badge, button, card, key-value-list, separator, alert, table
  *
  * Each entry is a fully-real ManifestEntry<TProps>:
@@ -127,6 +127,14 @@ type StackProps = {
 /** grid — house-built layout primitive */
 type GridProps = {
   readonly cols?: number;
+  readonly gap?: "none" | "sm" | "md" | "lg";
+  readonly "aria-label"?: string; // optional landmark label (UI-SPEC §11)
+  readonly children?: React.ReactNode;
+};
+
+/** section — house-built semantic layout primitive (Phase 18 / CTLG-06) */
+type SectionProps = {
+  readonly heading?: string;
   readonly gap?: "none" | "sm" | "md" | "lg";
   readonly "aria-label"?: string; // optional landmark label (UI-SPEC §11)
   readonly children?: React.ReactNode;
@@ -364,8 +372,29 @@ function GridComponent({
   );
 }
 
+function SectionComponent({
+  heading,
+  gap = "md",
+  "aria-label": ariaLabel,
+  children,
+}: SectionProps): React.ReactElement {
+  const gapClass =
+    gap === "none" ? "gap-0" :
+    gap === "sm" ? "gap-2" :
+    gap === "lg" ? "gap-6" :
+    "gap-4"; // md default
+  return React.createElement(
+    "section",
+    { className: `flex flex-col ${gapClass}`, "aria-label": ariaLabel },
+    heading !== undefined
+      ? React.createElement("h2", { className: "text-base font-semibold text-foreground" }, heading)
+      : null,
+    children,
+  );
+}
+
 // ---------------------------------------------------------------------------
-// NAUTA_CATALOG — 10 fully-real manifest entries (D-01, D-02, D-03)
+// NAUTA_CATALOG — 11 fully-real manifest entries (D-01, D-02, D-03)
 // ---------------------------------------------------------------------------
 
 /**
@@ -604,6 +633,26 @@ export const NAUTA_CATALOG: ComponentRegistry = Object.freeze({
     lockedProps: [],
     acceptsChildren: true,
     component: GridComponent as AnyManifestEntry["component"],
+  },
+
+  section: {
+    type: "section",
+    description:
+      "Semantic layout section — a house-built <section> container with an optional heading and vertical flex layout. Use section to group related components under a labelled region within a page (e.g. 'Recent Activity', 'Profile Details'). Prefer section over stack when the grouping warrants a visible heading or a semantic HTML landmark. Accepts positional children.",
+    example: {
+      heading: "Recent Activity",
+      gap: "md",
+    },
+    propsSchema: z
+      .object({
+        heading: z.string().optional(),
+        gap: z.enum(["none", "sm", "md", "lg"]).optional(),
+        "aria-label": z.string().optional(), // optional landmark (UI-SPEC §11)
+      })
+      .strict(),
+    lockedProps: [],
+    acceptsChildren: true,
+    component: SectionComponent as AnyManifestEntry["component"],
   },
 } satisfies ComponentRegistry);
 
