@@ -207,7 +207,7 @@ change; Tier B-2 (jailed-eval) is the one new high-risk subsystem and is fenced 
  (completed 2026-06-28)
 
 - [x] **Phase 17: Tier A — Design-Token/Theme Layer + Style Packs + Assembly RAG** — Ground generation in an explicit design system + W3C-DTCG design tokens varied per generation + retrieved exemplars (v0's "registry" method), measured as a lift on the golden set (completed 2026-06-28)
-- [ ] **Phase 18: Tier A — Catalog Expansion** — Real domain components (avatar, list/feed-item, nav, tabs, input primitives) so composition stops reading as generic cards; depth-first, a11y-marked, CI-validated
+- [x] **Phase 18: Tier A — Catalog Expansion** — Real domain components (avatar, list/feed-item, nav, tabs, input primitives) so composition stops reading as generic cards; depth-first, a11y-marked, CI-validated (completed 2026-07-01)
 - [ ] **Phase 19: Tier B-1 — Declarative JSON-Schema Form Engine** — A `form` node backed by a schema-driven engine (RJSF/JSONForms/Formily-style) for fields, conditional logic, and customizable validation/business rules — fully declarative, no eval
 - [ ] **Phase 20: Tier B-2 — Sandboxed Code-Island (SPIKE → phase, USER SIGN-OFF GATE)** — Emit real code into an isolated sandbox (iframe/Sandpack/WebContainer) with a v0-style AST-validate/autofix/self-heal harness, for truly custom interactive widgets only; CHANGES the safety model from no-eval to jailed-eval — MUST NOT start without explicit user sign-off
 
@@ -303,12 +303,12 @@ with a strict Zod prop schema, a CI-validated example, and registry registration
   3. Each new component is registered in `COMPONENT_REGISTRY`, the registry version bumps accordingly, and the existing cache-invalidation-on-version-change behavior continues to hold.
   4. Re-running the Phase-16 eval on prompts that previously degraded to generic cards (e.g. profile, feed, navigation prompts from the corpus) shows the new components being composed, with a measurable rubric lift over the Phase-17 score.
 
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 18-01-PLAN.md — vocabulary contract: SpecNodeType union + 6 wire NodeSchemas + grid colSpan + section layout primitive
 - [x] 18-02-PLAN.md — 5 domain catalog entries: avatar, input, nav, feed-item, tabs (render side of the wire/render lockstep)
-- [ ] 18-03-PLAN.md — CI 16-entry example gate + wire/render parity test + Bedrock artifact re-emit + registry-version bump; deferred eval lift-vs-baseline
+- [x] 18-03-PLAN.md — CI 16-entry example gate + wire/render parity test + Bedrock artifact re-emit + registry-version bump; deferred eval lift-vs-baseline
 
 **UI hint**: yes
 
@@ -362,7 +362,7 @@ as a **SPIKE** (prove the sandbox + repair loop in isolation) before being commi
 |-------|----------------|--------|-----------|
 | 16. Studio Foundation — Eval Harness + History & Page-Ideas Tabs | 5/5 | Complete    | 2026-06-28 |
 | 17. Tier A — Design-Token/Theme Layer + Style Packs + Assembly RAG | 5/5 | Complete   | 2026-06-28 |
-| 18. Tier A — Catalog Expansion | 2/3 | In Progress|  |
+| 18. Tier A — Catalog Expansion | 3/3 | Complete   | 2026-07-01 |
 | 19. Tier B-1 — Declarative JSON-Schema Form Engine | 0/0 | Not started | - |
 | 20. Tier B-2 — Sandboxed Code-Island (SPIKE → phase, USER SIGN-OFF GATE) | 0/0 | Not started (blocked: user sign-off) | - |
 
