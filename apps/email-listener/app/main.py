@@ -17,6 +17,7 @@ from app.presentation.api.v1.emails import router as emails_router
 from app.presentation.api.v1.entity_instances import router as entity_instances_router
 from app.presentation.api.v1.entity_types import router as entity_types_router
 from app.presentation.api.v1.genui import router as genui_router
+from app.presentation.api.v1.genui_code import router as genui_code_router
 from app.presentation.api.v1.inbound_email import router as inbound_email_router
 from app.presentation.api.v1.sns_inbound import router as sns_inbound_router
 from app.presentation.middleware.request_logging import RequestLoggingMiddleware
@@ -63,6 +64,7 @@ def create_app() -> FastAPI:
     app.include_router(entity_instances_router)
     app.include_router(entity_types_router)
     app.include_router(genui_router)
+    app.include_router(genui_code_router)
 
     setup_dishka(container=create_container(), app=app)
     return app

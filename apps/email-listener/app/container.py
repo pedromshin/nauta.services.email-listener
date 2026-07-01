@@ -35,6 +35,7 @@ from app.application.use_cases.edit_region import (
     RejectRegionUseCase,
     SplitRegionUseCase,
 )
+from app.application.use_cases.generate_code_island import GenerateCodeIslandUseCase
 from app.application.use_cases.generate_ui_spec import GenerateUiSpecUseCase
 from app.application.use_cases.ingest_inbound_email import IngestInboundEmailUseCase, IngestionConfig
 from app.application.use_cases.manage_entity_types import (
@@ -78,6 +79,7 @@ from app.infrastructure.llm.anthropic_client import get_anthropic_client
 from app.infrastructure.llm.autofill_adapter import AnthropicAutofiller
 from app.infrastructure.llm.embedding_adapter import EmbeddingAdapter
 from app.infrastructure.llm.entity_type_classifier_adapter import AnthropicEntityTypeClassifier
+from app.infrastructure.llm.genui_code_generator_adapter import GenuiCodeGeneratorAdapter
 from app.infrastructure.llm.genui_generator_adapter import GenuiGeneratorAdapter
 from app.infrastructure.llm.genui_quarantine_adapter import GenuiQuarantineAdapter
 from app.infrastructure.llm.genui_retrieval_provider import LexicalRetrievalProvider
@@ -395,6 +397,22 @@ def _provide_genui_generator_adapter(client: AsyncAnthropicBedrock) -> GenuiGene
     )
 
 
+def _provide_genui_code_generator_adapter(client: AsyncAnthropicBedrock) -> GenuiCodeGeneratorAdapter:
+    """GenuiCodeGeneratorAdapter — Call B of the PARALLEL code-island path (D-09, SAFE-02).
+
+    Mirrors _provide_genui_generator_adapter exactly; emits arbitrary JS island code
+    instead of a declarative SpecRoot. Shares the same Bedrock client + model settings.
+    """
+    settings = get_settings()
+    return GenuiCodeGeneratorAdapter(
+        client=client,
+        model_id=settings.genui_model_id,
+        escalation_model_id=settings.genui_escalation_model_id,
+        max_tokens=settings.GENUI_GENERATOR_MAX_TOKENS,
+        timeout_seconds=settings.GENUI_TIMEOUT_SECONDS,
+    )
+
+
 def _provide_generation_audit_repository(client: Client) -> GenerationAuditRepository:
     """SupabaseGenerationAuditRepository — best-effort audit for generation events (GEN-05, D-19)."""
     return SupabaseGenerationAuditRepository(client=client)
@@ -424,6 +442,23 @@ def _provide_generate_ui_spec_use_case(
         audit=audit,
         templates=templates,
         retrieval_provider=retrieval_provider,
+    )
+
+
+def _provide_generate_code_island_use_case(
+    quarantine: GenuiQuarantineAdapter,
+    code_generator: GenuiCodeGeneratorAdapter,
+    audit: GenerationAuditRepository,
+) -> GenerateCodeIslandUseCase:
+    """Factory for GenerateCodeIslandUseCase — orchestrates the PARALLEL quarantine→code-generate→audit pipeline.
+
+    Reuses the quarantine adapter (Call A) and the audit repository; no cache (code is
+    non-deterministic). Mirrors _provide_generate_ui_spec_use_case.
+    """
+    return GenerateCodeIslandUseCase(
+        quarantine=quarantine,
+        code_generator=code_generator,
+        audit=audit,
     )
 
 
@@ -535,6 +570,13 @@ def _build_provider() -> Provider:  # noqa: PLR0915
     provider.provide(_provide_lexical_retrieval_provider, provides=RetrievalProvider)
     # GenerateUiSpecUseCase factory: quarantine + generator + audit + templates + retrieval all resolved first.
     provider.provide(_provide_generate_ui_spec_use_case, provides=GenerateUiSpecUseCase)
+
+    # ── GenUI code-island layer (PARALLEL path) ───────────────────────────────
+    # Emits arbitrary JS island code via forced tool-use, alongside the declarative
+    # spec path above (which is untouched). Reuses GenuiQuarantineAdapter (Call A) +
+    # GenerationAuditRepository; no cache (code output is non-deterministic).
+    provider.provide(_provide_genui_code_generator_adapter, provides=GenuiCodeGeneratorAdapter)
+    provider.provide(_provide_generate_code_island_use_case, provides=GenerateCodeIslandUseCase)
 
     return provider
 
