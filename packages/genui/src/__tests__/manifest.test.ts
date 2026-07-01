@@ -195,8 +195,8 @@ describe("RegisteredTypeSchema allowlist (D-06)", () => {
     expect(RegisteredTypeSchema.safeParse("").success).toBe(false);
   });
 
-  it("REGISTERED_TYPES has exactly 16 entries", () => {
-    expect(REGISTERED_TYPES.length).toBe(16);
+  it("REGISTERED_TYPES has exactly 17 entries", () => {
+    expect(REGISTERED_TYPES.length).toBe(17); // Phase 19 added the `form` entry
   });
 });
 
@@ -278,7 +278,7 @@ describe("computeRegistryHash content-hash (D-07)", () => {
     // The hash must be a 64-char SHA-256 hex — the mechanism that ties the version
     // to the key set is already proven by the "is sensitive to an added entry" test above.
     expect(REGISTRY_VERSION.version).toMatch(/^[0-9a-f]{64}$/);
-    expect(Object.keys(COMPONENT_REGISTRY).length).toBe(16);
+    expect(Object.keys(COMPONENT_REGISTRY).length).toBe(17); // Phase 19 added `form`
   });
 });
 

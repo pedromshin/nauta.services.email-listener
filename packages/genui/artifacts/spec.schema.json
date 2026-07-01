@@ -917,6 +917,242 @@
             "children"
           ],
           "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string",
+              "const": "form"
+            },
+            "title": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "fields": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "fieldType": {
+                    "type": "string",
+                    "enum": [
+                      "text",
+                      "email",
+                      "number",
+                      "tel",
+                      "url",
+                      "password",
+                      "textarea",
+                      "select",
+                      "checkbox",
+                      "radio"
+                    ]
+                  },
+                  "placeholder": {
+                    "type": "string"
+                  },
+                  "required": {
+                    "type": "boolean"
+                  },
+                  "options": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "label",
+                        "value"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "min": {
+                    "type": "number"
+                  },
+                  "max": {
+                    "type": "number"
+                  },
+                  "minLength": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "maxLength": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "pattern": {
+                    "type": "string"
+                  },
+                  "helpText": {
+                    "type": "string"
+                  },
+                  "defaultValue": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean"
+                    ]
+                  },
+                  "visibleWhen": {
+                    "type": "object",
+                    "properties": {
+                      "field": {
+                        "type": "string"
+                      },
+                      "equals": {
+                        "type": [
+                          "string",
+                          "number",
+                          "boolean"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "field",
+                      "equals"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "requiredWhen": {
+                    "type": "object",
+                    "properties": {
+                      "field": {
+                        "type": "string"
+                      },
+                      "equals": {
+                        "type": [
+                          "string",
+                          "number",
+                          "boolean"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "field",
+                      "equals"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "name",
+                  "label"
+                ],
+                "additionalProperties": false
+              },
+              "minItems": 1
+            },
+            "submitLabel": {
+              "type": "string"
+            },
+            "onSubmit": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "navigate"
+                    },
+                    "href": {
+                      "type": "string",
+                      "pattern": "^\\/",
+                      "not": {
+                        "pattern": "^(//|[a-zA-Z][a-zA-Z0-9+\\-.]*:)"
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "href"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "setState"
+                    },
+                    "key": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "value": {
+                      "type": [
+                        "string",
+                        "number",
+                        "boolean",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "key",
+                    "value"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "const": "mutate"
+                    },
+                    "procedure": {
+                      "not": {}
+                    },
+                    "params": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": [
+                          "string",
+                          "number",
+                          "boolean"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "procedure",
+                    "params"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "colSpan": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            }
+          },
+          "required": [
+            "type",
+            "fields"
+          ],
+          "additionalProperties": false
         }
       ]
     }
@@ -1844,6 +2080,242 @@
               "required": [
                 "type",
                 "children"
+              ],
+              "additionalProperties": false
+            },
+            {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "const": "form"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                },
+                "fields": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "fieldType": {
+                        "type": "string",
+                        "enum": [
+                          "text",
+                          "email",
+                          "number",
+                          "tel",
+                          "url",
+                          "password",
+                          "textarea",
+                          "select",
+                          "checkbox",
+                          "radio"
+                        ]
+                      },
+                      "placeholder": {
+                        "type": "string"
+                      },
+                      "required": {
+                        "type": "boolean"
+                      },
+                      "options": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "label": {
+                              "type": "string"
+                            },
+                            "value": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "label",
+                            "value"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "min": {
+                        "type": "number"
+                      },
+                      "max": {
+                        "type": "number"
+                      },
+                      "minLength": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "maxLength": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "pattern": {
+                        "type": "string"
+                      },
+                      "helpText": {
+                        "type": "string"
+                      },
+                      "defaultValue": {
+                        "type": [
+                          "string",
+                          "number",
+                          "boolean"
+                        ]
+                      },
+                      "visibleWhen": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "equals": {
+                            "type": [
+                              "string",
+                              "number",
+                              "boolean"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "equals"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "requiredWhen": {
+                        "type": "object",
+                        "properties": {
+                          "field": {
+                            "type": "string"
+                          },
+                          "equals": {
+                            "type": [
+                              "string",
+                              "number",
+                              "boolean"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "equals"
+                        ],
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "label"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "minItems": 1
+                },
+                "submitLabel": {
+                  "type": "string"
+                },
+                "onSubmit": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "navigate"
+                        },
+                        "href": {
+                          "type": "string",
+                          "pattern": "^\\/",
+                          "not": {
+                            "pattern": "^(//|[a-zA-Z][a-zA-Z0-9+\\-.]*:)"
+                          }
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "href"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "setState"
+                        },
+                        "key": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        },
+                        "value": {
+                          "type": [
+                            "string",
+                            "number",
+                            "boolean",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "key",
+                        "value"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "type": "string",
+                          "const": "mutate"
+                        },
+                        "procedure": {
+                          "not": {}
+                        },
+                        "params": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": [
+                              "string",
+                              "number",
+                              "boolean"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "procedure",
+                        "params"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "colSpan": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 12
+                }
+              },
+              "required": [
+                "type",
+                "fields"
               ],
               "additionalProperties": false
             }

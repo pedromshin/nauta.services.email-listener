@@ -386,6 +386,68 @@ const SectionNodeSchema = z
   })
   .strict();
 
+/**
+ * form field-spec shared schemas (Phase 19). Exported so the manifest propsSchema imports the
+ * SAME definitions — the wire ↔ render contract cannot drift by construction.
+ */
+export const FieldConditionSchema = z
+  .object({
+    field: z.string(),
+    equals: z.union([z.string(), z.number(), z.boolean()]),
+  })
+  .strict();
+
+export const FormFieldTypeSchema = z.enum([
+  "text",
+  "email",
+  "number",
+  "tel",
+  "url",
+  "password",
+  "textarea",
+  "select",
+  "checkbox",
+  "radio",
+]);
+
+export const FormFieldSchema = z
+  .object({
+    name: z.string(),
+    label: z.string(), // a11y-required (D-04 / UI-SPEC §11)
+    fieldType: FormFieldTypeSchema.optional(), // NOT `type` — avoids discriminant collision (GOTCHA-1)
+    placeholder: z.string().optional(),
+    required: z.boolean().optional(),
+    options: z
+      .array(z.object({ label: z.string(), value: z.string() }).strict())
+      .optional(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    minLength: z.number().int().min(0).optional(),
+    maxLength: z.number().int().min(0).optional(),
+    pattern: z.string().optional(),
+    helpText: z.string().optional(),
+    defaultValue: z.union([z.string(), z.number(), z.boolean()]).optional(),
+    visibleWhen: FieldConditionSchema.optional(),
+    requiredWhen: FieldConditionSchema.optional(),
+  })
+  .strict();
+
+/**
+ * form — declarative, zero-eval form (Phase 19). Fields + conditional logic + validation as DATA.
+ * onSubmit binds to the allowlisted ActionSchema seam (SEAM-02 / FORM-04) — no arbitrary endpoint.
+ */
+const FormNodeSchema = z
+  .object({
+    type: z.literal("form"),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    fields: z.array(FormFieldSchema).min(1),
+    submitLabel: z.string().optional(),
+    onSubmit: ActionSchema.optional(),
+    colSpan: z.number().int().min(1).max(12).optional(),
+  })
+  .strict();
+
 // ===========================================================================
 // SECTION 5: SpecNodeSchema — discriminated union
 //
@@ -416,6 +478,7 @@ const SpecNodeSchema = z.discriminatedUnion("type", [
   FeedItemNodeSchema,
   TabsNodeSchema,
   SectionNodeSchema,
+  FormNodeSchema,
 ]);
 
 // Wire the lazy reference immediately after construction.

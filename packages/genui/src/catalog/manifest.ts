@@ -50,7 +50,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@nauta/ui/tabs";
 
 import type { AnyManifestEntry, ComponentRegistry } from "./types";
 import { ActionSchema } from "../schema/action-schema";
-import { SpecNodeSchema } from "../schema/spec-schema";
+import { SpecNodeSchema, FormFieldSchema } from "../schema/spec-schema";
+import { FormComponent } from "./form-component";
 
 // ---------------------------------------------------------------------------
 // Prop type declarations (one per catalog entry)
@@ -1107,6 +1108,49 @@ export const NAUTA_CATALOG: ComponentRegistry = Object.freeze({
     lockedProps: [],
     acceptsChildren: false,
     component: TabsComponent as AnyManifestEntry["component"],
+  },
+
+  form: {
+    type: "form",
+    description:
+      "Declarative, interactive form (Phase 19). Carries a `fields` array (each with name, required `label`, `fieldType` — text/email/number/tel/url/password/textarea/select/checkbox/radio — plus optional required, options for select/radio, min/max/minLength/maxLength/pattern, helpText, defaultValue). Conditional logic is declarative: `visibleWhen`/`requiredWhen` = {field, equals} show/require a field based on another field's value. Validation runs on submit with inline field-level errors (no eval). `onSubmit` binds ONLY to the allowlisted action seam (navigate/setState) — never an arbitrary endpoint. For exotic/arbitrary form logic beyond this, use a code-island instead.",
+    example: {
+      title: "Lead capture",
+      fields: [
+        { name: "name", label: "Full name", fieldType: "text", required: true },
+        { name: "email", label: "Work email", fieldType: "email", required: true, placeholder: "you@company.com" },
+        {
+          name: "interest",
+          label: "Primary interest",
+          fieldType: "select",
+          options: [
+            { label: "Sales", value: "sales" },
+            { label: "Support", value: "support" },
+          ],
+        },
+        { name: "contactMe", label: "Contact me by phone", fieldType: "checkbox" },
+        {
+          name: "phone",
+          label: "Phone",
+          fieldType: "tel",
+          visibleWhen: { field: "contactMe", equals: true },
+          requiredWhen: { field: "contactMe", equals: true },
+        },
+      ],
+      submitLabel: "Request a demo",
+    },
+    propsSchema: z
+      .object({
+        title: z.string().optional(),
+        description: z.string().optional(),
+        fields: z.array(FormFieldSchema).min(1),
+        submitLabel: z.string().optional(),
+        onSubmit: ActionSchema.optional(),
+      })
+      .strict(),
+    lockedProps: [],
+    acceptsChildren: false,
+    component: FormComponent as unknown as AnyManifestEntry["component"],
   },
 } satisfies ComponentRegistry);
 

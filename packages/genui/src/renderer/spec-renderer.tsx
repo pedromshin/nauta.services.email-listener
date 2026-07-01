@@ -17,6 +17,11 @@
 import * as React from "react";
 
 import { COMPONENT_REGISTRY } from "../registry/component-registry";
+import {
+  ActionRegistryContext,
+  type ActionHandler,
+  type ActionRegistry,
+} from "./action-registry-context";
 import { useDeclaredState } from "./use-declared-state";
 import { renderNode } from "./render-node";
 import { ThemedRoot } from "../theme/themed-wrapper";
@@ -28,32 +33,11 @@ import type { RenderContext } from "./render-node";
 // ActionRegistry seam — EMPTY this phase, real handlers arrive in Phase 14 (SEAM-02)
 // ---------------------------------------------------------------------------
 
-/**
- * A single action handler function signature.
- * Phase 14 will populate the registry with real handlers per action ID.
- */
-export type ActionHandler = (value?: unknown) => void;
-
-/**
- * Map from action ID string to its handler function.
- * Intentionally empty in Phase 12 — Phase 14 fills it via context provider.
- */
-export type ActionRegistry = Readonly<Record<string, ActionHandler>>;
-
-/**
- * React context carrying the action registry.
- *
- * Default value is `{}` — all button.action IDs resolve to `undefined` (noop),
- * which is safe: the renderer checks for handler existence before calling.
- *
- * To wire real handlers: wrap with:
- *   <ActionRegistryContext.Provider value={myHandlers}>
- *     <SpecRenderer ... />
- *   </ActionRegistryContext.Provider>
- */
-export const ActionRegistryContext = React.createContext<ActionRegistry>({});
-
-ActionRegistryContext.displayName = "ActionRegistryContext";
+// ActionRegistry seam (SEAM-02) — types + context now live in a standalone module so catalog
+// components can consume the context without importing this file (avoids a manifest ↔ renderer
+// cycle). Imported locally for useActionRegistry below and re-exported for backward compatibility.
+export { ActionRegistryContext };
+export type { ActionHandler, ActionRegistry };
 
 /**
  * Hook to retrieve a handler for a given action ID.

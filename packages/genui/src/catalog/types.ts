@@ -43,7 +43,8 @@ export type SpecNodeType =
   | "nav"
   | "feed-item"
   | "tabs"
-  | "section";
+  | "section"
+  | "form";
 
 // ---------------------------------------------------------------------------
 // ManifestEntry<TProps> — per-component catalog entry shape (D-03, SPEC-RENDERER §4.1)

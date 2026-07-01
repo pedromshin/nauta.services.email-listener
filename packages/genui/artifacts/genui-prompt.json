@@ -1,7 +1,7 @@
 {
   "registryVersion": {
     "catalogId": "global",
-    "version": "d9d66f5deeb56591132a6893ada92bba9cfb6ce04d8a197c3df5adb181ce1cd0"
+    "version": "9f9a3f98b6fb656a8ca318d86c16b58183deaa34c849781321e8559841fb9bdf"
   },
   "components": [
     {
@@ -119,6 +119,13 @@
     {
       "type": "tabs",
       "description": "Tabbed content panel wrapping @nauta/ui/tabs (Radix Tabs). aria-label is required for accessibility. Each tab needs a unique value (used as the key), a label shown on the trigger, and a content node (a SpecNode rendered in the panel). defaultValue sets the initially active tab — defaults to the first tab's value. Presentational-only in Phase 18; interactive state is wired in Phase 19.",
+      "acceptsChildren": false,
+      "slots": [],
+      "lockedProps": []
+    },
+    {
+      "type": "form",
+      "description": "Declarative, interactive form (Phase 19). Carries a `fields` array (each with name, required `label`, `fieldType` — text/email/number/tel/url/password/textarea/select/checkbox/radio — plus optional required, options for select/radio, min/max/minLength/maxLength/pattern, helpText, defaultValue). Conditional logic is declarative: `visibleWhen`/`requiredWhen` = {field, equals} show/require a field based on another field's value. Validation runs on submit with inline field-level errors (no eval). `onSubmit` binds ONLY to the allowlisted action seam (navigate/setState) — never an arbitrary endpoint. For exotic/arbitrary form logic beyond this, use a code-island instead.",
       "acceptsChildren": false,
       "slots": [],
       "lockedProps": []

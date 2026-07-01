@@ -14,7 +14,8 @@
     "./eval": "./src/eval/index.ts",
     "./theme": "./src/theme/index.ts",
     "./sandbox": "./src/sandbox/index.ts",
-    "./sandbox/axe-source": "./src/sandbox/axe-source.ts"
+    "./sandbox/axe-source": "./src/sandbox/axe-source.ts",
+    "./form": "./src/form/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
