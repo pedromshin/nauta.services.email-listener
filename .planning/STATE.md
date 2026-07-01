@@ -6,10 +6,10 @@ status: ready_to_plan
 last_updated: "2026-07-01T00:43:00Z"
 progress:
   total_phases: 5
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 13
   completed_plans: 13
-  percent: 60
+  percent: 80
 ---
 
 # State
@@ -19,7 +19,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-27)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** ◆ **Phase 20 — Sandboxed Code-Island (SPIKE)** — REORDERED ahead of Phase 19 after user sign-off 2026-07-01.
+**Current focus:** ✅ **Phase 20 — Sandboxed Code-Island — COMPLETE** (SPIKE→full phase, 2026-07-01). Next: **Phase 19** (declarative form engine) — the only remaining v1.2 phase; its engine fork is open (revisit post-island).
 
 ## 🔀 PIVOT / DECISION 2026-07-01 (during `/gsd:autonomous --from 19`)
 
@@ -33,7 +33,11 @@ See: .planning/PROJECT.md (updated 2026-06-27)
 
 ### ✅ SPIKE EXECUTED + PASSED 2026-07-01
 
-New `@nauta/genui/sandbox` core (framework-free): `validate-island-code` (@babel/parser AST allowlist — blocks import/require/eval/Function/fetch/XHR/WebSocket/EventSource/sendBeacon/parent/top/opener/cookie/localStorage), `build-island-srcdoc` (`sandbox="allow-scripts"` NO same-origin + inline `<meta>` CSP `default-src 'none'; connect-src 'none'` + error harness + inlined axe), `island-message` (Zod postMessage + source-identity/null-origin/nonce auth), `repair-loop` (pure state machine: validate→autofix→run→heal≤2→fallback; re-validates healed code, rejects malicious heals), `autofix`, `safe-placeholder`, `axe-source`, fixtures (curveball soundscape mixer / broken→heals / unrepairable→fallback / 18 adversarial). Studio: new **Code-Island tab** (`code-island-frame.tsx` jailed iframe + repair driver; `code-sandbox-island.tsx` preset demo). Playwright cross-browser isolation spec authored (`apps/web/e2e/`, run deferred to connected-env). **Gates: genui tsc clean, genui vitest 416/416 (+49), web tsc clean, next build green (/studio 114kB), host no-eval clean.** Docs: 20-RESEARCH / 20-SPIKE-PLAN / 20-SPIKE-SUMMARY / 20-VERIFICATION (status human_needed: browser run + live Bedrock gen deferred, non-blocking). Declarative core UNTOUCHED (additive: 1 pkg subpath + 1 opt-in tab). **Seams for full phase:** live Bedrock intent→code (recon Option A+B), live healer, Playwright run, React/npm islands (Sandpack). **Next: promote Phase 20 → full phase; then Phase 19 form engine (fork revisited post-island).**
+New `@nauta/genui/sandbox` core (framework-free): `validate-island-code` (@babel/parser AST allowlist — blocks import/require/eval/Function/fetch/XHR/WebSocket/EventSource/sendBeacon/parent/top/opener/cookie/localStorage), `build-island-srcdoc` (`sandbox="allow-scripts"` NO same-origin + inline `<meta>` CSP `default-src 'none'; connect-src 'none'` + error harness + inlined axe), `island-message` (Zod postMessage + source-identity/null-origin/nonce auth), `repair-loop` (pure state machine: validate→autofix→run→heal≤2→fallback; re-validates healed code, rejects malicious heals), `autofix`, `safe-placeholder`, `axe-source`, fixtures (curveball soundscape mixer / broken→heals / unrepairable→fallback / 18 adversarial). Studio: new **Code-Island tab** (`code-island-frame.tsx` jailed iframe + repair driver; `code-sandbox-island.tsx` preset demo). Playwright cross-browser isolation spec authored (`apps/web/e2e/`, run deferred to connected-env). **Gates: genui tsc clean, genui vitest 416/416 (+49), web tsc clean, next build green (/studio 114kB), host no-eval clean.** Docs: 20-RESEARCH / 20-SPIKE-PLAN / 20-SPIKE-SUMMARY / 20-VERIFICATION (status human_needed: browser run + live Bedrock gen deferred, non-blocking). Declarative core UNTOUCHED (additive: 1 pkg subpath + 1 opt-in tab). **Seams for full phase:** live Bedrock intent→code (recon Option A+B), live healer, Playwright run, React/npm islands (Sandpack).
+
+### ✅ FULL PHASE COMPLETE 2026-07-01 (promoted from spike)
+
+Wired live intent→code end-to-end: **Python** `GenuiCodeGeneratorAdapter` (Bedrock `emit_code_island` forced tool-use, Haiku→Sonnet, temp=0, timeout, SAFE_FALLBACK_CODE, no eval) + `GenerateCodeIslandUseCase` (quarantine→generate→best-effort audit reusing GenerationEvent, `registry_version="code-island-v1"`, no migration) + `POST /v1/genui/code-island/generate` (X-API-Key, always-200 envelope) + Dishka DI; declarative path untouched. **TS/web** tRPC `genui.codeIslandGenerate` (proxy+fallback) + `/studio` Code-Island tab live "generate from intent" + live re-generate healer. **Adversarial review (ultracode):** 5 dims, 37 findings, 31 confirmed, 5 high/crit — **0 unmitigated by the runtime jail**; hardened the AST-allowlist bypass class (computed/template/alias/destructure/reflection/constructor-chain, fail-closed dynamic) + pinned postMessage targetOrigin + CSP-drift guard. **Gates:** genui tsc + 438 vitest; api-client 44; web tsc + build green (/studio 115kB); Python 27 new + 92 regression pytest, ruff/mypy/lint-imports clean; host no-eval clean. Commits: f8ab67c (tRPC/web), 2411900 (Python), 2aa0a07 (hardening). Docs: 20-SUMMARY / 20-VERIFICATION (status human_needed). **DEFERRED (connected-env, non-blocking, DEF-20-01):** live Bedrock smoke, Playwright cross-browser isolation run, Phase-16 eval-harness lift-vs-baseline (EVAL-01/02). **Next: Phase 19** (declarative form engine) — last v1.2 phase; engine fork (JSONForms / custom+AJV / RJSF / forms-inside-islands) still OPEN, revisit informed by the island. Milestone v1.2 = 4/5 phases complete.
 
 ## Milestone v1.1 — Generative UI Engine — 🎉 COMPLETE 2026-06-27 (4 phases, 15 plans; autonomous run)
 

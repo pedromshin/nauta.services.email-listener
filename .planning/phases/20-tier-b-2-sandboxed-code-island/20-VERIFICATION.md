@@ -1,11 +1,25 @@
 ---
 status: human_needed
 phase: 20
-mode: spike
+mode: full-phase
 date: 2026-07-01
 ---
 
-# Phase 20 — Sandboxed Code-Island (SPIKE) — VERIFICATION
+# Phase 20 — Sandboxed Code-Island (FULL PHASE) — VERIFICATION
+
+**Verdict:** FULL PHASE COMPLETE (machine-verified) + ADVERSARIALLY REVIEWED. Promoted from SPIKE:
+live intent→code generation wired end-to-end (Bedrock forced tool-use, offline-mocked). A multi-agent
+adversarial review (37 findings, 31 confirmed, **0 high/critical unmitigated by the runtime jail**) drove
+defense-in-depth hardening of the AST allowlist + postMessage. Connected-env items deferred (non-blocking,
+consistent with DEF-17-05-01 / DEF-18-03-01): live Bedrock smoke, Playwright browser run, eval-harness lift.
+
+**Latest gates:** genui tsc clean · genui vitest 438 · api-client 44 · web tsc clean · next build green ·
+Python 27 new + 92 regression pytest · ruff/mypy/lint-imports clean · host no-eval clean.
+See [20-SUMMARY.md](./20-SUMMARY.md).
+
+---
+
+## Original SPIKE verification (retained)
 
 **Verdict:** SPIKE PASSED (machine-verified). Two items require a connected environment / human
 (non-blocking, consistent with this project's deferral pattern).
