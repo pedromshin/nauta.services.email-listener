@@ -1,25 +1,22 @@
 "use client";
 
 /**
- * code-sandbox-island.tsx — /studio "Code-Island" tab (Phase 20 SPIKE).
+ * code-sandbox-island.tsx — /studio "Code-Island" tab (Phase 20).
  *
- * Demonstrates jailed-eval arbitrary-code rendering: pick a preset (or edit code) and Run it in
- * a sandboxed opaque-origin iframe driven by the validate→autofix→run→heal→fallback loop.
- * Presets prove each path: the curveball widget (impossible in the declarative catalog), a
- * broken island that self-heals, an unrepairable island that falls back, and an adversarial
- * island that the allowlist blocks before execution.
- *
- * SEAM (full phase): live intent → code generation via Bedrock (GenuiCodeGeneratorAdapter +
- * POST /v1/genui/code-island/generate + tRPC genui.codeIsland.generate). The spike is
- * paste/fixture-driven and requires no backend, so the sandbox + repair loop are proven offline.
+ * TWO modes, both feeding the jailed CodeIslandFrame:
+ *  1. LIVE: type an intent → tRPC genui.codeIslandGenerate → Bedrock emits arbitrary JS island
+ *     code → rendered in the sandboxed frame with the repair loop. The live healer re-generates
+ *     with the runtime error appended (bounded by the frame's ≤2 attempt budget).
+ *  2. PRESETS: hand-authored fixtures proving each path (curveball / self-heal / fallback / blocked).
  *
  * Security: the HOST does no eval/Function/dangerouslySetInnerHTML — execution is jailed to the
- * iframe; dangerous code is rejected by the AST allowlist first.
+ * iframe; the AST allowlist rejects dangerous code before execution. D-06: generation is
+ * manually triggered (enabled:false + refetch), never automatic.
  */
 
 import React, { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import { Play } from "lucide-react";
+import { Loader2, Play, Sparkles } from "lucide-react";
 
 import { Button } from "@nauta/ui/button";
 import { Textarea } from "@nauta/ui/textarea";
@@ -41,13 +38,13 @@ import {
   type IslandHealer,
 } from "@nauta/genui/sandbox";
 
+import { api } from "~/trpc/react";
+
 const CodeIslandFrame = dynamic(
   () => import("./code-island-frame").then((m) => ({ default: m.CodeIslandFrame })),
   {
     ssr: false,
-    loading: () => (
-      <div className="text-sm text-muted-foreground">Loading sandboxed runtime…</div>
-    ),
+    loading: () => <div className="text-sm text-muted-foreground">Loading sandboxed runtime…</div>,
   },
 );
 
@@ -70,15 +67,53 @@ const PRESETS: readonly Preset[] = [
 ];
 
 export function CodeSandboxIsland(): React.ReactElement {
+  const [intent, setIntent] = useState<string>("");
   const [presetId, setPresetId] = useState<string>(PRESETS[0]!.id);
   const [code, setCode] = useState<string>(PRESETS[0]!.code);
   const [runId, setRunId] = useState<number>(0);
   const [active, setActive] = useState<{ code: string; heal?: IslandHealer } | null>(null);
+  const [genError, setGenError] = useState<string | null>(null);
+
+  const utils = api.useUtils();
+  const gen = api.genui.codeIslandGenerate.useQuery(
+    { intent, rawContent: "" },
+    { enabled: false, retry: false, refetchOnWindowFocus: false },
+  );
+
+  // Live healer: regenerate with the runtime error appended. Bounded by the frame's attempt budget.
+  const liveHealer: IslandHealer = useCallback(
+    async (failedCode, error) => {
+      try {
+        const res = await utils.genui.codeIslandGenerate.fetch({
+          intent: `${intent}\n\nThe previous attempt threw a runtime error: ${error}\nReturn corrected, self-contained code.`,
+          rawContent: "",
+        });
+        return res.outcome === "fallback" || res.code.length === 0 ? null : res.code;
+      } catch {
+        return null;
+      }
+    },
+    [utils, intent],
+  );
 
   const currentPreset = useMemo(
     () => PRESETS.find((p) => p.id === presetId) ?? PRESETS[0]!,
     [presetId],
   );
+
+  const handleGenerate = useCallback(async (): Promise<void> => {
+    if (intent.trim().length === 0) return;
+    setGenError(null);
+    const res = await gen.refetch();
+    if (res.data && res.data.code.length > 0) {
+      setCode(res.data.code);
+      setActive({ code: res.data.code, heal: liveHealer });
+      setRunId((n) => n + 1);
+      if (res.data.outcome === "fallback") setGenError(res.data.reason ?? "Generation fell back.");
+    } else {
+      setGenError("Generation failed. Check the service and try again.");
+    }
+  }, [intent, gen, liveHealer]);
 
   const handlePreset = useCallback((value: string): void => {
     const preset = PRESETS.find((p) => p.id === value) ?? PRESETS[0]!;
@@ -86,7 +121,8 @@ export function CodeSandboxIsland(): React.ReactElement {
     setCode(preset.code);
   }, []);
 
-  const handleRun = useCallback((): void => {
+  const handleRunPreset = useCallback((): void => {
+    setGenError(null);
     setActive({ code, heal: currentPreset.heal });
     setRunId((n) => n + 1);
   }, [code, currentPreset]);
@@ -94,16 +130,35 @@ export function CodeSandboxIsland(): React.ReactElement {
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="rounded-md border border-border/60 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-        <strong className="text-foreground">Jailed-eval SPIKE.</strong> Code runs in a sandboxed
-        opaque-origin iframe (no host DOM/cookies/storage; network blocked by CSP). An AST
-        allowlist rejects dangerous APIs before execution; a v0-style repair loop self-heals
-        runtime errors (≤2 attempts) then falls back to a safe placeholder. Live intent → code
-        generation via Bedrock is the full-phase seam.
+        <strong className="text-foreground">Jailed-eval code-island.</strong> Generated code runs in a
+        sandboxed opaque-origin iframe (no host DOM/cookies/storage; network blocked by CSP). An AST
+        allowlist rejects dangerous APIs before execution; a v0-style repair loop self-heals runtime
+        errors (≤2 attempts) then falls back to a safe placeholder.
       </div>
 
+      {/* LIVE generation from intent */}
+      <div className="flex flex-col gap-2 rounded-lg border border-border/60 p-3">
+        <span className="text-sm font-medium">Generate from intent</span>
+        <Textarea
+          value={intent}
+          onChange={(e) => setIntent(e.target.value)}
+          placeholder="e.g. a web soundscape mixer that feels like a physical desktop console"
+          aria-label="Generation intent"
+          className="h-20"
+        />
+        <div className="flex items-center gap-3">
+          <Button onClick={handleGenerate} disabled={gen.isFetching || intent.trim().length === 0} className="gap-1">
+            {gen.isFetching ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Sparkles className="size-4" aria-hidden />}
+            Generate &amp; run
+          </Button>
+          {genError ? <span className="text-xs text-red-600">{genError}</span> : null}
+        </div>
+      </div>
+
+      {/* PRESET fixtures */}
       <div className="flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1 text-sm">
-          <span className="text-muted-foreground">Preset</span>
+          <span className="text-muted-foreground">Or try a preset</span>
           <Select value={presetId} onValueChange={handlePreset}>
             <SelectTrigger className="w-72" aria-label="Code-island preset">
               <SelectValue />
@@ -117,9 +172,9 @@ export function CodeSandboxIsland(): React.ReactElement {
             </SelectContent>
           </Select>
         </label>
-        <Button onClick={handleRun} className="gap-1">
+        <Button variant="outline" onClick={handleRunPreset} className="gap-1">
           <Play className="size-4" aria-hidden />
-          Run in sandbox
+          Run preset
         </Button>
       </div>
 
@@ -138,7 +193,7 @@ export function CodeSandboxIsland(): React.ReactElement {
         <CodeIslandFrame key={runId} code={active.code} heal={active.heal} />
       ) : (
         <div className="text-sm text-muted-foreground">
-          Pick a preset and press <span className="font-medium">Run in sandbox</span>.
+          Generate from an intent, or pick a preset and press Run.
         </div>
       )}
     </div>
