@@ -113,8 +113,13 @@ class BaseAppSettings(BaseSettings):
     # --- Code-island (Phase 20/21) — dedicated, larger tier for arbitrary UI code ---
     GENUI_CODE_MODEL_ID: str = ""  # primary (attempts 1-2); default Sonnet
     GENUI_CODE_ESCALATION_MODEL_ID: str = ""  # escalation (attempt 3); default Sonnet (set Opus via env if provisioned)
-    GENUI_CODE_MAX_TOKENS: int = 16000  # arbitrary code is large — 3000 truncates → invalid tool call → fallback
-    GENUI_CODE_TIMEOUT_SECONDS: float = 60.0  # large generations take longer than the 15s spec budget
+    # Bedrock InvokeModel is NON-STREAMING: it buffers the WHOLE completion before returning
+    # headers, so the timeout must cover total generation time. Sonnet at ~60-90 tok/s means
+    # 8000 tokens ≈ 100-160s. Budget is tuned to reliably COMPLETE within the timeout (16000 +
+    # a 60s timeout guaranteed a timeout→fallback). A real fix (stream + show progress) is a
+    # Phase-21 follow-up; until then this trades some size for actually returning.
+    GENUI_CODE_MAX_TOKENS: int = 8000
+    GENUI_CODE_TIMEOUT_SECONDS: float = 240.0
 
     @property
     def api_key(self) -> str:
