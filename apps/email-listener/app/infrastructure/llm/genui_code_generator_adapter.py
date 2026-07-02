@@ -298,16 +298,9 @@ class GenuiCodeGeneratorAdapter:
             escalated_this_attempt = attempt == 2
             model_id = self._escalation_model_id if escalated_this_attempt else self._model_id
 
-            async with asyncio.timeout(self._timeout_seconds):
-                response = await self._client.messages.create(  # type: ignore[call-overload]
-                    model=model_id,
-                    max_tokens=self._max_tokens,
-                    temperature=0,
-                    system=system_blocks,
-                    tools=[_EMIT_TOOL],
-                    tool_choice={"type": "tool", "name": _EMIT_TOOL_NAME},
-                    messages=messages,
-                )
+            response = await self._stream_message(
+                model_id=model_id, system_blocks=system_blocks, messages=messages
+            )
 
             candidate = self._parse_response(response)
             if candidate is not None:
@@ -355,6 +348,39 @@ class GenuiCodeGeneratorAdapter:
             escalated=True,
             is_fallback=True,
         )
+
+    async def _stream_message(
+        self,
+        *,
+        model_id: str,
+        system_blocks: list[dict[str, Any]],
+        messages: list[dict[str, Any]],
+    ) -> Any:
+        """Stream the generation, enforcing an INACTIVITY timeout between events.
+
+        Bedrock InvokeModel is non-streaming — it buffers the ENTIRE completion before
+        returning response headers — so a total-time timeout is fragile: a large custom UI
+        (thousands of tokens at Bedrock throughput) reliably exceeds any fixed cap and falls
+        back. Streaming yields events continuously; we reschedule the deadline on every event,
+        so we fail ONLY if the stream stalls for `self._timeout_seconds` (a genuinely stuck
+        call), letting a slow-but-steady multi-minute generation complete. Returns the
+        accumulated final Message (the forced tool_use block is fully parsed).
+        """
+        loop = asyncio.get_running_loop()
+        async with self._client.messages.stream(  # type: ignore[call-overload]
+            model=model_id,
+            max_tokens=self._max_tokens,
+            temperature=0,
+            system=system_blocks,
+            tools=[_EMIT_TOOL],
+            tool_choice={"type": "tool", "name": _EMIT_TOOL_NAME},
+            messages=messages,
+        ) as stream:
+            async with asyncio.timeout(self._timeout_seconds) as cm:
+                async for _event in stream:
+                    # Each streamed event = activity → push the inactivity deadline forward.
+                    cm.reschedule(loop.time() + self._timeout_seconds)
+                return await stream.get_final_message()
 
     def _parse_response(self, response: Any) -> tuple[str, str] | None:
         """Extract (code, language) from the emit_code_island tool_use block.
