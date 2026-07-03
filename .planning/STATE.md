@@ -2,13 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: "Generative UI: Realism & Interactivity"
-status: ready_to_plan
-last_updated: "2026-07-01T00:43:00Z"
+status: Awaiting next milestone
+last_updated: "2026-07-03T01:31:27.184Z"
+last_activity: 2026-07-03 — Milestone v1.2 completed and archived
 progress:
   total_phases: 5
   completed_phases: 5
-  total_plans: 13
-  completed_plans: 13
+  total_plans: 14
+  completed_plans: 14
   percent: 100
 ---
 
@@ -19,19 +20,48 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-27)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** ◆ **Phase 21 — Generation Quality Verification** (chosen over closing v1.2; quality/verify pass FIRST). All 5 build phases complete (16,17,18,20,19). Do NOT audit/complete/cleanup until generation quality is verified against live Bedrock.
+**Current focus:** 🎉 **Milestone v1.2 SHIPPED + archived 2026-07-03.** No active milestone — start the next with `/gsd:new-milestone` (v1.3 proposal in `.planning/research/v1.3/`). Code-island generation verified working live; multi-candidate+judge + $30 budget guard in place.
+
+## Deferred Items
+
+Acknowledged and deferred at the v1.2 milestone close (2026-07-03) — all are connected-env / browser
+verifications (no code gaps), consistent with this project's long-standing pattern:
+
+| Category | Phase | Item | Status |
+|----------|-------|------|--------|
+| verification_gap | 05 | 05-VERIFICATION.md | human_needed |
+| verification_gap | 06 | 06-VERIFICATION.md | human_needed |
+| verification_gap | 07 | 07-VERIFICATION.md | human_needed |
+| verification_gap | 09 | 09-VERIFICATION.md | human_needed |
+| verification_gap | 12 | 12-VERIFICATION.md | human_needed |
+| verification_gap | 15 | 15-VERIFICATION.md | human_needed |
+| verification_gap | 16 | 16-VERIFICATION.md | human_needed |
+| verification_gap | 17 | 17-VERIFICATION.md | human_needed |
+| verification_gap | 18 | 18-VERIFICATION.md | human_needed |
+| verification_gap | 19 | 19-VERIFICATION.md | human_needed |
+| verification_gap | 20 | 20-VERIFICATION.md | human_needed |
+| uat_gap | 04 | 04-UAT.md | diagnosed (0 open) |
+| uat_gap | 09 | 09-HUMAN-UAT.md | partial (3 open) |
+| uat_gap | 16 | 16-HUMAN-UAT.md | partial (3 open) |
+| uat_gap | 17 | 17-HUMAN-UAT.md | partial (0 open) |
+
+**v1.2-specific deferrals (→ v1.3 / DEF-*):** eval-lift-vs-baseline on the v1.2 corpus (DEF-17-05-01/
+18-03-01/19-01/20-01), Playwright code-island isolation run, live-progress studio streaming. All need
+live Bedrock / a browser.
 
 ## Phase 21 — Generation Quality Verification (in progress 2026-07-01)
 
 **Why:** live testing showed the code-island `Generation fell back` on real prompts ("complex full twitter clone") — NOT a design-taste issue, a hard failure. Root cause: the code-island reused the declarative generator's tiny budget (Haiku, max_tokens=3000, 15s) → arbitrary UI code truncates mid tool-call → invalid → 3 retries fail → SAFE_FALLBACK_CODE (which the studio then rendered as a misleading "Rendered ✓").
 
 **OFFLINE levers DONE (need backend restart to take effect):**
+
 - Code-island `exports is not defined` crash fixed: srcdoc shims window.module/exports + autofix strips `export {}` (commit edc89fc).
 - Strong design-quality generator prompt + forbid module/JSX (edc89fc).
 - **Dedicated code-island tier**: Sonnet primary, GENUI_CODE_MAX_TOKENS=16000, GENUI_CODE_TIMEOUT_SECONDS=60 (declarative stays Haiku/3000) — settings + DI (commit 3f8d160). **This is the fix for the fallback.**
 - Honest fallback UX: outcome=fallback no longer renders placeholder as "Rendered ✓" (3f8d160).
 
 **LIVE / connected-env (USER must run — no Bedrock in the headless session):**
+
 1. **Restart FastAPI + `npm run dev`** (stale process still has old settings/prompt/model).
 2. Code-Island tab → generate a real prompt → confirm it now returns real code (Sonnet, 16k budget), not fallback. If it still falls back, capture FastAPI logs (the `genui_code_generator_*` structlog events).
 3. Run the Phase-16 eval harness against live Bedrock to MEASURE quality vs baseline (DEF-17-05-01/18-03-01/19-01/20-01 — never run).
@@ -39,10 +69,12 @@ See: .planning/PROJECT.md (updated 2026-06-27)
 **✅ RESOLVED 2026-07-02 — code-island generation VERIFIED WORKING (live Bedrock, user-confirmed "all good").** Root-cause chain fixed: (1) `exports is not defined` — CJS boilerplate crashed the jail → srcdoc shims module/exports + autofix strips `export{}` (edc89fc); (2) generic output → Sonnet tier + design-quality prompt (edc89fc, 3f8d160); (3) every real design fell back — Bedrock InvokeModel is NON-STREAMING (buffers whole completion) so a total-time timeout always fired → switched adapter to `messages.stream` with an INACTIVITY timeout via `asyncio.timeout.reschedule` (b86647d); (4) still 60s — STALE `@lru_cache` settings under `uvicorn reload=DEBUG`/zombie processes → fixed by a COLD restart (`uv run uvicorn app.main:app`, single worker, no --reload). Commits: edc89fc, 3f8d160, 0e37307, b86647d, dc7e4f5.
 
 **Phase 21 progress:**
+
 - ✅ **Multi-candidate + judge generation** (dda8937): quarantine once → fan out N concurrent code gens (varied temp 0.4-1.0) → LLM judge picks best. Cost-conservative defaults: GENUI_CODE_CANDIDATES=2, judge=Haiku. New GenuiCodeJudgeAdapter. 51 code-island pytest green. Degrades gracefully (all-fallback→fallback, 1-good→skip judge, judge-fail→first). **Requires backend restart to activate.**
 - ✅ **Cost guard** (4b28ec6): $30/month AWS budget + email alerts (80%/100% actual + forecast) in `infrastructure/aws/budget.tf` — user must `terraform apply`. Generation is manual-click only (idle=$0); ~$0.10-0.25/click at N=2 Haiku-judge.
 
 **Remaining Phase 21:**
+
 1. **Live-progress streaming to the studio** (the one UX wart left — silent 1-4min spinner; stream code/preview live like Lovable). Recommended next build.
 2. **Eval harness vs baseline** (DEF-17-05-01/18-03-01/19-01/20-01) — never run; measures quality lift.
 3. **Then:** audit → complete → cleanup v1.2 with honest numbers.
@@ -52,6 +84,7 @@ See: .planning/PROJECT.md (updated 2026-06-27)
 **North-star restated by user:** *"Let the user create absolutely any design they want — not locked to any pattern — from raw pure empty HTML to making their page look like anything. Better than WordPress / Lovable, where it's hard to break out of the tool's natural design. I want this from day 0."*
 
 **Decisions:**
+
 1. **Phase 20 (sandboxed code-island) USER SIGN-OFF = GRANTED.** The no-eval → jailed-eval safety-model change is accepted. Begins as a SPIKE.
 2. **REORDER: Phase 20 runs BEFORE Phase 19.** The code-island is the only architecture piece that escapes the fixed catalog "natural design"; it becomes the primary day-0 path. Target architecture = HYBRID (reliable declarative core as fast-path + arbitrary sandboxed code-island for the long tail) — matches the v0/Bolt + Google A2UI + sandboxed-MCP-App research already in this doc.
 3. **Phase 19 form engine DEFERRED to after Phase 20.** Form-engine library (JSONForms / custom+AJV / RJSF) left OPEN — forms may end up expressed inside code-islands rather than a separate declarative engine. Revisit post-spike.
@@ -1014,3 +1047,14 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 16-02 | ~60m | 3 tasks | 9 files — pure deterministic rubric (valid-spec/composed/a11y, weights 0.30/0.30/0.25/0.15) + LLM-as-judge adapter (escalation model, forced tool-use) + eval runner (create_container(), golden-set, Semaphore(3)) + report writer (JSON+MD) + compare helper; 21 tests (20 unit + 1 integration smoke, gated RUN_GENUI_EVAL=1); 87% coverage gate holds; ruff clean; Task 4 (live Bedrock baseline) deferred to connected env |
 | Phase 16-05 | ~10m | 2 tasks | 2 files — history-island.tsx (474 lines: HistoryMasterList + HistoryDetailView + 7 sub-components + offset pager + parseSpecSafe safe-fallback) + studio-tabs.tsx slot swap (HistoryPlaceholder → HistoryIsland); STDO-02 reuse contract intact (one dynamic SpecRenderer); D-18 read-only; tsc+next build green; Task 3 browser-verify deferred (autonomous, no backend) |
 | Phase 17-01 | ~45m | 3 tasks | 11 files — 6 WCAG-AA DTCG packs (nauta-teal baseline + 5 distinct personalities; HSL triplet colors, no raw hex) + TOKEN_ALIASES (21-alias closed set) + TokenAliasSchema/StylePackIdSchema/TokenPropsSchema (fourth Zod allowlist) + style_pack_id on SpecRootSchema + re-emitted drift-gate-green Bedrock artifacts; TDD RED/GREEN per task (5 commits); 289/289 tests green; tsc clean |
+
+## Current Position
+
+Phase: Milestone v1.2 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-07-03 — Milestone v1.2 completed and archived
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

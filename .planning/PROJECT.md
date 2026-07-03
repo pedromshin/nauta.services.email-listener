@@ -13,7 +13,25 @@ Reliably receive every inbound email destined for agent@magnitudetech.com.br and
 observable — nothing lost, everything logged — as the foundation for later parsing,
 persistence, and the agentic pipeline.
 
-## Current Milestone: v1.1 Generative UI Engine
+## Current State (v1.2 shipped 2026-07-03)
+
+**Shipped:** **v1.2 — Generative UI: Realism & Interactivity** (Phases 16–20) archived. The genui engine
+is now a **hybrid**: the reliable spec-first declarative core (v1.1) + design-token **style packs**, an
+expanded catalog, a **zero-eval declarative form engine**, and a **jailed-eval sandboxed code-island**
+(iframe opaque-origin jail + AST allowlist + v0 repair loop) that generates *any* design from a prompt —
+verified working live on Bedrock, with parallel multi-candidate + LLM-judge for quality. Cost-guarded
+($30 AWS budget alert; conservative defaults; manual-only generation). Local/`/studio`-only.
+
+**Deferred to v1.3 (connected-env):** run the eval harness vs baseline to *measure* quality lift, the
+Playwright code-island isolation run, and live-progress studio streaming. A v1.3 proposal
+("conversational genui on a 2D canvas") exists in `.planning/research/v1.3/`.
+
+**Prior milestones:** v1.0 MVP (email ingest→parse→extract→entities/knowledge, Phases 1–11); v1.1
+Generative UI Engine (Catalog→Spec→Registry→Renderer→Generation→Cache→Studio, Phases 12–15).
+
+---
+
+## Milestone history: v1.1 Generative UI Engine (historical)
 
 **Goal:** A runtime, spec-first generative-UI engine that, on the fly, generates web-page UI
 (components, props, declared state, data bindings) from a constrained catalog of existing
