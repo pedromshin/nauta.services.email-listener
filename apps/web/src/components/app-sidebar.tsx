@@ -1,7 +1,16 @@
 "use client";
 
 import type { LucideIcon } from "lucide-react";
-import { Boxes, FlaskConical, Inbox, Moon, Share2, Shapes, Sun } from "lucide-react";
+import {
+  Boxes,
+  FlaskConical,
+  Inbox,
+  MessageSquare,
+  Moon,
+  Share2,
+  Shapes,
+  Sun,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
@@ -33,13 +42,14 @@ interface SoonNavItem {
   readonly soon: true;
 }
 
-// D-20 nav order: Inbox · Entity Types · Entities · Knowledge · Studio (all live).
+// D-20 nav order: Inbox · Entity Types · Entities · Knowledge · Studio · Chat (all live).
 const LIVE_NAV_ITEMS: ReadonlyArray<LiveNavItem> = [
   { href: "/", label: "Inbox", icon: Inbox },
   { href: "/entity-types", label: "Entity Types", icon: Shapes },
   { href: "/entities", label: "Entities", icon: Boxes },
   { href: "/knowledge", label: "Knowledge", icon: Share2 }, // ← promoted Phase 11
   { href: "/studio", label: "Studio", icon: FlaskConical }, // ← Phase 15: repointed to /studio landing (D-14)
+  { href: "/chat", label: "Chat", icon: MessageSquare }, // ← Phase 22 (D-11): single Chat nav item
 ];
 
 const SOON_NAV_ITEMS: ReadonlyArray<SoonNavItem> = []; // Knowledge removed
