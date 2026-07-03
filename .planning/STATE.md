@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: "Conversational GenUI: Chat, Canvas & Dual-Channel"
 status: executing
-last_updated: "2026-07-03T20:20:30.008Z"
-last_activity: 2026-07-03 -- Phase 22 Plan 04 (cost circuit breaker) complete
+last_updated: "2026-07-03T20:54:22.439Z"
+last_activity: 2026-07-03 -- Phase 22 Plan 05 (chat spine persistence + rail UI) complete
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 11
-  completed_plans: 4
+  completed_plans: 5
   percent: 0
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-06-27)
 ## Current Position
 
 Phase: 22 (Chat Spine + Persistence + Streaming) — EXECUTING
-Plan: 5 of 11
-Status: Executing Phase 22 (22-01 complete: chat data model + migration 0023 applied to local Postgres; 22-02 complete: ChatProvider port + curated 7-entry model registry + BedrockChatAdapter/OpenRouterChatAdapter + GET /v1/chat/models; 22-03 complete: sanitized MarkdownRenderer — react-markdown + remark-gfm + rehype-sanitize + rehype-highlight, CHAT-07/D-28; 22-04 complete: cost ledger port/adapter + fail-closed CostCircuitBreaker (config-only $0.50/$2.00/$5.00 caps) + D-22 genui usage-capture fix)
-Last activity: 2026-07-03 -- Phase 22 Plan 04 (cost circuit breaker) complete
+Plan: 6 of 11
+Status: Executing Phase 22 (22-01 complete: chat data model + migration 0023 applied to local Postgres; 22-02 complete: ChatProvider port + curated 7-entry model registry + BedrockChatAdapter/OpenRouterChatAdapter + GET /v1/chat/models; 22-03 complete: sanitized MarkdownRenderer — react-markdown + remark-gfm + rehype-sanitize + rehype-highlight, CHAT-07/D-28; 22-04 complete: cost ledger port/adapter + fail-closed CostCircuitBreaker (config-only $0.50/$2.00/$5.00 caps) + D-22 genui usage-capture fix; 22-05 complete: chat tRPC router create/list/rename/delete/getHistory over Drizzle + /chat route with collapsible rail, home empty-state, inline rename, hard-delete confirm dialog, single Chat sidebar nav item — CHAT-02 done, CHAT-01 persistence-side done)
+Last activity: 2026-07-03 -- Phase 22 Plan 05 (chat spine persistence + rail UI) complete
 
-Progress: [████░░░░░░] 36%
+Progress: [█████░░░░░] 45%
 
 ## v1.3 Roadmap Summary (2026-07-02)
 
@@ -300,7 +300,7 @@ User direction after v1.1: keep LOCAL + `/studio` sandbox (no deploy/convergence
   + UI-SPEC + PATTERNS generated. Decision coverage 21/21 (D-01..D-21). Commits: 1444bce (UI-SPEC+PATTERNS),
   b59e929 (plans), 521f767 + ffe968f (review fixes). Ready to execute.
 
-- **Resume file:** .planning/phases/22-chat-spine-persistence-streaming/22-02-SUMMARY.md
+- **Resume file:** None
 - **Architecture locked:** identity = **repurpose `entity_instances`** (nauta_id nullable + `source`
   col); resolution = **suggest-only, never auto** → **parallel BlendedRAG (dense HNSW + lexical
   pg_trgm exact/fuzzy) fused by RRF(k=60)**, on-confirm + re-runnable backfill, confirm writes back
@@ -1042,6 +1042,10 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 - 2026-07-03 (22-04): D-22 fix widened beyond the plan's literal files_modified list to the calling use cases (generate_ui_spec.py, generate_code_island.py) — the adapters alone exposing real usage does not close the gap; the use cases were still discarding it before GenerationEvent
 - 2026-07-03 (22-04): GenuiCodeJudgeAdapter.rank() return type changed int -> JudgeResult(best_index, input_tokens, output_tokens) to have a result object to attach usage to; all call sites/tests updated in the same commit, all prior test assertions preserved 1:1
 - 2026-07-03 (22-04): test files placed at the flat tests/ level (repeating the 22-02 precedent) instead of the plan's literal tests/unit/ path — that directory does not exist anywhere in this repo
+- 2026-07-03 (22-05): DEFAULT_CHAT_MODEL_ID = "us.anthropic.claude-sonnet-4-6" mirrors chat_model_registry.py's Bedrock default (22-02) — keeps the web-side D-10 remember-last-used fallback in sync with the Python registry's first entry (hand-sync note in both files)
+- 2026-07-03 (22-05): D-10 remember-last-used logic extracted into a pure resolveDefaultModelId helper (mirrors entities/gallery.ts's shapeGalleryItem pattern) — DB-free-testable without mocking a Drizzle query chain, which has no precedent anywhere in this codebase
+- 2026-07-03 (22-05): rename/delete mutations + the single DeleteConversationDialog instance live inside ConversationRail (not lifted to page.tsx) — keeps the rail self-contained and avoids nesting an AlertDialog inside a DropdownMenu (known Radix portal/focus conflict)
+- 2026-07-03 (22-05): rail-collapse toggle placed in a page-level top bar, outside the rail's own 0px-collapsed width container — the UI-SPEC's literal 0px-collapsed rail would otherwise have no way to reopen once collapsed; localStorage read/write still lives inside conversation-rail.tsx per the plan's acceptance criteria
 
 ## Performance Metrics
 
@@ -1090,3 +1094,4 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 22 P02 | 75min | 3 tasks | 11 files |
 | Phase 22 P03 | ~25min | 1 tasks | 3 files |
 | Phase 22 P04 | 25min | 3 tasks | 13 files |
+| Phase 22 P05 | 25min | 3 tasks | 13 files |

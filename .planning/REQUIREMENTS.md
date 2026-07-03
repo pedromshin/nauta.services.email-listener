@@ -11,7 +11,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 ### Chat Spine
 
 - [x] **CHAT-01**: User can open `/chat`, send a message, and get an agent response; conversations + messages persist across reload
-- [ ] **CHAT-02**: User can see a conversation list, switch between chats, rename and delete them
+- [x] **CHAT-02**: User can see a conversation list, switch between chats, rename and delete them
 - [ ] **CHAT-03**: User can stop an in-flight generation
 - [x] **CHAT-04**: User can regenerate the last response without retyping
 - [ ] **CHAT-05**: A failed turn shows an inline, retryable error without losing the user's in-flight input
@@ -95,7 +95,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | CHAT-01 | Phase 22 | Complete |
-| CHAT-02 | Phase 22 | Pending |
+| CHAT-02 | Phase 22 | Complete |
 | CHAT-03 | Phase 22 | Pending |
 | CHAT-04 | Phase 22 | Complete |
 | CHAT-05 | Phase 22 | Pending |
