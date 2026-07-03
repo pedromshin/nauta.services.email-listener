@@ -11,11 +11,13 @@
 
 import { createTRPCRouter } from "../../trpc";
 import { chatConversationsProcedures } from "./conversations";
+import { chatCostProcedures } from "./cost";
 import { chatHistoryProcedures } from "./history";
 import { modelsProcedure } from "./models";
 
 export const chatRouter = createTRPCRouter({
   ...chatConversationsProcedures,
   ...chatHistoryProcedures,
+  ...chatCostProcedures,
   models: modelsProcedure,
 });

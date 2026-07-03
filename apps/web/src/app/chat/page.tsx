@@ -10,11 +10,13 @@ import { api } from "~/trpc/react";
 import { ChatHomeEmptyState } from "./_components/chat-home-empty-state";
 import { Composer } from "./_components/composer";
 import { ConversationRail } from "./_components/conversation-rail";
+import { CostMeter } from "./_components/cost-meter";
 import {
   GeneratingIndicator,
   MessageList,
   type MessageListItem,
 } from "./_components/message-list";
+import { ModelPicker } from "./_components/model-picker";
 import {
   useChatStream,
   type MessagePart,
@@ -73,6 +75,9 @@ function ConversationView({
     // Every terminal branch persists whatever streamed so far (D-15) — the
     // persisted row is now authoritative, so replace the transient turns.
     void utils.chat.getHistory.invalidate({ conversationId });
+    // A completed turn writes a new chat_cost_ledger row (22-06/22-07) — keep
+    // the session cost meter live (D-23) without a manual refresh.
+    void utils.chat.sessionCost.invalidate({ conversationId });
     setOptimisticUserText(null);
   }, [conversationId, utils]);
 
@@ -115,6 +120,10 @@ function ConversationView({
       <span className="sr-only" aria-live="polite">
         {liveAnnouncementFor(chatStream.state)}
       </span>
+      <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-border/50 px-4">
+        <ModelPicker conversationId={conversationId} currentModelId={modelId} />
+        <CostMeter conversationId={conversationId} />
+      </div>
       <MessageList turns={turns} streamingTurnId={STREAMING_TURN_ID} />
       <GeneratingIndicator state={chatStream.state} />
       <Composer
