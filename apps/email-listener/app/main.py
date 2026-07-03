@@ -12,6 +12,7 @@ from fastapi import FastAPI
 from app.container import create_container
 from app.infrastructure.observability.logging import setup_logging
 from app.presentation.api.health import router as health_router
+from app.presentation.api.v1.chat_models import router as chat_models_router
 from app.presentation.api.v1.components import router as components_router
 from app.presentation.api.v1.emails import router as emails_router
 from app.presentation.api.v1.entity_instances import router as entity_instances_router
@@ -65,6 +66,7 @@ def create_app() -> FastAPI:
     app.include_router(entity_types_router)
     app.include_router(genui_router)
     app.include_router(genui_code_router)
+    app.include_router(chat_models_router)
 
     setup_dishka(container=create_container(), app=app)
     return app
