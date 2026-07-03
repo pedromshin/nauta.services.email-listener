@@ -52,6 +52,7 @@ from app.application.use_cases.propose_regions import ProposeRegionsUseCase
 from app.application.use_cases.receive_inbound_email import ReceiveInboundEmailUseCase
 from app.application.use_cases.reprocess_email import ReprocessEmailUseCase
 from app.application.use_cases.resolve_entity_candidates import ResolveEntityCandidatesUseCase
+from app.application.use_cases.run_chat_turn import RunChatTurn
 from app.application.use_cases.set_component_relationship import (
     SetComponentEntityTypeUseCase,
     SetComponentFieldRelationshipUseCase,
@@ -501,6 +502,32 @@ def _provide_chat_provider_router(
     return ChatProviderRouter(bedrock=bedrock, openrouter=openrouter)
 
 
+def _provide_run_chat_turn(
+    messages: ChatMessageRepository,
+    runs: ChatRunRepository,
+    conversations: ChatConversationRepository,
+    router: ChatProviderRouter,
+    breaker: CostCircuitBreaker,
+    ledger: CostLedgerRepository,
+) -> RunChatTurn:
+    """Factory for RunChatTurn — the chat turn agent (SEAM-04, Phase 22-06).
+
+    default_importer_id/max_output_tokens come from settings (single-tenant
+    DEFAULT_IMPORTER_ID + CHAT_MAX_OUTPUT_TOKENS), not per-call parameters.
+    """
+    settings = get_settings()
+    return RunChatTurn(
+        messages=messages,
+        runs=runs,
+        conversations=conversations,
+        router=router,
+        breaker=breaker,
+        ledger=ledger,
+        default_importer_id=settings.DEFAULT_IMPORTER_ID,
+        max_output_tokens=settings.CHAT_MAX_OUTPUT_TOKENS,
+    )
+
+
 def _provide_openrouter_chat_adapter(http_client: httpx.AsyncClient) -> OpenRouterChatAdapter:
     """OpenRouterChatAdapter — the second ChatProvider implementation (Phase 22, D-07, D-22).
 
@@ -729,6 +756,7 @@ def _build_provider() -> Provider:  # noqa: PLR0915
     provider.provide(_provide_chat_run_repository, provides=ChatRunRepository)
     provider.provide(_provide_chat_conversation_repository, provides=ChatConversationRepository)
     provider.provide(_provide_chat_provider_router, provides=ChatProviderRouter)
+    provider.provide(_provide_run_chat_turn, provides=RunChatTurn)
 
     return provider
 

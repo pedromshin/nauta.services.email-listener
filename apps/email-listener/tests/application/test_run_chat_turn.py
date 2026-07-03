@@ -65,6 +65,21 @@ _SMALL_CONTEXT_MODEL = ChatModel(
     best_for="testing",
 )
 
+_TEST_MODELS = {model.id: model for model in (_SERVER_MODEL, _SMALL_CONTEXT_MODEL)}
+
+
+@pytest.fixture(autouse=True)
+def _patch_model_registry(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Substitute run_chat_turn's get_model() lookup with this file's test-only models.
+
+    RunChatTurn resolves models via the REAL curated CHAT_MODEL_REGISTRY
+    (chat_model_registry.get_model) — these tests use synthetic ChatModel
+    fixtures instead (e.g. a tiny context_tokens=5 budget to exercise D-26
+    trimming deterministically), so the module-level name is patched for
+    every test in this file.
+    """
+    monkeypatch.setattr("app.application.use_cases.run_chat_turn.get_model", _TEST_MODELS.get)
+
 
 class FakeChatMessageRepository:
     """In-memory ChatMessageRepository test double."""
