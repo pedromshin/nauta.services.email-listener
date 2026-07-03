@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: "Conversational GenUI: Chat, Canvas & Dual-Channel"
 status: planning
-last_updated: "2026-07-03T02:00:55.564Z"
-last_activity: 2026-07-03
+last_updated: "2026-07-02T00:00:00.000Z"
+last_activity: 2026-07-02
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,7 +20,29 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-27)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** 🎉 **Milestone v1.2 SHIPPED + archived 2026-07-03.** No active milestone — start the next with `/gsd:new-milestone` (v1.3 proposal in `.planning/research/v1.3/`). Code-island generation verified working live; multi-candidate+judge + $30 budget guard in place.
+**Current focus:** 📋 **Milestone v1.3 roadmap created (2026-07-02)** — 4 phases (22–25): Chat spine + streaming → 2D canvas + shared state → dual-channel genui → anticipatory-prompting SPIKE. Ready to plan Phase 22. Local/sandbox only (no deploy criteria).
+
+## Current Position
+
+Phase: 22 of 25 (Chat Spine + Persistence + Streaming) — first v1.3 phase
+Plan: TBD (not yet broken down)
+Status: Ready to plan
+Last activity: 2026-07-02 — ROADMAP.md + REQUIREMENTS.md traceability written for v1.3 (24 requirements, 100% mapped across 4 phases: 22 chat spine/streaming, 23 canvas/shared state, 24 dual-channel genui, 25 anticipatory-prompting SPIKE)
+
+Progress: [░░░░░░░░░░] 0%
+
+## v1.3 Roadmap Summary (2026-07-02)
+
+Phase numbering continues from v1.2 (ended at Phase 20, informal Phase 21 quality-verification effort). v1.3 = Phases 22–25, derived from research/SUMMARY.md's confirmed 4-phase dependency chain (chat spine → canvas → dual-channel → anticipatory SPIKE). Full detail: .planning/ROADMAP.md § Phase Details.
+
+| Phase | Goal | Requirements |
+|-------|------|--------------|
+| 22 — Chat Spine + Streaming | Persistent, streamed `/chat` with progressive genui rendering, cost-capped | CHAT-01..07, STREAM-01..03, SEAM-03, SEAM-04 |
+| 23 — 2D Canvas + Shared State | genui panels-as-nodes on an infinite canvas, cross-panel state + data edges | CANVAS-01..04, STATE-01..02 |
+| 24 — Dual-Channel GenUI | Agent↔user widget round-trips (proposal cards → clarify-widgets), safely re-validated | DCUI-01..04 |
+| 25 — Anticipatory Prompting (SPIKE) | Eval-gated, frequency-capped proactive prompt triggers | ANTIC-01, ANTIC-02 |
+
+Coverage: 24/24 v1.3 requirements mapped, no orphans. Next: `/gsd:plan-phase 22`.
 
 ## Deferred Items
 

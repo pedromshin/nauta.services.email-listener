@@ -94,13 +94,36 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated by roadmap) | | |
+| CHAT-01 | Phase 22 | Pending |
+| CHAT-02 | Phase 22 | Pending |
+| CHAT-03 | Phase 22 | Pending |
+| CHAT-04 | Phase 22 | Pending |
+| CHAT-05 | Phase 22 | Pending |
+| CHAT-06 | Phase 22 | Pending |
+| CHAT-07 | Phase 22 | Pending |
+| STREAM-01 | Phase 22 | Pending |
+| STREAM-02 | Phase 22 | Pending |
+| STREAM-03 | Phase 22 | Pending |
+| SEAM-03 | Phase 22 | Pending |
+| SEAM-04 | Phase 22 | Pending |
+| CANVAS-01 | Phase 23 | Pending |
+| CANVAS-02 | Phase 23 | Pending |
+| CANVAS-03 | Phase 23 | Pending |
+| CANVAS-04 | Phase 23 | Pending |
+| STATE-01 | Phase 23 | Pending |
+| STATE-02 | Phase 23 | Pending |
+| DCUI-01 | Phase 24 | Pending |
+| DCUI-02 | Phase 24 | Pending |
+| DCUI-03 | Phase 24 | Pending |
+| DCUI-04 | Phase 24 | Pending |
+| ANTIC-01 | Phase 25 | Pending |
+| ANTIC-02 | Phase 25 | Pending |
 
 **Coverage:**
 - v1.3 requirements: 24 total
-- Mapped to phases: 0
-- Unmapped: 24 ⚠️
+- Mapped to phases: 24
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-07-02*
-*Last updated: 2026-07-02 after initial definition*
+*Last updated: 2026-07-02 after roadmap creation (Phases 22–25, 100% coverage)*
