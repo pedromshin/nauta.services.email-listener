@@ -7,6 +7,21 @@ import {
   type FormFieldSpec,
 } from "./validate-form";
 
+describe("validateForm — whitespace handling", () => {
+  it("treats a whitespace-only value as empty for a required field", () => {
+    const f: FormFieldSpec[] = [{ name: "name", label: "Name", required: true }];
+    expect(validateForm(f, { name: "   " }).errors.name).toContain("required");
+  });
+
+  it("validates minLength/pattern against trimmed content, not surrounding spaces", () => {
+    const f: FormFieldSpec[] = [{ name: "t", label: "T", minLength: 2 }];
+    // "  " trims to "" → empty + optional → valid (not a bogus length pass)
+    expect(validateForm(f, { t: "  " }).valid).toBe(true);
+    // " a " trims to "a" → below minLength 2
+    expect(validateForm(f, { t: " a " }).errors.t).toContain("at least 2");
+  });
+});
+
 describe("validateForm — required", () => {
   const fields: FormFieldSpec[] = [{ name: "email", label: "Email", fieldType: "email", required: true }];
 

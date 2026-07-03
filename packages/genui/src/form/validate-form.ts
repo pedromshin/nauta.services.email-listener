@@ -82,7 +82,9 @@ export function isFieldRequired(field: FormFieldSpec, values: FormValues): boole
 
 function isEmpty(value: FormValue, fieldType: FieldType): boolean {
   if (fieldType === "checkbox") return value !== true;
-  return value === undefined || value === null || value === "";
+  // Whitespace-only strings count as empty so a lone space cannot satisfy `required`.
+  if (typeof value === "string") return value.trim() === "";
+  return value === undefined || value === null;
 }
 
 function isValidUrl(value: string): boolean {
@@ -117,7 +119,8 @@ function lengthError(field: FormFieldSpec, value: string): string | null {
 
 function validateField(field: FormFieldSpec, raw: FormValue): string | null {
   const fieldType = field.fieldType ?? "text";
-  const strVal = typeof raw === "string" ? raw : String(raw);
+  // Trim so length/pattern/format checks reflect real content, not surrounding whitespace.
+  const strVal = (typeof raw === "string" ? raw : String(raw)).trim();
 
   switch (fieldType) {
     case "number": {
