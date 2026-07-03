@@ -40,6 +40,7 @@ import * as React from "react";
 import { Skeleton } from "@nauta/ui/skeleton";
 import { SpecRenderer } from "@nauta/genui/renderer";
 import {
+  MAX_SPEC_DEPTH,
   SAFE_FALLBACK_SPEC,
   SpecNodeSchema,
   SpecRootSchema,
@@ -256,7 +257,17 @@ interface PartialNodeResult {
   readonly hasPending: boolean;
 }
 
-function buildPartialNode(raw: unknown): PartialNodeResult {
+/**
+ * @param depth — remaining recursion budget (T-22-35: a pathologically deep
+ * partial buffer must never risk a stack overflow before the finalized
+ * SpecRootSchema's own MAX_SPEC_DEPTH refinement ever gets a chance to run —
+ * this partial walk is the one path that touches untrusted structure BEFORE
+ * that root-level gate applies).
+ */
+function buildPartialNode(raw: unknown, depth: number = MAX_SPEC_DEPTH): PartialNodeResult {
+  if (depth <= 0) {
+    return { node: null, hasPending: true };
+  }
   if (typeof raw !== "object" || raw === null) {
     return { node: null, hasPending: true };
   }
@@ -281,7 +292,7 @@ function buildPartialNode(raw: unknown): PartialNodeResult {
     const rawChildren = record.children as unknown[];
     const validChildren: Record<string, unknown>[] = [];
     for (const child of rawChildren) {
-      const result = buildPartialNode(child);
+      const result = buildPartialNode(child, depth - 1);
       if (result.node !== null && !result.hasPending) {
         validChildren.push(result.node);
       } else {
@@ -300,7 +311,7 @@ function buildPartialNode(raw: unknown): PartialNodeResult {
 
   for (const field of SINGLE_CHILD_FIELDS) {
     if (field in record) {
-      const result = buildPartialNode(record[field]);
+      const result = buildPartialNode(record[field], depth - 1);
       if (result.node !== null && !result.hasPending) {
         patched[field] = result.node;
       } else {
