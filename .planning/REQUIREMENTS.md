@@ -12,7 +12,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 - [x] **CHAT-01**: User can open `/chat`, send a message, and get an agent response; conversations + messages persist across reload
 - [x] **CHAT-02**: User can see a conversation list, switch between chats, rename and delete them
-- [ ] **CHAT-03**: User can stop an in-flight generation
+- [x] **CHAT-03**: User can stop an in-flight generation
 - [x] **CHAT-04**: User can regenerate the last response without retyping
 - [ ] **CHAT-05**: A failed turn shows an inline, retryable error without losing the user's in-flight input
 - [ ] **CHAT-06**: Composer supports multi-line input, send-on-enter, disabled-while-streaming, and optimistic render of the user's message
@@ -21,7 +21,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 ### Streaming
 
 - [x] **STREAM-01**: Agent text responses stream live (FastAPI SSE → web) with a visible generating indicator
-- [ ] **STREAM-02**: Declarative genui specs render progressively as partial trees during generation — render-what's-valid, placeholder the rest (closes GEN-04)
+- [x] **STREAM-02**: Declarative genui specs render progressively as partial trees during generation — render-what's-valid, placeholder the rest (closes GEN-04)
 - [x] **STREAM-03**: An application-level cost circuit breaker (per-turn/per-session caps) guards streaming chat, independent of the AWS budget alert
 
 ### Canvas
@@ -96,13 +96,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | CHAT-01 | Phase 22 | Complete |
 | CHAT-02 | Phase 22 | Complete |
-| CHAT-03 | Phase 22 | Pending |
+| CHAT-03 | Phase 22 | Complete |
 | CHAT-04 | Phase 22 | Complete |
 | CHAT-05 | Phase 22 | Pending |
 | CHAT-06 | Phase 22 | Pending |
 | CHAT-07 | Phase 22 | Complete |
 | STREAM-01 | Phase 22 | Complete |
-| STREAM-02 | Phase 22 | Pending |
+| STREAM-02 | Phase 22 | Complete |
 | STREAM-03 | Phase 22 | Complete |
 | SEAM-03 | Phase 22 | Complete |
 | SEAM-04 | Phase 22 | Complete |
