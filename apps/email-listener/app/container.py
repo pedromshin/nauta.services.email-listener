@@ -88,6 +88,7 @@ from app.domain.services.cost_circuit_breaker import CostCircuitBreaker
 from app.infrastructure.llm.anthropic_client import get_anthropic_client
 from app.infrastructure.llm.autofill_adapter import AnthropicAutofiller
 from app.infrastructure.llm.bedrock_chat_adapter import BedrockChatAdapter
+from app.infrastructure.llm.chat_tools import EMIT_UI_SPEC_TOOL
 from app.infrastructure.llm.embedding_adapter import EmbeddingAdapter
 from app.infrastructure.llm.entity_type_classifier_adapter import AnthropicEntityTypeClassifier
 from app.infrastructure.llm.genui_code_generator_adapter import GenuiCodeGeneratorAdapter
@@ -510,10 +511,14 @@ def _provide_run_chat_turn(
     breaker: CostCircuitBreaker,
     ledger: CostLedgerRepository,
 ) -> RunChatTurn:
-    """Factory for RunChatTurn — the chat turn agent (SEAM-04, Phase 22-06).
+    """Factory for RunChatTurn — the chat turn agent (SEAM-04, Phase 22-06/22-07).
 
     default_importer_id/max_output_tokens come from settings (single-tenant
     DEFAULT_IMPORTER_ID + CHAT_MAX_OUTPUT_TOKENS), not per-call parameters.
+    emit_ui_spec_tool is wired here (not imported by run_chat_turn.py itself) —
+    RunChatTurn takes it as a plain dict constructor parameter specifically so
+    the application layer never imports app.infrastructure (Phase 22-07,
+    see chat_tools.py's layering note).
     """
     settings = get_settings()
     return RunChatTurn(
@@ -523,6 +528,7 @@ def _provide_run_chat_turn(
         router=router,
         breaker=breaker,
         ledger=ledger,
+        emit_ui_spec_tool=EMIT_UI_SPEC_TOOL,
         default_importer_id=settings.DEFAULT_IMPORTER_ID,
         max_output_tokens=settings.CHAT_MAX_OUTPUT_TOKENS,
     )

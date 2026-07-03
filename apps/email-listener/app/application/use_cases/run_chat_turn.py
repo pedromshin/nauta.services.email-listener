@@ -1,4 +1,4 @@
-"""RunChatTurn — the chat agent/run orchestration loop (SEAM-04, SEAM-03, Phase 22-06).
+"""RunChatTurn — the chat agent/run orchestration loop (SEAM-04, SEAM-03, Phase 22-06/22-07).
 
 Assembles token-budget-trimmed history (D-26), routes to the right transport via
 the ChatProviderRouter (D-04..D-07), gates the turn through the CostCircuitBreaker
@@ -12,6 +12,18 @@ that persist WHATEVER partial content streamed so far — never silently dropped
 — then write exactly one terminal run event + the matching message/run status.
 regenerate() creates a new active sibling version of an assistant turn (D-16),
 reusing the same run loop.
+
+Phase 22-07 (STREAM-02, D-02, D-05, D-18): emit_ui_spec is offered to the
+provider ONLY when the picked model is flagged genui-capable in the registry
+(D-05) -- the tool dict itself is injected via the constructor (see
+`emit_ui_spec_tool` below) rather than imported from
+app.infrastructure.llm.chat_tools, since the "Application does not import
+infrastructure" import-linter contract forbids that. A genui-capable model's
+tool-call partial-JSON (ToolCallDelta) streams progressively as `tool_call` run
+events and, once its JSON is complete, finalizes into an interleaved genui_spec
+part (D-18) alongside a single `tool_result` run event. The spec is stored
+verbatim -- no server-side schema validation/fallback (that gate is the web
+boundary, FOUND-6).
 
 Built as an async generator with NO HTTP dependency — the SSE transport (22-07)
 is a thin wrapper over `run()`/`regenerate()`.
@@ -27,10 +39,13 @@ import asyncio
 import contextlib
 import json
 import uuid
+from dataclasses import dataclass, replace
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, cast
 
-from app.domain.ports.chat_provider import StreamEnd, TextDelta, UsageDelta
+import structlog
+
+from app.domain.ports.chat_provider import StreamEnd, TextDelta, ToolCallDelta, UsageDelta
 from app.domain.ports.chat_repositories import (
     ChatConversationRepository,
     ChatMessage,
@@ -52,6 +67,8 @@ if TYPE_CHECKING:
 
     from app.domain.ports.chat_provider import ChatDelta, ChatProvider
 
+logger = structlog.get_logger(__name__)
+
 # SEAM-04: one agent, one run per turn today.
 _AGENT_ID = "chat-agent-v1"
 
@@ -61,6 +78,26 @@ _SYSTEM_PROMPT = (
 )
 
 _TITLE_SNIPPET_MAX_LEN = 60
+
+
+@dataclass(frozen=True)
+class _TurnState:
+    """Immutable accumulator folded across a turn's streamed deltas (Phase 22-07, D-18).
+
+    parts: FINALIZED interleaved content parts, in emission order (text | genui_spec).
+    text_buffer: text accumulated since the last flush point (not yet a part).
+    pending_tool_name/pending_tool_id/pending_tool_json: an in-flight emit_ui_spec
+        tool call's partial JSON, accumulated across ToolCallDelta chunks sharing
+        the same id, until a different delta type/id finalizes it into a part.
+    """
+
+    parts: tuple[dict[str, Any], ...] = ()
+    text_buffer: str = ""
+    pending_tool_name: str | None = None
+    pending_tool_id: str | None = None
+    pending_tool_json: str = ""
+    input_tokens: int = 0
+    output_tokens: int = 0
 
 
 class RunChatTurn:
@@ -79,6 +116,7 @@ class RunChatTurn:
         router: ChatProviderRouter,
         breaker: CostCircuitBreaker,
         ledger: CostLedgerRepository,
+        emit_ui_spec_tool: dict[str, Any],
         default_importer_id: str,
         max_output_tokens: int = 4096,
     ) -> None:
@@ -88,6 +126,7 @@ class RunChatTurn:
         self._router = router
         self._breaker = breaker
         self._ledger = ledger
+        self._emit_ui_spec_tool = emit_ui_spec_tool
         self._default_importer_id = default_importer_id
         self._max_output_tokens = max_output_tokens
 
@@ -241,9 +280,9 @@ class RunChatTurn:
         trimmed_history = _trim_history_to_budget(history, context_tokens=model.capabilities.context_tokens)
         provider_messages = _build_provider_messages(trimmed_history)
 
-        accumulated_text = ""
-        input_tokens = 0
-        output_tokens = 0
+        # D-05: emit_ui_spec is offered ONLY to genui-capable models; a text-only
+        # model never even sees a tool exists (D-02/D-03 — no other data tools).
+        tools: tuple[dict[str, Any], ...] = (self._emit_ui_spec_tool,) if model.capabilities.genui else ()
 
         # Cast: ChatProvider.stream() is typed AsyncIterator[ChatDelta] on the Protocol
         # (deliberately loose so a future non-generator implementation stays valid),
@@ -256,35 +295,26 @@ class RunChatTurn:
                 model_id=model_id,
                 system=_SYSTEM_PROMPT,
                 messages=provider_messages,
-                tools=(),
+                tools=tools,
                 max_tokens=self._max_output_tokens,
             ),
         )
+        state = _TurnState()
         try:
             async with contextlib.aclosing(raw_stream) as delta_stream:
                 async for delta in delta_stream:
-                    accumulated_text, input_tokens, output_tokens, event_type, event_data = _apply_delta(
-                        delta, accumulated_text=accumulated_text, input_tokens=input_tokens, output_tokens=output_tokens
-                    )
-                    if event_type is not None:
+                    state, events = _apply_delta(delta, state)
+                    for event_type, event_data in events:
                         yield await self._emit(run.id, event_type, event_data)
 
-                    terminal_status = self._terminal_status_for(
-                        delta,
-                        model=model,
-                        accumulated_text=accumulated_text,
-                        input_tokens=input_tokens,
-                        output_tokens=output_tokens,
-                    )
+                    terminal_status = self._terminal_status_for(delta, model=model, state=state)
                     if terminal_status is not None:
                         async for event in self._terminate(
                             run=run,
                             conversation_id=conversation_id,
                             turn_index=turn_index,
-                            accumulated_text=accumulated_text,
+                            state=state,
                             status=terminal_status,
-                            input_tokens=input_tokens,
-                            output_tokens=output_tokens,
                             model=model,
                             importer_id=importer_id,
                             sibling_group_id=sibling_group_id,
@@ -297,10 +327,8 @@ class RunChatTurn:
                 run=run,
                 conversation_id=conversation_id,
                 turn_index=turn_index,
-                accumulated_text=accumulated_text,
+                state=state,
                 status="stopped",
-                input_tokens=input_tokens,
-                output_tokens=output_tokens,
                 model=model,
                 importer_id=importer_id,
                 sibling_group_id=sibling_group_id,
@@ -313,10 +341,8 @@ class RunChatTurn:
                 run=run,
                 conversation_id=conversation_id,
                 turn_index=turn_index,
-                accumulated_text=accumulated_text,
+                state=state,
                 status="failed",
-                input_tokens=input_tokens,
-                output_tokens=output_tokens,
                 model=model,
                 importer_id=importer_id,
                 sibling_group_id=sibling_group_id,
@@ -330,17 +356,15 @@ class RunChatTurn:
             run=run,
             conversation_id=conversation_id,
             turn_index=turn_index,
-            accumulated_text=accumulated_text,
+            state=state,
             status="completed",
             run_status="completed",
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
             model=model,
             importer_id=importer_id,
             sibling_group_id=sibling_group_id,
             version=version,
         )
-        yield await self._emit(run.id, "usage", {"input_tokens": input_tokens, "output_tokens": output_tokens})
+        yield await self._emit(run.id, "usage", {"input_tokens": state.input_tokens, "output_tokens": state.output_tokens})
         yield await self._emit(run.id, "completed", {})
 
         if is_first_turn:
@@ -355,9 +379,7 @@ class RunChatTurn:
         delta: ChatDelta,
         *,
         model: ChatModel,
-        accumulated_text: str,
-        input_tokens: int,
-        output_tokens: int,
+        state: _TurnState,
     ) -> ChatMessageStatus | None:
         """Return the terminal status this delta forces, or None to keep streaming.
 
@@ -368,12 +390,12 @@ class RunChatTurn:
         if isinstance(delta, StreamEnd) and delta.stop_reason == "error":
             return "failed"
         if isinstance(delta, TextDelta):
-            estimated_cost = self._estimated_cost_so_far(model=model, accumulated_text=accumulated_text)
+            estimated_cost = self._estimated_cost_so_far(model=model, state=state)
             if self._breaker.should_abort(estimated_cost):
                 return "cost_capped"
         elif isinstance(delta, UsageDelta):
             real_cost = self._breaker.estimate_turn_cost(
-                model=model, prompt_tokens_est=input_tokens, max_output_tokens=output_tokens
+                model=model, prompt_tokens_est=state.input_tokens, max_output_tokens=state.output_tokens
             )
             if self._breaker.should_abort(real_cost):
                 return "cost_capped"
@@ -385,10 +407,8 @@ class RunChatTurn:
         run: ChatRun,
         conversation_id: str,
         turn_index: int,
-        accumulated_text: str,
+        state: _TurnState,
         status: ChatMessageStatus,
-        input_tokens: int,
-        output_tokens: int,
         model: ChatModel,
         importer_id: str,
         sibling_group_id: str,
@@ -404,11 +424,9 @@ class RunChatTurn:
             run=run,
             conversation_id=conversation_id,
             turn_index=turn_index,
-            accumulated_text=accumulated_text,
+            state=state,
             status=status,
             run_status=run_status,
-            input_tokens=input_tokens,
-            output_tokens=output_tokens,
             model=model,
             importer_id=importer_id,
             sibling_group_id=sibling_group_id,
@@ -425,11 +443,9 @@ class RunChatTurn:
         run: ChatRun,
         conversation_id: str,
         turn_index: int,
-        accumulated_text: str,
+        state: _TurnState,
         status: ChatMessageStatus,
         run_status: ChatRunStatus,
-        input_tokens: int,
-        output_tokens: int,
         model: ChatModel,
         importer_id: str,
         sibling_group_id: str,
@@ -440,13 +456,16 @@ class RunChatTurn:
         Called for EVERY terminal branch (completed/cost_capped/stopped/failed)
         so a partial is never silently dropped (D-15) and the ledger always
         gets whatever usage was captured — even Decimal("0")/0 tokens when the
-        stream never reached a UsageDelta (D-21 mid-stream / T-22-22).
+        stream never reached a UsageDelta (D-21 mid-stream / T-22-22). `state`
+        is finalized here (Phase 22-07: any buffered text or in-flight
+        emit_ui_spec tool call is flushed into `parts`, D-18) so a mid-stream
+        abort never drops the interleaved partial.
         """
-        parts = ({"type": "text", "text": accumulated_text},) if accumulated_text else ()
+        finalized = _finalize_state(state)
         await self._messages.insert_message(
             conversation_id=conversation_id,
             role="assistant",
-            parts=parts,
+            parts=finalized.parts,
             turn_index=turn_index,
             status=status,
             run_id=run.id,
@@ -455,15 +474,15 @@ class RunChatTurn:
             is_active=True,
         )
         cost = self._breaker.estimate_turn_cost(
-            model=model, prompt_tokens_est=input_tokens, max_output_tokens=output_tokens
+            model=model, prompt_tokens_est=finalized.input_tokens, max_output_tokens=finalized.output_tokens
         )
         await self._ledger.record(
             UsageEvent(
                 importer_id=importer_id,
                 model_id=model.id,
                 execution_locus=model.execution_locus,
-                input_tokens=input_tokens,
-                output_tokens=output_tokens,
+                input_tokens=finalized.input_tokens,
+                output_tokens=finalized.output_tokens,
                 cost_usd=cost,
                 conversation_id=conversation_id,
                 run_id=run.id,
@@ -471,14 +490,14 @@ class RunChatTurn:
         )
         await self._runs.finish_run(run_id=run.id, status=run_status)
 
-    def _estimated_cost_so_far(self, *, model: ChatModel, accumulated_text: str) -> Decimal:
+    def _estimated_cost_so_far(self, *, model: ChatModel, state: _TurnState) -> Decimal:
         """Cheap running-cost ESTIMATE from accumulated output length (mid-stream abort signal).
 
         Real cost is always recorded post-turn from actual captured usage
         (D-22); this heuristic exists solely to decide whether to keep
         streaming, mirroring the pre-turn estimate's own heuristic contract.
         """
-        tokens_so_far = estimate_prompt_tokens(len(accumulated_text))
+        tokens_so_far = estimate_prompt_tokens(len(_accumulated_text_for_estimate(state)))
         return self._breaker.estimate_turn_cost(model=model, prompt_tokens_est=0, max_output_tokens=tokens_so_far)
 
     async def _emit(self, run_id: str, event_type: ChatRunEventType, data: dict[str, Any]) -> ChatRunEvent:
@@ -488,32 +507,127 @@ class RunChatTurn:
 
 def _apply_delta(
     delta: ChatDelta,
-    *,
-    accumulated_text: str,
-    input_tokens: int,
-    output_tokens: int,
-) -> tuple[str, int, int, ChatRunEventType | None, dict[str, Any]]:
+    state: _TurnState,
+) -> tuple[_TurnState, list[tuple[ChatRunEventType, dict[str, Any]]]]:
     """Fold one provider delta into the running turn state (pure, no I/O).
 
-    Returns (new_accumulated_text, new_input_tokens, new_output_tokens,
-    checkpoint_event_type_or_None, checkpoint_data). ToolCallDelta and a
-    non-error StreamEnd are no-ops here (D-03: no data tools in 22-06; a
-    non-error StreamEnd needs no mid-loop handling — the stream simply ends).
+    TextDelta: finalizes any in-flight emit_ui_spec tool call first (D-18
+    interleaving order), then buffers the text and emits a
+    text_delta_checkpoint event.
+    ToolCallDelta: flushes any buffered text before STARTING a new tool call
+    (or finalizes a DIFFERENT prior tool call before starting this one), then
+    accumulates this chunk's partial_json and emits a tool_call event so the
+    client can render the partial tree progressively (STREAM-02).
+    UsageDelta: records the real captured token counts; no part/event change.
+    A non-error StreamEnd needs no mid-loop handling (D-03/22-06 precedent).
     """
     if isinstance(delta, TextDelta):
-        return accumulated_text + delta.text, input_tokens, output_tokens, "text_delta_checkpoint", {"text": delta.text}
+        events: list[tuple[ChatRunEventType, dict[str, Any]]] = []
+        if state.pending_tool_id is not None:
+            state, tool_result_event = _finalize_pending_tool(state)
+            if tool_result_event is not None:
+                events.append(tool_result_event)
+        state = replace(state, text_buffer=state.text_buffer + delta.text)
+        events.append(("text_delta_checkpoint", {"text": delta.text}))
+        return state, events
+
+    if isinstance(delta, ToolCallDelta):
+        events = []
+        if state.pending_tool_id is not None and state.pending_tool_id != delta.id:
+            state, tool_result_event = _finalize_pending_tool(state)
+            if tool_result_event is not None:
+                events.append(tool_result_event)
+        if state.pending_tool_id is None:
+            state = _flush_text_buffer(state)
+            state = replace(state, pending_tool_name=delta.tool_name, pending_tool_id=delta.id, pending_tool_json="")
+        state = replace(state, pending_tool_json=state.pending_tool_json + delta.partial_json)
+        events.append(("tool_call", {"tool_name": delta.tool_name, "id": delta.id, "partial_json": delta.partial_json}))
+        return state, events
+
     if isinstance(delta, UsageDelta):
-        return accumulated_text, delta.input_tokens, delta.output_tokens, None, {}
-    return accumulated_text, input_tokens, output_tokens, None, {}
+        state = replace(state, input_tokens=delta.input_tokens, output_tokens=delta.output_tokens)
+        return state, []
+
+    return state, []
+
+
+def _flush_text_buffer(state: _TurnState) -> _TurnState:
+    """Flush any buffered text into a finalized text part (order-preserving, D-18)."""
+    if not state.text_buffer:
+        return state
+    return replace(state, parts=(*state.parts, {"type": "text", "text": state.text_buffer}), text_buffer="")
+
+
+def _finalize_pending_tool(
+    state: _TurnState,
+) -> tuple[_TurnState, tuple[ChatRunEventType, dict[str, Any]] | None]:
+    """Parse an in-flight emit_ui_spec tool call's accumulated JSON into a genui_spec part.
+
+    The spec is stored verbatim (no schema validation/fallback here — that gate
+    is the web boundary, FOUND-6). A tool call whose JSON never parses (e.g. cut
+    off mid-stream by a mid-turn abort/cancellation) is dropped rather than
+    persisting invalid JSON into a canonical typed part.
+    """
+    if state.pending_tool_id is None:
+        return state, None
+    tool_name = state.pending_tool_name or ""
+    tool_id = state.pending_tool_id
+    raw_json = state.pending_tool_json
+    cleared = replace(state, pending_tool_name=None, pending_tool_id=None, pending_tool_json="")
+    try:
+        spec: dict[str, Any] = json.loads(raw_json) if raw_json else {}
+    except (json.JSONDecodeError, TypeError):
+        logger.warning("emit_ui_spec_tool_call_parse_failed", tool_id=tool_id, tool_name=tool_name)
+        return cleared, None
+    finalized = replace(cleared, parts=(*cleared.parts, {"type": "genui_spec", "spec": spec}))
+    return finalized, ("tool_result", {"tool_name": tool_name, "id": tool_id, "spec": spec})
+
+
+def _finalize_state(state: _TurnState) -> _TurnState:
+    """Flush any remaining buffered text/pending tool call into parts (never dropped, D-15)."""
+    state, _tool_result_event = _finalize_pending_tool(state)
+    return _flush_text_buffer(state)
+
+
+def _accumulated_text_for_estimate(state: _TurnState) -> str:
+    """Cheap text-length signal for the mid-stream cost estimate (D-21 heuristic).
+
+    Sums already-finalized text parts plus the current buffer; tool-call JSON
+    length is intentionally excluded (the heuristic tracks assistant PROSE
+    output, mirroring the pre-22-07 accumulated_text estimate).
+    """
+    finalized_text = "".join(part["text"] for part in state.parts if part.get("type") == "text")
+    return finalized_text + state.text_buffer
 
 
 def _build_provider_messages(history: Sequence[ChatMessage]) -> list[dict[str, Any]]:
     """Anthropic-shaped {role, content} dicts from active-sibling ChatMessage rows (FOUND-1)."""
     return [
-        {"role": message.role, "content": list(message.parts)}
+        {"role": message.role, "content": _provider_content_blocks(message.parts)}
         for message in history
         if message.role in ("user", "assistant")
     ]
+
+
+def _provider_content_blocks(parts: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Convert canonical typed parts into Anthropic-shaped content blocks for replay.
+
+    Plain 'text' parts are already Anthropic-shaped and pass through verbatim. A
+    'genui_spec' part (D-02 emit_ui_spec, Phase 22-07) is NOT itself a valid
+    Anthropic content block — replaying it as a bare tool_use block without a
+    paired tool_result would violate the API's block-alternation contract. It is
+    replayed as a compact text stand-in instead so history resent to the
+    provider stays well-formed; full tool_use/tool_result replay is deferred to
+    the Phase 24 round-trip seam (ToolResultDelta is already reserved for it).
+    """
+    blocks: list[dict[str, Any]] = []
+    for part in parts:
+        if part.get("type") == "genui_spec":
+            spec_json = json.dumps(part.get("spec", {}), ensure_ascii=False)
+            blocks.append({"type": "text", "text": f"[emitted UI spec: {spec_json}]"})
+        else:
+            blocks.append(part)
+    return blocks
 
 
 def _estimate_message_tokens(message: ChatMessage) -> int:

@@ -65,7 +65,25 @@ _SMALL_CONTEXT_MODEL = ChatModel(
     best_for="testing",
 )
 
-_TEST_MODELS = {model.id: model for model in (_SERVER_MODEL, _SMALL_CONTEXT_MODEL)}
+# Phase 22-07: a non-genui-capable model, used to verify emit_ui_spec is NEVER
+# offered to a text-only model (D-05) — see test_happy_path_calls_provider_with_no_tools.
+_TEXT_ONLY_MODEL = ChatModel(
+    id="test-text-only-model",
+    display_name="Test Text-Only Model",
+    transport="openrouter",
+    execution_locus="server",
+    price_in_per_mtok=0.5,
+    price_out_per_mtok=1.0,
+    capabilities=ChatModelCapabilities(tools=True, genui=False, streaming=True, context_tokens=64_000),
+    best_for="testing",
+)
+
+_TEST_MODELS = {model.id: model for model in (_SERVER_MODEL, _SMALL_CONTEXT_MODEL, _TEXT_ONLY_MODEL)}
+
+# Phase 22-07: a minimal test emit_ui_spec tool dict, standing in for the real
+# EMIT_UI_SPEC_TOOL (app.infrastructure.llm.chat_tools) — this test file exercises
+# RunChatTurn in isolation and should not depend on the infrastructure layer.
+_TEST_EMIT_UI_SPEC_TOOL: dict[str, Any] = {"name": "emit_ui_spec", "description": "test", "input_schema": {}}
 
 
 @pytest.fixture(autouse=True)
@@ -260,6 +278,7 @@ def _make_use_case(
     conversations: FakeChatConversationRepository | None = None,
     breaker: FakeCostCircuitBreaker | None = None,
     ledger: FakeCostLedgerRepository | None = None,
+    emit_ui_spec_tool: dict[str, Any] | None = None,
 ) -> tuple[RunChatTurn, dict[str, Any]]:
     collaborators = {
         "messages": messages or FakeChatMessageRepository(),
@@ -276,6 +295,7 @@ def _make_use_case(
         router=collaborators["router"],
         breaker=collaborators["breaker"],
         ledger=collaborators["ledger"],
+        emit_ui_spec_tool=emit_ui_spec_tool or _TEST_EMIT_UI_SPEC_TOOL,
         default_importer_id=_IMPORTER_ID,
         max_output_tokens=1000,
     )
@@ -327,11 +347,18 @@ async def test_happy_path_yields_started_checkpoint_usage_completed() -> None:
 
 @pytest.mark.unit
 @pytest.mark.asyncio
-async def test_happy_path_calls_provider_with_no_tools() -> None:
+async def test_happy_path_calls_provider_with_no_tools_for_text_only_model() -> None:
+    """A non-genui-capable model never sees any tool offered (D-03/D-05).
+
+    Phase 22-07 note: emit_ui_spec IS now offered to genui-capable models
+    (see tests/application/test_emit_ui_spec_tool.py) — this test now exercises
+    the text-only model specifically, preserving the original "no data tools"
+    invariant (D-03) for models NOT flagged genui-capable.
+    """
     provider = FakeChatProvider([StreamEnd(stop_reason="end_turn")])
     use_case, _fakes = _make_use_case(provider=provider)
 
-    async for _ in use_case.run(conversation_id=_CONVERSATION_ID, user_text="Hi", model_id=_SERVER_MODEL.id):
+    async for _ in use_case.run(conversation_id=_CONVERSATION_ID, user_text="Hi", model_id=_TEXT_ONLY_MODEL.id):
         pass
 
     assert provider.stream_called
