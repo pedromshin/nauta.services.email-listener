@@ -21,6 +21,7 @@ candidate code strings — no raw prose.
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, cast
 
 import structlog
@@ -86,12 +87,38 @@ _SYSTEM_PROMPT = (
 )
 
 
+@dataclass(frozen=True)
+class JudgeResult:
+    """Immutable result of a GenuiCodeJudgeAdapter.rank() call (D-22).
+
+    best_index is the primary value callers want; input_tokens/output_tokens
+    surface the judge call's real usage (0 on the short-circuit < 2 candidates
+    path or on any error — no billed call was made in either case).
+    """
+
+    best_index: int
+    input_tokens: int = 0
+    output_tokens: int = 0
+
+
+def _extract_usage(response: Any) -> tuple[int, int]:
+    """Read real (input_tokens, output_tokens) off a Bedrock response (D-22).
+
+    Mirrors GenuiQuarantineAdapter's existing `.usage` capture idiom.
+    """
+    usage = getattr(response, "usage", None)
+    input_tokens = getattr(usage, "input_tokens", 0) or 0
+    output_tokens = getattr(usage, "output_tokens", 0) or 0
+    return input_tokens, output_tokens
+
+
 class GenuiCodeJudgeAdapter:
     """LLM judge that ranks N code-island candidates and returns the best index.
 
     Bedrock forced tool-use (pick_best_design). Non-streaming: the ranking output is
     tiny (an index + short reason), so a single fast messages.create is used. On any
-    error/timeout/invalid output the adapter returns 0 — never raises.
+    error/timeout/invalid output the adapter returns JudgeResult(best_index=0) —
+    never raises.
     """
 
     def __init__(
@@ -107,20 +134,21 @@ class GenuiCodeJudgeAdapter:
         self._max_tokens = max_tokens
         self._timeout_seconds = timeout_seconds
 
-    async def rank(self, *, intent_summary: str, candidates: list[str]) -> int:
-        """Return the 0-based index of the best candidate.
+    async def rank(self, *, intent_summary: str, candidates: list[str]) -> JudgeResult:
+        """Return the 0-based index of the best candidate + the judge call's real usage.
 
         Args:
             intent_summary: Neutral description of what the user wants (from Call A).
             candidates: The candidate island code strings to rank (len >= 1).
 
         Returns:
-            An index in [0, len(candidates) - 1]. Returns 0 on any error, timeout,
-            invalid tool output, out-of-range index, or when fewer than 2 candidates
-            are supplied. Never raises.
+            JudgeResult.best_index is in [0, len(candidates) - 1]. Returns index 0
+            (with input_tokens=output_tokens=0 — no call was made) on any error,
+            timeout, invalid tool output, out-of-range index, or when fewer than 2
+            candidates are supplied. Never raises.
         """
         if len(candidates) < _MIN_CANDIDATES_TO_RANK:  # nothing to rank; first is the answer.
-            return 0
+            return JudgeResult(best_index=0)
         try:
             return await self._call_model(intent_summary=intent_summary, candidates=candidates)
         except Exception:
@@ -130,9 +158,9 @@ class GenuiCodeJudgeAdapter:
                 candidate_count=len(candidates),
                 exc_info=True,
             )
-            return 0
+            return JudgeResult(best_index=0)
 
-    async def _call_model(self, *, intent_summary: str, candidates: list[str]) -> int:
+    async def _call_model(self, *, intent_summary: str, candidates: list[str]) -> JudgeResult:
         """Make the Bedrock ranking call with a timeout; parse and clamp the index."""
         user_content = _build_user_content(intent_summary=intent_summary, candidates=candidates)
         messages: list[dict[str, object]] = [{"role": "user", "content": user_content}]
@@ -148,7 +176,10 @@ class GenuiCodeJudgeAdapter:
                 messages=messages,
             )
 
-        return self._parse_response(response, candidate_count=len(candidates))
+        # D-22: capture real usage regardless of how parsing turns out below.
+        input_tokens, output_tokens = _extract_usage(response)
+        best_index = self._parse_response(response, candidate_count=len(candidates))
+        return JudgeResult(best_index=best_index, input_tokens=input_tokens, output_tokens=output_tokens)
 
     def _parse_response(self, response: Any, *, candidate_count: int) -> int:
         """Extract best_index from the pick_best_design tool_use block; clamp to range."""

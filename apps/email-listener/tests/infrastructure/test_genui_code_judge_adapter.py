@@ -31,23 +31,27 @@ _CANDIDATES = [
 ]
 
 
-def _make_pick_response(best_index: int, reason: str = "cleanest layout") -> MagicMock:
-    """Build a mock Bedrock response with a pick_best_design tool_use block."""
+def _make_pick_response(
+    best_index: int, reason: str = "cleanest layout", *, input_tokens: int = 120, output_tokens: int = 40
+) -> MagicMock:
+    """Build a mock Bedrock response with a pick_best_design tool_use block + usage (D-22)."""
     block = MagicMock()
     block.type = "tool_use"
     block.input = {"best_index": best_index, "reason": reason}
     response = MagicMock()
     response.content = [block]
+    response.usage = MagicMock(input_tokens=input_tokens, output_tokens=output_tokens)
     return response
 
 
 def _make_no_tool_response() -> MagicMock:
-    """Build a mock response with NO tool_use block (text only)."""
+    """Build a mock response with NO tool_use block (text only), still carrying usage (D-22)."""
     block = MagicMock()
     block.type = "text"
     block.text = "Candidate 1 looks nice."
     response = MagicMock()
     response.content = [block]
+    response.usage = MagicMock(input_tokens=90, output_tokens=10)
     return response
 
 
@@ -173,7 +177,7 @@ async def test_parses_best_index(
 
     result = await judge.rank(intent_summary="x", candidates=_CANDIDATES)
 
-    assert result == 2
+    assert result.best_index == 2
 
 
 @pytest.mark.unit
@@ -187,7 +191,7 @@ async def test_out_of_range_index_is_clamped(
 
     result = await judge.rank(intent_summary="x", candidates=_CANDIDATES)
 
-    assert result == len(_CANDIDATES) - 1
+    assert result.best_index == len(_CANDIDATES) - 1
 
 
 @pytest.mark.unit
@@ -201,11 +205,49 @@ async def test_negative_index_is_clamped_to_zero(
 
     result = await judge.rank(intent_summary="x", candidates=_CANDIDATES)
 
-    assert result == 0
+    assert result.best_index == 0
 
 
 # ---------------------------------------------------------------------------
-# Short-circuit + error handling → return 0 (never raise)
+# D-22 — real token usage capture
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_rank_captures_real_usage_on_success(
+    judge: GenuiCodeJudgeAdapter,
+    mock_bedrock_client: MagicMock,
+) -> None:
+    """A successful ranking call surfaces the REAL input/output tokens (D-22), not 0."""
+    mock_bedrock_client.messages.create.return_value = _make_pick_response(
+        1, input_tokens=321, output_tokens=17
+    )
+
+    result = await judge.rank(intent_summary="x", candidates=_CANDIDATES)
+
+    assert result.input_tokens == 321
+    assert result.output_tokens == 17
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_rank_captures_usage_even_when_no_tool_use(
+    judge: GenuiCodeJudgeAdapter,
+    mock_bedrock_client: MagicMock,
+) -> None:
+    """Usage is captured even on the no-tool-use fallback path (a real call was still billed)."""
+    mock_bedrock_client.messages.create.return_value = _make_no_tool_response()
+
+    result = await judge.rank(intent_summary="x", candidates=_CANDIDATES)
+
+    assert result.best_index == 0
+    assert result.input_tokens == 90
+    assert result.output_tokens == 10
+
+
+# ---------------------------------------------------------------------------
+# Short-circuit + error handling → JudgeResult(best_index=0) (never raise)
 # ---------------------------------------------------------------------------
 
 
@@ -215,10 +257,12 @@ async def test_single_candidate_short_circuits_without_model_call(
     judge: GenuiCodeJudgeAdapter,
     mock_bedrock_client: MagicMock,
 ) -> None:
-    """< 2 candidates → return 0 immediately, no Bedrock call."""
+    """< 2 candidates → best_index=0 immediately, no Bedrock call, no usage."""
     result = await judge.rank(intent_summary="x", candidates=["only"])
 
-    assert result == 0
+    assert result.best_index == 0
+    assert result.input_tokens == 0
+    assert result.output_tokens == 0
     mock_bedrock_client.messages.create.assert_not_awaited()
 
 
@@ -228,12 +272,12 @@ async def test_no_tool_use_returns_zero(
     judge: GenuiCodeJudgeAdapter,
     mock_bedrock_client: MagicMock,
 ) -> None:
-    """No tool_use block in the response → return 0 (never raise)."""
+    """No tool_use block in the response → best_index=0 (never raise)."""
     mock_bedrock_client.messages.create.return_value = _make_no_tool_response()
 
     result = await judge.rank(intent_summary="x", candidates=_CANDIDATES)
 
-    assert result == 0
+    assert result.best_index == 0
 
 
 @pytest.mark.unit
@@ -242,17 +286,18 @@ async def test_invalid_index_type_returns_zero(
     judge: GenuiCodeJudgeAdapter,
     mock_bedrock_client: MagicMock,
 ) -> None:
-    """A non-integer best_index → return 0 (defence-in-depth)."""
+    """A non-integer best_index → best_index=0 (defence-in-depth)."""
     block = MagicMock()
     block.type = "tool_use"
     block.input = {"best_index": "not-an-int", "reason": "?"}
     response = MagicMock()
     response.content = [block]
+    response.usage = MagicMock(input_tokens=50, output_tokens=5)
     mock_bedrock_client.messages.create.return_value = response
 
     result = await judge.rank(intent_summary="x", candidates=_CANDIDATES)
 
-    assert result == 0
+    assert result.best_index == 0
 
 
 @pytest.mark.unit
@@ -261,12 +306,14 @@ async def test_timeout_returns_zero(
     judge: GenuiCodeJudgeAdapter,
     mock_bedrock_client: MagicMock,
 ) -> None:
-    """asyncio.TimeoutError must return 0, not raise (D-17)."""
+    """asyncio.TimeoutError must return best_index=0, not raise (D-17)."""
     mock_bedrock_client.messages.create = AsyncMock(side_effect=TimeoutError())
 
     result = await judge.rank(intent_summary="x", candidates=_CANDIDATES)
 
-    assert result == 0
+    assert result.best_index == 0
+    assert result.input_tokens == 0
+    assert result.output_tokens == 0
 
 
 @pytest.mark.unit
@@ -275,9 +322,11 @@ async def test_exception_returns_zero(
     judge: GenuiCodeJudgeAdapter,
     mock_bedrock_client: MagicMock,
 ) -> None:
-    """Any Bedrock exception must return 0, not raise."""
+    """Any Bedrock exception must return best_index=0, not raise."""
     mock_bedrock_client.messages.create = AsyncMock(side_effect=RuntimeError("Bedrock error"))
 
     result = await judge.rank(intent_summary="x", candidates=_CANDIDATES)
 
-    assert result == 0
+    assert result.best_index == 0
+    assert result.input_tokens == 0
+    assert result.output_tokens == 0

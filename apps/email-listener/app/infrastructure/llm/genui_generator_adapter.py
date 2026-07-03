@@ -309,6 +309,26 @@ class GeneratorResult:
     exhausted). Set structurally by the adapter — never inferred from spec content
     (CR-02: eliminates false-positive for legitimate alert specs)."""
 
+    input_tokens: int = 0
+    """Real cumulative input tokens across every repair-loop attempt (D-22).
+    0 when the top-level exception handler returns SAFE_FALLBACK_SPEC before
+    any response was received."""
+
+    output_tokens: int = 0
+    """Real cumulative output tokens across every repair-loop attempt (D-22)."""
+
+
+def _extract_usage(response: Any) -> tuple[int, int]:
+    """Read real (input_tokens, output_tokens) off a Bedrock response (D-22).
+
+    Mirrors GenuiQuarantineAdapter's existing `.usage` capture idiom — defends
+    against a missing/partial `usage` attribute rather than assuming its shape.
+    """
+    usage = getattr(response, "usage", None)
+    input_tokens = getattr(usage, "input_tokens", 0) or 0
+    output_tokens = getattr(usage, "output_tokens", 0) or 0
+    return input_tokens, output_tokens
+
 
 # ---------------------------------------------------------------------------
 # Adapter
@@ -427,6 +447,12 @@ class GenuiGeneratorAdapter:
             {"role": "user", "content": initial_user_content},
         ]
 
+        # D-22: real token usage accumulated across every repair-loop attempt —
+        # each attempt is a real, billed Bedrock call, so all of them count
+        # toward this turn's total cost, not just the one that succeeds.
+        total_input_tokens = 0
+        total_output_tokens = 0
+
         _max_attempts = 3
         for attempt in range(_max_attempts):
             # Attempt 3 (index 2) escalates to Sonnet (D-05)
@@ -449,6 +475,11 @@ class GenuiGeneratorAdapter:
                     messages=messages,
                 )
 
+            # D-22: capture this attempt's real usage before parsing/validating.
+            attempt_input_tokens, attempt_output_tokens = _extract_usage(response)
+            total_input_tokens += attempt_input_tokens
+            total_output_tokens += attempt_output_tokens
+
             # Parse candidate from tool_use block
             candidate = self._parse_response(response)
             if candidate is None:
@@ -466,6 +497,8 @@ class GenuiGeneratorAdapter:
                         spec=candidate,
                         attempts=attempt + 1,
                         escalated=escalated_this_attempt,
+                        input_tokens=total_input_tokens,
+                        output_tokens=total_output_tokens,
                     )
 
             logger.warning(
@@ -498,7 +531,14 @@ class GenuiGeneratorAdapter:
             "genui_generator_all_attempts_failed",
             max_attempts=_max_attempts,
         )
-        return GeneratorResult(spec=SAFE_FALLBACK_SPEC, attempts=_max_attempts, escalated=True, is_fallback=True)
+        return GeneratorResult(
+            spec=SAFE_FALLBACK_SPEC,
+            attempts=_max_attempts,
+            escalated=True,
+            is_fallback=True,
+            input_tokens=total_input_tokens,
+            output_tokens=total_output_tokens,
+        )
 
     def _parse_response(self, response: Any) -> dict[str, Any] | None:
         """Extract the spec dict from the emit_ui_spec tool_use block.

@@ -264,8 +264,11 @@ class GenerateUiSpecUseCase:
         event = GenerationEvent(
             intent_hash=intent_hash,
             model_id=model_id,
-            input_tokens=getattr(extraction, "input_tokens", 0),
-            output_tokens=getattr(extraction, "output_tokens", 0),
+            # D-22: extraction (Call A, quarantine) + generator (Call B, cumulative
+            # across every repair-loop attempt) real usage — both calls are real,
+            # billed Bedrock calls that contribute to this turn's total cost.
+            input_tokens=getattr(extraction, "input_tokens", 0) + getattr(gen_result, "input_tokens", 0),
+            output_tokens=getattr(extraction, "output_tokens", 0) + getattr(gen_result, "output_tokens", 0),
             attempts=gen_result.attempts,
             outcome=outcome,
             spec_validation_passed=(outcome != "fallback"),

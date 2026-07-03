@@ -158,7 +158,7 @@ class GenerateCodeIslandUseCase:
 
         # ── Judge: pick the best non-fallback candidate ─────────────────────────
         good = [r for r in gen_results if not r.is_fallback]
-        winner, judged = await self._select_winner(
+        winner, judged, judge_input_tokens, judge_output_tokens = await self._select_winner(
             good=good,
             all_results=gen_results,
             intent_summary=extraction.intent_summary,
@@ -188,8 +188,13 @@ class GenerateCodeIslandUseCase:
         event = GenerationEvent(
             intent_hash=intent_hash,
             model_id=_resolve_model_id(escalated=gen_result.escalated),
-            input_tokens=getattr(extraction, "input_tokens", 0),
-            output_tokens=getattr(extraction, "output_tokens", 0),
+            # D-22: extraction (Call A, quarantine) + judge (ranking call) real
+            # usage. The winning code_generator candidate's own tokens are NOT
+            # yet captured here — genui_code_generator_adapter.py's usage gap
+            # is explicitly out of scope for this plan (22-04 Task 3 fixes only
+            # genui_generator_adapter.py + genui_code_judge_adapter.py).
+            input_tokens=getattr(extraction, "input_tokens", 0) + judge_input_tokens,
+            output_tokens=getattr(extraction, "output_tokens", 0) + judge_output_tokens,
             attempts=gen_result.attempts,
             outcome=outcome,
             spec_validation_passed=(outcome != "fallback"),
@@ -223,16 +228,20 @@ class GenerateCodeIslandUseCase:
         all_results: list[Any],
         intent_summary: str,
         log: Any,
-    ) -> tuple[Any, bool]:
+    ) -> tuple[Any, bool, int, int]:
         """Pick the winning candidate from the non-fallback set.
 
-        Returns (winner, judged):
+        Returns (winner, judged, judge_input_tokens, judge_output_tokens):
           - 0 good candidates → an actual fallback CodeGeneratorResult from the fan-out
-            (it already carries SAFE_FALLBACK_CODE + attempts/escalated flags), judged=False.
-          - exactly 1 good     → that candidate, judged=False (judge skipped).
+            (it already carries SAFE_FALLBACK_CODE + attempts/escalated flags),
+            judged=False, judge tokens 0 (no judge call made).
+          - exactly 1 good     → that candidate, judged=False (judge skipped), judge
+            tokens 0 (no judge call made).
           - >= 2 good          → judge.rank picks the best; judged=True. The judge
-            never raises (returns 0 on error), so a judge failure yields the first
-            good candidate.
+            never raises (returns JudgeResult(best_index=0) on error), so a judge
+            failure yields the first good candidate. judge_input_tokens/
+            judge_output_tokens carry the judge call's REAL usage (D-22) — 0 only
+            if the judge itself short-circuited or errored before a call was made.
         """
         if not good:
             # Every candidate fell back: return a real fallback result from the fan-out.
@@ -240,18 +249,18 @@ class GenerateCodeIslandUseCase:
             # failure, so all_results[-1] already IS a safe fallback — no infra import
             # needed (lint-imports: the application layer stays infrastructure-free).
             # all_results is never empty (N >= 1, enforced in __init__).
-            return (all_results[-1], False)
+            return (all_results[-1], False, 0, 0)
         if len(good) == 1:
-            return (good[0], False)
+            return (good[0], False, 0, 0)
 
-        best_i = await self._judge.rank(
+        judge_result = await self._judge.rank(
             intent_summary=intent_summary,
             candidates=[r.code for r in good],
         )
         # Defence-in-depth: clamp the judge's index even though rank() already clamps.
-        best_i = max(0, min(best_i, len(good) - 1))
+        best_i = max(0, min(judge_result.best_index, len(good) - 1))
         log.info("genui_code_island_judged", best_index=best_i, good_count=len(good))
-        return (good[best_i], True)
+        return (good[best_i], True, judge_result.input_tokens, judge_result.output_tokens)
 
 
 def _candidate_temperatures(n: int) -> list[float]:

@@ -33,6 +33,7 @@ from app.infrastructure.llm.genui_code_generator_adapter import (
     SAFE_FALLBACK_CODE,
     CodeGeneratorResult,
 )
+from app.infrastructure.llm.genui_code_judge_adapter import JudgeResult
 from app.infrastructure.llm.genui_quarantine_adapter import QuarantineExtraction
 
 # ---------------------------------------------------------------------------
@@ -87,7 +88,7 @@ def mock_audit() -> MagicMock:
 @pytest.fixture
 def mock_judge() -> MagicMock:
     judge = MagicMock()
-    judge.rank = AsyncMock(return_value=0)
+    judge.rank = AsyncMock(return_value=JudgeResult(best_index=0))
     return judge
 
 
@@ -375,7 +376,7 @@ async def test_two_or_more_good_calls_judge_and_returns_winner(
     generator = MagicMock()
     generator.generate = AsyncMock(side_effect=[_good("CAND0"), _good("CAND1"), _good("CAND2")])
     judge = MagicMock()
-    judge.rank = AsyncMock(return_value=2)  # pick the third good candidate
+    judge.rank = AsyncMock(return_value=JudgeResult(best_index=2, input_tokens=200, output_tokens=30))
     uc = _make_use_case(
         quarantine=mock_quarantine, code_generator=generator, judge=judge, audit=mock_audit, candidates=3
     )
@@ -390,6 +391,11 @@ async def test_two_or_more_good_calls_judge_and_returns_winner(
     assert result.judged is True
     assert result.candidate_count == 3
 
+    # D-22: the judge's REAL usage is added to extraction's (Call A) usage in the audit row.
+    event = mock_audit.record.call_args.args[0]
+    assert event.input_tokens == 10 + 200  # extraction default (10) + judge (200)
+    assert event.output_tokens == 5 + 30  # extraction default (5) + judge (30)
+
 
 @pytest.mark.unit
 @pytest.mark.asyncio
@@ -401,7 +407,7 @@ async def test_judge_failure_returns_first_good(
     generator = MagicMock()
     generator.generate = AsyncMock(side_effect=[_good("FIRST_GOOD"), _good("SECOND_GOOD"), _fallback()])
     judge = MagicMock()
-    judge.rank = AsyncMock(return_value=0)  # judge-failure contract: returns 0
+    judge.rank = AsyncMock(return_value=JudgeResult(best_index=0))  # judge-failure contract
     uc = _make_use_case(
         quarantine=mock_quarantine, code_generator=generator, judge=judge, audit=mock_audit, candidates=3
     )
@@ -423,7 +429,7 @@ async def test_judge_out_of_range_index_is_clamped(
     generator = MagicMock()
     generator.generate = AsyncMock(side_effect=[_good("G0"), _good("G1")])
     judge = MagicMock()
-    judge.rank = AsyncMock(return_value=99)
+    judge.rank = AsyncMock(return_value=JudgeResult(best_index=99))
     uc = _make_use_case(
         quarantine=mock_quarantine, code_generator=generator, judge=judge, audit=mock_audit, candidates=2
     )
