@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: "Conversational GenUI: Chat, Canvas & Dual-Channel"
 status: planning
-last_updated: "2026-07-03T17:45:34.394Z"
+last_updated: "2026-07-03T18:31:16.520Z"
 last_activity: "2026-07-02 — ROADMAP.md + REQUIREMENTS.md traceability written for v1.3 (24 requirements, 100% mapped across 4 phases: 22 chat spine/streaming, 23 canvas/shared state, 24 dual-channel genui, 25 anticipatory-prompting SPIKE)"
 progress:
   total_phases: 4
   completed_phases: 0
-  total_plans: 0
+  total_plans: 11
   completed_plans: 0
   percent: 0
 ---
@@ -300,7 +300,7 @@ User direction after v1.1: keep LOCAL + `/studio` sandbox (no deploy/convergence
   + UI-SPEC + PATTERNS generated. Decision coverage 21/21 (D-01..D-21). Commits: 1444bce (UI-SPEC+PATTERNS),
   b59e929 (plans), 521f767 + ffe968f (review fixes). Ready to execute.
 
-- **Resume file:** .planning/phases/22-chat-spine-persistence-streaming/22-CONTEXT.md
+- **Resume file:** .planning/phases/22-chat-spine-persistence-streaming/22-01-PLAN.md
 - **Architecture locked:** identity = **repurpose `entity_instances`** (nauta_id nullable + `source`
   col); resolution = **suggest-only, never auto** → **parallel BlendedRAG (dense HNSW + lexical
   pg_trgm exact/fuzzy) fused by RRF(k=60)**, on-confirm + re-runnable backfill, confirm writes back
