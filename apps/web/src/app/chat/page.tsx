@@ -177,6 +177,13 @@ function ConversationView({
   // retry path for a turn that fails before it has ever been persisted (so
   // there is no message id yet to regenerate against, CHAT-05).
   const lastSentTextRef = useRef<string>("");
+  // chat.getHistory row count captured at the moment the CURRENT turn's
+  // stream started — every terminal outcome except a pre-turn cost block
+  // inserts at least one new row (D-15: even a failed/stopped turn persists
+  // whatever partial streamed), so once the refetched count grows past this
+  // snapshot the persisted row has landed and the transient live pseudo-turn
+  // is dropped in favor of it (avoids rendering the same turn twice).
+  const historyCountAtStreamStartRef = useRef<number>(0);
 
   const handleTerminal = useCallback(() => {
     // Every terminal branch persists whatever streamed so far (D-15) — the
@@ -194,10 +201,11 @@ function ConversationView({
   const handleSubmit = useCallback(
     (text: string) => {
       lastSentTextRef.current = text;
+      historyCountAtStreamStartRef.current = (historyRows ?? []).length;
       setOptimisticUserText(text);
       chatStream.send(text, modelId);
     },
-    [chatStream, modelId],
+    [chatStream, modelId, historyRows],
   );
 
   const handleRegenerate = useCallback(
@@ -206,9 +214,10 @@ function ConversationView({
       // pointing at a retired version once the new one lands.
       setSiblingOverrides({});
       setRegeneratingActiveId(assistantMessageId);
+      historyCountAtStreamStartRef.current = (historyRows ?? []).length;
       chatStream.regenerate(assistantMessageId, modelId);
     },
-    [chatStream, modelId],
+    [chatStream, modelId, historyRows],
   );
 
   // CHAT-05: retry is the same operation as regenerate once a message id
@@ -219,8 +228,9 @@ function ConversationView({
       handleRegenerate(regeneratingActiveId);
       return;
     }
+    historyCountAtStreamStartRef.current = (historyRows ?? []).length;
     chatStream.send(lastSentTextRef.current, modelId);
-  }, [regeneratingActiveId, handleRegenerate, chatStream, modelId]);
+  }, [regeneratingActiveId, handleRegenerate, chatStream, modelId, historyRows]);
 
   const handleNavigateSibling = useCallback(
     (siblingMessageId: string) => {
@@ -243,6 +253,18 @@ function ConversationView({
   // whatever partial content streamed before the breach, D-15).
   const isPreTurnCostBlock =
     chatStream.state === "cost_capped" && chatStream.parts.length === 0;
+  // A pre-turn block never inserts a chat_messages row at all, so history
+  // can never "catch up" to it — it stays visible until the next action
+  // replaces it. Every other terminal outcome DOES insert a row (D-15), so
+  // once the refetched row count grows past the pre-stream snapshot, the
+  // persisted turn has landed and this transient stand-in is redundant.
+  const historyHasCaughtUp =
+    (historyRows ?? []).length > historyCountAtStreamStartRef.current;
+  const suppressLiveTurn =
+    chatStream.state !== "idle" &&
+    chatStream.state !== "streaming" &&
+    !isPreTurnCostBlock &&
+    historyHasCaughtUp;
 
   const turns: MessageListItem[] = [...historyTurns];
   if (optimisticUserText !== null && chatStream.state !== "idle") {
@@ -252,7 +274,7 @@ function ConversationView({
       parts: [{ type: "text", text: optimisticUserText }],
     });
   }
-  if (chatStream.state !== "idle") {
+  if (chatStream.state !== "idle" && !suppressLiveTurn) {
     const liveStatus: TurnStatus =
       chatStream.state === "streaming"
         ? "streaming"
