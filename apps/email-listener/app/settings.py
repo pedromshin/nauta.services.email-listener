@@ -139,6 +139,11 @@ class BaseAppSettings(BaseSettings):
     COST_CAP_PER_SESSION_USD: float = 2.00
     COST_CAP_PER_DAY_USD: float = 5.00
 
+    # --- Chat turn agent (Phase 22-06, SEAM-04) ---
+    # Hard cap on generated tokens for a single chat turn (always set, no implicit
+    # default — required by the ChatProvider.stream contract).
+    CHAT_MAX_OUTPUT_TOKENS: int = 4096
+
     # --- Code-island parallel multi-candidate + judge (Phase 21) ---
     # N candidates generated CONCURRENTLY (varied temperature) then an LLM judge picks the best.
     # Same wall-clock as one generation (asyncio.gather), N-times the tokens, higher quality.
