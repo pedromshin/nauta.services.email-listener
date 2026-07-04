@@ -30,7 +30,7 @@ from app.infrastructure.llm.openrouter_chat_adapter import OpenRouterChatAdapter
 # Real curated registry ids (chat_model_registry.CHAT_MODEL_REGISTRY, 22-02).
 _BEDROCK_MODEL_ID = "us.anthropic.claude-sonnet-4-6"
 _OPENROUTER_MODEL_ID = "deepseek/deepseek-chat"
-_BROWSER_MODEL_ID = "webllm-gemma-3-4b"
+_BROWSER_MODEL_ID = "webllm-qwen3-4b"
 
 
 @pytest.fixture

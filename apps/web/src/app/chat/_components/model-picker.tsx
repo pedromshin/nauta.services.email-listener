@@ -15,20 +15,30 @@ import { Popover, PopoverContent, PopoverTrigger } from "@nauta/ui/popover";
 
 import { api } from "~/trpc/react";
 
-import { ModelPickerEntry, type ChatModelEntry } from "./model-picker-entry";
+import {
+  ModelPickerEntry,
+  type ChatModelEntry,
+  type WebllmEntryState,
+} from "./model-picker-entry";
 
 export interface ModelPickerProps {
   readonly conversationId: string;
   readonly currentModelId: string;
   /**
-   * Called instead of the default chat.setModel persist when the user picks
-   * a browser-locus (WebLLM) entry — the 22-11 download/WebGPU-readiness
-   * gate hooks in here. Falls back to the same server-model flow when
-   * omitted (today): the browser entry's real capabilities/cost/best-for
-   * still render honestly (D-05), it just persists immediately like any
-   * other selection until 22-11 adds the loading gate in front of it.
+   * Called BEFORE persisting a browser-locus (WebLLM) selection — 22-11's
+   * download/WebGPU-readiness gate (the caller's implementation calls
+   * useWebllmEngine().ensureLoaded()). ModelPicker awaits it, then persists
+   * via the SAME chat.setModel path as any other model — this keeps the
+   * "same API, same shape" selection flow uniform across loci. Rejecting
+   * (loading failed) aborts the selection: the picker stays open, nothing
+   * persists, and the row's own `webllm.status === 'error'` surfaces the
+   * failure. Falls back to persisting immediately (no loading gate) when
+   * omitted.
    */
-  readonly onSelectBrowserModel?: (modelId: string) => void;
+  readonly onSelectBrowserModel?: (modelId: string) => Promise<void>;
+  /** Visual state for the browser-locus row (D-08) — omit to render it like
+   * any other entry (pre-22-11 fallback). */
+  readonly webllm?: WebllmEntryState;
 }
 
 const TRANSPORT_GROUPS: ReadonlyArray<{
@@ -52,6 +62,7 @@ export function ModelPicker({
   conversationId,
   currentModelId,
   onSelectBrowserModel,
+  webllm,
 }: ModelPickerProps): React.ReactElement {
   const [open, setOpen] = useState(false);
   const utils = api.useUtils();
@@ -69,12 +80,25 @@ export function ModelPicker({
     [models, currentModelId],
   );
 
-  const handleSelect = (model: ChatModelEntry): void => {
-    setOpen(false);
-    if (model.executionLocus === "browser" && onSelectBrowserModel) {
-      onSelectBrowserModel(model.id);
+  const handleSelect = async (model: ChatModelEntry): Promise<void> => {
+    if (model.executionLocus === "browser") {
+      if (webllm && !webllm.supported) return; // disabled row — defensive no-op
+      if (onSelectBrowserModel) {
+        try {
+          await onSelectBrowserModel(model.id);
+        } catch {
+          // Loading failed (e.g. WebGPU OOM) — leave the picker open; the
+          // row's own error state surfaces via webllm.status, nothing persists.
+          return;
+        }
+      }
+      if (model.id !== currentModelId) {
+        setModel.mutate({ conversationId, modelId: model.id });
+      }
+      setOpen(false);
       return;
     }
+    setOpen(false);
     if (model.id === currentModelId) return;
     setModel.mutate({ conversationId, modelId: model.id });
   };
@@ -107,11 +131,19 @@ export function ModelPicker({
                     <CommandItem
                       key={model.id}
                       value={`${model.displayName} ${model.id}`}
-                      onSelect={() => handleSelect(model)}
+                      disabled={
+                        model.executionLocus === "browser" &&
+                        webllm !== undefined &&
+                        !webllm.supported
+                      }
+                      onSelect={() => void handleSelect(model)}
                     >
                       <ModelPickerEntry
                         model={model}
                         isRecommended={model.id === currentModelId}
+                        webllm={
+                          model.executionLocus === "browser" ? webllm : undefined
+                        }
                       />
                     </CommandItem>
                   ))}

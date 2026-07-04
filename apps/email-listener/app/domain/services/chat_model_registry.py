@@ -124,8 +124,15 @@ CHAT_MODEL_REGISTRY: tuple[ChatModel, ...] = (
         best_for="Cheapest general-purpose chat; no tool-calling support.",
     ),
     ChatModel(
-        id="webllm-gemma-3-4b",
-        display_name="Gemma 3 4B (in-browser)",
+        # 22-11: D-08 named "Qwen3 4B or Gemma 3 4B" as equally acceptable
+        # curated options. The vetted @mlc-ai/web-llm 0.2.84 package's
+        # prebuiltAppConfig ships no Gemma-3-4B build (only Gemma3-1B) — this
+        # entry was repointed from the originally-planned "webllm-gemma-3-4b"
+        # to Qwen3-4B, a real, available 4B-class WebLLM prebuilt model, so
+        # the picker's advertised model always matches what actually runs
+        # (D-05/D-06 honesty contract). See 22-11-SUMMARY.md deviations.
+        id="webllm-qwen3-4b",
+        display_name="Qwen3 4B (in-browser)",
         transport="browser",
         execution_locus="browser",
         price_in_per_mtok=0.0,

@@ -130,7 +130,7 @@ def test_record_browser_locus_zero_cost_still_records_tokens() -> None:
     repo = SupabaseCostLedgerRepository(client)
     event = UsageEvent(
         importer_id="00000000-0000-0000-0003-000000000001",
-        model_id="webllm-gemma-3-4b",
+        model_id="webllm-qwen3-4b",
         execution_locus="browser",
         input_tokens=128,
         output_tokens=64,
