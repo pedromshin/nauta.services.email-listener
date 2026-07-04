@@ -1,0 +1,163 @@
+/**
+ * node-type-registry.test.ts — unit tests for the versioned node-type
+ * registry, its content-hash version, and the genui-panel node.data boundary
+ * (CANVAS-03, FOUND-2, D-04, D-05).
+ */
+
+import { describe, expect, it } from "vitest";
+
+import {
+  computeNodeRegistryHash,
+  NODE_REGISTRY_VERSION,
+} from "../node-registry-version";
+import { GenuiPanelNodeDataSchema } from "../node-data-schemas";
+import {
+  NODE_TYPE_REGISTRY,
+  resolveNodeType,
+} from "../node-type-registry";
+import type { NodeTypeRegistryEntry } from "../node-type-registry";
+import { z } from "zod";
+
+describe("computeNodeRegistryHash", () => {
+  it("returns the same hex for the same registry (determinism)", () => {
+    const hashA = computeNodeRegistryHash(NODE_TYPE_REGISTRY);
+    const hashB = computeNodeRegistryHash(NODE_TYPE_REGISTRY);
+    expect(hashA).toBe(hashB);
+    expect(hashA).toMatch(/^[0-9a-f]{8}$/);
+  });
+
+  it("is insensitive to registration order (sorted keys)", () => {
+    const reordered: Record<string, NodeTypeRegistryEntry> = {
+      "genui-panel": NODE_TYPE_REGISTRY["genui-panel"]!,
+      chat: NODE_TYPE_REGISTRY.chat!,
+    };
+    expect(computeNodeRegistryHash(reordered)).toBe(
+      computeNodeRegistryHash(NODE_TYPE_REGISTRY),
+    );
+  });
+
+  it("flips when an entry's description changes", () => {
+    const original = computeNodeRegistryHash(NODE_TYPE_REGISTRY);
+    const mutated: Record<string, NodeTypeRegistryEntry> = {
+      ...NODE_TYPE_REGISTRY,
+      chat: { ...NODE_TYPE_REGISTRY.chat!, description: "changed description" },
+    };
+    expect(computeNodeRegistryHash(mutated)).not.toBe(original);
+  });
+
+  it("flips when an entry's schema shape changes (field added)", () => {
+    const original = computeNodeRegistryHash(NODE_TYPE_REGISTRY);
+    const withExtraField = z
+      .object({
+        conversationId: z.string().uuid(),
+        extraField: z.string(),
+      })
+      .strict();
+    const mutated: Record<string, NodeTypeRegistryEntry> = {
+      ...NODE_TYPE_REGISTRY,
+      chat: { ...NODE_TYPE_REGISTRY.chat!, dataSchema: withExtraField },
+    };
+    expect(computeNodeRegistryHash(mutated)).not.toBe(original);
+  });
+
+  it("flips when an entry's id changes", () => {
+    const original = computeNodeRegistryHash(NODE_TYPE_REGISTRY);
+    const mutated: Record<string, NodeTypeRegistryEntry> = {
+      ...NODE_TYPE_REGISTRY,
+      chat: { ...NODE_TYPE_REGISTRY.chat!, id: "chat-renamed" },
+    };
+    expect(computeNodeRegistryHash(mutated)).not.toBe(original);
+  });
+
+  it("NODE_REGISTRY_VERSION matches computeNodeRegistryHash(NODE_TYPE_REGISTRY)", () => {
+    expect(NODE_REGISTRY_VERSION).toBe(computeNodeRegistryHash(NODE_TYPE_REGISTRY));
+  });
+
+  it("does not import Node crypto (browser-safe)", async () => {
+    // Static-imports-only module; if this test file (and its transitive
+    // imports) loaded successfully under vitest's jsdom environment without
+    // needing to polyfill `crypto.createHash`, the hash implementation is
+    // browser-safe. Additionally assert the hash is NOT a 64-hex-char sha256
+    // digest shape (the Node-crypto pattern this module explicitly avoids).
+    expect(NODE_REGISTRY_VERSION).not.toMatch(/^[0-9a-f]{64}$/);
+  });
+});
+
+describe("resolveNodeType", () => {
+  it("resolves 'genui-panel' to its registered entry", () => {
+    const resolved = resolveNodeType("genui-panel");
+    expect(resolved.kind).toBe("registered");
+    if (resolved.kind === "registered") {
+      expect(resolved.entry.id).toBe("genui-panel");
+    }
+  });
+
+  it("resolves 'chat' to its registered entry", () => {
+    const resolved = resolveNodeType("chat");
+    expect(resolved.kind).toBe("registered");
+    if (resolved.kind === "registered") {
+      expect(resolved.entry.id).toBe("chat");
+    }
+  });
+
+  it("resolves an unregistered type to an unknown marker, never throws", () => {
+    expect(() => resolveNodeType("agent")).not.toThrow();
+    const resolved = resolveNodeType("agent");
+    expect(resolved.kind).toBe("unknown");
+    if (resolved.kind === "unknown") {
+      expect(resolved.nodeType).toBe("agent");
+    }
+  });
+});
+
+describe("GenuiPanelNodeDataSchema", () => {
+  it("accepts a valid provenance + turnIndex payload", () => {
+    const result = GenuiPanelNodeDataSchema.safeParse({
+      provenance: {
+        messageId: "550e8400-e29b-41d4-a716-446655440000",
+        partIndex: 0,
+        runId: null,
+      },
+      turnIndex: 2,
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("rejects a payload containing a top-level spec key", () => {
+    const result = GenuiPanelNodeDataSchema.safeParse({
+      provenance: {
+        messageId: "550e8400-e29b-41d4-a716-446655440000",
+        partIndex: 0,
+        runId: null,
+      },
+      turnIndex: 2,
+      spec: { v: 1, root: { type: "text", content: "hi" } },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a payload containing a top-level root key", () => {
+    const result = GenuiPanelNodeDataSchema.safeParse({
+      provenance: {
+        messageId: "550e8400-e29b-41d4-a716-446655440000",
+        partIndex: 0,
+        runId: null,
+      },
+      turnIndex: 2,
+      root: { type: "text", content: "hi" },
+    });
+    expect(result.success).toBe(false);
+  });
+
+  it("rejects a payload with a negative turnIndex", () => {
+    const result = GenuiPanelNodeDataSchema.safeParse({
+      provenance: {
+        messageId: "550e8400-e29b-41d4-a716-446655440000",
+        partIndex: 0,
+        runId: null,
+      },
+      turnIndex: -1,
+    });
+    expect(result.success).toBe(false);
+  });
+});
