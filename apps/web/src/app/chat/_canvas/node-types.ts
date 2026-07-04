@@ -1,0 +1,39 @@
+/**
+ * node-types.ts — the module-level React Flow `nodeTypes` map (D-04/D-07:
+ * defined ONCE at module scope, never inline in render — a fresh object
+ * identity on every render would force React Flow to remount every node,
+ * matching `/knowledge`'s established `graph-nodes.tsx` pattern).
+ *
+ * `resolveNodeComponent` is the companion lookup `ChatCanvas` (Task 3) uses
+ * when it needs a component reference OUTSIDE the `nodeTypes` prop itself
+ * (e.g. measuring/pre-checking a persisted node's type before render) — it
+ * mirrors `resolveNodeType`'s (23-02) never-throws contract: an unregistered
+ * type resolves to `UnknownNodeTypePlaceholder` rather than `undefined`
+ * (CANVAS-03, T-23-05).
+ */
+
+import type { NodeTypes } from "@xyflow/react";
+
+import { resolveNodeType } from "./node-type-registry";
+import { ChatNode } from "./chat-node";
+import { GenuiPanelNode } from "./genui-panel-node";
+import { UnknownNodeTypePlaceholder } from "./unknown-node-type-placeholder";
+
+export const nodeTypes: NodeTypes = {
+  chat: ChatNode,
+  "genui-panel": GenuiPanelNode,
+};
+
+/**
+ * resolveNodeComponent — looks up the React Flow component for a node
+ * `type`. Never throws: an unregistered/legacy type resolves to
+ * `UnknownNodeTypePlaceholder`, the same degrade-gracefully signal
+ * `resolveNodeType` (23-02) already gives the data layer.
+ */
+export function resolveNodeComponent(type: string): NodeTypes[string] {
+  const resolved = resolveNodeType(type);
+  if (resolved.kind === "unknown") {
+    return UnknownNodeTypePlaceholder;
+  }
+  return nodeTypes[resolved.entry.id] ?? UnknownNodeTypePlaceholder;
+}
