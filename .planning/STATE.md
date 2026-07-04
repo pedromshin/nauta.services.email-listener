@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: "Conversational GenUI: Chat, Canvas & Dual-Channel"
 status: executing
-last_updated: "2026-07-04T02:12:52.283Z"
+last_updated: "2026-07-04T02:34:29.444Z"
 last_activity: 2026-07-04 -- Phase 23 execution started
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 16
-  completed_plans: 12
+  completed_plans: 13
   percent: 25
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-06-27)
 ## Current Position
 
 Phase: 23 (2D Canvas + Panels-as-Nodes + Shared State) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Executing Phase 23
 Last activity: 2026-07-04 -- Phase 23 execution started
 
-Progress: [████████░░] 75%
+Progress: [████████░░] 81%
 
 ## v1.3 Roadmap Summary (2026-07-02)
 
@@ -1059,6 +1059,8 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 - 2026-07-03 (22-11, Rule 1 cross-file fix): repointed chat_model_registry.py's browser entry from "webllm-gemma-3-4b"/"Gemma 3 4B (in-browser)" to "webllm-qwen3-4b"/"Qwen3 4B (in-browser)" — @mlc-ai/web-llm 0.2.84's prebuiltAppConfig ships no Gemma-3-4B build (only Gemma3-1B); D-08 named Qwen3 4B as an equally acceptable curated option, so this stays within the decision's own sanctioned alternatives rather than requiring a new one
 - 2026-07-03 (22-11): recordBrowserTurn also touches chat_conversations.model_id/title/updated_at on the first turn (mirrors the server agent's touch() behavior) so browser-only conversations get correct rail titles/ordering — same-shape-as-server-turns truth
 - 2026-07-03 (22-11): added minimal browser-locus Stop support (engine.interruptGenerate() + a ref-tracked terminal-status label) even though the plan's action text only covered send — CHAT-03 Stop is an already-shipped, phase-wide contract; leaving it a silent no-op for the browser locus would be a regression
+- 2026-07-04 (23-02): computeNodeRegistryHash hashes a Zod public-API structural schema-shape summary (not .toString()/raw object) — browser-safe FNV-1a, flips on any real schema change (field add/remove/retype, check add, nullability change)
+- 2026-07-04 (23-02): GenuiPanelNode Handles left visible (not hidden via opacity-0) since canvas edges are user-created via interactive drag-to-connect, unlike /knowledge's decorative-only handles
 
 ## Performance Metrics
 
@@ -1115,3 +1117,4 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 22 P09 | 40min | 3 tasks | 12 files |
 | Phase 22 P11 | ~65min | 2 tasks | 12 files — @mlc-ai/web-llm engine hook + picker activation + browser-locus send branch + chat.recordBrowserTurn persistence; phase 22 all 11 plans complete |
 | Phase 23 P01 | 35min | 3 tasks | 8 files |
+| Phase 23 P02 | 25min | 2 tasks | 7 files |

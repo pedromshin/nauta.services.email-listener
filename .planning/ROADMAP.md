@@ -91,7 +91,7 @@ data across each other.
   5. Panels on the same canvas read and write a shared per-chat state store, and data-carrying edges let one panel's output feed another panel's input
 **Plans**: 5 plans (4 waves)
 - [x] 23-01-PLAN.md — Canvas persistence spine: chat_canvas_layouts (migration 0024, [BLOCKING] local push) + chat.getCanvasLayout/saveCanvasLayout + CanvasSnapshotSchema Zod boundary
-- [ ] 23-02-PLAN.md — Versioned node-type registry (content-hash, Zod, inert placeholder) + GenuiPanelNode + CanvasSpecContext
+- [x] 23-02-PLAN.md — Versioned node-type registry (content-hash, Zod, inert placeholder) + GenuiPanelNode + CanvasSpecContext
 - [ ] 23-03-PLAN.md — Conversation controller refactor + ChatNode + 2D canvas surface + Chat/Canvas view toggle (dagre auto-place, keyboard-operable)
 - [ ] 23-04-PLAN.md — Layout persistence (exact restore + debounced ~800ms save) + streaming responsiveness (volatile state outside nodes array)
 - [ ] 23-05-PLAN.md — Shared per-chat Zustand store (5-mutation declared-state grammar) + data-carrying edges (Zod-validated, live subscription)
@@ -129,7 +129,7 @@ Phases execute in numeric order: 22 → 23 → 24 → 25
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
 | 22. Chat Spine + Persistence + Streaming | 11/11 | Complete   | 2026-07-04 |
-| 23. 2D Canvas + Panels-as-Nodes + Shared State | 1/5 | In Progress|  |
+| 23. 2D Canvas + Panels-as-Nodes + Shared State | 2/5 | In Progress|  |
 | 24. Dual-Channel GenUI | 0/TBD | Not started | - |
 | 25. Anticipatory Prompting (SPIKE) | 0/TBD | Not started | - |
 
