@@ -22,7 +22,12 @@ import {
   useChatStream,
   type MessagePart,
   type StreamState,
+  type StreamTerminalState,
 } from "./_hooks/use-chat-stream";
+import {
+  useWebllmEngine,
+  type UseWebllmEngineResult,
+} from "./_hooks/use-webllm-engine";
 
 const STREAMING_TURN_ID = "__streaming-turn__";
 const OPTIMISTIC_USER_TURN_ID = "__optimistic-user-turn__";
@@ -117,6 +122,32 @@ function groupTurnsFromHistory(
   return items;
 }
 
+/**
+ * toWebllmMessages — active-sibling chat.getHistory rows -> the plain
+ * text-only {role, content} shape useWebllmEngine.generateStream() expects.
+ * D-08: a browser-locus model never sees genui_spec parts (no tool was ever
+ * offered to it), so a prior assistant turn's non-text parts are simply
+ * skipped rather than replayed — this mirrors run_chat_turn.py's own
+ * _provider_content_blocks stand-in posture for parts a given transport
+ * can't represent, just applied to the OUTGOING side instead.
+ */
+function toWebllmMessages(
+  rows: readonly ChatHistoryRow[],
+): ReadonlyArray<{ readonly role: "user" | "assistant"; readonly content: string }> {
+  return rows
+    .filter((row) => row.isActive && (row.role === "user" || row.role === "assistant"))
+    .slice()
+    .sort((a, b) => a.turnIndex - b.turnIndex)
+    .map((row) => {
+      const parts = (row.parts as MessagePart[] | null) ?? [];
+      const content = parts
+        .filter((part): part is Extract<MessagePart, { type: "text" }> => part.type === "text")
+        .map((part) => part.text)
+        .join("\n");
+      return { role: row.role as "user" | "assistant", content };
+    });
+}
+
 // Visually-hidden aria-live announcer copy (22-UI-SPEC.md Accessibility) —
 // announces STATE TRANSITIONS only, never the growing delta text itself
 // (that would spam screen readers on every streamed token).
@@ -140,24 +171,43 @@ function liveAnnouncementFor(state: StreamState): string {
 interface ConversationViewProps {
   readonly conversationId: string;
   readonly modelId: string;
+  /** Single top-level useWebllmEngine() instance (ChatPage) — threaded down
+   * so switching conversations never re-instantiates or re-downloads the
+   * WebLLM engine (D-08). */
+  readonly webllm: UseWebllmEngineResult;
 }
 
 /**
  * ConversationView — the /chat main column once a conversation is selected
  * (CHAT-01/03/06/07, STREAM-01). Merges persisted history (chat.getHistory)
- * with the live streaming turn from useChatStream. The optimistic user
- * message renders immediately on submit — before the assistant stream even
- * starts — and both transient turns are dropped once the turn settles and
+ * with the live streaming turn from EITHER useChatStream (server-locus, SSE)
+ * or useWebllmEngine (browser-locus, local — D-08/D-09). The send handler
+ * branches purely on the selected model's registry execution_locus — never a
+ * hardcoded per-model special case — so both loci feed the SAME growing-parts
+ * + state-machine shape into the SAME MessageList. The optimistic user
+ * message renders immediately on submit — before either path starts — and
+ * both transient turns are dropped once the turn settles and
  * chat.getHistory is invalidated (the persisted row takes over).
  */
 function ConversationView({
   conversationId,
   modelId,
+  webllm,
 }: ConversationViewProps): React.ReactElement {
   const utils = api.useUtils();
   const { data: historyRows } = api.chat.getHistory.useQuery({
     conversationId,
   });
+  const { data: modelsData } = api.chat.models.useQuery();
+  const recordBrowserTurn = api.chat.recordBrowserTurn.useMutation();
+  // Data-driven locus branch (D-09) — looked up from the registry, never a
+  // hardcoded model-id comparison in the renderer/send-path.
+  const isBrowserLocus =
+    (modelsData?.models ?? []).find((model) => model.id === modelId)
+      ?.executionLocus === "browser";
+  const [webllmParts, setWebllmParts] = useState<readonly MessagePart[]>([]);
+  const [webllmStreamState, setWebllmStreamState] = useState<StreamState>("idle");
+  const webllmStopRequestedRef = useRef(false);
   const [optimisticUserText, setOptimisticUserText] = useState<string | null>(
     null,
   );
@@ -198,15 +248,86 @@ function ConversationView({
 
   const chatStream = useChatStream({ conversationId, onTerminal: handleTerminal });
 
+  // Browser-locus send path (D-08/D-09) — the SIBLING of chatStream.send for
+  // a WebLLM model: streams locally via useWebllmEngine.generateStream, then
+  // persists the finished turn in the SAME canonical shape server turns use
+  // via chat.recordBrowserTurn (T-22-39-style: no genui, text-only).
+  const runWebllmTurn = useCallback(
+    async (text: string) => {
+      webllmStopRequestedRef.current = false;
+      setWebllmParts([]);
+      setWebllmStreamState("streaming");
+      historyCountAtStreamStartRef.current = (historyRows ?? []).length;
+
+      const requestMessages = [
+        ...toWebllmMessages(historyRows ?? []),
+        { role: "user" as const, content: text },
+      ];
+
+      let accumulatedText = "";
+      let usage: { inputTokens: number; outputTokens: number } | undefined;
+      let terminalState: StreamTerminalState = "completed";
+
+      try {
+        await webllm.ensureLoaded();
+        for await (const chunk of webllm.generateStream(requestMessages)) {
+          if (chunk.textDelta) {
+            accumulatedText += chunk.textDelta;
+            setWebllmParts([{ type: "text", text: accumulatedText }]);
+          }
+          if (chunk.usage) {
+            usage = chunk.usage;
+          }
+        }
+        terminalState = webllmStopRequestedRef.current ? "stopped" : "completed";
+      } catch (error) {
+        console.error("[ConversationView] WebLLM generation failed:", error);
+        terminalState = webllmStopRequestedRef.current ? "stopped" : "failed";
+      }
+
+      setWebllmStreamState(terminalState);
+
+      try {
+        await recordBrowserTurn.mutateAsync({
+          conversationId,
+          modelId,
+          userText: text,
+          assistantText: accumulatedText,
+          status: terminalState,
+          inputTokens: usage?.inputTokens ?? 0,
+          outputTokens: usage?.outputTokens ?? 0,
+        });
+      } catch (error) {
+        console.error("[ConversationView] recordBrowserTurn failed:", error);
+      }
+
+      handleTerminal();
+    },
+    [webllm, historyRows, conversationId, modelId, recordBrowserTurn, handleTerminal],
+  );
+
   const handleSubmit = useCallback(
     (text: string) => {
       lastSentTextRef.current = text;
-      historyCountAtStreamStartRef.current = (historyRows ?? []).length;
       setOptimisticUserText(text);
+      if (isBrowserLocus) {
+        void runWebllmTurn(text);
+        return;
+      }
+      historyCountAtStreamStartRef.current = (historyRows ?? []).length;
       chatStream.send(text, modelId);
     },
-    [chatStream, modelId, historyRows],
+    [chatStream, modelId, historyRows, isBrowserLocus, runWebllmTurn],
   );
+
+  const handleStop = useCallback(() => {
+    if (isBrowserLocus) {
+      webllmStopRequestedRef.current = true;
+      webllm.interrupt();
+      return;
+    }
+    chatStream.stop();
+  }, [isBrowserLocus, webllm, chatStream]);
 
   const handleRegenerate = useCallback(
     (assistantMessageId: string) => {
@@ -222,15 +343,27 @@ function ConversationView({
 
   // CHAT-05: retry is the same operation as regenerate once a message id
   // exists; a turn that failed before ever being persisted (no id yet) falls
-  // back to re-sending the same user text.
+  // back to re-sending the same user text (via whichever locus is active).
   const handleLiveRetry = useCallback(() => {
     if (regeneratingActiveId) {
       handleRegenerate(regeneratingActiveId);
       return;
     }
+    if (isBrowserLocus) {
+      void runWebllmTurn(lastSentTextRef.current);
+      return;
+    }
     historyCountAtStreamStartRef.current = (historyRows ?? []).length;
     chatStream.send(lastSentTextRef.current, modelId);
-  }, [regeneratingActiveId, handleRegenerate, chatStream, modelId, historyRows]);
+  }, [
+    regeneratingActiveId,
+    handleRegenerate,
+    chatStream,
+    modelId,
+    historyRows,
+    isBrowserLocus,
+    runWebllmTurn,
+  ]);
 
   const handleNavigateSibling = useCallback(
     (siblingMessageId: string) => {
@@ -248,11 +381,24 @@ function ConversationView({
     regeneratingActiveId,
   );
 
+  // The currently-active locus's stream state/parts (D-09 — a data-driven
+  // branch, never a hardcoded per-model special case). Exactly one of
+  // {chatStream, runWebllmTurn} is ever active per ConversationView instance
+  // (the composer disables while either streams), so this union is safe.
+  const activeStreamState: StreamState = isBrowserLocus
+    ? webllmStreamState
+    : chatStream.state;
+  const activeStreamParts: readonly MessagePart[] = isBrowserLocus
+    ? webllmParts
+    : chatStream.parts;
+
   // D-21: a pre-turn fail-closed block never streams any content at all —
   // zero parts distinguishes it from a mid-stream cost-cap (which always has
-  // whatever partial content streamed before the breach, D-15).
+  // whatever partial content streamed before the breach, D-15). Browser-locus
+  // turns never cost-cap (D-08 — always $0), so this is only ever true for
+  // the server-locus path.
   const isPreTurnCostBlock =
-    chatStream.state === "cost_capped" && chatStream.parts.length === 0;
+    activeStreamState === "cost_capped" && activeStreamParts.length === 0;
   // A pre-turn block never inserts a chat_messages row at all, so history
   // can never "catch up" to it — it stays visible until the next action
   // replaces it. Every other terminal outcome DOES insert a row (D-15), so
@@ -261,30 +407,30 @@ function ConversationView({
   const historyHasCaughtUp =
     (historyRows ?? []).length > historyCountAtStreamStartRef.current;
   const suppressLiveTurn =
-    chatStream.state !== "idle" &&
-    chatStream.state !== "streaming" &&
+    activeStreamState !== "idle" &&
+    activeStreamState !== "streaming" &&
     !isPreTurnCostBlock &&
     historyHasCaughtUp;
 
   const turns: MessageListItem[] = [...historyTurns];
-  if (optimisticUserText !== null && chatStream.state !== "idle") {
+  if (optimisticUserText !== null && activeStreamState !== "idle") {
     turns.push({
       id: OPTIMISTIC_USER_TURN_ID,
       role: "user",
       parts: [{ type: "text", text: optimisticUserText }],
     });
   }
-  if (chatStream.state !== "idle" && !suppressLiveTurn) {
+  if (activeStreamState !== "idle" && !suppressLiveTurn) {
     const liveStatus: TurnStatus =
-      chatStream.state === "streaming"
+      activeStreamState === "streaming"
         ? "streaming"
         : isPreTurnCostBlock
           ? "cost_capped_pre_turn"
-          : (chatStream.state as TurnStatus);
+          : (activeStreamState as TurnStatus);
     turns.push({
       id: STREAMING_TURN_ID,
       role: "assistant",
-      parts: chatStream.parts,
+      parts: activeStreamParts,
       status: liveStatus,
       // A "completed" live turn's real message id isn't known client-side
       // until chat.getHistory catches up (server-generated UUID) — offering
@@ -298,15 +444,32 @@ function ConversationView({
     });
   }
 
-  const regenerateDisabled = chatStream.state === "streaming";
+  const regenerateDisabled = activeStreamState === "streaming";
+
+  const handleSelectBrowserModel = useCallback(
+    async (_modelId: string) => {
+      await webllm.ensureLoaded();
+    },
+    [webllm],
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col">
       <span className="sr-only" aria-live="polite">
-        {liveAnnouncementFor(chatStream.state)}
+        {liveAnnouncementFor(activeStreamState)}
       </span>
       <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-border/50 px-4">
-        <ModelPicker conversationId={conversationId} currentModelId={modelId} />
+        <ModelPicker
+          conversationId={conversationId}
+          currentModelId={modelId}
+          onSelectBrowserModel={handleSelectBrowserModel}
+          webllm={{
+            supported: webllm.supported,
+            status: webllm.status,
+            progress: webllm.progress,
+            progressText: webllm.progressText,
+          }}
+        />
         <CostMeter conversationId={conversationId} />
       </div>
       <MessageList
@@ -320,11 +483,11 @@ function ConversationView({
             : handleRegenerate(assistantMessageId)
         }
       />
-      <GeneratingIndicator state={chatStream.state} />
+      <GeneratingIndicator state={activeStreamState} />
       <Composer
-        isStreaming={chatStream.state === "streaming"}
+        isStreaming={activeStreamState === "streaming"}
         onSubmit={handleSubmit}
-        onStop={chatStream.stop}
+        onStop={handleStop}
       />
     </div>
   );
@@ -344,6 +507,10 @@ function ConversationView({
 export default function ChatPage(): React.ReactElement {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [railCollapsed, setRailCollapsed] = useState(false);
+  // ONE top-level engine instance (D-08) — never re-instantiated when the
+  // selected conversation changes, so switching conversations never
+  // re-downloads the (large, first-run-only) WebLLM model weights.
+  const webllm = useWebllmEngine();
 
   const utils = api.useUtils();
   const { data: conversations } = api.chat.listConversations.useQuery({});
@@ -408,6 +575,7 @@ export default function ChatPage(): React.ReactElement {
               key={selectedId}
               conversationId={selectedId}
               modelId={selectedConversation.modelId}
+              webllm={webllm}
             />
           ) : selectedId ? (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">

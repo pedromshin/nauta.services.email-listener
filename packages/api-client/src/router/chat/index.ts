@@ -10,6 +10,7 @@
  */
 
 import { createTRPCRouter } from "../../trpc";
+import { browserTurnProcedures } from "./browser-turn";
 import { chatConversationsProcedures } from "./conversations";
 import { chatCostProcedures } from "./cost";
 import { chatHistoryProcedures } from "./history";
@@ -19,5 +20,6 @@ export const chatRouter = createTRPCRouter({
   ...chatConversationsProcedures,
   ...chatHistoryProcedures,
   ...chatCostProcedures,
+  ...browserTurnProcedures,
   models: modelsProcedure,
 });
