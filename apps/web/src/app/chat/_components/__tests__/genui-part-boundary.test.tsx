@@ -77,7 +77,7 @@ describe("GenuiPartBoundary", () => {
     expect(container.textContent).toContain("First");
     expect(container.textContent).not.toContain("Sec");
 
-    const skeletons = container.querySelectorAll(".animate-pulse");
+    const skeletons = container.querySelectorAll('[class*="animate-pulse"]');
     expect(skeletons.length).toBeGreaterThan(0);
   });
 

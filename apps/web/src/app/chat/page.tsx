@@ -458,7 +458,7 @@ function ConversationView({
       <span className="sr-only" aria-live="polite">
         {liveAnnouncementFor(activeStreamState)}
       </span>
-      <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-border/50 px-4">
+      <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-background/70 px-4 backdrop-blur-md">
         <ModelPicker
           conversationId={conversationId}
           currentModelId={modelId}

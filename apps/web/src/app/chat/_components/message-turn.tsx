@@ -134,7 +134,7 @@ export function MessageTurn({
                   {isStreamingTurn && isLastPart && (
                     <span
                       aria-hidden
-                      className="ml-0.5 inline-block align-middle text-foreground motion-safe:animate-pulse"
+                      className="ml-0.5 inline-block align-middle text-primary motion-safe:animate-pulse"
                     >
                       ▍
                     </span>
