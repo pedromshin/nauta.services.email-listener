@@ -13,6 +13,12 @@ import { ConversationRail } from "./_components/conversation-rail";
 import { CostMeter } from "./_components/cost-meter";
 import { GeneratingIndicator, MessageList } from "./_components/message-list";
 import { ModelPicker } from "./_components/model-picker";
+import { ChatCanvasIsland } from "./_canvas/chat-canvas-island";
+import {
+  ChatCanvasViewToggle,
+  readStoredViewMode,
+  type ChatCanvasViewMode,
+} from "./_canvas/chat-canvas-view-toggle";
 import { useConversationController } from "./_hooks/use-conversation-controller";
 import { useWebllmEngine, type UseWebllmEngineResult } from "./_hooks/use-webllm-engine";
 
@@ -27,15 +33,15 @@ interface ConversationViewProps {
 
 /**
  * ConversationView — the /chat main column once a conversation is selected
- * (CHAT-01/03/06/07, STREAM-01). Merges persisted history (chat.getHistory)
- * with the live streaming turn from EITHER useChatStream (server-locus, SSE)
- * or useWebllmEngine (browser-locus, local — D-08/D-09). The send handler
- * branches purely on the selected model's registry execution_locus — never a
- * hardcoded per-model special case — so both loci feed the SAME growing-parts
- * + state-machine shape into the SAME MessageList. The optimistic user
- * message renders immediately on submit — before either path starts — and
- * both transient turns are dropped once the turn settles and
- * chat.getHistory is invalidated (the persisted row takes over).
+ * (CHAT-01/03/06/07, STREAM-01, CANVAS-01). Instantiates ONE
+ * useConversationController (D-02) — the SAME instance drives both the
+ * docked Chat body and the Canvas island, so the ChatCanvasViewToggle can
+ * switch between them without ever interrupting an in-flight generation.
+ * Merges persisted history (chat.getHistory) with the live streaming turn
+ * from EITHER useChatStream (server-locus, SSE) or useWebllmEngine
+ * (browser-locus, local — D-08/D-09); the send handler branches purely on
+ * the selected model's registry execution_locus — never a hardcoded
+ * per-model special case.
  */
 function ConversationView({
   conversationId,
@@ -43,6 +49,9 @@ function ConversationView({
   webllm,
 }: ConversationViewProps): React.ReactElement {
   const controller = useConversationController({ conversationId, modelId, webllm });
+  const [viewMode, setViewMode] = useState<ChatCanvasViewMode>(() =>
+    readStoredViewMode(conversationId),
+  );
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -50,32 +59,51 @@ function ConversationView({
         {controller.liveAnnouncement}
       </span>
       <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-background/70 px-4 backdrop-blur-md">
-        <ModelPicker
-          conversationId={conversationId}
-          currentModelId={modelId}
-          onSelectBrowserModel={controller.handleSelectBrowserModel}
-          webllm={{
-            supported: webllm.supported,
-            status: webllm.status,
-            progress: webllm.progress,
-            progressText: webllm.progressText,
-          }}
-        />
+        <div className="flex items-center gap-2">
+          <ChatCanvasViewToggle
+            conversationId={conversationId}
+            value={viewMode}
+            onChange={setViewMode}
+          />
+          <ModelPicker
+            conversationId={conversationId}
+            currentModelId={modelId}
+            onSelectBrowserModel={controller.handleSelectBrowserModel}
+            webllm={{
+              supported: webllm.supported,
+              status: webllm.status,
+              progress: webllm.progress,
+              progressText: webllm.progressText,
+            }}
+          />
+        </div>
         <CostMeter conversationId={conversationId} />
       </div>
-      <MessageList
-        turns={controller.turns}
-        streamingTurnId={controller.streamingTurnId}
-        regenerateDisabled={controller.regenerateDisabled}
-        onNavigateSibling={controller.handleNavigateSibling}
-        onRegenerate={controller.onRegenerateTurn}
-      />
-      <GeneratingIndicator state={controller.activeStreamState} />
-      <Composer
-        isStreaming={controller.activeStreamState === "streaming"}
-        onSubmit={controller.handleSubmit}
-        onStop={controller.handleStop}
-      />
+      <div className="min-h-0 flex-1">
+        {viewMode === "canvas" ? (
+          <ChatCanvasIsland
+            conversationId={conversationId}
+            controller={controller}
+            historyRows={controller.historyRows}
+          />
+        ) : (
+          <div className="flex h-full min-h-0 flex-col">
+            <MessageList
+              turns={controller.turns}
+              streamingTurnId={controller.streamingTurnId}
+              regenerateDisabled={controller.regenerateDisabled}
+              onNavigateSibling={controller.handleNavigateSibling}
+              onRegenerate={controller.onRegenerateTurn}
+            />
+            <GeneratingIndicator state={controller.activeStreamState} />
+            <Composer
+              isStreaming={controller.activeStreamState === "streaming"}
+              onSubmit={controller.handleSubmit}
+              onStop={controller.handleStop}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }
