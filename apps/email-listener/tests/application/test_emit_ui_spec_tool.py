@@ -29,7 +29,9 @@ from app.domain.ports.chat_repositories import ChatMessage, ChatRun, ChatRunEven
 from app.domain.ports.cost_ledger_repository import UsageEvent
 from app.domain.services.chat_model_registry import ChatModel, ChatModelCapabilities
 from app.domain.services.cost_circuit_breaker import PreTurnDecision
-from app.infrastructure.llm.chat_tools import EMIT_UI_SPEC_TOOL, EMIT_UI_SPEC_TOOL_NAME
+from app.infrastructure.llm.chat_tools import EMIT_UI_SPEC_TOOL_NAME, build_emit_ui_spec_tool
+
+EMIT_UI_SPEC_TOOL = build_emit_ui_spec_tool()
 
 _IMPORTER_ID = "importer-1"
 _CONVERSATION_ID = "conv-1"

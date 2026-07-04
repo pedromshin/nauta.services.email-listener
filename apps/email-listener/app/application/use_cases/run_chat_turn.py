@@ -363,6 +363,13 @@ class RunChatTurn:
             return
 
         # Completed normally — the last delta was a StreamEnd with a non-error stop_reason.
+        # Finalize any pending emit_ui_spec call HERE so its tool_result event
+        # reaches the client (persist's own _finalize_state would silently
+        # swallow it — found live 2026-07-04: spec persisted but no tool_result
+        # streamed, leaving the client's live view stuck on "streaming").
+        state, tool_result_event = _finalize_pending_tool(state)
+        if tool_result_event is not None:
+            yield await self._emit(run.id, tool_result_event[0], tool_result_event[1])
         await self._persist_and_finish(
             run=run,
             conversation_id=conversation_id,
