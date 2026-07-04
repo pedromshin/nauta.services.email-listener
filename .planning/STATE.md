@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: "Conversational GenUI: Chat, Canvas & Dual-Channel"
 status: paused
-last_updated: "2026-07-03T23:15:47.538Z"
+last_updated: "2026-07-04T00:02:14.922Z"
 last_activity: "2026-07-03 -- Phase 22 Plan 10 (model picker + cost meter: chat.models proxy, ModelPicker/ModelPickerEntry, chat.sessionCost + CostMeter/CostBreakdownPopover, toolbar wiring) complete"
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 11
-  completed_plans: 9
+  completed_plans: 10
   percent: 0
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-06-27)
 ## Current Position
 
 Phase: 22 (Chat Spine + Persistence + Streaming) — EXECUTING
-Plan: 10 of 11
+Plan: 11 of 11
 Status: Executing Phase 22 (22-01 complete: chat data model + migration 0023 applied to local Postgres; 22-02 complete: ChatProvider port + curated 7-entry model registry + BedrockChatAdapter/OpenRouterChatAdapter + GET /v1/chat/models; 22-03 complete: sanitized MarkdownRenderer — react-markdown + remark-gfm + rehype-sanitize + rehype-highlight, CHAT-07/D-28; 22-04 complete: cost ledger port/adapter + fail-closed CostCircuitBreaker (config-only $0.50/$2.00/$5.00 caps) + D-22 genui usage-capture fix; 22-05 complete: chat tRPC router create/list/rename/delete/getHistory over Drizzle + /chat route with collapsible rail, home empty-state, inline rename, hard-delete confirm dialog, single Chat sidebar nav item — CHAT-02 done, CHAT-01 persistence-side done; 22-06 complete: RunChatTurn agent/run orchestrator (SEAM-04) — history assembly (D-26 trim) + ChatProviderRouter + fail-closed pre-turn gate (D-21) + streamed typed run events (SEAM-03) + FOUND-1 persistence + full turn-control lifecycle (mid-stream cost abort, cancel->stopped, failure->failed, regenerate-as-sibling D-16); chat persistence repos + provider router DI-wired; 22-07 complete: EMIT_UI_SPEC_TOOL capability-gated (D-05) offering + D-18 interleaved genui_spec parts via an immutable _TurnState accumulator, injected into RunChatTurn's constructor to avoid an application->infrastructure import-linter violation; POST /v1/chat/stream + /v1/chat/regenerate FastAPI SSE endpoints (X-API-Key fail-closed) with real asyncio.Task cancellation on client disconnect driving the D-15/D-25 stopped-partial path — STREAM-01/STREAM-02/CHAT-03/CHAT-04 done; 22-08 complete: Next.js SSE proxy routes injecting EMAIL_LISTENER_API_KEY server-side (D-24) + useChatStream hook (parseSseChunk/applyRunEvent pure helpers, idle->streaming->terminal state machine) + MessageList/MessageTurn/Composer wired into /chat — the first end-to-end streamed conversation (send -> live stream -> persists across reload), CHAT-01/03/06/07 + STREAM-01 done; 22-10 complete (executed ahead of 22-09, no dependency between them): chat.models tRPC proxy (server-side X-API-Key, Zod-revalidated snake_case->camelCase) + chat.setModel (D-10 persistence) + ModelPicker/ModelPickerEntry (cmdk Command grouped Bedrock/OpenRouter/Browser, honest capability row, real cost line, verbatim best_for, Recommended outline, typed onSelectBrowserModel seam for 22-11) + chat.sessionCost (bounded Drizzle read + shapeSessionCost pure helper) + CostMeter/CostBreakdownPopover (subtle text-xs meter, non-modal popover, display-only) wired into the conversation-view toolbar — STREAM-01/STREAM-03 done)
 Last activity: 2026-07-03 -- Phase 22 Plan 10 (model picker + cost meter: chat.models proxy, ModelPicker/ModelPickerEntry, chat.sessionCost + CostMeter/CostBreakdownPopover, toolbar wiring) complete
 
-Progress: [████████░░] 82%
+Progress: [█████████░] 91%
 
 ## v1.3 Roadmap Summary (2026-07-02)
 
@@ -1051,6 +1051,11 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 - 2026-07-03 (22-06): every assistant message insert (fresh turn AND regenerate) always gets a freshly-generated sibling_group_id rather than leaving it null until a first regenerate — removes a backfill special-case
 - 2026-07-03 (22-06): regenerate() runs the pre-turn cost gate BEFORE set_sibling_inactive — a BLOCKed regenerate must never retire the only active assistant reply for a turn
 - 2026-07-03 (22-06): test files placed at tests/test_chat_provider_router.py (flat) + tests/application/test_run_chat_turn.py — repeats the 22-02/22-04 precedent (no tests/unit/ directory exists anywhere in this repo)
+- 2026-07-03 (22-09): extended use-chat-stream.ts's applyRunEvent to accumulate tool_call partial_json into a new genui_spec_streaming MessagePart (mirrors the Python _TurnState.pending_tool_json accumulator) — the plan's own progressive-genui must-have is unreachable otherwise, since tool_call deltas were previously dropped entirely
+- 2026-07-03 (22-09): chat.getHistory's ConversationView consumer now folds ALL sibling rows per turn instead of isActive-only — SiblingNav needs every version to navigate; 22-08 explicitly flagged that filter as deferred to 22-09
+- 2026-07-03 (22-09): regenerate and InlineErrorCard's Retry unified into one onRegenerate(assistantMessageId) operation — no two diverging retry mechanisms; withheld on a "completed" live turn's transient sentinel id specifically, to avoid a resend-instead-of-regenerate misfire in the brief window before chat.getHistory catches up
+- 2026-07-03 (22-09): fixed a latent duplicate-turn bug (Rule 1) — the live streaming pseudo-turn was kept visible by a parts.length>0 check that never turns false once a turn settles, so every completed/failed/stopped turn rendered twice; replaced with a chat.getHistory row-count snapshot that correctly detects when the persisted row has landed
+- 2026-07-03 (22-09): buildPartialNode's recursion depth capped at MAX_SPEC_DEPTH (Rule 2, T-22-35) — the partial-tree walk touches untrusted model-authored structure BEFORE the finalized SpecRootSchema's own depth refinement ever runs
 
 ## Performance Metrics
 
@@ -1104,3 +1109,4 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 22 P07 | 30min | 2 tasks | 8 files |
 | Phase 22 P08 | 35min | 3 tasks | 9 files |
 | Phase 22 P10 | 25min | 2 tasks | 7 files |
+| Phase 22 P09 | 40min | 3 tasks | 12 files |

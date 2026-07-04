@@ -14,7 +14,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 - [x] **CHAT-02**: User can see a conversation list, switch between chats, rename and delete them
 - [x] **CHAT-03**: User can stop an in-flight generation
 - [x] **CHAT-04**: User can regenerate the last response without retyping
-- [ ] **CHAT-05**: A failed turn shows an inline, retryable error without losing the user's in-flight input
+- [x] **CHAT-05**: A failed turn shows an inline, retryable error without losing the user's in-flight input
 - [x] **CHAT-06**: Composer supports multi-line input, send-on-enter, disabled-while-streaming, and optimistic render of the user's message
 - [x] **CHAT-07**: Agent responses render markdown + code blocks; auto-scroll with a jump-to-bottom affordance
 
@@ -98,7 +98,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CHAT-02 | Phase 22 | Complete |
 | CHAT-03 | Phase 22 | Complete |
 | CHAT-04 | Phase 22 | Complete |
-| CHAT-05 | Phase 22 | Pending |
+| CHAT-05 | Phase 22 | Complete |
 | CHAT-06 | Phase 22 | Complete |
 | CHAT-07 | Phase 22 | Complete |
 | STREAM-01 | Phase 22 | Complete |
