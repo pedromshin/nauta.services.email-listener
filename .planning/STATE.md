@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: "Conversational GenUI: Chat, Canvas & Dual-Channel"
-status: paused
-last_updated: "2026-07-04T00:40:10.991Z"
-last_activity: "2026-07-03 -- Phase 22 Plan 11 (browser/WebLLM model locus: @mlc-ai/web-llm engine hook + picker activation + browser-locus send branch + chat.recordBrowserTurn persistence) complete -- Phase 22 all 11 plans done, ready for verification"
+status: executing
+last_updated: "2026-07-04T02:12:52.283Z"
+last_activity: 2026-07-04 -- Phase 23 execution started
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 11
-  completed_plans: 11
+  total_plans: 16
+  completed_plans: 12
   percent: 25
 ---
 
@@ -20,16 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-27)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** Phase 22 — Chat Spine + Persistence + Streaming
+**Current focus:** Phase 23 — 2D Canvas + Panels-as-Nodes + Shared State
 
 ## Current Position
 
-Phase: 22 (Chat Spine + Persistence + Streaming) — ALL 11 PLANS COMPLETE, ready for verification
-Plan: 11 of 11 (complete)
-Status: Phase 22 fully executed (22-01 complete: chat data model + migration 0023 applied to local Postgres; 22-02 complete: ChatProvider port + curated 7-entry model registry + BedrockChatAdapter/OpenRouterChatAdapter + GET /v1/chat/models; 22-03 complete: sanitized MarkdownRenderer — react-markdown + remark-gfm + rehype-sanitize + rehype-highlight, CHAT-07/D-28; 22-04 complete: cost ledger port/adapter + fail-closed CostCircuitBreaker (config-only $0.50/$2.00/$5.00 caps) + D-22 genui usage-capture fix; 22-05 complete: chat tRPC router create/list/rename/delete/getHistory over Drizzle + /chat route with collapsible rail, home empty-state, inline rename, hard-delete confirm dialog, single Chat sidebar nav item — CHAT-02 done, CHAT-01 persistence-side done; 22-06 complete: RunChatTurn agent/run orchestrator (SEAM-04) — history assembly (D-26 trim) + ChatProviderRouter + fail-closed pre-turn gate (D-21) + streamed typed run events (SEAM-03) + FOUND-1 persistence + full turn-control lifecycle (mid-stream cost abort, cancel->stopped, failure->failed, regenerate-as-sibling D-16); chat persistence repos + provider router DI-wired; 22-07 complete: EMIT_UI_SPEC_TOOL capability-gated (D-05) offering + D-18 interleaved genui_spec parts via an immutable _TurnState accumulator, injected into RunChatTurn's constructor to avoid an application->infrastructure import-linter violation; POST /v1/chat/stream + /v1/chat/regenerate FastAPI SSE endpoints (X-API-Key fail-closed) with real asyncio.Task cancellation on client disconnect driving the D-15/D-25 stopped-partial path — STREAM-01/STREAM-02/CHAT-03/CHAT-04 done; 22-08 complete: Next.js SSE proxy routes injecting EMAIL_LISTENER_API_KEY server-side (D-24) + useChatStream hook (parseSseChunk/applyRunEvent pure helpers, idle->streaming->terminal state machine) + MessageList/MessageTurn/Composer wired into /chat — the first end-to-end streamed conversation (send -> live stream -> persists across reload), CHAT-01/03/06/07 + STREAM-01 done; 22-10 complete (executed ahead of 22-09, no dependency between them): chat.models tRPC proxy (server-side X-API-Key, Zod-revalidated snake_case->camelCase) + chat.setModel (D-10 persistence) + ModelPicker/ModelPickerEntry (cmdk Command grouped Bedrock/OpenRouter/Browser, honest capability row, real cost line, verbatim best_for, Recommended outline, typed onSelectBrowserModel seam for 22-11) + chat.sessionCost (bounded Drizzle read + shapeSessionCost pure helper) + CostMeter/CostBreakdownPopover (subtle text-xs meter, non-modal popover, display-only) wired into the conversation-view toolbar — STREAM-01/STREAM-03 done; 22-11 complete: @mlc-ai/web-llm (vetted, v0.2.84) engine hook (WebGPU detect, lazy dynamic-import singleton, generateStream with real token usage, interruptGenerate Stop parity) + ModelPicker/ModelPickerEntry browser-locus activation (disabled/loading/ready states) + ConversationView's data-driven execution_locus send/stop branch + chat.recordBrowserTurn (canonical message/run/run_events/$0-metered-ledger persistence, DB-free-tested buildBrowserTurnRows) — D-08/D-09 minimal honest in-browser prototype done, STREAM-01/STREAM-03 done. Rule-1 cross-file fix: chat_model_registry.py's browser entry repointed webllm-gemma-3-4b -> webllm-qwen3-4b (Gemma-3-4B doesn't exist in the vetted WebLLM package; Qwen3-4B is D-08's own named alternative))
-Last activity: 2026-07-03 -- Phase 22 Plan 11 (browser/WebLLM model locus: @mlc-ai/web-llm engine hook + picker activation + browser-locus send branch + chat.recordBrowserTurn persistence) complete -- Phase 22 all 11 plans done, ready for verification
+Phase: 23 (2D Canvas + Panels-as-Nodes + Shared State) — EXECUTING
+Plan: 2 of 5
+Status: Executing Phase 23
+Last activity: 2026-07-04 -- Phase 23 execution started
 
-Progress: [██████████] 100%
+Progress: [████████░░] 75%
 
 ## v1.3 Roadmap Summary (2026-07-02)
 
@@ -1114,3 +1114,4 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 22 P10 | 25min | 2 tasks | 7 files |
 | Phase 22 P09 | 40min | 3 tasks | 12 files |
 | Phase 22 P11 | ~65min | 2 tasks | 12 files — @mlc-ai/web-llm engine hook + picker activation + browser-locus send branch + chat.recordBrowserTurn persistence; phase 22 all 11 plans complete |
+| Phase 23 P01 | 35min | 3 tasks | 8 files |
