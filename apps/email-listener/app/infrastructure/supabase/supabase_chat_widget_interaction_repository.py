@@ -81,6 +81,7 @@ class SupabaseChatWidgetInteractionRepository:
         declaration: dict[str, Any],
         declared_response_schema: dict[str, Any],
         sibling_group_id: str | None = None,
+        interaction_id: str | None = None,
     ) -> WidgetInteraction:
         row: dict[str, Any] = {
             "conversation_id": conversation_id,
@@ -93,6 +94,11 @@ class SupabaseChatWidgetInteractionRepository:
             "declared_response_schema": declared_response_schema,
             "state": "pending",
         }
+        # Phase 24-02: when the caller pre-generated the id (so it can be embedded
+        # in the interactive_widget part's interactionId before this row exists),
+        # pass it through explicitly instead of relying on gen_random_uuid().
+        if interaction_id is not None:
+            row["id"] = interaction_id
         result = await asyncio.to_thread(lambda: self._client.table(_TABLE).insert(row).execute())
         return _row_to_entity(result.data[0])
 

@@ -25,6 +25,17 @@ part (D-18) alongside a single `tool_result` run event. The spec is stored
 verbatim -- no server-side schema validation/fallback (that gate is the web
 boundary, FOUND-6).
 
+Phase 24-02 (DCUI-03, D-01/D-04): `interactive_widget_tools` (e.g.
+emit_proposal_cards, also injected via the constructor -- same layering
+rationale) are offered alongside emit_ui_spec to genui-capable models. A
+completed interactive-widget tool call finalizes into an `interactive_widget`
+part instead of a genui_spec part (run_chat_turn_widgets.py owns the pure
+parse/derive logic); after the assistant message is persisted, exactly one
+pending chat_widget_interactions row is created for it via the injected
+ChatWidgetInteractionRepository (D-04: at most one pending widget per turn).
+Both new constructor parameters default to falsy values so existing callers
+are unaffected (additive).
+
 Built as an async generator with NO HTTP dependency — the SSE transport (22-07)
 is a thin wrapper over `run()`/`regenerate()`.
 
@@ -45,6 +56,12 @@ from typing import TYPE_CHECKING, Any, cast
 
 import structlog
 
+from app.application.use_cases.run_chat_turn_widgets import (
+    INTERACTIVE_WIDGET_TOOL_NAMES,
+    build_interactive_widget_part,
+    content_block_stand_in,
+    derive_declared_response_schema,
+)
 from app.domain.ports.chat_provider import StreamEnd, TextDelta, ToolCallDelta, UsageDelta
 from app.domain.ports.chat_repositories import (
     ChatConversationRepository,
@@ -57,6 +74,7 @@ from app.domain.ports.chat_repositories import (
     ChatRunRepository,
     ChatRunStatus,
 )
+from app.domain.ports.chat_widget_interaction_repository import ChatWidgetInteractionRepository, WidgetKind
 from app.domain.ports.cost_ledger_repository import CostLedgerRepository, UsageEvent
 from app.domain.services.chat_model_registry import ChatModel, get_model
 from app.domain.services.chat_provider_router import ChatModelNotFoundError, ChatProviderRouter
@@ -119,6 +137,8 @@ class RunChatTurn:
         emit_ui_spec_tool: dict[str, Any],
         default_importer_id: str,
         max_output_tokens: int = 4096,
+        widget_interactions: ChatWidgetInteractionRepository | None = None,
+        interactive_widget_tools: tuple[dict[str, Any], ...] = (),
     ) -> None:
         self._messages = messages
         self._runs = runs
@@ -129,6 +149,8 @@ class RunChatTurn:
         self._emit_ui_spec_tool = emit_ui_spec_tool
         self._default_importer_id = default_importer_id
         self._max_output_tokens = max_output_tokens
+        self._widget_interactions = widget_interactions
+        self._interactive_widget_tools = interactive_widget_tools
 
     async def run(
         self,
@@ -291,9 +313,12 @@ class RunChatTurn:
         trimmed_history = _trim_history_to_budget(history, context_tokens=model.capabilities.context_tokens)
         provider_messages = _build_provider_messages(trimmed_history)
 
-        # D-05: emit_ui_spec is offered ONLY to genui-capable models; a text-only
-        # model never even sees a tool exists (D-02/D-03 — no other data tools).
-        tools: tuple[dict[str, Any], ...] = (self._emit_ui_spec_tool,) if model.capabilities.genui else ()
+        # D-05: emit_ui_spec (+ Phase 24-02 interactive_widget_tools, e.g.
+        # emit_proposal_cards) is offered ONLY to genui-capable models; a
+        # text-only model never even sees a tool exists (D-02/D-03).
+        tools: tuple[dict[str, Any], ...] = (
+            (self._emit_ui_spec_tool, *self._interactive_widget_tools) if model.capabilities.genui else ()
+        )
 
         # Cast: ChatProvider.stream() is typed AsyncIterator[ChatDelta] on the Protocol
         # (deliberately loose so a future non-generator implementation stays valid),
@@ -480,7 +505,7 @@ class RunChatTurn:
         abort never drops the interleaved partial.
         """
         finalized = _finalize_state(state)
-        await self._messages.insert_message(
+        message = await self._messages.insert_message(
             conversation_id=conversation_id,
             role="assistant",
             parts=finalized.parts,
@@ -490,6 +515,12 @@ class RunChatTurn:
             sibling_group_id=sibling_group_id,
             version=version,
             is_active=True,
+        )
+        await self._create_pending_widget_interaction(
+            conversation_id=conversation_id,
+            message=message,
+            turn_index=turn_index,
+            sibling_group_id=sibling_group_id,
         )
         cost = self._breaker.estimate_turn_cost(
             model=model, prompt_tokens_est=finalized.input_tokens, max_output_tokens=finalized.output_tokens
@@ -507,6 +538,42 @@ class RunChatTurn:
             )
         )
         await self._runs.finish_run(run_id=run.id, status=run_status)
+
+    async def _create_pending_widget_interaction(
+        self,
+        *,
+        conversation_id: str,
+        message: ChatMessage,
+        turn_index: int,
+        sibling_group_id: str,
+    ) -> None:
+        """Create the one pending chat_widget_interactions row for message's interactive_widget part.
+
+        D-04: at most one pending interactive widget per turn — the first (and
+        only) interactive_widget part found is used. A no-op when no widget
+        repository is configured (additive/back-compat default) or the message
+        carries no interactive_widget part.
+        """
+        if self._widget_interactions is None:
+            return
+        for part_index, part in enumerate(message.parts):
+            if part.get("type") != "interactive_widget":
+                continue
+            widget_kind = cast("WidgetKind", part["widgetKind"])
+            declaration = part["declaration"]
+            declared_response_schema = derive_declared_response_schema(widget_kind, declaration)
+            await self._widget_interactions.create_pending(
+                interaction_id=part["interactionId"],
+                conversation_id=conversation_id,
+                message_id=message.id,
+                part_index=part_index,
+                turn_index=turn_index,
+                widget_kind=widget_kind,
+                declaration=declaration,
+                declared_response_schema=declared_response_schema,
+                sibling_group_id=sibling_group_id,
+            )
+            return
 
     def _estimated_cost_so_far(self, *, model: ChatModel, state: _TurnState) -> Decimal:
         """Cheap running-cost ESTIMATE from accumulated output length (mid-stream abort signal).
@@ -579,12 +646,16 @@ def _flush_text_buffer(state: _TurnState) -> _TurnState:
 def _finalize_pending_tool(
     state: _TurnState,
 ) -> tuple[_TurnState, tuple[ChatRunEventType, dict[str, Any]] | None]:
-    """Parse an in-flight emit_ui_spec tool call's accumulated JSON into a genui_spec part.
+    """Parse an in-flight tool call's accumulated JSON into its finalized part.
 
-    The spec is stored verbatim (no schema validation/fallback here — that gate
-    is the web boundary, FOUND-6). A tool call whose JSON never parses (e.g. cut
-    off mid-stream by a mid-turn abort/cancellation) is dropped rather than
-    persisting invalid JSON into a canonical typed part.
+    emit_ui_spec (or any tool NOT in INTERACTIVE_WIDGET_TOOL_NAMES) finalizes
+    into a genui_spec part, stored verbatim (no schema validation/fallback here
+    — that gate is the web boundary, FOUND-6). Phase 24-02 interactive-widget
+    tools (e.g. emit_proposal_cards) finalize into an `interactive_widget` part
+    instead (run_chat_turn_widgets.py owns the parse logic) — NEVER both for
+    the same tool call. A tool call whose JSON never parses, or whose parsed
+    shape is unusable (e.g. cut off mid-stream by a mid-turn abort/cancellation),
+    is dropped rather than persisting a malformed/invalid part.
     """
     if state.pending_tool_id is None:
         return state, None
@@ -592,6 +663,18 @@ def _finalize_pending_tool(
     tool_id = state.pending_tool_id
     raw_json = state.pending_tool_json
     cleared = replace(state, pending_tool_name=None, pending_tool_id=None, pending_tool_json="")
+
+    if tool_name in INTERACTIVE_WIDGET_TOOL_NAMES:
+        widget_part = build_interactive_widget_part(tool_name, raw_json)
+        if widget_part is None:
+            logger.warning("interactive_widget_tool_call_parse_failed", tool_id=tool_id, tool_name=tool_name)
+            return cleared, None
+        finalized = replace(cleared, parts=(*cleared.parts, widget_part))
+        return finalized, (
+            "tool_result",
+            {"tool_name": tool_name, "id": tool_id, "interactionId": widget_part["interactionId"]},
+        )
+
     try:
         spec: dict[str, Any] = json.loads(raw_json) if raw_json else {}
     except (json.JSONDecodeError, TypeError):
@@ -635,14 +718,19 @@ def _provider_content_blocks(parts: Sequence[dict[str, Any]]) -> list[dict[str, 
     Anthropic content block — replaying it as a bare tool_use block without a
     paired tool_result would violate the API's block-alternation contract. It is
     replayed as a compact text stand-in instead so history resent to the
-    provider stays well-formed; full tool_use/tool_result replay is deferred to
-    the Phase 24 round-trip seam (ToolResultDelta is already reserved for it).
+    provider stays well-formed. Phase 24-02: 'interactive_widget'/'interaction_result'
+    parts get the same compact-text-stand-in treatment (run_chat_turn_widgets.py's
+    content_block_stand_in) — full tool_use/tool_result replay is not attempted for
+    any of these shapes (ToolResultDelta is reserved for a future replay design).
     """
     blocks: list[dict[str, Any]] = []
     for part in parts:
-        if part.get("type") == "genui_spec":
+        part_type = part.get("type")
+        if part_type == "genui_spec":
             spec_json = json.dumps(part.get("spec", {}), ensure_ascii=False)
             blocks.append({"type": "text", "text": f"[emitted UI spec: {spec_json}]"})
+        elif part_type in ("interactive_widget", "interaction_result"):
+            blocks.append(content_block_stand_in(part))
         else:
             blocks.append(part)
     return blocks

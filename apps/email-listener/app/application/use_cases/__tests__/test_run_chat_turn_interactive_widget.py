@@ -15,7 +15,13 @@ app/domain/services/__tests__/, app/infrastructure/supabase/__tests__/) rather
 than the pre-24-01 top-level tests/ convention that
 tests/application/test_run_chat_turn.py and
 tests/application/test_emit_ui_spec_tool.py still use for the existing
-regression suite.
+regression suite. Because this file is nested under app.application, the
+import-linter "Application does not import infrastructure" contract applies
+to it too — so (mirroring test_run_chat_turn.py's existing precedent) tool
+dicts are hand-authored test doubles here, never imported from
+app.infrastructure.llm.chat_tools; build_emit_proposal_cards_tool's own
+Bedrock-valid-schema contract is enforced by its module-level assert in
+chat_tools.py, not re-tested from this file.
 """
 
 from __future__ import annotations
@@ -32,7 +38,6 @@ from app.domain.ports.chat_widget_interaction_repository import WidgetInteractio
 from app.domain.ports.cost_ledger_repository import UsageEvent
 from app.domain.services.chat_model_registry import ChatModel, ChatModelCapabilities
 from app.domain.services.cost_circuit_breaker import PreTurnDecision
-from app.infrastructure.llm.chat_tools import build_emit_proposal_cards_tool
 
 _IMPORTER_ID = "importer-1"
 _CONVERSATION_ID = "conv-1"
@@ -50,6 +55,11 @@ _GENUI_MODEL = ChatModel(
 _TEST_MODELS = {_GENUI_MODEL.id: _GENUI_MODEL}
 
 _TEST_EMIT_UI_SPEC_TOOL: dict[str, Any] = {"name": "emit_ui_spec", "description": "test", "input_schema": {}}
+_TEST_PROPOSAL_CARDS_TOOL: dict[str, Any] = {
+    "name": "emit_proposal_cards",
+    "description": "test",
+    "input_schema": {},
+}
 
 
 @pytest.fixture(autouse=True)
@@ -235,7 +245,7 @@ def _make_use_case(
         default_importer_id=_IMPORTER_ID,
         max_output_tokens=1000,
         widget_interactions=widget_interactions,
-        interactive_widget_tools=(build_emit_proposal_cards_tool(),),
+        interactive_widget_tools=(_TEST_PROPOSAL_CARDS_TOOL,),
     )
     return use_case, messages
 
@@ -335,7 +345,7 @@ async def test_genui_capable_model_offers_both_emit_ui_spec_and_proposal_cards_t
     async for _ in use_case.run(conversation_id=_CONVERSATION_ID, user_text="Hi", model_id=_GENUI_MODEL.id):
         pass
 
-    assert provider.stream_calls[0]["tools"] == (_TEST_EMIT_UI_SPEC_TOOL, build_emit_proposal_cards_tool())
+    assert provider.stream_calls[0]["tools"] == (_TEST_EMIT_UI_SPEC_TOOL, _TEST_PROPOSAL_CARDS_TOOL)
 
 
 # ---------------------------------------------------------------------------

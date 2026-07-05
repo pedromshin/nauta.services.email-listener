@@ -61,8 +61,17 @@ class ChatWidgetInteractionRepository(Protocol):
         declaration: dict[str, Any],
         declared_response_schema: dict[str, Any],
         sibling_group_id: str | None = None,
+        interaction_id: str | None = None,
     ) -> WidgetInteraction:
-        """Insert a new pending chat_widget_interactions row and return it (id populated)."""
+        """Insert a new pending chat_widget_interactions row and return it (id populated).
+
+        interaction_id (Phase 24-02 addition, additive/optional): the interactive_widget
+        message part's `interactionId` field is the client-visible FK to this row, and it
+        must be embedded in the part BEFORE this row exists (the part is persisted first,
+        as part of the assistant chat_messages insert). When provided, the caller
+        pre-generated this id so the part and the row share it. Falls back to the column's
+        own `DEFAULT gen_random_uuid()` (24-01's original contract) when omitted.
+        """
         ...
 
     async def get(self, interaction_id: str) -> WidgetInteraction | None:
