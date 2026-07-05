@@ -192,6 +192,12 @@ export interface ConversationController {
   /** Raw chat.getHistory rows (ALL sibling versions) — the canvas surface
    * (23-03 Task 3) derives its genui-panel nodes from these. */
   readonly historyRows: readonly ChatHistoryRow[];
+  /** The already-materialized assistant message id currently being
+   * regenerated, or null — the canvas surface (23-04 Task 3) uses this as
+   * the STABLE provenance key to overlay the live streaming pseudo-turn's
+   * partial genui content onto that EXISTING genui-panel node (never a new
+   * one — a regenerate has no new messageId until it lands, D-07). */
+  readonly regeneratingMessageId: string | null;
   readonly handleSubmit: (text: string) => void;
   readonly handleStop: () => void;
   readonly handleRegenerate: (assistantMessageId: string) => void;
@@ -492,6 +498,7 @@ export function useConversationController({
     regenerateDisabled,
     liveAnnouncement: liveAnnouncementFor(activeStreamState),
     historyRows: historyRows ?? [],
+    regeneratingMessageId: regeneratingActiveId,
     handleSubmit,
     handleStop,
     handleRegenerate,

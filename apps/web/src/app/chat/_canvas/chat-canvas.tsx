@@ -66,7 +66,7 @@ import {
   KEYBOARD_HINT_DISMISSED_KEY,
 } from "./canvas-keyboard-hint";
 import { CanvasSkeleton } from "./canvas-skeleton";
-import { CanvasSpecProvider } from "./canvas-spec-context";
+import { CanvasSpecProvider, type CanvasSpecEntry } from "./canvas-spec-context";
 import { ChatControllerProvider } from "./chat-node";
 import { nodeTypes } from "./node-types";
 import {
@@ -87,13 +87,13 @@ const GENUI_PANEL_CLASS_NAME = "motion-safe:animate-in fade-in duration-200";
 
 /** `messageId:partIndex` — mirrors canvas-spec-context.tsx's own provenance
  * lookup key convention exactly. */
-function provenanceKey(messageId: string, partIndex: number): string {
+export function provenanceKey(messageId: string, partIndex: number): string {
   return `${messageId}:${partIndex}`;
 }
 
 /** History-derived specsByProvenance map — feeds CanvasSpecProvider (23-02
  * seam); keys mirror canvas-spec-context.tsx's own provenanceKey exactly. */
-function buildSpecsByProvenance(
+export function buildSpecsByProvenance(
   historyRows: readonly ChatHistoryRow[],
 ): Map<string, string> {
   const map = new Map<string, string>();
@@ -146,6 +146,58 @@ function toFlowEdge(edge: PersistedCanvasEdge): FlowEdge {
     target: edge.target,
     data: { sourcePath: edge.data.sourcePath, targetKey: edge.data.targetKey },
   };
+}
+
+/**
+ * buildStreamingByProvenance — the CANVAS-04 seam (D-07): overlays the
+ * LIVE streaming pseudo-turn's partial genui content onto an EXISTING,
+ * already-materialized genui-panel node — never creates a new one. A
+ * brand-new genui_spec part has no stable provenance id until its turn
+ * finishes and `chat.getHistory` refetches (the backend only inserts the
+ * assistant message row at finalize; there is no messageId to key a NEW
+ * node's provenance on mid-stream), so the only stream this can safely
+ * "just work" for is a REGENERATE of an already-materialized message —
+ * `controller.regeneratingMessageId` is that message's stable, already-real
+ * id. Returns an empty map whenever nothing is regenerating — the common
+ * case (a first-time send is watched live via the ChatNode's own embedded
+ * MessageList instead, which reads `controller.turns` directly; the
+ * settled panel materializes once the turn completes via the historyRows
+ * reconcile effect above).
+ *
+ * Pure, framework-agnostic w.r.t. node state — NEVER touches `nodes`/
+ * `setNodes`. Streamed content flows to `GenuiPanelNodeBody` exclusively via
+ * `useCanvasSpec` (React context) — the memo-identity invariant D-07
+ * requires: a streamed token changes this map's CONTENTS (a new Map
+ * instance, cheap) but never the `nodes` ARRAY passed to React Flow, so no
+ * node ever remounts, repositions, or forces a layout pass while it streams.
+ */
+export function buildStreamingByProvenance(
+  controller: ConversationController,
+): ReadonlyMap<string, CanvasSpecEntry> {
+  const map = new Map<string, CanvasSpecEntry>();
+  const { regeneratingMessageId } = controller;
+  if (regeneratingMessageId === null || controller.activeStreamState !== "streaming") {
+    return map;
+  }
+
+  const streamingTurn = controller.turns.find(
+    (turn) => turn.id === controller.streamingTurnId,
+  );
+  const parts = streamingTurn?.parts ?? [];
+  parts.forEach((part, partIndex) => {
+    if (part.type === "genui_spec_streaming") {
+      map.set(provenanceKey(regeneratingMessageId, partIndex), {
+        specJson: part.partialJson,
+        isStreaming: true,
+      });
+    } else if (part.type === "genui_spec") {
+      map.set(provenanceKey(regeneratingMessageId, partIndex), {
+        specJson: JSON.stringify(part.spec),
+        isStreaming: false,
+      });
+    }
+  });
+  return map;
 }
 
 export interface ChatCanvasProps {
@@ -216,10 +268,32 @@ export function ChatCanvas({
     }
   }, [persistence.saveStatus, onSaveStatusChange]);
 
+  // Announce "New panel added" the moment reconciliation adds a node whose
+  // id wasn't present in the PREVIOUS render's node set — never fires on the
+  // initial seed (prevNodeIdsRef starts null) and never fires on a plain
+  // drag/select tick (those change positions/selection, never the id set).
+  const prevNodeIdsRef = useRef<ReadonlySet<string> | null>(null);
+  useEffect(() => {
+    const currentIds = new Set(nodes.map((node) => node.id));
+    const previousIds = prevNodeIdsRef.current;
+    if (previousIds !== null && seededRef.current) {
+      const hasNewNode = [...currentIds].some((id) => !previousIds.has(id));
+      if (hasNewNode) {
+        setAnnouncement("New panel added");
+      }
+    }
+    prevNodeIdsRef.current = currentIds;
+  }, [nodes]);
+
   const specsByProvenance = useMemo(
     () => buildSpecsByProvenance(historyRows),
     [historyRows],
   );
+  // CANVAS-04/D-07 seam — see buildStreamingByProvenance's own doc comment.
+  // Recomputed every render (controller is a fresh object each call, same
+  // as historyRows/specsByProvenance's existing posture) — cheap, and NEVER
+  // touches `nodes`/`setNodes`.
+  const streamingByProvenance = buildStreamingByProvenance(controller);
 
   // Session-only (23-UI-SPEC.md Layout & Structure "Minimap decision") —
   // deliberately NOT persisted, resets to off on reload.
@@ -344,7 +418,10 @@ export function ChatCanvas({
   const isEmpty = nodes.length === 0;
 
   return (
-    <CanvasSpecProvider specsByProvenance={specsByProvenance}>
+    <CanvasSpecProvider
+      specsByProvenance={specsByProvenance}
+      streamingByProvenance={streamingByProvenance}
+    >
       <ChatControllerProvider controller={controller}>
         <div
           role="application"
