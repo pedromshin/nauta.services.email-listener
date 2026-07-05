@@ -17,6 +17,13 @@
  * `sharedState`, D-10) — a single source of truth, never two stores.
  */
 
+// Explicit React import (not just named hook imports) — this file's JSX
+// (CanvasStoreContext.Provider / CanvasEdgesContext.Provider) compiles fine under Next.js's
+// SWC automatic JSX runtime, but vitest's plain esbuild transform defaults to the classic
+// runtime (React.createElement) and needs `React` in scope whenever a test mounts these
+// providers directly (23-06 Task 3 — found live: "React is not defined" mounting
+// CanvasStoreProvider in panel-data-flow.test.tsx).
+import * as React from "react";
 import {
   createContext,
   useCallback,
@@ -27,6 +34,7 @@ import {
   type ReactNode,
 } from "react";
 import { useStore } from "zustand";
+import { useShallow } from "zustand/react/shallow";
 
 import {
   createCanvasStore,
@@ -180,6 +188,16 @@ export function CanvasEdgesProvider({
 
 const EMPTY_INCOMING_EDGES: readonly IncomingDataEdge[] = [];
 
+/**
+ * Stable empty-object fallback for a panel's own slice when it has never written anything to
+ * `panels.{panelId}.*` yet. Using `?? {}` inline would allocate a NEW object literal on every
+ * selector invocation — `useSyncExternalStore` (which `useStore` is built on) requires a
+ * snapshot getter to return a REFERENCE-STABLE value when nothing has changed, or it re-renders
+ * in an infinite loop (found live, 23-06 Task 3: mounting a never-written panel threw "Maximum
+ * update depth exceeded" / "getSnapshot should be cached").
+ */
+const EMPTY_PANEL_DATA: Record<string, unknown> = {};
+
 /** Returns the CURRENT list of data-carrying edges targeting `panelId` — a
  * missing provider (e.g. a standalone test render) degrades to an empty
  * list rather than throwing (mirrors `useCanvasSpec`'s degrade posture). */
@@ -213,17 +231,28 @@ export function usePanelData(
 ): UsePanelDataResult {
   const { store } = useCanvasStoreContext();
 
-  const data = useStore(store, (state) => {
-    const panels = state.values.panels as Record<string, unknown> | undefined;
-    const own = (panels?.[panelId] as Record<string, unknown> | undefined) ?? {};
-    if (incomingEdges.length === 0) return own;
+  // `useShallow` (zustand v5's replacement for the deprecated 3-arg useStore equality-fn form)
+  // is REQUIRED here, not cosmetic: the overlay branch below always allocates a brand-new
+  // `{ ...own, ...overlay }` object, so without a shallow-equality wrapper
+  // useSyncExternalStore would see a "changed" snapshot on every single render (even when
+  // nothing actually changed) and loop forever ("Maximum update depth exceeded" — found live,
+  // 23-06 Task 3, mounting a target panel with a live incoming edge). useShallow caches the
+  // previous shallow-equal result and returns THAT reference instead, so a genuine source-value
+  // change (STATE-02's live edge resolution) still re-renders, but a no-op re-computation does not.
+  const data = useStore(
+    store,
+    useShallow((state) => {
+      const panels = state.values.panels as Record<string, unknown> | undefined;
+      const own = (panels?.[panelId] as Record<string, unknown> | undefined) ?? EMPTY_PANEL_DATA;
+      if (incomingEdges.length === 0) return own;
 
-    const overlay: Record<string, unknown> = {};
-    for (const edge of incomingEdges) {
-      overlay[edge.targetKey] = resolveCanvasPath(state.values, edge.sourcePath);
-    }
-    return { ...own, ...overlay };
-  });
+      const overlay: Record<string, unknown> = {};
+      for (const edge of incomingEdges) {
+        overlay[edge.targetKey] = resolveCanvasPath(state.values, edge.sourcePath);
+      }
+      return { ...own, ...overlay };
+    }),
+  );
 
   const mutate = useStore(store, (state) => state.mutate);
 
