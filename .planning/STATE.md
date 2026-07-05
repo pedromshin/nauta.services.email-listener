@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: "Conversational GenUI: Chat, Canvas & Dual-Channel"
-status: completed
-last_updated: "2026-07-05T01:08:49.070Z"
-last_activity: 2026-07-04 -- 23-05 executed (per-conversation Zustand canvas store + data-carrying edges; STATE-01/STATE-02 complete)
+status: verifying
+last_updated: "2026-07-05T04:59:57.800Z"
+last_activity: "2026-07-05 -- 23-06 executed (gap closure: ButtonComponent -> ActionRegistry trigger + panel-action-bridge write path + end-to-end proof; STATE-01/STATE-02 now observably true, closing 23-VERIFICATION.md's two missing items)"
 progress:
   total_phases: 4
   completed_phases: 2
-  total_plans: 16
-  completed_plans: 16
+  total_plans: 17
+  completed_plans: 17
   percent: 50
 ---
 
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-27)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** Phase 23 — 2D Canvas + Panels-as-Nodes + Shared State (COMPLETE) — next: Phase 24
+**Current focus:** Phase 23 — 2D Canvas + Panels-as-Nodes + Shared State (COMPLETE, gap closed) — next: Phase 24
 
 ## Current Position
 
-Phase: 23 (2D Canvas + Panels-as-Nodes + Shared State) — ALL 5 PLANS COMPLETE
-Plan: 5 of 5 (23-01..23-05 all complete)
-Status: Phase 23 complete — ready for `/gsd:plan-phase 24` (Dual-Channel GenUI)
-Last activity: 2026-07-04 -- 23-05 executed (per-conversation Zustand canvas store + data-carrying edges; STATE-01/STATE-02 complete)
+Phase: 23 (2D Canvas + Panels-as-Nodes + Shared State) — ALL 6 PLANS COMPLETE (5 original + 1 gap closure)
+Plan: 6 of 6 (23-01..23-06 all complete)
+Status: Phase 23 complete + verification gap closed — ready for `/gsd:plan-phase 24` (Dual-Channel GenUI)
+Last activity: 2026-07-05 -- 23-06 executed (gap closure: ButtonComponent -> ActionRegistry trigger + panel-action-bridge write path + end-to-end proof; STATE-01/STATE-02 now observably true, closing 23-VERIFICATION.md's two missing items)
 
 Progress: [██████████] 100% (Phase 23)
 
@@ -77,7 +77,9 @@ live Bedrock / a browser.
 - **23-02 EXECUTED:** `NODE_TYPE_REGISTRY`/`NODE_REGISTRY_VERSION` (browser-safe FNV-1a content-hash) + `resolveNodeType` allowlist (never throws) + `GenuiPanelNode` (memoized, renders via the unmodified `SpecRenderer`) + `CanvasSpecProvider`/`useCanvasSpec` — the CANVAS-04 seam keeping streaming content out of `node.data` from day one.
 - **23-03 EXECUTED:** `useConversationController` (lifted streaming/turn state shared by the docked Chat view and the canvas `ChatNode` — one instance, D-02) + `ChatNode`/module-level `nodeTypes` map + `layoutCanvasNodes`/`offsetCascadePosition` (dagre) + the mounted `ChatCanvas` surface/island/view-toggle. Persistence/restore and live materialization were explicitly deferred to 23-04 (this plan's own stated seam).
 - **23-04 EXECUTED:** Closed the persistence loop — `useCanvasPersistence` (exact restore, unknown-type degrade via `reconcileNodesFromHistory`, live `historyRows` reconciliation, ~800ms debounced coalesced `chat.saveCanvasLayout` save, `SaveStatusIndicator` in the toolbar) — and the CANVAS-04 streaming-responsiveness contract (`buildStreamingByProvenance` overlays a live regenerate's partial content onto an existing genui-panel node; a brand-new turn's live progress is watched via the `ChatNode`'s own embedded MessageList, since the backend has no stable messageId until a turn finalizes). Both CANVAS-02 and CANVAS-04 now marked complete in REQUIREMENTS.md. **Deviation:** split `packages/api-client`'s `chat/canvas.ts` into a new client-safe `canvas-schema.ts` (zero imports beyond zod) + a `"./chat-canvas"` package export, since the original file's `../../trpc` → `@nauta/db` import chain crashed any client-side import with a server-env-var error (found live via a failing test).
-- **23-05 EXECUTED (this session) — PHASE 23 COMPLETE:** `createCanvasStore`/`CANVAS_STORE_MUTATIONS` (per-conversation `zustand/vanilla` store, superset of v1.1's declared-state 5-mutation grammar, `panels.*`/`shared.*` namespaces, FORBIDDEN_KEYS-guarded `resolveCanvasPath`) wired `GenuiPanelNode` -> `usePanelData` -> a new `data` prop on `GenuiPartBoundary` -> the UNMODIFIED `SpecRenderer`. `EdgePayloadSchema`/`DataEdge`/`EdgeCreationPicker` deliver data-carrying edges: drag-to-connect NEVER auto-wires (only the picker's explicit "Connect fields" creates an edge), a live Zustand subscription re-resolves the target panel's `data[targetKey]` on every source change, and `buildSnapshot` now persists real `sharedState` (optional 4th param, backward-compatible) alongside the `edges` array 23-04 already round-tripped. STATE-01/STATE-02 now marked complete in REQUIREMENTS.md — **all Phase 23 requirements (CANVAS-01..04, STATE-01/02) delivered.** **Autonomous decision:** Task 1's blocking package-legitimacy checkpoint (zustand, absent from the repo) was resolved without stopping, per this run's explicit auto-mode directive — verified live at `registry.npmjs.org/zustand` (pmndrs/zustand, maintainers daishi/drcmda/jeremyrh, MIT) before installing via `npm install --workspace=@nauta/web` (npm-workspaces canonical, not the plan's literal pnpm command). See 23-05-SUMMARY.md for full detail. **Next: Phase 24** (Dual-Channel GenUI, DCUI-01..04).
+- **23-05 EXECUTED — Store + edges plumbing:** `createCanvasStore`/`CANVAS_STORE_MUTATIONS` (per-conversation `zustand/vanilla` store, superset of v1.1's declared-state 5-mutation grammar, `panels.*`/`shared.*` namespaces, FORBIDDEN_KEYS-guarded `resolveCanvasPath`) wired `GenuiPanelNode` -> `usePanelData` -> a new `data` prop on `GenuiPartBoundary` -> the UNMODIFIED `SpecRenderer`. `EdgePayloadSchema`/`DataEdge`/`EdgeCreationPicker` deliver data-carrying edges: drag-to-connect NEVER auto-wires (only the picker's explicit "Connect fields" creates an edge), a live Zustand subscription re-resolves the target panel's `data[targetKey]` on every source change, and `buildSnapshot` now persists real `sharedState` (optional 4th param, backward-compatible) alongside the `edges` array 23-04 already round-tripped. **Autonomous decision:** Task 1's blocking package-legitimacy checkpoint (zustand, absent from the repo) was resolved without stopping, per this run's explicit auto-mode directive — verified live at `registry.npmjs.org/zustand` (pmndrs/zustand, maintainers daishi/drcmda/jeremyrh, MIT) before installing via `npm install --workspace=@nauta/web` (npm-workspaces canonical, not the plan's literal pnpm command). See 23-05-SUMMARY.md for full detail.
+- **23-VERIFICATION.md found a gap (2026-07-05):** 4/5 ROADMAP success criteria verified, but SC #5 (STATE-01/02) was PARTIAL/FAILED — the store's WRITE path (`usePanelData().dispatch`) had ZERO production call sites anywhere outside its own test file. No genui-spec button/action ever reached it, so `panels.*`/`shared.*` stayed `{}` forever in a real session, and `EdgeCreationPicker`'s source-field list was permanently empty. Two `missing:` items: (1) a real trigger calling `.dispatch(...)`; (2) an end-to-end test/proof of interaction -> store write -> field discovery -> live edge resolution.
+- **23-06 EXECUTED (this session) — GAP CLOSED, PHASE 23 NOW GENUINELY COMPLETE:** Task 1 wired `ButtonComponent` (packages/genui catalog) to consume `ActionRegistryContext` — clicks now fire `registry[onClick.type]?.(onClick)` (or the legacy string `action` key), mirroring `FormComponent`'s exact contract, with zero `spec-renderer.tsx` changes. Task 2 built `panel-action-bridge.ts` (`buildPanelActionRegistry`/`usePanelActionRegistry`) — a per-panel `setState`-only `ActionRegistry` routing through `usePanelData().dispatch` (panels.*) or the raw store's `mutate` (shared.* prefix), always the literal `"set"` mutation — and threaded it through a new additive `actions` prop on `GenuiPartBoundary` into `GenuiPanelNodeBody`. Task 3 proved the full chain end-to-end with zero mocks (`panel-data-flow.test.tsx`): click -> store write -> `EdgeCreationPicker`'s own `panelFieldOptions` lists the field -> a live-subscribed target panel resolves the value and re-resolves on a second write. **Found + fixed 2 pre-existing bugs in 23-05's `canvas-store-context.tsx`** while writing that test (both were latent defects that only a live React mount could expose): a missing `React` import (JSX crashes outside Next's SWC auto-runtime) and an unstable `useSyncExternalStore` snapshot in `usePanelData`'s incoming-edges branch (infinite-loops ANY target panel with a live edge in production, not just tests) — fixed with zustand v5's `useShallow` + a stable empty-object constant. Both 23-VERIFICATION.md `missing:` items now closed. All 6 Phase 23 requirements (CANVAS-01..04, STATE-01/02) genuinely observable, not just plumbed. See 23-06-SUMMARY.md for full detail. **Next: Phase 24** (Dual-Channel GenUI, DCUI-01..04).
 
 ## Phase 21 — Generation Quality Verification (in progress 2026-07-01)
 
@@ -1073,6 +1075,9 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 - 2026-07-04 (23-03): genui-panel nodes materialize only from ACTIVE (isActive) history rows — a regenerated turn's retired sibling never also renders a panel, keeping canvas panel count in lockstep with what the docked view currently displays
 - 2026-07-04 (23-03): persistence/restore intentionally NOT wired this plan (23-04's seam) — ChatCanvas rebuilds nodes + a fresh dagre layout from chat.getHistory on every mount; dragged positions aren't preserved across a Chat<->Canvas toggle yet
 - 2026-07-04 (23-03, Rule 3 fix): vitest had no "~/*" path alias (only tsconfig.json's `paths` had it) — any test reaching "~/trpc/react" failed to resolve under vite; added `resolve.alias` to vitest.config.ts mirroring tsconfig
+- 2026-07-05 (23-06): ButtonComponent's onClick (Phase-13 ActionSchema object) takes precedence over the legacy string `action` ActionRegistry key when both are present on a button node
+- 2026-07-05 (23-06): panel-action-bridge registers ONLY setState in its ActionRegistry — navigate/mutate/query-refresh intentionally absent (a memoized canvas node body shouldn't carry router/tRPC deps; mutate is unreachable anyway since ALLOWED_MUTATIONS=[])
+- 2026-07-05 (23-06, Rule 1/3 fix): found + fixed 2 pre-existing bugs in 23-05's canvas-store-context.tsx while writing the first-ever live React-mount test of CanvasStoreProvider/usePanelData: (1) missing `React` import (JSX only worked under Next's SWC auto-runtime, crashed under vitest's plain esbuild transform); (2) usePanelData's incoming-edges overlay selector allocated a new object every call, breaking useSyncExternalStore's snapshot-stability contract and infinite-looping ANY target panel with a live edge in the real running app — fixed with zustand v5's useShallow + a stable EMPTY_PANEL_DATA constant
 
 ## Performance Metrics
 
@@ -1133,3 +1138,4 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 23 P03 | ~35min | 3 tasks | 13 files |
 | Phase 23 P04 | 55min | 3 tasks | 12 files |
 | Phase 23 P05 | ~50min | 3 tasks | 14 files |
+| Phase 23 P06 | 55min | 3 tasks | 9 files |
