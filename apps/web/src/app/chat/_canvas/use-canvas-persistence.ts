@@ -37,7 +37,7 @@
  *     `chat.saveCanvasLayout` save to read at save time.
  */
 
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Edge as FlowEdge, Node as FlowNode, Viewport } from "@xyflow/react";
 
 import type { RouterOutputs } from "@nauta/api-client";
@@ -304,6 +304,17 @@ export interface UseCanvasPersistenceResult {
   readonly initialEdges: readonly PersistedCanvasEdge[];
   readonly initialViewport: PersistedCanvasViewport | undefined;
   readonly isRestoring: boolean;
+  /** "idle" (nothing saved yet this session) | "saving" (mutation in
+   * flight) | "saved" (last save succeeded — SaveStatusIndicator shows
+   * "Saved" for ~2s) | "error" (last save failed — the debounce timer
+   * auto-retries on the NEXT triggering event, no manual retry). */
+  readonly saveStatus: SaveStatus;
+  /** Schedules a debounced (~800ms) `chat.saveCanvasLayout` mutation — call
+   * from `onNodeDragStop`, an edge add/remove, or `onMoveEnd` (D-06).
+   * Coalesces rapid successive calls into ONE save via a single trailing
+   * timer; always snapshots the LATEST `nodes`/`edges`/`viewport` at fire
+   * time (via `latestStateRef`), never whatever was current when scheduled. */
+  readonly scheduleSave: () => void;
 }
 
 /** Re-validates the persisted row against `CanvasSnapshotSchema` on the READ
@@ -332,19 +343,27 @@ function validateSavedRow(
   return parsed.data;
 }
 
+/** Debounce window (23-UI-SPEC.md D-06): a single trailing timer coalesces
+ * rapid successive {drag, edge add/remove, viewport settle} events into ONE
+ * `chat.saveCanvasLayout` call. */
+const SAVE_DEBOUNCE_MS = 800;
+
 /**
- * useCanvasPersistence — restore side (this task): fetches
- * `chat.getCanvasLayout`, validates it, and returns the restored
- * `{ initialNodes, initialEdges, initialViewport, isRestoring }` (saved
- * positions/viewport applied EXACTLY; unknown types flagged for placeholder
- * rendering via `reconcileNodesFromHistory` called with empty `historyRows`
- * — Pass 1 only, no new-part placement at this layer). `chat-canvas.tsx`
- * layers `historyRows` reconciliation and the D-02 default-chat-node
- * synthesis on top of `initialNodes` itself (both need `conversationId`,
- * which this hook's restore step doesn't require).
+ * useCanvasPersistence — restore side: fetches `chat.getCanvasLayout`,
+ * validates it, and returns the restored `{ initialNodes, initialEdges,
+ * initialViewport, isRestoring }` (saved positions/viewport applied EXACTLY;
+ * unknown types flagged for placeholder rendering via
+ * `reconcileNodesFromHistory` called with empty `historyRows` — Pass 1 only,
+ * no new-part placement at this layer). `chat-canvas.tsx` layers
+ * `historyRows` reconciliation and the D-02 default-chat-node synthesis on
+ * top of `initialNodes` itself (both need `conversationId`, which this
+ * hook's restore step doesn't require).
  *
- * Save side (plan 23-04 Task 2) keeps `nodes`/`edges`/`viewport` fresh in a
- * ref here so the debounced save timer always reads the LATEST live state.
+ * Save side (this task): `scheduleSave()` arms a single trailing ~800ms
+ * timer (cleared on unmount); when it fires, it reads the LATEST
+ * `nodes`/`edges`/`viewport` from `latestStateRef` (never a stale closure),
+ * builds a snapshot via `buildSnapshot`, and calls `chat.saveCanvasLayout`.
+ * `saveStatus` reflects the outcome for `SaveStatusIndicator`.
  */
 export function useCanvasPersistence({
   conversationId,
@@ -353,6 +372,7 @@ export function useCanvasPersistence({
   viewport,
 }: UseCanvasPersistenceOptions): UseCanvasPersistenceResult {
   const layoutQuery = api.chat.getCanvasLayout.useQuery({ conversationId });
+  const saveMutation = api.chat.saveCanvasLayout.useMutation();
 
   const validatedRow = useMemo(
     () => (layoutQuery.data !== undefined ? validateSavedRow(layoutQuery.data) : null),
@@ -367,14 +387,61 @@ export function useCanvasPersistence({
   const initialViewport = validatedRow?.viewport;
   const isRestoring = layoutQuery.isPending;
 
-  // Kept fresh every render — plan 23-04 Task 2's debounced save reads this
-  // ref (not the closed-over `nodes`/`edges`/`viewport` params) so a save
-  // that fires ~800ms after the triggering event always snapshots the
-  // LATEST state, not whatever was current when the timer was scheduled.
+  // Kept fresh every render so the debounced save timer always reads the
+  // LATEST live state, not whatever was current when it was scheduled.
   const latestStateRef = useRef({ nodes, edges, viewport });
   useEffect(() => {
     latestStateRef.current = { nodes, edges, viewport };
   }, [nodes, edges, viewport]);
 
-  return { initialNodes, initialEdges, initialViewport, isRestoring };
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const scheduleSave = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      timerRef.current = null;
+      const current = latestStateRef.current;
+
+      let snapshot: CanvasSnapshot;
+      try {
+        snapshot = buildSnapshot(current.nodes, current.edges, current.viewport);
+      } catch (error) {
+        // An internal invariant violation (not untrusted external input —
+        // buildSnapshot only ever sees our own React Flow state) — never
+        // crash the canvas over a failed save (CANVAS-03's ethos extended
+        // to persistence failures).
+        console.error("[useCanvasPersistence] buildSnapshot failed — skipping this save", error);
+        setSaveStatus("error");
+        return;
+      }
+
+      setSaveStatus("saving");
+      saveMutation.mutate(
+        { conversationId, snapshot },
+        {
+          onSuccess: () => setSaveStatus("saved"),
+          onError: (error) => {
+            console.error("[useCanvasPersistence] saveCanvasLayout failed", error);
+            setSaveStatus("error");
+          },
+        },
+      );
+    }, SAVE_DEBOUNCE_MS);
+  }, [conversationId, saveMutation]);
+
+  return {
+    initialNodes,
+    initialEdges,
+    initialViewport,
+    isRestoring,
+    saveStatus,
+    scheduleSave,
+  };
 }

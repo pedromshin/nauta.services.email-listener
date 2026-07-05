@@ -19,6 +19,8 @@ import {
   readStoredViewMode,
   type ChatCanvasViewMode,
 } from "./_canvas/chat-canvas-view-toggle";
+import { SaveStatusIndicator } from "./_canvas/save-status-indicator";
+import type { SaveStatus } from "./_canvas/use-canvas-persistence";
 import { useConversationController } from "./_hooks/use-conversation-controller";
 import { useWebllmEngine, type UseWebllmEngineResult } from "./_hooks/use-webllm-engine";
 
@@ -52,6 +54,10 @@ function ConversationView({
   const [viewMode, setViewMode] = useState<ChatCanvasViewMode>(() =>
     readStoredViewMode(conversationId),
   );
+  // Canvas-only ambient save feedback (D-06, 23-UI-SPEC.md "toolbar right
+  // zone") — reset to idle whenever the canvas isn't mounted, so switching
+  // back to Chat never leaves a stale "Saved"/"retrying" label lingering.
+  const [canvasSaveStatus, setCanvasSaveStatus] = useState<SaveStatus>("idle");
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -77,7 +83,10 @@ function ConversationView({
             }}
           />
         </div>
-        <CostMeter conversationId={conversationId} />
+        <div className="flex items-center gap-3">
+          {viewMode === "canvas" && <SaveStatusIndicator status={canvasSaveStatus} />}
+          <CostMeter conversationId={conversationId} />
+        </div>
       </div>
       <div className="min-h-0 flex-1">
         {viewMode === "canvas" ? (
@@ -85,6 +94,7 @@ function ConversationView({
             conversationId={conversationId}
             controller={controller}
             historyRows={controller.historyRows}
+            onSaveStatusChange={setCanvasSaveStatus}
           />
         ) : (
           <div className="flex h-full min-h-0 flex-col">

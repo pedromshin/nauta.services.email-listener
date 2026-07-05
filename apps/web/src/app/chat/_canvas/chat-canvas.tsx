@@ -39,6 +39,7 @@ import {
   useEdgesState,
   useNodesState,
   type Edge as FlowEdge,
+  type EdgeChange,
   type Node as FlowNode,
   type ReactFlowInstance,
   type ReactFlowProps,
@@ -73,6 +74,7 @@ import {
   withDefaultChatNode,
   type PersistedCanvasEdge,
   type ReconciledNode,
+  type SaveStatus,
   useCanvasPersistence,
 } from "./use-canvas-persistence";
 
@@ -150,12 +152,17 @@ export interface ChatCanvasProps {
   readonly conversationId: string;
   readonly controller: ConversationController;
   readonly historyRows: readonly ChatHistoryRow[];
+  /** Reports the debounced-save status up to the host page (page.tsx mounts
+   * `SaveStatusIndicator` in the conversation toolbar's right zone,
+   * 23-UI-SPEC.md) — optional so ChatCanvas stays usable standalone. */
+  readonly onSaveStatusChange?: (status: SaveStatus) => void;
 }
 
 export function ChatCanvas({
   conversationId,
   controller,
   historyRows,
+  onSaveStatusChange,
 }: ChatCanvasProps): React.ReactElement {
   const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
@@ -200,6 +207,15 @@ export function ChatCanvas({
     conversationId,
   ]);
 
+  // Reports saveStatus up to the host toolbar; announces "Layout saved" via
+  // this component's own aria-live region on success (23-UI-SPEC.md).
+  useEffect(() => {
+    onSaveStatusChange?.(persistence.saveStatus);
+    if (persistence.saveStatus === "saved") {
+      setAnnouncement("Layout saved");
+    }
+  }, [persistence.saveStatus, onSaveStatusChange]);
+
   const specsByProvenance = useMemo(
     () => buildSpecsByProvenance(historyRows),
     [historyRows],
@@ -223,6 +239,31 @@ export function ChatCanvas({
       prev.map((node) => (node.selected ? { ...node, selected: false } : node)),
     );
   }, [setNodes]);
+
+  // Debounced save triggers (D-06): node drag end, edge add/remove, viewport
+  // settle. A single trailing timer inside the hook coalesces rapid
+  // successive calls into ONE `chat.saveCanvasLayout` mutation.
+  const handleNodeDragStop = useCallback(() => {
+    persistence.scheduleSave();
+  }, [persistence]);
+
+  const handleEdgesChange = useCallback(
+    (changes: EdgeChange<FlowEdge>[]) => {
+      onEdgesChange(changes);
+      if (changes.some((change) => change.type === "add" || change.type === "remove")) {
+        persistence.scheduleSave();
+      }
+    },
+    [onEdgesChange, persistence],
+  );
+
+  const handleMoveEnd = useCallback(
+    (_event: MouseEvent | TouchEvent | null, nextViewport: Viewport) => {
+      setViewportState(nextViewport);
+      persistence.scheduleSave();
+    },
+    [persistence],
+  );
 
   const PAN_STEP_PX = 50;
 
@@ -257,28 +298,32 @@ export function ChatCanvas({
           y: currentViewport.y + delta.y,
           zoom: currentViewport.zoom,
         });
+        persistence.scheduleSave();
         return;
       }
       if (event.key === "+" || event.key === "=") {
         event.preventDefault();
         instance.zoomIn();
+        persistence.scheduleSave();
         return;
       }
       if (event.key === "-") {
         event.preventDefault();
         instance.zoomOut();
+        persistence.scheduleSave();
         return;
       }
       if (event.key === "0") {
         event.preventDefault();
         void instance.fitView({ padding: 0.2, duration: 200 });
+        persistence.scheduleSave();
         return;
       }
       if (event.key === "Escape") {
         handlePaneClick();
       }
     },
-    [handlePaneClick],
+    [handlePaneClick, persistence],
   );
 
   const handleDismissHint = useCallback(() => {
@@ -320,7 +365,9 @@ export function ChatCanvas({
               edges={edges}
               nodeTypes={nodeTypes}
               onNodesChange={onNodesChange}
-              onEdgesChange={onEdgesChange}
+              onEdgesChange={handleEdgesChange}
+              onNodeDragStop={handleNodeDragStop}
+              onMoveEnd={handleMoveEnd}
               onPaneClick={handlePaneClick}
               onInit={handleInit}
               defaultViewport={viewport ?? undefined}
