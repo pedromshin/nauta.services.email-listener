@@ -176,6 +176,13 @@
       "when": 1783190400000,
       "tag": "0024_chat_canvas_layouts",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1783276800000,
+      "tag": "0025_chat_widget_interactions",
+      "breakpoints": true
     }
   ]
 }
