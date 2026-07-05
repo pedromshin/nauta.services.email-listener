@@ -34,6 +34,7 @@ import { ScrollArea } from "@nauta/ui/scroll-area";
 
 import { GenuiPartBoundary } from "../_components/genui-part-boundary";
 import { usePanelData, useIncomingEdgesForPanel } from "./canvas-store-context";
+import { usePanelActionRegistry } from "./panel-action-bridge";
 import { useCanvasSpec } from "./canvas-spec-context";
 import type { GenuiPanelNodeData } from "./node-data-schemas";
 
@@ -59,7 +60,8 @@ const GenuiPanelNodeBody = memo(function GenuiPanelNodeBody({
 }) {
   const { specJson, isStreaming } = useCanvasSpec(provenance);
   const incomingEdges = useIncomingEdgesForPanel(panelId);
-  const { data: panelData } = usePanelData(panelId, incomingEdges);
+  const { data: panelData, dispatch } = usePanelData(panelId, incomingEdges);
+  const actions = usePanelActionRegistry(dispatch);
 
   return (
     <>
@@ -79,7 +81,12 @@ const GenuiPanelNodeBody = memo(function GenuiPanelNodeBody({
 
       <ScrollArea className="min-h-0 flex-1">
         <div className="p-4">
-          <GenuiPartBoundary specJson={specJson} isStreaming={isStreaming} data={panelData} />
+          <GenuiPartBoundary
+            specJson={specJson}
+            isStreaming={isStreaming}
+            data={panelData}
+            actions={actions}
+          />
         </div>
       </ScrollArea>
     </>

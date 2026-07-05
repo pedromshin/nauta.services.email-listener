@@ -39,6 +39,7 @@ import * as React from "react";
 
 import { Skeleton } from "@nauta/ui/skeleton";
 import { SpecRenderer } from "@nauta/genui/renderer";
+import type { ActionRegistry } from "@nauta/genui/renderer";
 import {
   MAX_SPEC_DEPTH,
   SAFE_FALLBACK_SPEC,
@@ -62,6 +63,12 @@ export interface GenuiPartBoundaryProps {
    * own default) when omitted, so every existing non-canvas caller is
    * unaffected. */
   readonly data?: Record<string, unknown>;
+  /** Optional action handlers forwarded verbatim to the UNMODIFIED
+   * `SpecRenderer`'s own `actions` prop (STATE-01, 23-06) — e.g. a canvas
+   * panel's `usePanelActionRegistry` bridge. Defaults to SpecRenderer's own
+   * empty-context default when omitted, so every existing non-canvas caller
+   * is unaffected. */
+  readonly actions?: ActionRegistry;
 }
 
 // ---------------------------------------------------------------------------
@@ -349,6 +356,7 @@ export function GenuiPartBoundary({
   specJson,
   isStreaming,
   data,
+  actions,
 }: GenuiPartBoundaryProps): React.ReactElement {
   const parsed = tryParsePartial(specJson);
 
@@ -359,7 +367,7 @@ export function GenuiPartBoundary({
     const finalSpec: SpecRoot = finalParse?.success ? finalParse.data : SAFE_FALLBACK_SPEC;
     return (
       <GenuiCard>
-        <SpecRenderer spec={finalSpec} data={data} />
+        <SpecRenderer spec={finalSpec} data={data} actions={actions} />
       </GenuiCard>
     );
   }
@@ -369,7 +377,7 @@ export function GenuiPartBoundary({
     if (fullParse.success) {
       return (
         <GenuiCard>
-          <SpecRenderer spec={fullParse.data} data={data} />
+          <SpecRenderer spec={fullParse.data} data={data} actions={actions} />
         </GenuiCard>
       );
     }
@@ -383,7 +391,7 @@ export function GenuiPartBoundary({
         if (rootParse.success) {
           return (
             <GenuiCard>
-              <SpecRenderer spec={rootParse.data} data={data} />
+              <SpecRenderer spec={rootParse.data} data={data} actions={actions} />
               {partial.hasPending && <SkeletonBars />}
             </GenuiCard>
           );
