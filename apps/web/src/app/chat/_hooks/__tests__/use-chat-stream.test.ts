@@ -235,4 +235,79 @@ describe("applyRunEvent", () => {
       { type: "genui_spec_streaming", toolId: "t2", partialJson: "{b" },
     ]);
   });
+
+  // -------------------------------------------------------------------------
+  // Interactive-widget tool_call/tool_result routing (Task 3, 24-03, D-01/D-04)
+  // -------------------------------------------------------------------------
+
+  it("accumulates a tool_call with tool_name 'emit_proposal_cards' into interactive_widget_streaming (NOT genui_spec_streaming)", () => {
+    const events: ChatRunEvent[] = [
+      {
+        type: "tool_call",
+        seq: 1,
+        data: { tool_name: "emit_proposal_cards", id: "w1", partial_json: '{"options":[' },
+      },
+    ];
+
+    const final = events.reduce(applyRunEvent, initial);
+
+    expect(final.parts).toEqual([
+      { type: "interactive_widget_streaming", toolId: "w1", partialJson: '{"options":[' },
+    ]);
+  });
+
+  it("concatenates successive tool_call chunks for the SAME interactive-widget tool id", () => {
+    const events: ChatRunEvent[] = [
+      {
+        type: "tool_call",
+        seq: 1,
+        data: { tool_name: "emit_proposal_cards", id: "w1", partial_json: '{"options"' },
+      },
+      {
+        type: "tool_call",
+        seq: 2,
+        data: { tool_name: "emit_proposal_cards", id: "w1", partial_json: ":[]}" },
+      },
+    ];
+
+    const final = events.reduce(applyRunEvent, initial);
+
+    expect(final.parts).toEqual([
+      { type: "interactive_widget_streaming", toolId: "w1", partialJson: '{"options":[]}' },
+    ]);
+  });
+
+  it("a widget tool_result carries no declaration — leaves the interactive_widget_streaming placeholder as-is (the real part arrives via chat.getHistory)", () => {
+    const events: ChatRunEvent[] = [
+      {
+        type: "tool_call",
+        seq: 1,
+        data: { tool_name: "emit_proposal_cards", id: "w1", partial_json: "{}" },
+      },
+      {
+        type: "tool_result",
+        seq: 2,
+        data: { tool_name: "emit_proposal_cards", id: "w1", interactionId: "int-1" },
+      },
+    ];
+
+    const final = events.reduce(applyRunEvent, initial);
+
+    expect(final.parts).toEqual([
+      { type: "interactive_widget_streaming", toolId: "w1", partialJson: "{}" },
+    ]);
+    expect(final.state).toBe("streaming");
+  });
+
+  it("a tool_call with no tool_name at all still defaults to genui_spec_streaming (backward compatibility)", () => {
+    const events: ChatRunEvent[] = [
+      { type: "tool_call", seq: 1, data: { id: "t1", partial_json: "{}" } },
+    ];
+
+    const final = events.reduce(applyRunEvent, initial);
+
+    expect(final.parts).toEqual([
+      { type: "genui_spec_streaming", toolId: "t1", partialJson: "{}" },
+    ]);
+  });
 });
