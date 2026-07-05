@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: "Conversational GenUI: Chat, Canvas & Dual-Channel"
 status: executing
-last_updated: "2026-07-04T03:12:39.698Z"
-last_activity: 2026-07-04 -- Phase 23 Plan 03 (canvas surface + view toggle) executed
+last_updated: "2026-07-05T00:19:33.915Z"
+last_activity: 2026-07-04 -- Phase 23 execution started
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 16
-  completed_plans: 14
+  completed_plans: 15
   percent: 25
 ---
 
@@ -25,11 +25,11 @@ See: .planning/PROJECT.md (updated 2026-06-27)
 ## Current Position
 
 Phase: 23 (2D Canvas + Panels-as-Nodes + Shared State) — EXECUTING
-Plan: 4 of 5
+Plan: 2 of 5 (23-01..23-04 complete; 23-05 remaining)
 Status: Executing Phase 23
-Last activity: 2026-07-04 -- Phase 23 Plan 03 (canvas surface + view toggle) executed
+Last activity: 2026-07-04 -- 23-04 executed (canvas persistence restore/reconcile/debounced-save + streaming responsiveness via CanvasSpecProvider's streamingByProvenance seam; CANVAS-02/CANVAS-04 requirements complete)
 
-Progress: [█████████░] 88%
+Progress: [█████████░] 94%
 
 ## v1.3 Roadmap Summary (2026-07-02)
 
@@ -70,6 +70,13 @@ verifications (no code gaps), consistent with this project's long-standing patte
 **v1.2-specific deferrals (→ v1.3 / DEF-*):** eval-lift-vs-baseline on the v1.2 corpus (DEF-17-05-01/
 18-03-01/19-01/20-01), Playwright code-island isolation run, live-progress studio streaming. All need
 live Bedrock / a browser.
+
+## Phase 23 — 2D Canvas + Panels-as-Nodes + Shared State (executing 2026-07-04)
+
+- **23-01 EXECUTED:** `chat_canvas_layouts` Drizzle table (migration 0024, RLS deny-all) + `chat.getCanvasLayout`/`chat.saveCanvasLayout` tRPC procedures gated by `CanvasSnapshotSchema` (prototype-pollution guard, no-spec-content D-05 refine, payload caps). CANVAS-02 marked complete at the spine level (schema + procedures only — the UI never called them until 23-04).
+- **23-02 EXECUTED:** `NODE_TYPE_REGISTRY`/`NODE_REGISTRY_VERSION` (browser-safe FNV-1a content-hash) + `resolveNodeType` allowlist (never throws) + `GenuiPanelNode` (memoized, renders via the unmodified `SpecRenderer`) + `CanvasSpecProvider`/`useCanvasSpec` — the CANVAS-04 seam keeping streaming content out of `node.data` from day one.
+- **23-03 EXECUTED:** `useConversationController` (lifted streaming/turn state shared by the docked Chat view and the canvas `ChatNode` — one instance, D-02) + `ChatNode`/module-level `nodeTypes` map + `layoutCanvasNodes`/`offsetCascadePosition` (dagre) + the mounted `ChatCanvas` surface/island/view-toggle. Persistence/restore and live materialization were explicitly deferred to 23-04 (this plan's own stated seam).
+- **23-04 EXECUTED (this session):** Closed the persistence loop — `useCanvasPersistence` (exact restore, unknown-type degrade via `reconcileNodesFromHistory`, live `historyRows` reconciliation, ~800ms debounced coalesced `chat.saveCanvasLayout` save, `SaveStatusIndicator` in the toolbar) — and the CANVAS-04 streaming-responsiveness contract (`buildStreamingByProvenance` overlays a live regenerate's partial content onto an existing genui-panel node; a brand-new turn's live progress is watched via the `ChatNode`'s own embedded MessageList, since the backend has no stable messageId until a turn finalizes). Both CANVAS-02 and CANVAS-04 now marked complete in REQUIREMENTS.md. **Deviation:** split `packages/api-client`'s `chat/canvas.ts` into a new client-safe `canvas-schema.ts` (zero imports beyond zod) + a `"./chat-canvas"` package export, since the original file's `../../trpc` → `@nauta/db` import chain crashed any client-side import with a server-env-var error (found live via a failing test). Next: 23-05 (shared per-chat state store + data-carrying edges, STATE-01/02).
 
 ## Phase 21 — Generation Quality Verification (in progress 2026-07-01)
 
@@ -1123,3 +1130,4 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 23 P01 | 35min | 3 tasks | 8 files |
 | Phase 23 P02 | 25min | 2 tasks | 7 files |
 | Phase 23 P03 | ~35min | 3 tasks | 13 files |
+| Phase 23 P04 | 55min | 3 tasks | 12 files |
