@@ -1,0 +1,215 @@
+/**
+ * interactive-widget-boundary.test.tsx — InteractiveWidgetBoundary unit tests
+ * (Task 2, 24-03, D-05/D-06/D-10/D-11/D-12).
+ *
+ * Mounts the REAL SpecRenderer path (via GenuiPartBoundary, no mocks) —
+ * mirrors button-action.test.tsx's createRoot-in-jsdom + `act` convention.
+ */
+
+import * as React from "react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import {
+  InteractiveWidgetBoundary,
+  type InteractiveWidgetPart,
+} from "../interactive-widget-boundary";
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+const PART: InteractiveWidgetPart = {
+  type: "interactive_widget",
+  interactionId: "11111111-1111-1111-1111-111111111111",
+  widgetKind: "proposal_cards",
+  declaration: {
+    prompt: "Which plan?",
+    options: [
+      { id: "opt-0", title: "Ship next week", description: "Fast" },
+      { id: "opt-1", title: "Ship next month" },
+    ],
+  },
+};
+
+let containers: HTMLDivElement[] = [];
+
+async function mount(element: React.ReactElement): Promise<HTMLDivElement> {
+  const container = document.createElement("div");
+  document.body.appendChild(container);
+  containers.push(container);
+  const root = createRoot(container);
+  await act(async () => {
+    root.render(element);
+  });
+  return container;
+}
+
+describe("InteractiveWidgetBoundary", () => {
+  beforeEach(() => {
+    containers = [];
+  });
+
+  afterEach(() => {
+    for (const c of containers) {
+      document.body.removeChild(c);
+    }
+    containers = [];
+  });
+
+  it("pending: renders the live spec with no status badge, and clicking a card fires onSubmitOption with the option id", async () => {
+    const onSubmitOption = vi.fn();
+    const container = await mount(
+      <InteractiveWidgetBoundary
+        part={PART}
+        displayState="pending"
+        onSubmitOption={onSubmitOption}
+      />,
+    );
+
+    expect(container.textContent).not.toContain("Selected");
+    expect(container.textContent).not.toContain("Superseded");
+    expect(container.textContent).not.toContain("Stale");
+
+    const button = container.querySelector(
+      '[aria-label="Choose this option — Ship next week"]',
+    ) as HTMLButtonElement | null;
+    expect(button).not.toBeNull();
+
+    await act(async () => {
+      button!.click();
+    });
+
+    expect(onSubmitOption).toHaveBeenCalledTimes(1);
+    expect(onSubmitOption).toHaveBeenCalledWith("opt-0");
+  });
+
+  it("submitting: group carries pointer-events-none and shows the 'Submitting…' row; clicking does NOT fire onSubmitOption (noop registry)", async () => {
+    const onSubmitOption = vi.fn();
+    const container = await mount(
+      <InteractiveWidgetBoundary
+        part={PART}
+        displayState="submitting"
+        onSubmitOption={onSubmitOption}
+      />,
+    );
+
+    expect(container.textContent).toContain("Submitting…");
+    expect(container.querySelector(".pointer-events-none")).not.toBeNull();
+
+    const button = container.querySelector(
+      '[aria-label="Choose this option — Ship next week"]',
+    ) as HTMLButtonElement | null;
+    if (button) {
+      await act(async () => {
+        button.click();
+      });
+    }
+    expect(onSubmitOption).not.toHaveBeenCalled();
+  });
+
+  it("submitted: chosen card gets the Selected badge, others render dimmed with no button; clicking anything does NOT fire onSubmitOption", async () => {
+    const onSubmitOption = vi.fn();
+    const container = await mount(
+      <InteractiveWidgetBoundary
+        part={PART}
+        displayState="submitted"
+        submittedValue={{ optionId: "opt-0" }}
+        onSubmitOption={onSubmitOption}
+      />,
+    );
+
+    expect(container.textContent).toContain("Selected");
+    expect(container.querySelector("button")).toBeNull();
+    expect(container.querySelectorAll('[aria-disabled="true"]').length).toBeGreaterThan(0);
+    expect(onSubmitOption).not.toHaveBeenCalled();
+  });
+
+  it("superseded: shows the Superseded badge + caption, dims the group, and never fires onSubmitOption", async () => {
+    const onSubmitOption = vi.fn();
+    const container = await mount(
+      <InteractiveWidgetBoundary
+        part={PART}
+        displayState="superseded"
+        onSubmitOption={onSubmitOption}
+      />,
+    );
+
+    expect(container.textContent).toContain("Superseded");
+    expect(container.textContent).toContain("You replied by typing instead.");
+    expect(container.querySelector('[aria-disabled="true"]')).not.toBeNull();
+
+    const button = container.querySelector(
+      '[aria-label="Choose this option — Ship next week"]',
+    ) as HTMLButtonElement | null;
+    if (button) {
+      await act(async () => {
+        button.click();
+      });
+    }
+    expect(onSubmitOption).not.toHaveBeenCalled();
+  });
+
+  it("stale: shows the Stale badge + caption, dims the group, and never fires onSubmitOption", async () => {
+    const onSubmitOption = vi.fn();
+    const container = await mount(
+      <InteractiveWidgetBoundary
+        part={PART}
+        displayState="stale"
+        onSubmitOption={onSubmitOption}
+      />,
+    );
+
+    expect(container.textContent).toContain("Stale");
+    expect(container.textContent).toContain("This is no longer the active response.");
+
+    const button = container.querySelector(
+      '[aria-label="Choose this option — Ship next week"]',
+    ) as HTMLButtonElement | null;
+    if (button) {
+      await act(async () => {
+        button.click();
+      });
+    }
+    expect(onSubmitOption).not.toHaveBeenCalled();
+  });
+
+  it("renders the unboxed error row (no border/background) when errorMessage is set, and re-enables the live spec", async () => {
+    const onSubmitOption = vi.fn();
+    const container = await mount(
+      <InteractiveWidgetBoundary
+        part={PART}
+        displayState="pending"
+        errorMessage="This response couldn't be saved. Please try again."
+        onSubmitOption={onSubmitOption}
+      />,
+    );
+
+    expect(container.textContent).toContain(
+      "This response couldn't be saved. Please try again.",
+    );
+    const errorRow = container.querySelector('[role="alert"]');
+    expect(errorRow).not.toBeNull();
+    expect(errorRow?.className ?? "").not.toContain("border");
+
+    const button = container.querySelector(
+      '[aria-label="Choose this option — Ship next week"]',
+    ) as HTMLButtonElement | null;
+    expect(button).not.toBeNull();
+    await act(async () => {
+      button!.click();
+    });
+    expect(onSubmitOption).toHaveBeenCalledWith("opt-0");
+  });
+
+  it("passes variant='bare' through to the underlying GenuiPartBoundary (no GenuiCard wrapper)", async () => {
+    const container = await mount(
+      <InteractiveWidgetBoundary
+        part={PART}
+        displayState="pending"
+        onSubmitOption={vi.fn()}
+        variant="bare"
+      />,
+    );
+    expect(container.querySelector(".border-border")).toBeNull();
+  });
+});
