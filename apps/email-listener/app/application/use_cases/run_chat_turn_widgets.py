@@ -80,6 +80,30 @@ def _build_proposal_cards_part(raw_json: str) -> dict[str, Any] | None:
     }
 
 
+def build_create_pending_kwargs(message_parts: Any) -> dict[str, Any] | None:
+    """Find message.parts' interactive_widget part (if any) and build its create_pending() kwargs.
+
+    D-04: at most one pending interactive widget per turn — the first (and
+    only) interactive_widget part found is used. Returns None when no such
+    part exists (the caller should not call create_pending at all). Callers
+    merge in conversation_id/message_id/turn_index/sibling_group_id, which
+    this pure function has no access to.
+    """
+    for part_index, part in enumerate(message_parts):
+        if part.get("type") != "interactive_widget":
+            continue
+        widget_kind = part["widgetKind"]
+        declaration = part["declaration"]
+        return {
+            "interaction_id": part["interactionId"],
+            "part_index": part_index,
+            "widget_kind": widget_kind,
+            "declaration": declaration,
+            "declared_response_schema": derive_declared_response_schema(widget_kind, declaration),
+        }
+    return None
+
+
 def derive_declared_response_schema(widget_kind: str, declaration: dict[str, Any]) -> dict[str, Any]:
     """Derive the STORED response schema a later submit is re-validated against (D-01/D-10).
 
@@ -122,6 +146,7 @@ def content_block_stand_in(part: dict[str, Any]) -> dict[str, Any]:
 __all__ = [
     "INTERACTIVE_WIDGET_TOOL_NAMES",
     "PROPOSAL_CARDS_TOOL_NAME",
+    "build_create_pending_kwargs",
     "build_interactive_widget_part",
     "content_block_stand_in",
     "derive_declared_response_schema",
