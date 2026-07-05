@@ -89,12 +89,13 @@ data across each other.
   3. New node types beyond genui-panel and chat can be added later via a versioned node-type registry without breaking existing canvases
   4. Canvas stays responsive (no visible lag or full-canvas re-render) while panels stream live content
   5. Panels on the same canvas read and write a shared per-chat state store, and data-carrying edges let one panel's output feed another panel's input
-**Plans**: 5 plans (4 waves)
+**Plans**: 6 plans (5 waves)
 - [x] 23-01-PLAN.md — Canvas persistence spine: chat_canvas_layouts (migration 0024, [BLOCKING] local push) + chat.getCanvasLayout/saveCanvasLayout + CanvasSnapshotSchema Zod boundary
 - [x] 23-02-PLAN.md — Versioned node-type registry (content-hash, Zod, inert placeholder) + GenuiPanelNode + CanvasSpecContext
 - [x] 23-03-PLAN.md — Conversation controller refactor + ChatNode + 2D canvas surface + Chat/Canvas view toggle (dagre auto-place, keyboard-operable)
 - [x] 23-04-PLAN.md — Layout persistence (exact restore + debounced ~800ms save) + streaming responsiveness (volatile state outside nodes array)
 - [x] 23-05-PLAN.md — Shared per-chat Zustand store (5-mutation declared-state grammar) + data-carrying edges (Zod-validated, live subscription)
+- [ ] 23-06-PLAN.md — GAP CLOSURE: bridge genui button actions -> canvas-store write path (setState ActionRegistry via usePanelData().dispatch) + end-to-end write->edge->target proof
 **UI hint**: yes
 
 ### Phase 24: Dual-Channel GenUI
