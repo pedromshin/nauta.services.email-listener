@@ -159,3 +159,16 @@ None beyond what this plan's own `<threat_model>` already enumerated (T-23-14 Bu
 ---
 *Phase: 23-2d-canvas-panels-as-nodes-shared-state*
 *Completed: 2026-07-05*
+
+## Self-Check: PASSED
+
+All 9 created/modified source files confirmed present on disk (`button-action.test.tsx`,
+`panel-action-bridge.ts`, `panel-action-bridge.test.ts`, `panel-data-flow.test.tsx`,
+`manifest.ts`, `genui-part-boundary.tsx`, `genui-panel-node.tsx`, `edge-creation-picker.tsx`,
+`canvas-store-context.tsx`). All 7 commits (`76bc886`, `d054b78`, `935e3ed`, `4c5165f`,
+`cd7b299`, `a0a50f7`, `aeecb2d`) confirmed present in `git log --oneline --all`.
+`packages/genui` vitest: 472/472 green. `apps/web` chat vitest: 95/95 green (94 pre-existing/
+prior-task + 1 new end-to-end). Both `tsc --noEmit` clean. `apps/web next build` compiles
+(`/chat` route unchanged, 124 kB / 330 kB First Load JS). No-eval grep on `_canvas`
+(excl. `__tests__`) = 0. `packages/genui/src/renderer/spec-renderer.tsx` confirmed unmodified
+(`git status --porcelain` empty; last touching commit still `ecc7a46`, Phase 19).
