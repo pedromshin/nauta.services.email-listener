@@ -13,12 +13,17 @@
  * 23-03-PLAN.md Task 1's acceptance criteria).
  */
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { api } from "~/trpc/react";
 
 import type { MessageListItem } from "../_components/message-list";
 import type { TurnStatus } from "../_components/message-turn";
+import {
+  deriveWidgetDisplayState,
+  type WidgetDisplayState,
+  type WidgetInteractionRow,
+} from "../_components/widget-display-state";
 import {
   useChatStream,
   type MessagePart,
@@ -207,6 +212,26 @@ export interface ConversationController {
   /** MessageList's onRegenerate contract — routes the streaming pseudo-turn's
    * id to handleLiveRetry, any real message id to handleRegenerate. */
   readonly onRegenerateTurn: (assistantMessageId: string) => void;
+  /** The authoritative widget-interaction rows for this conversation
+   * (chat.getWidgetInteractions) — the canvas surface (Task 4) derives its
+   * per-panel widget state from these, same as the transcript. */
+  readonly widgetInteractions: readonly WidgetInteractionRow[];
+  /** Pre-computed widget render surface keyed by interactionId (built in the
+   * controller, not in render — keeps MessageList memo-friendly, D-08). Both
+   * the transcript and the canvas render purely from this bundle. */
+  readonly widgets: WidgetSurface;
+}
+
+/** The widget render surface both the transcript (MessageTurn) and the canvas
+ * (GenuiPanelNode) consume — one source of truth (D-08). Keyed by
+ * interactionId. */
+export interface WidgetSurface {
+  readonly states: Readonly<Record<string, WidgetDisplayState>>;
+  readonly submittedValues: Readonly<Record<string, { readonly optionId: string }>>;
+  readonly errorMessages: Readonly<Record<string, string | null>>;
+  /** InteractiveWidgetBoundary's onSubmitOption gives just the optionId; the
+   * transcript/canvas bind the interactionId, so this takes both. */
+  readonly onSubmitOption: (interactionId: string, optionId: string) => void;
 }
 
 /**
@@ -228,6 +253,8 @@ export function useConversationController({
   const { data: historyRows } = api.chat.getHistory.useQuery({
     conversationId,
   });
+  const { data: widgetInteractionsData } =
+    api.chat.getWidgetInteractions.useQuery({ conversationId });
   const { data: modelsData } = api.chat.models.useQuery();
   const recordBrowserTurn = api.chat.recordBrowserTurn.useMutation();
   // Data-driven locus branch (D-09) — looked up from the registry, never a
@@ -265,6 +292,28 @@ export function useConversationController({
   // is dropped in favor of it (avoids rendering the same turn twice).
   const historyCountAtStreamStartRef = useRef<number>(0);
 
+  const widgetInteractions: readonly WidgetInteractionRow[] = useMemo(
+    () => widgetInteractionsData ?? [],
+    [widgetInteractionsData],
+  );
+
+  // D-02: interaction ids the user has locally (optimistically) superseded by
+  // typing a new message while the widget was pending — populated in
+  // handleSubmit BEFORE the send request even starts. Held in state (not a
+  // ref) so the derived display state re-renders the moment it changes.
+  const [supersededLocally, setSupersededLocally] = useState<ReadonlySet<string>>(
+    () => new Set<string>(),
+  );
+
+  // The single in-flight widget submit (D-04: at most one pending widget per
+  // turn). status "submitting" overlays the Submitting… row; status "error"
+  // carries the errorKind the rejection mapped to (D-10/D-11/D-12).
+  const [inFlightWidget, setInFlightWidget] = useState<{
+    readonly interactionId: string;
+    readonly status: "submitting" | "error";
+    readonly errorKind?: "conflict" | "stale" | "invalid";
+  } | null>(null);
+
   const handleTerminal = useCallback(() => {
     // Every terminal branch persists whatever streamed so far (D-15) — the
     // persisted row is now authoritative, so replace the transient turns.
@@ -272,11 +321,48 @@ export function useConversationController({
     // A completed turn writes a new chat_cost_ledger row (22-06/22-07) — keep
     // the session cost meter live (D-23) without a manual refresh.
     void utils.chat.sessionCost.invalidate({ conversationId });
+    // A widget-submit continuation turn just settled — the pending widget is
+    // now `submitted` server-side (D-16); refetch so its locked state lands.
+    void utils.chat.getWidgetInteractions.invalidate({ conversationId });
     setOptimisticUserText(null);
     setRegeneratingActiveId(null);
+    setInFlightWidget(null);
   }, [conversationId, utils]);
 
-  const chatStream = useChatStream({ conversationId, onTerminal: handleTerminal });
+  // onWidgetRejected (D-10/D-11/D-12): a non-ok submit response maps to an
+  // errorKind and invalidates getWidgetInteractions so server truth reconciles
+  // the visual state. Never marks the global stream state failed — the
+  // transcript turn is fine, only the widget shows the outcome.
+  const handleWidgetRejected = useCallback(
+    (status: number, reason: string) => {
+      const errorKind: "conflict" | "stale" | "invalid" =
+        status === 422
+          ? "invalid"
+          : reason.toLowerCase().includes("already")
+            ? "conflict"
+            : "stale";
+      setInFlightWidget((prev) =>
+        prev ? { ...prev, status: "error", errorKind } : prev,
+      );
+      void utils.chat.getWidgetInteractions.invalidate({ conversationId });
+    },
+    [conversationId, utils],
+  );
+
+  const chatStream = useChatStream({
+    conversationId,
+    onTerminal: handleTerminal,
+    onWidgetRejected: handleWidgetRejected,
+  });
+
+  const handleWidgetSubmit = useCallback(
+    (interactionId: string, result: Readonly<Record<string, unknown>>) => {
+      setInFlightWidget({ interactionId, status: "submitting" });
+      historyCountAtStreamStartRef.current = (historyRows ?? []).length;
+      chatStream.submitWidget(interactionId, result, modelId);
+    },
+    [chatStream, modelId, historyRows],
+  );
 
   // Browser-locus send path (D-08/D-09) — the SIBLING of chatStream.send for
   // a WebLLM model: streams locally via useWebllmEngine.generateStream, then
@@ -340,6 +426,15 @@ export function useConversationController({
     (text: string) => {
       lastSentTextRef.current = text;
       setOptimisticUserText(text);
+      // D-02 (typing supersedes): every currently-pending widget is
+      // optimistically marked superseded BEFORE the send starts — the
+      // composer is never blocked by a pending widget.
+      const pendingIds = widgetInteractions
+        .filter((row) => row.state === "pending")
+        .map((row) => row.id);
+      if (pendingIds.length > 0) {
+        setSupersededLocally((prev) => new Set([...prev, ...pendingIds]));
+      }
       if (isBrowserLocus) {
         void runWebllmTurn(text);
         return;
@@ -347,7 +442,7 @@ export function useConversationController({
       historyCountAtStreamStartRef.current = (historyRows ?? []).length;
       chatStream.send(text, modelId);
     },
-    [chatStream, modelId, historyRows, isBrowserLocus, runWebllmTurn],
+    [chatStream, modelId, historyRows, isBrowserLocus, runWebllmTurn, widgetInteractions],
   );
 
   const handleStop = useCallback(() => {
@@ -491,6 +586,57 @@ export function useConversationController({
     [handleLiveRetry, handleRegenerate],
   );
 
+  const onSubmitOption = useCallback(
+    (interactionId: string, optionId: string) => {
+      handleWidgetSubmit(interactionId, { optionId });
+    },
+    [handleWidgetSubmit],
+  );
+
+  // The widget render surface both surfaces consume (D-08) — built here, not
+  // in render, so MessageList stays memo-friendly. Keyed by interactionId.
+  const widgets: WidgetSurface = useMemo(() => {
+    const states: Record<string, WidgetDisplayState> = {};
+    const submittedValues: Record<string, { optionId: string }> = {};
+    const errorMessages: Record<string, string | null> = {};
+
+    for (const interaction of widgetInteractions) {
+      states[interaction.id] = deriveWidgetDisplayState({
+        interaction,
+        historyRows: historyRows ?? [],
+        supersededLocally,
+        // Only the "submitting" status feeds the in-flight overlay — once a
+        // rejection lands ("error"), the base derived state (pending for a
+        // 422 retry, or the reconciled server state) takes over.
+        inFlightInteractionId:
+          inFlightWidget?.status === "submitting" ? inFlightWidget.interactionId : null,
+      });
+
+      const submitted = interaction.submittedValue;
+      if (
+        submitted !== null &&
+        typeof submitted === "object" &&
+        typeof (submitted as { optionId?: unknown }).optionId === "string"
+      ) {
+        submittedValues[interaction.id] = {
+          optionId: (submitted as { optionId: string }).optionId,
+        };
+      }
+
+      // Only the retryable validation error surfaces an inline error row that
+      // re-enables the widget (D-10). Conflict/stale reconcile to their own
+      // badge/caption via the invalidated server state — no separate row.
+      errorMessages[interaction.id] =
+        inFlightWidget?.interactionId === interaction.id &&
+        inFlightWidget.status === "error" &&
+        inFlightWidget.errorKind === "invalid"
+          ? "This response couldn't be saved. Please try again."
+          : null;
+    }
+
+    return { states, submittedValues, errorMessages, onSubmitOption };
+  }, [widgetInteractions, historyRows, supersededLocally, inFlightWidget, onSubmitOption]);
+
   return {
     turns,
     streamingTurnId: STREAMING_TURN_ID,
@@ -506,5 +652,7 @@ export function useConversationController({
     handleNavigateSibling,
     handleSelectBrowserModel,
     onRegenerateTurn,
+    widgetInteractions,
+    widgets,
   };
 }

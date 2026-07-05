@@ -60,14 +60,26 @@ export type StreamTerminalState =
 
 export type StreamState = "idle" | "streaming" | StreamTerminalState;
 
-/** D-18 canonical interleaved part — text | genui_spec | genui_spec_streaming.
- * A finalized tool call becomes a genui_spec part, mirroring the Python
- * _TurnState accumulator exactly. genui_spec_streaming is a CLIENT-ONLY
- * transient part (never persisted server-side) that accumulates an in-flight
- * emit_ui_spec tool call's partial JSON across tool_call deltas sharing the
- * same toolId — 22-09's GenuiPartBoundary consumes it for progressive
- * partial-tree rendering (STREAM-02, D-17) before the matching tool_result
- * event replaces it with the finalized genui_spec part. */
+/** D-18 canonical interleaved part — text | genui_spec | genui_spec_streaming
+ * | interactive_widget | interaction_result | interactive_widget_streaming.
+ * A finalized `emit_ui_spec` tool call becomes a genui_spec part, mirroring
+ * the Python _TurnState accumulator exactly. genui_spec_streaming is a
+ * CLIENT-ONLY transient part (never persisted server-side) that accumulates
+ * an in-flight emit_ui_spec tool call's partial JSON across tool_call deltas
+ * sharing the same toolId — 22-09's GenuiPartBoundary consumes it for
+ * progressive partial-tree rendering (STREAM-02, D-17) before the matching
+ * tool_result event replaces it with the finalized genui_spec part.
+ *
+ * Phase 24 (DCUI-01/D-01/D-04): `interactive_widget` (persisted, loaded via
+ * chat.getHistory — the declared widget: proposal_cards today, clarify
+ * widgets in 24-04) and `interaction_result` (persisted, the D-16 compact
+ * user-response summary) never stream progressively client-side — the
+ * emitting tool call's `tool_call` deltas accumulate into the CLIENT-ONLY
+ * `interactive_widget_streaming` part instead (rendered as a skeleton, Task 4)
+ * since the corresponding `tool_result` event carries no declaration (only
+ * `interactionId`, 24-02) — the real part arrives moments later via
+ * chat.getHistory once the turn's terminal event invalidates it (D-01
+ * async-resume). */
 export type MessagePart =
   | { readonly type: "text"; readonly text: string }
   | {
@@ -76,6 +88,23 @@ export type MessagePart =
     }
   | {
       readonly type: "genui_spec_streaming";
+      readonly toolId: string;
+      readonly partialJson: string;
+    }
+  | {
+      readonly type: "interactive_widget";
+      readonly interactionId: string;
+      readonly widgetKind: string;
+      readonly declaration: Readonly<Record<string, unknown>>;
+    }
+  | {
+      readonly type: "interaction_result";
+      readonly interactionId: string;
+      readonly widgetKind: string;
+      readonly summary: Readonly<Record<string, unknown>>;
+    }
+  | {
+      readonly type: "interactive_widget_streaming";
       readonly toolId: string;
       readonly partialJson: string;
     };
@@ -91,6 +120,11 @@ export interface UseChatStreamOptions {
    * state — the caller's cue to invalidate chat.getHistory (22-UI-SPEC.md,
    * "the persisted turn replaces the transient streamed parts"). */
   readonly onTerminal?: (state: StreamTerminalState) => void;
+  /** Fires when a submitWidget() POST returns a non-ok response (404/409/422
+   * — D-10/D-11/D-12). The GLOBAL stream state resolves to 'idle' rather than
+   * 'failed' in this case — the transcript turn is fine, only the widget
+   * itself shows the rejection (never a whole-turn InlineErrorCard). */
+  readonly onWidgetRejected?: (status: number, reason: string) => void;
 }
 
 export interface UseChatStreamResult {
@@ -98,6 +132,15 @@ export interface UseChatStreamResult {
   readonly parts: readonly MessagePart[];
   readonly send: (userText: string, modelId: string) => void;
   readonly regenerate: (assistantMessageId: string, modelId: string) => void;
+  /** Posts a widget interaction result to /api/chat/widget/submit and, on
+   * success, reuses the SAME reader/accumulator loop as send() so the
+   * continuation turn streams like any other turn (D-01). On rejection,
+   * invokes onWidgetRejected instead of marking the global state 'failed'. */
+  readonly submitWidget: (
+    interactionId: string,
+    result: Readonly<Record<string, unknown>>,
+    modelId: string,
+  ) => void;
   readonly stop: () => void;
 }
 
@@ -219,32 +262,55 @@ export function applyRunEvent(
     const toolId = typeof event.data.id === "string" ? event.data.id : "";
     const chunk =
       typeof event.data.partial_json === "string" ? event.data.partial_json : "";
+    const toolName = typeof event.data.tool_name === "string" ? event.data.tool_name : undefined;
+    // A recognized interactive-widget tool (any tool_name other than the
+    // default emit_ui_spec) streams into interactive_widget_streaming
+    // instead of genui_spec_streaming (Phase 24 Task 3) — an ABSENT tool_name
+    // defaults to the existing genui path (backward compatibility).
+    const streamingPartType: "genui_spec_streaming" | "interactive_widget_streaming" =
+      toolName !== undefined && toolName !== "emit_ui_spec"
+        ? "interactive_widget_streaming"
+        : "genui_spec_streaming";
     const lastPart = acc.parts[acc.parts.length - 1];
-    // Same in-flight tool call — concatenate. A DIFFERENT (or absent) prior
-    // streaming part is REPLACED rather than appended alongside — the server
-    // always finalizes a tool call (tool_result) before starting a different
-    // one, but defensively dropping an orphaned partial avoids a permanently
-    // stuck skeleton placeholder if that invariant is ever violated.
+    // Same in-flight tool call of the SAME streaming part type — concatenate.
+    // A DIFFERENT (or absent) prior streaming part is REPLACED rather than
+    // appended alongside — the server always finalizes a tool call
+    // (tool_result) before starting a different one, but defensively
+    // dropping an orphaned partial avoids a permanently stuck skeleton
+    // placeholder if that invariant is ever violated.
     const parts: MessagePart[] =
-      lastPart && lastPart.type === "genui_spec_streaming"
+      lastPart &&
+      (lastPart.type === "genui_spec_streaming" || lastPart.type === "interactive_widget_streaming")
         ? [
             ...acc.parts.slice(0, -1),
-            lastPart.toolId === toolId
+            lastPart.toolId === toolId && lastPart.type === streamingPartType
               ? {
-                  type: "genui_spec_streaming",
+                  type: streamingPartType,
                   toolId,
                   partialJson: lastPart.partialJson + chunk,
                 }
-              : { type: "genui_spec_streaming", toolId, partialJson: chunk },
+              : { type: streamingPartType, toolId, partialJson: chunk },
           ]
         : [
             ...acc.parts,
-            { type: "genui_spec_streaming", toolId, partialJson: chunk },
+            { type: streamingPartType, toolId, partialJson: chunk },
           ];
     return { parts, state: "streaming" };
   }
 
   if (event.type === "tool_result") {
+    const toolName = typeof event.data.tool_name === "string" ? event.data.tool_name : undefined;
+    const isWidgetTool = toolName !== undefined && toolName !== "emit_ui_spec";
+    if (isWidgetTool) {
+      // The tool_result event for an interactive-widget tool carries no
+      // declaration client-side (only interactionId, 24-02's
+      // _finalize_pending_tool) — the real interactive_widget part arrives
+      // moments later via chat.getHistory once the turn's terminal event
+      // invalidates it (D-01 async-resume, D-04 the turn ends right here).
+      // Leave the interactive_widget_streaming placeholder exactly as-is
+      // rather than fabricate an incomplete part.
+      return { parts: acc.parts, state: "streaming" };
+    }
     const spec =
       typeof event.data.spec === "object" && event.data.spec !== null
         ? (event.data.spec as Record<string, unknown>)
@@ -268,13 +334,26 @@ export function applyRunEvent(
 export function useChatStream({
   conversationId,
   onTerminal,
+  onWidgetRejected,
 }: UseChatStreamOptions): UseChatStreamResult {
   const [state, setState] = useState<StreamState>("idle");
   const [parts, setParts] = useState<readonly MessagePart[]>([]);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  /**
+   * runStream — shared fetch+reader+accumulate body for send/regenerate AND
+   * submitWidget (Task 3, 24-03). `onHttpError`, when supplied, replaces the
+   * default "mark the whole turn failed" behavior on a non-ok response with
+   * a caller-owned rejection callback — used by submitWidget so a 404/409/422
+   * widget rejection never surfaces as a whole-turn InlineErrorCard (D-10/
+   * D-11/D-12: only the widget itself shows the rejection).
+   */
   const runStream = useCallback(
-    async (url: string, body: Record<string, unknown>) => {
+    async (
+      url: string,
+      body: Record<string, unknown>,
+      onHttpError?: (status: number, reason: string) => void,
+    ) => {
       const controller = new AbortController();
       abortControllerRef.current = controller;
       setParts([]);
@@ -291,6 +370,14 @@ export function useChatStream({
         });
 
         if (!res.ok || !res.body) {
+          if (onHttpError) {
+            const bodyJson = (await res.json().catch(() => null)) as
+              | { readonly error?: string; readonly reason?: string }
+              | null;
+            setState("idle");
+            onHttpError(res.status, bodyJson?.reason ?? bodyJson?.error ?? "Request rejected");
+            return;
+          }
           setState("failed");
           onTerminal?.("failed");
           return;
@@ -332,6 +419,13 @@ export function useChatStream({
           return;
         }
         console.error("[useChatStream] stream failed:", error);
+        if (onHttpError) {
+          // A network-level failure during a widget submit — no structured
+          // rejection status/reason to report, but the global state must
+          // still resolve out of 'streaming' without faking a turn failure.
+          setState("idle");
+          return;
+        }
         setState("failed");
         onTerminal?.("failed");
       } finally {
@@ -363,9 +457,29 @@ export function useChatStream({
     [conversationId, runStream],
   );
 
+  const submitWidget = useCallback(
+    (
+      interactionId: string,
+      result: Readonly<Record<string, unknown>>,
+      modelId: string,
+    ) => {
+      void runStream(
+        "/api/chat/widget/submit",
+        {
+          conversation_id: conversationId,
+          interaction_id: interactionId,
+          model_id: modelId,
+          result,
+        },
+        (status, reason) => onWidgetRejected?.(status, reason),
+      );
+    },
+    [conversationId, runStream, onWidgetRejected],
+  );
+
   const stop = useCallback(() => {
     abortControllerRef.current?.abort();
   }, []);
 
-  return { state, parts, send, regenerate, stop };
+  return { state, parts, send, regenerate, submitWidget, stop };
 }
