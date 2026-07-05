@@ -69,6 +69,14 @@ export interface GenuiPartBoundaryProps {
    * empty-context default when omitted, so every existing non-canvas caller
    * is unaffected. */
   readonly actions?: ActionRegistry;
+  /** "default" (unset) wraps the rendered content in `GenuiCard` — unchanged
+   * behavior, the only chrome `MessageTurn`'s transcript call sites use.
+   * "bare" renders the IDENTICAL content with NO `GenuiCard` wrapper (no
+   * extra border/padding) — for hosts that already supply their own bordered
+   * shell (24-UI-SPEC.md's mandatory `GenuiPanelNode` triple-nesting fix,
+   * 23-UI-REVIEW.md Top Fix #1). Applies uniformly across all four return
+   * paths (finalized / streaming-full-parse / streaming-partial / skeleton). */
+  readonly variant?: "default" | "bare";
 }
 
 // ---------------------------------------------------------------------------
@@ -79,6 +87,24 @@ function GenuiCard({ children }: { readonly children: React.ReactNode }): React.
   return (
     <div className="my-2 rounded-lg border border-border p-4">{children}</div>
   );
+}
+
+/**
+ * Wrapper — routes to `GenuiCard` for the "default" variant (unchanged
+ * behavior) or a plain fragment for "bare" (no extra border/padding layer) —
+ * the ONE switch point all four return paths share (Task 1, 24-03).
+ */
+function Wrapper({
+  variant,
+  children,
+}: {
+  readonly variant: "default" | "bare";
+  readonly children: React.ReactNode;
+}): React.ReactElement {
+  if (variant === "bare") {
+    return <>{children}</>;
+  }
+  return <GenuiCard>{children}</GenuiCard>;
 }
 
 /** Generic minimum-viable pending-content placeholder (22-UI-SPEC.md D-17):
@@ -357,6 +383,7 @@ export function GenuiPartBoundary({
   isStreaming,
   data,
   actions,
+  variant = "default",
 }: GenuiPartBoundaryProps): React.ReactElement {
   const parsed = tryParsePartial(specJson);
 
@@ -366,9 +393,9 @@ export function GenuiPartBoundary({
     const finalParse = parsed !== undefined ? SpecRootSchema.safeParse(parsed) : undefined;
     const finalSpec: SpecRoot = finalParse?.success ? finalParse.data : SAFE_FALLBACK_SPEC;
     return (
-      <GenuiCard>
+      <Wrapper variant={variant}>
         <SpecRenderer spec={finalSpec} data={data} actions={actions} />
-      </GenuiCard>
+      </Wrapper>
     );
   }
 
@@ -376,9 +403,9 @@ export function GenuiPartBoundary({
     const fullParse = SpecRootSchema.safeParse(parsed);
     if (fullParse.success) {
       return (
-        <GenuiCard>
+        <Wrapper variant={variant}>
           <SpecRenderer spec={fullParse.data} data={data} actions={actions} />
-        </GenuiCard>
+        </Wrapper>
       );
     }
 
@@ -390,10 +417,10 @@ export function GenuiPartBoundary({
         const rootParse = SpecRootSchema.safeParse(syntheticRoot);
         if (rootParse.success) {
           return (
-            <GenuiCard>
+            <Wrapper variant={variant}>
               <SpecRenderer spec={rootParse.data} data={data} actions={actions} />
               {partial.hasPending && <SkeletonBars />}
-            </GenuiCard>
+            </Wrapper>
           );
         }
       }
@@ -402,8 +429,8 @@ export function GenuiPartBoundary({
 
   // Nothing renderable yet — the whole spec is still pending.
   return (
-    <GenuiCard>
+    <Wrapper variant={variant}>
       <SkeletonBars />
-    </GenuiCard>
+    </Wrapper>
   );
 }

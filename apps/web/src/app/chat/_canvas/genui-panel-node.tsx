@@ -86,6 +86,7 @@ const GenuiPanelNodeBody = memo(function GenuiPanelNodeBody({
             isStreaming={isStreaming}
             data={panelData}
             actions={actions}
+            variant="bare"
           />
         </div>
       </ScrollArea>
