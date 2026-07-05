@@ -54,6 +54,7 @@ import {
   offsetCascadePosition,
   type CanvasRect,
 } from "./canvas-layout";
+import type { CanvasStore } from "./canvas-store";
 import { NODE_REGISTRY_VERSION } from "./node-registry-version";
 import { resolveNodeType } from "./node-type-registry";
 
@@ -251,11 +252,18 @@ function originalDataFor(node: FlowNode): Record<string, unknown> {
  * `NODE_REGISTRY_VERSION` (D-04); contains NO spec content (D-05) —
  * genui-panel node.data carries only the provenance ref, never re-derived
  * from anything spec-shaped.
+ *
+ * `sharedState` (default `{}`, backward-compatible with every pre-23-05
+ * call site) is the canvas store's CURRENT `values` bag (`panels.*` +
+ * `shared.*`) — persisted verbatim so cross-panel wiring survives reload
+ * (D-10); streaming/derived values are never written into the store in the
+ * first place, so there is nothing transient to strip here.
  */
 export function buildSnapshot(
   nodes: readonly FlowNode[],
   edges: readonly FlowEdge[],
   viewport: Viewport | null | undefined,
+  sharedState: Record<string, unknown> = {},
 ): CanvasSnapshot {
   const candidate = {
     nodes: nodes.map((node) => ({
@@ -277,7 +285,7 @@ export function buildSnapshot(
       };
     }),
     ...(viewport ? { viewport: { x: viewport.x, y: viewport.y, zoom: viewport.zoom } } : {}),
-    sharedState: {},
+    sharedState,
     nodeRegistryVersion: NODE_REGISTRY_VERSION,
   };
 
@@ -317,8 +325,11 @@ export interface UseCanvasPersistenceResult {
    * from `onNodeDragStop`, an edge add/remove, or `onMoveEnd` (D-06).
    * Coalesces rapid successive calls into ONE save via a single trailing
    * timer; always snapshots the LATEST `nodes`/`edges`/`viewport` at fire
-   * time (via `latestStateRef`), never whatever was current when scheduled. */
-  readonly scheduleSave: () => void;
+   * time (via `latestStateRef`), never whatever was current when scheduled.
+   * `canvasStore` (optional — omit when nothing has changed there) is read
+   * via `.getState().values` AT FIRE TIME (not at schedule time) so the
+   * persisted `sharedState` is always the freshest snapshot (D-10). */
+  readonly scheduleSave: (canvasStore?: CanvasStore | null) => void;
 }
 
 /** Re-validates the persisted row against `CanvasSnapshotSchema` on the READ
@@ -401,6 +412,7 @@ export function useCanvasPersistence({
 
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const canvasStoreRef = useRef<CanvasStore | null>(null);
 
   useEffect(() => {
     return () => {
@@ -408,15 +420,17 @@ export function useCanvasPersistence({
     };
   }, []);
 
-  const scheduleSave = useCallback(() => {
+  const scheduleSave = useCallback((canvasStore?: CanvasStore | null) => {
+    if (canvasStore !== undefined) canvasStoreRef.current = canvasStore;
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       timerRef.current = null;
       const current = latestStateRef.current;
+      const sharedState = canvasStoreRef.current?.getState().values ?? {};
 
       let snapshot: CanvasSnapshot;
       try {
-        snapshot = buildSnapshot(current.nodes, current.edges, current.viewport);
+        snapshot = buildSnapshot(current.nodes, current.edges, current.viewport, sharedState);
       } catch (error) {
         // An internal invariant violation (not untrusted external input —
         // buildSnapshot only ever sees our own React Flow state) — never

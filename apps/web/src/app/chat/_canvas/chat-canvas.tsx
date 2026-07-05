@@ -33,11 +33,13 @@ import { Map as MapIcon } from "lucide-react";
 import {
   Background,
   Controls,
+  MarkerType,
   MiniMap,
   Panel,
   ReactFlow,
   useEdgesState,
   useNodesState,
+  type Connection,
   type Edge as FlowEdge,
   type EdgeChange,
   type Node as FlowNode,
@@ -67,7 +69,17 @@ import {
 } from "./canvas-keyboard-hint";
 import { CanvasSkeleton } from "./canvas-skeleton";
 import { CanvasSpecProvider, type CanvasSpecEntry } from "./canvas-spec-context";
-import { CanvasStoreProvider } from "./canvas-store-context";
+import {
+  CanvasEdgesProvider,
+  CanvasStoreProvider,
+  toCanvasStoreSeed,
+  useCanvasStoreInstance,
+  type DataCarryingEdge,
+} from "./canvas-store-context";
+import { EdgeLabelClickProvider, type DataEdgeClickPayload } from "./data-edge";
+import { EdgeCreationPicker } from "./edge-creation-picker";
+import { edgeTypes } from "./edge-types";
+import type { EdgePayload } from "./edge-payload-schema";
 import { ChatControllerProvider } from "./chat-node";
 import { nodeTypes } from "./node-types";
 import {
@@ -78,6 +90,8 @@ import {
   type SaveStatus,
   useCanvasPersistence,
 } from "./use-canvas-persistence";
+
+const DATA_EDGE_MARKER_END = { type: MarkerType.ArrowClosed } as const;
 
 const DRAG_HANDLE_SELECTOR = ".node-drag-handle";
 // New-panel materialization fade (23-UI-SPEC.md Interaction Contracts) —
@@ -145,8 +159,38 @@ function toFlowEdge(edge: PersistedCanvasEdge): FlowEdge {
     id: edge.id,
     source: edge.source,
     target: edge.target,
+    type: "data-edge",
+    animated: false, // reduced-motion posture — never a flowing/dashed edge (23-UI-SPEC.md)
+    markerEnd: DATA_EDGE_MARKER_END,
     data: { sourcePath: edge.data.sourcePath, targetKey: edge.data.targetKey },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Edge-creation/edit picker state (STATE-02, D-09) — a single discriminated
+// state so "drag-to-connect" (create) and "click an existing label pill"
+// (edit) share one popover instance. The edge is NOT created/updated until
+// EdgeCreationPicker's "Connect fields" fires (never auto-wired by the
+// drag/click gesture alone — T-23-13).
+// ---------------------------------------------------------------------------
+
+interface PickerState {
+  readonly mode: "create" | "edit";
+  readonly edgeId?: string;
+  readonly source: string;
+  readonly target: string;
+  readonly initialSourcePath?: string;
+  readonly initialTargetKey?: string;
+  readonly anchor: { readonly x: number; readonly y: number };
+}
+
+function extractPointerPosition(event: MouseEvent | TouchEvent): {
+  readonly x: number;
+  readonly y: number;
+} {
+  if ("clientX" in event) return { x: event.clientX, y: event.clientY };
+  const touch = event.changedTouches[0];
+  return { x: touch?.clientX ?? 0, y: touch?.clientY ?? 0 };
 }
 
 /**
@@ -224,6 +268,16 @@ export function ChatCanvas({
 
   const persistence = useCanvasPersistence({ conversationId, nodes, edges, viewport });
   const seededRef = useRef(false);
+
+  // ONE canvas store per conversation (STATE-01/D-10) — only actually built
+  // once restore resolves (`ready = !isRestoring`), so it hydrates from the
+  // REAL persisted sharedState rather than permanently baking in an empty
+  // seed on the pre-restore render (see useCanvasStoreInstance's own doc).
+  const canvasStore = useCanvasStoreInstance(
+    conversationId,
+    toCanvasStoreSeed(persistence.initialSharedState),
+    !persistence.isRestoring,
+  );
 
   // Seed once restore resolves, then reconcile on every later historyRows
   // change (new turns completing while the canvas stays mounted) — a single
@@ -319,25 +373,25 @@ export function ChatCanvas({
   // settle. A single trailing timer inside the hook coalesces rapid
   // successive calls into ONE `chat.saveCanvasLayout` mutation.
   const handleNodeDragStop = useCallback(() => {
-    persistence.scheduleSave();
-  }, [persistence]);
+    persistence.scheduleSave(canvasStore);
+  }, [persistence, canvasStore]);
 
   const handleEdgesChange = useCallback(
     (changes: EdgeChange<FlowEdge>[]) => {
       onEdgesChange(changes);
       if (changes.some((change) => change.type === "add" || change.type === "remove")) {
-        persistence.scheduleSave();
+        persistence.scheduleSave(canvasStore);
       }
     },
-    [onEdgesChange, persistence],
+    [onEdgesChange, persistence, canvasStore],
   );
 
   const handleMoveEnd = useCallback(
     (_event: MouseEvent | TouchEvent | null, nextViewport: Viewport) => {
       setViewportState(nextViewport);
-      persistence.scheduleSave();
+      persistence.scheduleSave(canvasStore);
     },
-    [persistence],
+    [persistence, canvasStore],
   );
 
   const PAN_STEP_PX = 50;
@@ -373,32 +427,32 @@ export function ChatCanvas({
           y: currentViewport.y + delta.y,
           zoom: currentViewport.zoom,
         });
-        persistence.scheduleSave();
+        persistence.scheduleSave(canvasStore);
         return;
       }
       if (event.key === "+" || event.key === "=") {
         event.preventDefault();
         instance.zoomIn();
-        persistence.scheduleSave();
+        persistence.scheduleSave(canvasStore);
         return;
       }
       if (event.key === "-") {
         event.preventDefault();
         instance.zoomOut();
-        persistence.scheduleSave();
+        persistence.scheduleSave(canvasStore);
         return;
       }
       if (event.key === "0") {
         event.preventDefault();
         void instance.fitView({ padding: 0.2, duration: 200 });
-        persistence.scheduleSave();
+        persistence.scheduleSave(canvasStore);
         return;
       }
       if (event.key === "Escape") {
         handlePaneClick();
       }
     },
-    [handlePaneClick, persistence],
+    [handlePaneClick, persistence, canvasStore],
   );
 
   const handleDismissHint = useCallback(() => {
@@ -412,76 +466,190 @@ export function ChatCanvas({
     setShowMiniMap((prev) => !prev);
   }, []);
 
-  if (persistence.isRestoring) {
+  // ---------------------------------------------------------------------
+  // Data-carrying edges (STATE-02, D-09) — drag-to-connect NEVER auto-wires:
+  // `onConnect` only remembers the pending source/target pair;
+  // `onConnectEnd` opens `EdgeCreationPicker` at the drop point. No edge
+  // enters `edges` state until the picker's "Connect fields" confirms.
+  // ---------------------------------------------------------------------
+  const [pickerState, setPickerState] = useState<PickerState | null>(null);
+  const pendingConnectionRef = useRef<{ source: string; target: string } | null>(null);
+
+  const handleConnect = useCallback((connection: Connection) => {
+    if (!connection.source || !connection.target) return;
+    pendingConnectionRef.current = { source: connection.source, target: connection.target };
+  }, []);
+
+  const handleConnectEnd = useCallback((event: MouseEvent | TouchEvent) => {
+    const pending = pendingConnectionRef.current;
+    pendingConnectionRef.current = null;
+    if (!pending) return; // drag ended without landing on a valid target handle
+    setPickerState({
+      mode: "create",
+      source: pending.source,
+      target: pending.target,
+      anchor: extractPointerPosition(event),
+    });
+  }, []);
+
+  const handleEdgeLabelClick = useCallback((payload: DataEdgeClickPayload) => {
+    setPickerState({
+      mode: "edit",
+      edgeId: payload.edgeId,
+      source: payload.source,
+      target: payload.target,
+      initialSourcePath: payload.sourcePath,
+      initialTargetKey: payload.targetKey,
+      anchor: { x: payload.clientX, y: payload.clientY },
+    });
+  }, []);
+
+  const handlePickerCancel = useCallback(() => {
+    setPickerState(null);
+  }, []);
+
+  const handlePickerConfirm = useCallback(
+    (payload: EdgePayload) => {
+      setPickerState((current) => {
+        if (!current) return null;
+        if (current.mode === "create") {
+          const newEdge: FlowEdge = {
+            id: `data-edge:${current.source}:${current.target}:${payload.targetKey}`,
+            source: current.source,
+            target: current.target,
+            type: "data-edge",
+            animated: false,
+            markerEnd: DATA_EDGE_MARKER_END,
+            data: { sourcePath: payload.sourcePath, targetKey: payload.targetKey },
+          };
+          setEdges((prev) => [...prev, newEdge]);
+        } else if (current.edgeId) {
+          const edgeId = current.edgeId;
+          setEdges((prev) =>
+            prev.map((edge) =>
+              edge.id === edgeId
+                ? { ...edge, data: { sourcePath: payload.sourcePath, targetKey: payload.targetKey } }
+                : edge,
+            ),
+          );
+        }
+        return null;
+      });
+      persistence.scheduleSave(canvasStore);
+    },
+    [setEdges, persistence, canvasStore],
+  );
+
+  const handlePickerRemove = useCallback(() => {
+    setPickerState((current) => {
+      if (current?.edgeId) {
+        const edgeId = current.edgeId;
+        setEdges((prev) => prev.filter((edge) => edge.id !== edgeId));
+      }
+      return null;
+    });
+    persistence.scheduleSave(canvasStore);
+  }, [setEdges, persistence, canvasStore]);
+
+  // edgesByTarget lookup feeding usePanelData's live subscription overlay
+  // (D-09) — recomputed whenever `edges` changes (add/remove/re-pick).
+  const dataCarryingEdges = useMemo<DataCarryingEdge[]>(() => {
+    return edges.flatMap((edge) => {
+      const edgeData = (edge.data ?? {}) as { sourcePath?: unknown; targetKey?: unknown };
+      const { sourcePath, targetKey } = edgeData;
+      if (typeof sourcePath !== "string" || typeof targetKey !== "string") return [];
+      if (sourcePath.length === 0 || targetKey.length === 0) return [];
+      return [{ target: edge.target, sourcePath, targetKey }];
+    });
+  }, [edges]);
+
+  if (persistence.isRestoring || canvasStore === null) {
     return <CanvasSkeleton />;
   }
 
   const isEmpty = nodes.length === 0;
 
   return (
-    <CanvasStoreProvider
-      conversationId={conversationId}
-      initialSharedState={persistence.initialSharedState}
-    >
-      <CanvasSpecProvider
-        specsByProvenance={specsByProvenance}
-        streamingByProvenance={streamingByProvenance}
-      >
-        <ChatControllerProvider controller={controller}>
-          <div
-            role="application"
-            aria-label="Conversation canvas"
-            aria-roledescription="node-based diagram"
-            tabIndex={0}
-            onKeyDown={handleKeyDown}
-            className="relative h-full w-full"
-          >
-            <span className="sr-only" aria-live="polite">
-              {announcement}
-            </span>
-            {isEmpty ? (
-              <CanvasEmptyState />
-            ) : (
-              <ReactFlowJSX
-                nodes={nodes}
-                edges={edges}
-                nodeTypes={nodeTypes}
-                onNodesChange={onNodesChange}
-                onEdgesChange={handleEdgesChange}
-                onNodeDragStop={handleNodeDragStop}
-                onMoveEnd={handleMoveEnd}
-                onPaneClick={handlePaneClick}
-                onInit={handleInit}
-                defaultViewport={viewport ?? undefined}
-                fitView={!viewport}
-                fitViewOptions={{ padding: 0.2 }}
-                minZoom={0.1}
-                maxZoom={2}
-                proOptions={{ hideAttribution: false }}
+    <CanvasStoreProvider store={canvasStore}>
+      <CanvasEdgesProvider edges={dataCarryingEdges}>
+        <CanvasSpecProvider
+          specsByProvenance={specsByProvenance}
+          streamingByProvenance={streamingByProvenance}
+        >
+          <ChatControllerProvider controller={controller}>
+            <EdgeLabelClickProvider onLabelClick={handleEdgeLabelClick}>
+              <div
+                role="application"
                 aria-label="Conversation canvas"
+                aria-roledescription="node-based diagram"
+                tabIndex={0}
+                onKeyDown={handleKeyDown}
+                className="relative h-full w-full"
               >
-                <Background gap={16} size={1} />
-                <Controls showZoom showFitView showInteractive />
-                {showMiniMap && <MiniMap pannable zoomable />}
-                <Panel position="top-right">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    aria-pressed={showMiniMap}
-                    aria-label="Toggle minimap"
-                    className="size-11 bg-background/70 backdrop-blur-md"
-                    onClick={handleToggleMiniMap}
+                <span className="sr-only" aria-live="polite">
+                  {announcement}
+                </span>
+                {isEmpty ? (
+                  <CanvasEmptyState />
+                ) : (
+                  <ReactFlowJSX
+                    nodes={nodes}
+                    edges={edges}
+                    nodeTypes={nodeTypes}
+                    edgeTypes={edgeTypes}
+                    onNodesChange={onNodesChange}
+                    onEdgesChange={handleEdgesChange}
+                    onNodeDragStop={handleNodeDragStop}
+                    onConnect={handleConnect}
+                    onConnectEnd={handleConnectEnd}
+                    onMoveEnd={handleMoveEnd}
+                    onPaneClick={handlePaneClick}
+                    onInit={handleInit}
+                    defaultViewport={viewport ?? undefined}
+                    fitView={!viewport}
+                    fitViewOptions={{ padding: 0.2 }}
+                    minZoom={0.1}
+                    maxZoom={2}
+                    proOptions={{ hideAttribution: false }}
+                    aria-label="Conversation canvas"
                   >
-                    <MapIcon className="size-4" aria-hidden />
-                  </Button>
-                </Panel>
-              </ReactFlowJSX>
-            )}
-            {!hintDismissed && <CanvasKeyboardHint onDismiss={handleDismissHint} />}
-          </div>
-        </ChatControllerProvider>
-      </CanvasSpecProvider>
+                    <Background gap={16} size={1} />
+                    <Controls showZoom showFitView showInteractive />
+                    {showMiniMap && <MiniMap pannable zoomable />}
+                    <Panel position="top-right">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-pressed={showMiniMap}
+                        aria-label="Toggle minimap"
+                        className="size-11 bg-background/70 backdrop-blur-md"
+                        onClick={handleToggleMiniMap}
+                      >
+                        <MapIcon className="size-4" aria-hidden />
+                      </Button>
+                    </Panel>
+                  </ReactFlowJSX>
+                )}
+                {!hintDismissed && <CanvasKeyboardHint onDismiss={handleDismissHint} />}
+                {pickerState && (
+                  <EdgeCreationPicker
+                    anchor={pickerState.anchor}
+                    sourcePanelId={pickerState.source}
+                    targetPanelId={pickerState.target}
+                    initialSourcePath={pickerState.initialSourcePath}
+                    initialTargetKey={pickerState.initialTargetKey}
+                    isEditing={pickerState.mode === "edit"}
+                    onConfirm={handlePickerConfirm}
+                    onCancel={handlePickerCancel}
+                    onRemove={pickerState.mode === "edit" ? handlePickerRemove : undefined}
+                  />
+                )}
+              </div>
+            </EdgeLabelClickProvider>
+          </ChatControllerProvider>
+        </CanvasSpecProvider>
+      </CanvasEdgesProvider>
     </CanvasStoreProvider>
   );
 }

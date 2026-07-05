@@ -33,7 +33,7 @@ import type { Node, NodeProps } from "@xyflow/react";
 import { ScrollArea } from "@nauta/ui/scroll-area";
 
 import { GenuiPartBoundary } from "../_components/genui-part-boundary";
-import { usePanelData, type IncomingDataEdge } from "./canvas-store-context";
+import { usePanelData, useIncomingEdgesForPanel } from "./canvas-store-context";
 import { useCanvasSpec } from "./canvas-spec-context";
 import type { GenuiPanelNodeData } from "./node-data-schemas";
 
@@ -52,14 +52,13 @@ const GenuiPanelNodeBody = memo(function GenuiPanelNodeBody({
   panelId,
   provenance,
   turnIndex,
-  incomingEdges,
 }: {
   readonly panelId: string;
   readonly provenance: GenuiPanelNodeData["provenance"];
   readonly turnIndex: number;
-  readonly incomingEdges: readonly IncomingDataEdge[];
 }) {
   const { specJson, isStreaming } = useCanvasSpec(provenance);
+  const incomingEdges = useIncomingEdgesForPanel(panelId);
   const { data: panelData } = usePanelData(panelId, incomingEdges);
 
   return (
@@ -87,15 +86,6 @@ const GenuiPanelNodeBody = memo(function GenuiPanelNodeBody({
   );
 });
 
-// Task 3 seam (STATE-02, data-carrying edges): React Flow's `NodeProps` only
-// ever carries `{id, data, selected, ...}` for a custom node — there is no
-// channel to pass this panel's INCOMING edges (computed from the canvas
-// host's own `edges` array) straight into a `nodeTypes` component. Task 3
-// wires real edges through a context seam (mirrors `CanvasSpecContext`'s own
-// shape) rather than a prop; kept empty here so Task 2 lands the store
-// wiring without depending on edges that don't exist yet.
-const NO_INCOMING_EDGES: readonly IncomingDataEdge[] = [];
-
 export const GenuiPanelNode = memo(function GenuiPanelNode({
   id,
   data,
@@ -110,7 +100,6 @@ export const GenuiPanelNode = memo(function GenuiPanelNode({
         panelId={id}
         provenance={data.provenance}
         turnIndex={data.turnIndex}
-        incomingEdges={NO_INCOMING_EDGES}
       />
       <Handle type="source" position={Position.Right} />
     </div>
