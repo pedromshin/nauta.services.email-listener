@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: "Conversational GenUI: Chat, Canvas & Dual-Channel"
-status: completed
-last_updated: "2026-07-06T00:50:58.470Z"
-last_activity: 2026-07-05 -- 24-04 executed (emit_clarify_widget tool + clarify-widget round-trip UI, phase 24 complete)
+status: executing
+last_updated: "2026-07-06T02:36:24.360Z"
+last_activity: 2026-07-06 -- Phase 25 Plan 01 (trigger/heuristic layer, ANTIC-01) executed
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 21
-  completed_plans: 21
-  percent: 75
+  total_plans: 24
+  completed_plans: 23
+  percent: 96
 ---
 
 # State
@@ -20,16 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-27)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** Phase 25 — Anticipatory Prompting (SPIKE, not yet planned)
+**Current focus:** Phase 25 — Anticipatory Prompting (SPIKE)
 
 ## Current Position
 
-Phase: 24 (Dual-Channel GenUI) — COMPLETE
-Plan: 4 of 4
-Status: Phase 24 complete; Phase 25 not yet planned
-Last activity: 2026-07-05 -- 24-04 executed (emit_clarify_widget tool + clarify-widget round-trip UI, phase 24 complete)
+Phase: 25 (Anticipatory Prompting (SPIKE)) — EXECUTING
+Plan: 2 of 3
+Status: Executing Phase 25
+Last activity: 2026-07-06 -- Phase 25 Plan 01 (trigger/heuristic layer, ANTIC-01) executed
 
-Progress: [██████████] 100%
+Progress: [██████████] 96%
 
 ## v1.3 Roadmap Summary (2026-07-02)
 
@@ -87,6 +87,10 @@ live Bedrock / a browser.
 - **24-02 EXECUTED:** The full server-side round-trip machinery (DCUI-03). `build_emit_proposal_cards_tool` (hand-authored, Bedrock-valid schema) offered alongside `emit_ui_spec`; `RunChatTurn._finalize_pending_tool` branches by tool name — a completed `emit_proposal_cards` call finalizes into an `interactive_widget` part (server-assigned `opt-{index}` ids, never `genui_spec`), and after the assistant message persists, exactly one pending `chat_widget_interactions` row is created (D-04). `SubmitWidgetInteraction` enforces the fixed ordering load+ownership -> staleness -> schema re-validation -> CAS lock -> resolve (server-side, from the STORED declaration, T-24-01) -> persist `interaction_result` -> continuation, raising a typed `WidgetSubmitRejected` (not_found/stale/invalid/conflict) BEFORE any DB lock flip or event yield. `RunChatTurn.continue_after_widget` reuses `_execute_turn` (one streaming loop, written once). `POST /v1/chat/widget/submit` awaits `SubmitWidgetInteraction.prepare()`, maps rejections to pre-stream HTTP status codes (404/409/422/409), and streams the continuation via the SAME `stream_run_events` SSE framing as `/v1/chat/stream`. Wired end-to-end in `container.py`/`main.py`; full app boot smoke-tested (route registers, zero DI errors). 25/25 new tests green (RED->GREEN all 3 TDD tasks, each independently confirmed via a real `git stash`-based RED check), 26/26 existing chat regression tests still green, ruff/mypy/lint-imports clean. **Deviation (Rule 2):** extended 24-01's `create_pending` with an optional `interaction_id` param (additive) so the part's `interactionId` and the DB row's PK share one pre-generated id. Extracted a `run_chat_turn_widgets.py` line-cap refactor mid-session (829 -> 791 lines). See 24-02-SUMMARY.md.
 - **24-03 EXECUTED:** DCUI-01 — proposal-card round-trip rendered in BOTH the transcript and a canvas genui-panel node from one message-part source of truth. `GenuiPartBoundary` gained a `variant?: "default"|"bare"` prop (closes 23-UI-REVIEW Top Fix #1 triple-nesting); `buildProposalCardsSpec` (declaration -> stack of card+footer-button, onClick setState carrying optionId) + `WidgetStatusBadge`/`CompactInteractionEntry`/`InteractiveWidgetBoundary` (pending/submitting/submitted/superseded/stale chrome, submitted view bypasses the live renderer for a ring+badge/dimmed-row treatment); `chat.getWidgetInteractions` tRPC query + `POST /api/chat/widget/submit` Next SSE proxy + `useChatStream.submitWidget`; `deriveWidgetDisplayState` (pure, D-02/D-11/D-12); controller `widgets` surface (states/submittedValues/errorMessages/onSubmitOption) driving both transcript and canvas (D-08, zero-mock dual-surface test). 126/126 web chat + 40/40 api-client + 472/472 genui vitest green; `spec-renderer.tsx` unmodified. See 24-03-SUMMARY.md. **Next: 24-04** (clarify-widget forms/pickers).
 - **24-04 EXECUTED — PHASE 24 COMPLETE:** DCUI-02 — clarify-widget round-trip via the UNMODIFIED Phase-19 form engine. `build_emit_clarify_widget_tool` (Bedrock-valid, `submitLabel` REQUIRED with `minLength:1` — the UI-SPEC's MANDATORY posture enforced in schema, not prompt); `run_chat_turn_widgets.py` parses the tool call into an `interactive_widget` part (widgetKind `clarify_widget`) and derives `declared_response_schema` from the fields server-side (enum/boolean/number/string, `required[]` — T-24-20, never model-authored); `ChatWidgetInteractionRepository.supersede_pending` (port+adapter, CAS idiom) called by `RunChatTurn.run()` right after the user-message insert — D-02 typing-supersedes now durable server-side, not just an optimistic client set. `FormComponent`'s `handleSubmit` now passes `{...onSubmit, values}` through the ActionRegistry seam (23-06 `ButtonComponent` precedent, 1-line change, `spec-renderer.tsx` untouched). `buildClarifyWidgetSpec`/`buildClarifySubmittedSpec` (web) + `InteractiveWidgetBoundary`'s new `clarify_widget` branch (submitted state replaces the ENTIRE live form with "Your response"+Submitted badge+key-value-list, D-16); the submit callback generalized `onSubmitOption(optionId)` -> `onSubmitResult(result)` across the boundary/controller/canvas (one signature, both widget kinds). **Deviation (Rule 2):** extended `SubmitWidgetInteraction._resolve_summary` for `clarify_widget` (not in the plan's own file list — without it the submit endpoint would 500). 20+/20 email-listener tests green (RED->GREEN all 3 TDD tasks), 475/475 genui vitest, 140/140 web chat vitest, tsc/build/no-eval/lint-imports all clean. See 24-04-SUMMARY.md. **Phase 24 (DCUI-01..04) is now fully complete. Next: Phase 25** (Anticipatory Prompting SPIKE — not yet planned).
+
+## Phase 25 — Anticipatory Prompting (SPIKE) (executing 2026-07-05)
+
+- **25-01 EXECUTED:** ANTIC-01 — the trigger/heuristic layer. `ANTICIPATORY_PROMPTING_ENABLED: bool = False` (D-12 global off switch) + 7 spike tunables (idle threshold 45s, appropriateness threshold 0.75, judge model/max-tokens/timeout, per-window/per-day frequency caps) added to `BaseAppSettings`, each with inline rationale; `anticipatory_judge_model_id` property resolves to `DEFAULT_GENUI_MODEL_ID` (Haiku) when unset. New `app.domain.anticipatory` package: `candidate.py` (frozen `AnticipatoryCandidate`/`AnticipatoryStateSnapshot`/`AnticipatoryLifecycleEvent`/`SourceStateRef`, D-05/D-06/D-13 — every snapshot collection is a `tuple`, never a `list`, enforcing read-only observation at the type level); `fixtures.py` (D-02 — `idle_after_genui_snapshot`/`completed_artifact_snapshot`/`ambiguous_intent_snapshot`, three scripted deterministic exercise inputs); `triggers.py` (D-04/D-06/D-12 — `detect_idle_after_genui`/`detect_completed_artifact`/`detect_ambiguous_intent`, pure functions sharing one `AnticipatoryTrigger` Protocol signature, `TRIGGERS` tuple, `run_triggers(snapshot, *, enabled, idle_threshold_seconds)` short-circuits to `[]` when `enabled=False`). Ambiguous-intent detection is fully deterministic (frozen vague-phrase set OR token-count floor, no ML). 20/20 pytest green (RED `614ef13` -> GREEN `4276997` for the TDD trigger task), ruff/mypy/lint-imports clean; `packages/genui/src/renderer/spec-renderer.tsx` untouched (backend-only plan). See 25-01-SUMMARY.md. **Next: 25-02** (appropriateness-eval + frequency-cap gate chain, ANTIC-02).
 
 ## Phase 21 — Generation Quality Verification (in progress 2026-07-01)
 
@@ -1149,3 +1153,4 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 24 P01 | 35min | 3 tasks | 9 files |
 | Phase 24 P02 | ~2h | 3 tasks | 17 files |
 | Phase 24 P04 | ~2h | 3 tasks | 17 files |
+| Phase 25 P01 | 15min | 3 tasks | 8 files |
