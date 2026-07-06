@@ -14,6 +14,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  errorMessageForWidgetError,
   groupTurnsFromHistory,
   toWebllmMessages,
   type ChatHistoryRow,
@@ -195,5 +196,33 @@ describe("toWebllmMessages", () => {
     const messages = toWebllmMessages(rows);
 
     expect(messages.map((m) => m.content)).toEqual(["first", "second"]);
+  });
+});
+
+// ===========================================================================
+// errorMessageForWidgetError — 24-05 fix pass (24-UI-REVIEW.md Copywriting
+// Contract violation #1): a double-submit 409 conflict must render "This was
+// already answered." — previously errorMessages was populated ONLY for
+// errorKind "invalid", so a conflict rejection produced no message text
+// anywhere in the UI.
+// ===========================================================================
+
+describe("errorMessageForWidgetError (24-05, 24-UI-SPEC.md Copywriting Contract)", () => {
+  it("'invalid' — the retryable validation-rejection message (D-10, unchanged)", () => {
+    expect(errorMessageForWidgetError("invalid")).toBe(
+      "This response couldn't be saved. Please try again.",
+    );
+  });
+
+  it("'conflict' — 'This was already answered.' (previously unrendered anywhere)", () => {
+    expect(errorMessageForWidgetError("conflict")).toBe("This was already answered.");
+  });
+
+  it("'stale' — null (reconciles via the Stale badge's own caption instead, D-12)", () => {
+    expect(errorMessageForWidgetError("stale")).toBeNull();
+  });
+
+  it("undefined — null (no in-flight error)", () => {
+    expect(errorMessageForWidgetError(undefined)).toBeNull();
   });
 });
