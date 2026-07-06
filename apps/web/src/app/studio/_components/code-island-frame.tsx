@@ -60,12 +60,12 @@ const PHASE_LABEL: Record<IslandPhase, string> = {
 };
 
 const PHASE_TONE: Record<IslandPhase, string> = {
-  running: "bg-amber-50 text-amber-800 border-amber-200",
-  healing: "bg-amber-50 text-amber-800 border-amber-200",
-  rendered: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  healed: "bg-emerald-50 text-emerald-800 border-emerald-200",
-  rejected: "bg-red-50 text-red-800 border-red-200",
-  fallback: "bg-red-50 text-red-800 border-red-200",
+  running: "border-border bg-muted/40 text-foreground",
+  healing: "border-border bg-muted/40 text-foreground",
+  rendered: "border-primary/30 bg-primary/10 text-primary",
+  healed: "border-primary/30 bg-primary/10 text-primary",
+  rejected: "border-destructive/30 bg-destructive/10 text-destructive",
+  fallback: "border-destructive/30 bg-destructive/10 text-destructive",
 };
 
 export function CodeIslandFrame({
@@ -157,14 +157,14 @@ export function CodeIslandFrame({
         title="Sandboxed code-island output"
         sandbox={ISLAND_SANDBOX}
         srcDoc={srcdoc}
-        className="h-[420px] w-full rounded-lg border border-border/60 bg-white"
+        className="h-[420px] w-full rounded-lg border border-border/60 bg-background"
       />
 
       {state.phase === "rejected" && state.violations.length > 0 ? (
         <ViolationList
           heading="Allowlist violations (code never executed)"
           items={state.violations.map((v) => `${v.rule} — ${v.detail}`)}
-          tone="red"
+          tone="destructive"
         />
       ) : null}
 
@@ -175,7 +175,7 @@ export function CodeIslandFrame({
             .slice()
             .sort((a, b) => impactRank(b.impact) - impactRank(a.impact))
             .map((v) => `${(v.impact ?? "n/a").toUpperCase()} — ${v.id}: ${v.help}`)}
-          tone="amber"
+          tone="muted"
         />
       ) : null}
     </div>
@@ -197,7 +197,7 @@ function StatusBar({
       aria-live="polite"
       className={`flex flex-wrap items-center gap-2 rounded-md border px-3 py-2 text-sm ${PHASE_TONE[phase]}`}
     >
-      <span className="font-medium">{PHASE_LABEL[phase]}</span>
+      <span className="font-semibold">{PHASE_LABEL[phase]}</span>
       {attempts > 0 ? <span className="text-xs opacity-80">heal attempts: {attempts}</span> : null}
       {lastError ? <span className="text-xs opacity-80">· {lastError}</span> : null}
     </div>
@@ -211,12 +211,12 @@ function ViolationList({
 }: {
   readonly heading: string;
   readonly items: readonly string[];
-  readonly tone: "red" | "amber";
+  readonly tone: "destructive" | "muted";
 }): React.ReactElement {
   const toneClass =
-    tone === "red"
-      ? "border-red-200 bg-red-50 text-red-900"
-      : "border-amber-200 bg-amber-50 text-amber-900";
+    tone === "destructive"
+      ? "border-destructive/30 bg-destructive/10 text-destructive"
+      : "border-border bg-muted text-foreground";
   return (
     <div className={`rounded-md border px-3 py-2 text-xs ${toneClass}`}>
       <p className="mb-1 font-semibold">{heading}</p>
