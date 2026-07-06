@@ -212,4 +212,99 @@ describe("InteractiveWidgetBoundary", () => {
     );
     expect(container.querySelector(".border-border")).toBeNull();
   });
+
+  // 24-05 fix pass (24-UI-REVIEW.md Top Fix #1): clarify_widget's own Phase-19
+  // "Submitted ✓" affordance must never co-render with the boundary's own
+  // "Submitting…" row, and must not reappear next to a re-enabled (422 retry) form.
+  describe("clarify_widget copy-collision (24-05, 24-UI-REVIEW Top Fix #1)", () => {
+    const CLARIFY_PART: InteractiveWidgetPart = {
+      type: "interactive_widget",
+      interactionId: "22222222-2222-2222-2222-222222222222",
+      widgetKind: "clarify_widget",
+      declaration: {
+        submitLabel: "Send response",
+        fields: [{ name: "note", label: "Note" }],
+      },
+    };
+
+    it("pending -> submitting: FormComponent's own 'Submitted ✓' never co-renders with 'Submitting…'", async () => {
+      const onSubmitResult = vi.fn();
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      containers.push(container);
+      const root = createRoot(container);
+
+      await act(async () => {
+        root.render(
+          <InteractiveWidgetBoundary
+            part={CLARIFY_PART}
+            displayState="pending"
+            onSubmitResult={onSubmitResult}
+          />,
+        );
+      });
+
+      const form = container.querySelector("form") as HTMLFormElement;
+      await act(async () => {
+        form.requestSubmit();
+      });
+      expect(onSubmitResult).toHaveBeenCalledTimes(1);
+
+      // Parent transitions to "submitting" — SAME tree position/instance, so
+      // FormComponent's own local `submitted` state (set true by the click above)
+      // would otherwise survive this re-render (the reproducible bug).
+      await act(async () => {
+        root.render(
+          <InteractiveWidgetBoundary
+            part={CLARIFY_PART}
+            displayState="submitting"
+            onSubmitResult={onSubmitResult}
+          />,
+        );
+      });
+
+      expect(container.textContent).toContain("Submitting…");
+      expect(container.textContent).not.toContain("Submitted ✓");
+    });
+
+    it("submitting -> pending (422 retry re-enable): 'Submitted ✓' does not reappear next to the re-enabled form", async () => {
+      const onSubmitResult = vi.fn();
+      const container = document.createElement("div");
+      document.body.appendChild(container);
+      containers.push(container);
+      const root = createRoot(container);
+
+      await act(async () => {
+        root.render(
+          <InteractiveWidgetBoundary
+            part={CLARIFY_PART}
+            displayState="pending"
+            onSubmitResult={onSubmitResult}
+          />,
+        );
+      });
+
+      const form = container.querySelector("form") as HTMLFormElement;
+      await act(async () => {
+        form.requestSubmit();
+      });
+
+      // Server rejects with 422 — the widget re-enables (D-10) with an inline error row.
+      await act(async () => {
+        root.render(
+          <InteractiveWidgetBoundary
+            part={CLARIFY_PART}
+            displayState="pending"
+            errorMessage="This response couldn't be saved. Please try again."
+            onSubmitResult={onSubmitResult}
+          />,
+        );
+      });
+
+      expect(container.textContent).toContain(
+        "This response couldn't be saved. Please try again.",
+      );
+      expect(container.textContent).not.toContain("Submitted ✓");
+    });
+  });
 });
