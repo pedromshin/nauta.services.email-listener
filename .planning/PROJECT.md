@@ -13,6 +13,39 @@ Reliably receive every inbound email destined for agent@magnitudetech.com.br and
 observable — nothing lost, everything logged — as the foundation for later parsing,
 persistence, and the agentic pipeline.
 
+## Current Milestone: v1.4 Chat & Studio Design Uplift
+
+**Goal:** A no-bloat visual/token-discipline uplift of `/chat` + `/studio`'s own hand-built chrome
+(backlog 999.6, UPLIFT-01..03) — zero new npm dependencies, executing the pre-baked 3-phase punch
+list in `.planning/research/CHAT-STUDIO-DESIGN-UPLIFT.md` (zero-dep contract fixes → narrowly
+adopted external picks → design-system token upgrades).
+
+**Target features:**
+- Zero-dependency contract fixes: style React Flow's stock chrome with app tokens, purge
+  `font-medium` at the source (`buttonVariants`) + 11 studio call-sites, replace Studio's 3
+  hardcoded amber/red color systems with tokens (dark-mode safe), differentiate ChatNode vs
+  GenuiPanelNode chrome, consolidate the 3 raw-JSON panes, restyle the catalog prop table, add
+  hover/transition affordances, assistant-role chrome + composer dock, scrollbar normalization,
+  differentiated empty states
+- Adopted external picks (near-zero footprint): impeccable.style product-register rules + 13-item
+  absolute-bans list into UI-SPEC as an appendix, Magic UI `file-tree` port (zero new deps),
+  hand-ported teal-only `<GeneratingRing>` CSS technique, 3 `ux-designer-skill` reference files,
+  3-4 retokenized `transitions.dev` CSS snippets
+- Design-system token upgrades: tonally differentiate `secondary`/`muted`/`accent`, rebase
+  `chart-1..5` + `sidebar-*` off the teal primary, real shadow scale, `xl`/`2xl` radius steps
+  (fix card.tsx hardcode), put installed `tailwindcss-animate` to work (entrance/stagger)
+- Folded backlog polish: 999.8(a) generator-prompt fix for declared-state display binding
+  (emit `dataRef`-bound nodes, not `{{mustache}}` text), 999.9 canvas auto-layout default
+  direction (avoid cramped vertical stacking)
+
+**Key context:** Selected autonomously per the user's standing directive — backlog 999.6 was
+explicitly queued to start "only once v1.3 fully ships" (shipped 2026-07-06). Research is
+pre-baked and locked (`CHAT-STUDIO-DESIGN-UPLIFT.md`, 2026-07-05): 5 external-resource verdicts,
+code-level audit, phase ordering A→B→C. Hard constraints: teal `primary` only, 2-weight
+typography, 4-role type scale, 8-pt spacing, 60/30/10 color discipline, **zero new npm
+dependencies**. 999.8(b) (renderer affordance for declared-state text) is explicitly out of
+scope — it touches the locked renderer.
+
 ## Current State (v1.3 shipped 2026-07-06)
 
 **Shipped:** **v1.3 — Conversational GenUI: Chat, Canvas & Dual-Channel** (Phases 22–25). The genui
@@ -101,9 +134,17 @@ already proven locally. Research: `.planning/research/` (SUMMARY.md + 6 deep doc
 
 ### Active
 
-<!-- No active milestone. Run /gsd:new-milestone to open the next one. Candidates in "Current State → Next". -->
+<!-- v1.4 Chat & Studio Design Uplift. Full REQ-IDs in .planning/REQUIREMENTS.md. -->
 
-_(none — v1.3 shipped; next milestone not yet opened)_
+- [ ] Zero-dependency contract fixes on `/chat` + `/studio` (FIX-01..11 — React Flow chrome,
+  font-medium purge, token discipline, node differentiation, JSON-pane consolidation,
+  hover/transition states, role chrome, scrollbars, empty states)
+- [ ] Narrowly-adopted external design picks (ADOPT-01..05 — impeccable bans appendix, Magic UI
+  file-tree, GeneratingRing CSS port, ux-designer-skill refs, transitions.dev snippets)
+- [ ] Design-system token upgrades (TOKEN-01..05 — secondary/muted/accent split, teal-based
+  chart/sidebar, shadow scale, radius steps, tailwindcss-animate entrances)
+- [ ] Folded backlog polish (POLISH-01 generator declared-state binding prompt fix,
+  POLISH-02 canvas auto-layout direction)
 
 ### Out of Scope
 
@@ -165,4 +206,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-06 after v1.3 milestone — Conversational GenUI (Chat, Canvas & Dual-Channel) shipped (Phases 22–25); 24 requirements moved to Validated; FOUND-1..6 marked ✓ Good, FOUND-7 ⚠️ Revisit; Active reset pending next milestone*
+*Last updated: 2026-07-06 after v1.4 milestone start — Chat & Studio Design Uplift opened (backlog 999.6 promoted per standing user directive; 999.8a + 999.9 folded in); requirements FIX/ADOPT/TOKEN/POLISH derived from the pre-baked `.planning/research/CHAT-STUDIO-DESIGN-UPLIFT.md`*
