@@ -69,7 +69,7 @@ discipline with an explicit accent allowlist; **zero new npm dependencies**. Not
 milestone touches `packages/genui/src/renderer/spec-renderer.tsx` or `GenuiPartBoundary`/
 `InteractiveWidgetBoundary` chrome (already owned/fixed by Phase 24).
 
-- [ ] **Phase 26: Zero-Dependency Contract Fixes + Backlog Polish** - `/chat` and `/studio`'s own chrome (React Flow, node differentiation, hardcoded colors, JSON panes, prop table, hover states, role chrome, composer dock, scrollbars, empty states) matches the app's existing token system instead of stock/hardcoded values, plus two small independent backlog fixes (declared-state binding, canvas auto-layout)
+- [x] **Phase 26: Zero-Dependency Contract Fixes + Backlog Polish** - `/chat` and `/studio`'s own chrome (React Flow, node differentiation, hardcoded colors, JSON panes, prop table, hover states, role chrome, composer dock, scrollbars, empty states) matches the app's existing token system instead of stock/hardcoded values, plus two small independent backlog fixes (declared-state binding, canvas auto-layout) (completed 2026-07-06)
 - [ ] **Phase 27: Adopted External Design Picks** - Impeccable's product-register rules, Magic UI's file-tree + generating-ring CSS technique, ux-designer-skill references, and transitions.dev snippets are folded into the app and its docs at near-zero footprint
 - [ ] **Phase 28: Design-System Token Upgrades** - The foundational token set (secondary/muted/accent, chart/sidebar hues, shadow scale, radius steps, entrance animation) is upgraded so every consuming surface benefits at once
 
@@ -97,7 +97,7 @@ Plans:
 - [x] 26-04-PLAN.md — Canvas node differentiation + auto-layout tuning (FIX-04, POLISH-02)
 - [x] 26-05-PLAN.md — React Flow chrome CSS + composer dock + uniform scrollbars (FIX-01, FIX-09, FIX-10)
 - [x] 26-06-PLAN.md — Shared EmptyState primitive + 3 call sites (FIX-11)
-- [ ] 26-07-PLAN.md — Generator prompt: declared-state dataRef binding (POLISH-01)
+- [x] 26-07-PLAN.md — Generator prompt: declared-state dataRef binding (POLISH-01)
 **UI hint**: yes
 
 ### Phase 27: Adopted External Design Picks
@@ -138,7 +138,7 @@ papered-over token gap before Phase C touches the token layer)
 
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
-| 26. Zero-Dependency Contract Fixes + Backlog Polish | 6/7 | In Progress|  |
+| 26. Zero-Dependency Contract Fixes + Backlog Polish | 7/7 | Complete   | 2026-07-06 |
 | 27. Adopted External Design Picks | 0/? | Not started | - |
 | 28. Design-System Token Upgrades | 0/? | Not started | - |
 

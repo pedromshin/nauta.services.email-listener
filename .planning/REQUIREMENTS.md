@@ -42,7 +42,7 @@
 
 ### Folded Backlog Polish (999.8a + 999.9, per their own backlog notes)
 
-- [ ] **POLISH-01**: The declarative generator is prompt-taught to express declared-state display via `dataRef`-bound nodes (never `{{mustache}}` text content), with `setState` increment-vs-absolute guidance — a "counter bound to state" prompt produces a live-updating render (999.8 option (a) only)
+- [x] **POLISH-01**: The declarative generator is prompt-taught to express declared-state display via `dataRef`-bound nodes (never `{{mustache}}` text content), with `setState` increment-vs-absolute guidance — a "counter bound to state" prompt produces a live-updating render (999.8 option (a) only)
 - [x] **POLISH-02**: New canvas panels auto-lay out without cramped vertical stacking (horizontal/grid default direction or smarter initial placement) (999.9)
 
 ## Future Requirements
@@ -96,7 +96,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FIX-09 | Phase 26 | Pending |
 | FIX-10 | Phase 26 | Pending |
 | FIX-11 | Phase 26 | Complete |
-| POLISH-01 | Phase 26 | Pending |
+| POLISH-01 | Phase 26 | Complete |
 | POLISH-02 | Phase 26 | Complete |
 | ADOPT-01 | Phase 27 | Pending |
 | ADOPT-02 | Phase 27 | Pending |
