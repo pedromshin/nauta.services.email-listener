@@ -29,6 +29,8 @@ import rehypeHighlight from "rehype-highlight";
 import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 
+import { ScrollArea, ScrollBar } from "@nauta/ui/scroll-area";
+
 // Token-neutral syntax theme. Code blocks render inside a bg-muted `<pre>`
 // wrapper (below); the highlighter's own theme colors the tokens within it.
 import "highlight.js/styles/github-dark.css";
@@ -84,12 +86,12 @@ function Pre({
   ...props
 }: ComponentPropsWithoutRef<"pre">): JSX.Element {
   return (
-    <pre
-      className="my-2 overflow-x-auto rounded-lg bg-muted p-3 text-xs"
-      {...props}
-    >
-      {children}
-    </pre>
+    <ScrollArea className="my-2 rounded-lg bg-muted">
+      <pre className="p-3 text-xs" {...props}>
+        {children}
+      </pre>
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
   );
 }
 
@@ -122,11 +124,12 @@ function Table({
   ...props
 }: ComponentPropsWithoutRef<"table">): JSX.Element {
   return (
-    <div className="my-2 overflow-x-auto">
+    <ScrollArea className="my-2">
       <table className="w-full border-collapse text-sm" {...props}>
         {children}
       </table>
-    </div>
+      <ScrollBar orientation="horizontal" />
+    </ScrollArea>
   );
 }
 
