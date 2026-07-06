@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Chat & Studio Design Uplift
-status: Roadmap created (Phases 26-28, 23/23 requirements mapped)
-last_updated: "2026-07-06T20:24:08.189Z"
-last_activity: 2026-07-06 — Milestone v1.4 roadmap created (Phases 26-28)
+status: executing
+last_updated: "2026-07-06T20:54:21.000Z"
+last_activity: 2026-07-06 -- Phase 26 plan 01 complete (JsonPane + history-island token cleanup)
 progress:
   total_phases: 3
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 7
+  completed_plans: 1
+  percent: 14
 ---
 
 # State
@@ -20,14 +20,19 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-27)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** v1.4 roadmap created (Phases 26-28); next: `/gsd:plan-phase 26`. Prior: Phase 25 — Anticipatory Prompting (SPIKE) — COMPLETE (verdict: ship-with-conditions).
+**Current focus:** Phase 26 — Zero-Dependency Contract Fixes + Backlog Polish
 
 ## Current Position
 
-Phase: Not started (roadmap created, ready for phase planning)
-Plan: —
-Status: Roadmap created (Phases 26-28, 23/23 requirements mapped)
-Last activity: 2026-07-06 — Milestone v1.4 roadmap created (Phases 26-28)
+Phase: 26 (Zero-Dependency Contract Fixes + Backlog Polish) — EXECUTING
+Plan: 2 of 7 (26-01 complete)
+Status: Executing Phase 26
+Last activity: 2026-07-06 -- Phase 26 plan 01 complete: shared JsonPane component (FIX-05, fully
+  complete) wired into all 3 studio JSON panes; history-island.tsx's FIX-02 #9/#10 (font-medium
+  drift) + FIX-03e (FallbackNotice amber->destructive) cleared. FIX-02/FIX-03 remain Pending in
+  REQUIREMENTS.md — both span additional call-sites owned by 26-02/26-03, not fully satisfied
+  until those land. Commits: 4cd49ec, 77f1497, 4b88fcc, a6023a7. Next: /gsd:plan-phase or execute
+  26-02-PLAN.md.
 
 ## v1.4 Roadmap Summary (2026-07-06)
 
@@ -362,7 +367,7 @@ User direction after v1.1: keep LOCAL + `/studio` sandbox (no deploy/convergence
 
 - **Resume file:** 
 
-.planning/phases/26-zero-dependency-contract-fixes-backlog-polish/26-UI-SPEC.md
+.planning/phases/26-zero-dependency-contract-fixes-backlog-polish/26-01-PLAN.md
   col); resolution = **suggest-only, never auto** → **parallel BlendedRAG (dense HNSW + lexical
   pg_trgm exact/fuzzy) fused by RRF(k=60)**, on-confirm + re-runnable backfill, confirm writes back
   aliases (flywheel), reranker deferred, degrades to lexical-only without Bedrock. Gallery = table
@@ -1134,6 +1139,9 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 - 2026-07-06 (25-02): frequency-cap check runs BEFORE the paid appropriateness-eval call (cost optimization only, per D-08) — a cap denial never bills the judge and is never overridden by what the eval would have said; proven by a dedicated independence test
 - 2026-07-06 (25-02, Rule 1 fix): `test_evaluate_anticipatory_candidates.py` initially imported `InMemoryAnticipatoryCapStore` from `app.infrastructure` — broke the "Application does not import infrastructure" lint-imports contract; replaced with a test-local `FakeAnticipatoryCapStore` double (mirrors `test_submit_widget_interaction.py`'s existing convention)
 - 2026-07-06 (25-02, Rule 2 addition): added `_extract_usage()` real-token-capture to `BedrockAppropriatenessJudgeAdapter` (mirroring `GenuiCodeJudgeAdapter`'s D-22 idiom) — not spelled out in Task 1's action text but required by Task 3's own acceptance criteria ("response.usage is read when present")
+- 2026-07-06 (26-01): FIX-02 row #9 (history-island row-title) drops `font-medium` entirely with no `font-normal` replacement (matches `conversation-row.tsx`'s sibling convention, no weight override at all); row #10 (detail-header caption) gets an explicit `font-medium` -> `font-normal` swap — the UI-SPEC's per-row table treats these as genuinely distinct, not both "just delete the class"
+- 2026-07-06 (26-01): `JsonPane`'s copy button uses standard `size="icon"` (36x36), not the 44px isolated-touch-target size — FIX-07's 44px rule is scoped to primary/isolated controls (composer Send, minimap toggle), not this dense inspector-header affordance
+- 2026-07-06 (26-01): FIX-02 and FIX-03 left `Pending` in REQUIREMENTS.md after this plan — both requirements span additional call-sites owned by 26-02 (FIX-02/FIX-03) and 26-03 (FIX-02); only FIX-05 is fully satisfied by 26-01 and was marked complete
 
 ## Performance Metrics
 
@@ -1201,6 +1209,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 25 P01 | 15min | 3 tasks | 8 files |
 | Phase 25 P02 | 23min | 3 tasks | 10 files |
 | Phase 25 P03 | ~20min | 2 tasks | 2 files |
+| Phase 26 P01 | 15min | 3 tasks | 6 files |
 
 ## Operator Next Steps
 

@@ -16,7 +16,7 @@
 - [ ] **FIX-02**: No `font-medium` anywhere on `/chat` or `/studio` — fixed at the source (`packages/ui/src/button.tsx` `buttonVariants` base class) and across the 11 Studio call-sites, restoring the locked 2-weight typography contract
 - [ ] **FIX-03**: Studio's three hardcoded color systems (`code-island-frame.tsx` PHASE_TONE + ViolationList + `bg-white` iframe wrapper, `page-ideas-island.tsx` curveball badge, `history-island.tsx` FallbackNotice, `code-sandbox-island.tsx` `text-red-600`) use semantic tokens (`destructive`/`primary`/`muted`) and render correctly in dark mode
 - [ ] **FIX-04**: `ChatNode` and `GenuiPanelNode` have visually differentiated header chrome (per-kind accent or icon) — the canvas no longer reads as identical gray boxes
-- [ ] **FIX-05**: The 3 duplicated raw-`JSON.stringify` panes (generation-sandbox, history, preview) are one shared component with consistent indentation and a copy button
+- [x] **FIX-05**: The 3 duplicated raw-`JSON.stringify` panes (generation-sandbox, history, preview) are one shared component with consistent indentation and a copy button
 - [ ] **FIX-06**: The catalog prop table is styled to match its surrounding card chrome (zebra rows, muted header fill) instead of a bare HTML `<table>`
 - [ ] **FIX-07**: Conversation rows and turn-action icon buttons have `transition-colors` and real hover affordances (background/border at rest and hover)
 - [ ] **FIX-08**: Assistant messages carry minimal role chrome (a thin left rail) so role is distinguishable beyond alignment alone
@@ -89,7 +89,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FIX-02 | Phase 26 | Pending |
 | FIX-03 | Phase 26 | Pending |
 | FIX-04 | Phase 26 | Pending |
-| FIX-05 | Phase 26 | Pending |
+| FIX-05 | Phase 26 | Complete |
 | FIX-06 | Phase 26 | Pending |
 | FIX-07 | Phase 26 | Pending |
 | FIX-08 | Phase 26 | Pending |
