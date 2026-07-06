@@ -124,7 +124,7 @@ export function MessageTurn({
         className={
           isUser
             ? "max-w-[85%] rounded-lg bg-muted px-4 py-2"
-            : "w-full max-w-full"
+            : "w-full max-w-full border-l-2 border-l-border/60 pl-3"
         }
       >
         {isCostCapBlocked ? (
