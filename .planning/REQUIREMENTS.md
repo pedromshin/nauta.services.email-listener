@@ -22,7 +22,7 @@
 - [x] **FIX-08**: Assistant messages carry minimal role chrome (a thin left rail) so role is distinguishable beyond alignment alone
 - [x] **FIX-09**: The composer reads as a visual "dock" (`border-t` + subtle token-safe top shadow)
 - [x] **FIX-10**: Scrollbar treatment is uniform — composer textarea and markdown code/table wrappers match the Radix-styled `ScrollArea` aesthetic used by MessageList/ConversationRail
-- [ ] **FIX-11**: The 3–4 near-duplicate empty-state components are differentiated instead of repeating one identical icon+heading+paragraph recipe
+- [x] **FIX-11**: The 3–4 near-duplicate empty-state components are differentiated instead of repeating one identical icon+heading+paragraph recipe
 
 ### Adopted External Picks (research doc Phase B — near-zero footprint; verdicts locked)
 
@@ -95,7 +95,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FIX-08 | Phase 26 | Complete |
 | FIX-09 | Phase 26 | Pending |
 | FIX-10 | Phase 26 | Pending |
-| FIX-11 | Phase 26 | Pending |
+| FIX-11 | Phase 26 | Complete |
 | POLISH-01 | Phase 26 | Pending |
 | POLISH-02 | Phase 26 | Complete |
 | ADOPT-01 | Phase 27 | Pending |
