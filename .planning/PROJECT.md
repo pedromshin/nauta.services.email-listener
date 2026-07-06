@@ -13,30 +13,30 @@ Reliably receive every inbound email destined for agent@magnitudetech.com.br and
 observable — nothing lost, everything logged — as the foundation for later parsing,
 persistence, and the agentic pipeline.
 
-## Current Milestone: v1.3 Conversational GenUI — Chat, Canvas & Dual-Channel
+## Current State (v1.3 shipped 2026-07-06)
 
-**Goal:** A conversational surface for the genui engine — a persistent `/chat` with streamed
-responses, laid out on a 2D infinite canvas of genui panels, where the agent and user exchange
-interactive declarative widgets in both directions. Local/sandbox only.
+**Shipped:** **v1.3 — Conversational GenUI: Chat, Canvas & Dual-Channel** (Phases 22–25). The genui
+engine now has a conversational surface: a persistent, streamed `/chat` (typed message parts, cost
+circuit breaker, regenerate-as-siblings, progressive partial-tree spec rendering, multi-provider
+registry incl. a WebGPU in-browser model) laid out on a **2D infinite canvas** of genui
+panels-as-nodes (React Flow, versioned node registry, per-chat shared-state store + data-carrying
+edges, exact layout persistence) with a **dual-channel** agent↔user widget round-trip (proposal
+cards + clarify-widgets, server-re-validated + DB-CAS double-submit-locked + staleness-signaled,
+persisted in history and canvas). Phase 25 was a scoped **anticipatory-prompting SPIKE** — a real
+but flag-OFF trigger→appropriateness-eval→frequency-cap→explicit-accept pipeline concluding
+**ship-with-conditions** (`25-SPIKE-FINDINGS.md`, 7 named seams). `SpecRenderer` stayed UNMODIFIED
+through all four phases. Local/sandbox only. Audit `tech_debt`, 24/24 requirements satisfied +
+cross-phase integration verified WIRED; 6 connected-env/browser verifications deferred
+(STATE.md → Deferred Items).
 
-**Target features:**
-- **Chat spine + streaming:** `/chat` route, conversation/message persistence, chat orchestration
-  loop (FastAPI → Bedrock `ConverseStream`), streamed text + streamed partial-tree declarative
-  specs (closes GEN-04 + the v1.2 live-progress deferral).
-- **2D infinite canvas + shared state:** genui panels-as-nodes (React Flow reuse candidate),
-  per-chat shared-state store, data-carrying edges, canvas persistence per chat.
-- **Dual-channel genui:** proposal cards first, then clarify-with-widgets; widget→agent
-  round-trip resumes the streamed run. Declarative catalog serves these widgets.
-- **Anticipatory prompting (SPIKE):** trigger/heuristic layer deciding WHEN/WHAT to proactively
-  prompt, eval-gated on appropriateness.
+**Next:** run `/gsd:new-milestone`. Candidates surfaced by v1.3: **999.6 Chat & Studio Design
+Uplift** (queued, research pre-baked in `.planning/research/CHAT-STUDIO-DESIGN-UPLIFT.md`), **v1.4
+Design Engine** (DSGN-01..04 — unify-vs-hybrid lock, rendered-visual-compare repair, promptable
+design system, screenshot/URL→token extraction), **v1.5 Orchestration Visualizer** (ORCH-01, seams
+SEAM-03/04 + CANVAS-03 left open), and the anticipatory-prompting go/no-go follow-through. R4 seams
+remain open for orchestration. Research base: `.planning/research/v1.3/V1.3-RESEARCH-SYNTHESIS.md`.
 
-**Key context:** Research base: `.planning/research/v1.3/V1.3-RESEARCH-SYNTHESIS.md` (R2/R4
-tracks pending fresh-web-validation). R4 seams stay open: panels-as-nodes generality, node-type
-registry, data edges, run/event schema stub, agent/run abstraction. Deferred: unify-vs-hybrid
-design-engine lock (v1.4), orchestration visualizer (v1.5), remote-desktop (north-star). Phase
-numbering continues at 22.
-
-## Current State (v1.2 shipped 2026-07-03)
+## Prior State (v1.2 shipped 2026-07-03)
 
 **Shipped:** **v1.2 — Generative UI: Realism & Interactivity** (Phases 16–20) archived. The genui engine
 is now a **hybrid**: the reliable spec-first declarative core (v1.1) + design-token **style packs**, an
@@ -97,16 +97,13 @@ already proven locally. Research: `.planning/research/` (SUMMARY.md + 6 deep doc
 - ✓ Knowledge-graph visualization (`/knowledge`) — Phase 11 (request-6 R6)
 - ✓ Generative-UI engine spine: Catalog → Spec → Registry → Renderer → Generation → Cache → `/studio` (spec-first, no eval) — v1.1, Phases 12–15
 - ✓ GenUI realism + interactivity: eval harness + LLM-judge, 6 DTCG style packs + assembly RAG, expanded catalog (16 entries), zero-eval form engine, jailed-eval sandboxed code-island (verified live on Bedrock, multi-candidate + judge, $30 cost guard) — v1.2, Phases 16–20
+- ✓ Conversational GenUI: persistent streamed `/chat` (cost breaker, regenerate-siblings, progressive spec render, multi-provider + WebGPU registry) + 2D infinite canvas of genui panels (React Flow, versioned node registry, shared per-chat state + data edges, exact persistence) + dual-channel widgets (proposal cards + clarify-widgets, server-re-validated + double-submit-locked round-trip, persisted in history+canvas) + anticipatory-prompting SPIKE (ship-with-conditions) — v1.3, Phases 22–25 (24/24 reqs; 6 connected-env verifications deferred)
 
 ### Active
 
-<!-- Milestone v1.3 — Conversational GenUI. See "Current Milestone" section + REQUIREMENTS.md. -->
+<!-- No active milestone. Run /gsd:new-milestone to open the next one. Candidates in "Current State → Next". -->
 
-- [ ] Chat spine: `/chat` route + conversation/message persistence + Bedrock `ConverseStream` orchestration loop
-- [ ] Streamed responses: text + partial-tree declarative spec streaming (GEN-04)
-- [ ] 2D infinite canvas: genui panels-as-nodes + shared per-chat state + data-carrying edges + persistence
-- [ ] Dual-channel genui: proposal cards + clarify-with-widgets + widget→agent round-trip
-- [ ] Anticipatory prompting (SPIKE): eval-gated proactive prompt triggers
+_(none — v1.3 shipped; next milestone not yet opened)_
 
 ### Out of Scope
 
@@ -140,15 +137,15 @@ already proven locally. Research: `.planning/research/` (SUMMARY.md + 6 deep doc
 | **v1.1**: Engine as `packages/genui` + thin `/studio` route | Reusable boundary for the "separate now, same product later" convergence; reuses tRPC + @nauta/ui | — Pending |
 | **v1.1**: Haiku 4.5 runtime / Sonnet 4.6 escalation via Bedrock | Cheapest/fastest model adequate for constrained spec generation; Bedrock IAM transport (no API key) | — Pending |
 | **v1.1**: Reuse pgvector + Titan V1 (1536) + RRF for the flywheel | Existing entity-resolution retrieval muscle; exact-cache in v1.1, semantic retrieval/promotion in v1.2 | — Pending |
-| **v1.3 FOUND-1**: Canonical typed message parts | Messages persist as typed content parts (text \| genui-spec \| tool-call \| tool-result \| widget-interaction) with Anthropic content blocks stored verbatim — regenerate/replay/evals/canvas/cross-chat all read ONE shape; flat-text + side blobs would force migrations forever | — Pending |
-| **v1.3 FOUND-2**: One registry contract, many instances | Component catalog, canvas node-type registry, dual-channel widget/tool registry (and future agent/tool registries) all instantiate one pattern: id + content-hash version + Zod schema + allowlist semantics (the proven REGISTRY_VERSION shape) | — Pending |
-| **v1.3 FOUND-3**: Cost ledger as domain concept | STREAM-03 is a general budget ledger (per-turn/per-session/per-feature caps) drawn on by studio, chat, proactive prompting, and future agents — not a chat-shaped guard bolted beside the AWS alert | — Pending |
-| **v1.3 FOUND-4**: Shared state extends declared-state | STATE-01/02 cross-panel store is a superset of the v1.1 declared-state model (same bounded mutation enum, same binding grammar) — one state system, never two | — Pending |
-| **v1.3 FOUND-5**: Provenance + addressability | Every spec/panel/widget records the run/event that produced it and carries stable IDs addressable across conversations — prerequisite for cross-chat context, promotion flywheel, and eval attribution | — Pending |
-| **v1.3 FOUND-6**: One untrusted-input boundary pattern | Raw email (quarantine), LLM output (safeParse + allowlists), and widget submissions (Phase-24 re-validation) are instances of one rule: ALL untrusted input crosses a schema gate at the tRPC/FastAPI boundary | — Pending |
-| **v1.3 FOUND-7**: Eval dimensions, not eval harnesses | Each phase registers new dimensions into the Phase-16 harness (streaming correctness, round-trip integrity, anticipatory appropriateness) — never parallel eval mechanisms | — Pending |
-| **v1.3**: Convergence stays behind the procedure allowlist | Dual-channel widgets reach Nauta product data (entities/inbox/knowledge) only via the existing allowed-tRPC-procedures gate — product convergence becomes a config change, not a rearchitecture | — Pending |
-| **v1.3**: Thread style_pack_id through chat + canvas | Chat-generated specs and canvas panels carry style_pack_id (already on the spec envelope) so the v1.4 promptable-design-system conditioning layer lands cleanly | — Pending |
+| **v1.3 FOUND-1**: Canonical typed message parts | Messages persist as typed content parts (text \| genui-spec \| tool-call \| tool-result \| widget-interaction) with Anthropic content blocks stored verbatim — regenerate/replay/evals/canvas/cross-chat all read ONE shape; flat-text + side blobs would force migrations forever | ✓ Good — shipped v1.3; interactive_widget/interaction_result parts round-trip verbatim across history+canvas |
+| **v1.3 FOUND-2**: One registry contract, many instances | Component catalog, canvas node-type registry, dual-channel widget/tool registry (and future agent/tool registries) all instantiate one pattern: id + content-hash version + Zod schema + allowlist semantics (the proven REGISTRY_VERSION shape) | ✓ Good — NODE_TYPE_REGISTRY + model registry + widget tools all instantiate it |
+| **v1.3 FOUND-3**: Cost ledger as domain concept | STREAM-03 is a general budget ledger (per-turn/per-session/per-feature caps) drawn on by studio, chat, proactive prompting, and future agents — not a chat-shaped guard bolted beside the AWS alert | ✓ Good — CostCircuitBreaker ledger gates every chat turn (fail-closed) |
+| **v1.3 FOUND-4**: Shared state extends declared-state | STATE-01/02 cross-panel store is a superset of the v1.1 declared-state model (same bounded mutation enum, same binding grammar) — one state system, never two | ✓ Good — canvas store reuses the bounded 5-mutation grammar + binding grammar |
+| **v1.3 FOUND-5**: Provenance + addressability | Every spec/panel/widget records the run/event that produced it and carries stable IDs addressable across conversations — prerequisite for cross-chat context, promotion flywheel, and eval attribution | ✓ Good — panels/widgets render by provenance from run-event-backed message parts |
+| **v1.3 FOUND-6**: One untrusted-input boundary pattern | Raw email (quarantine), LLM output (safeParse + allowlists), and widget submissions (Phase-24 re-validation) are instances of one rule: ALL untrusted input crosses a schema gate at the tRPC/FastAPI boundary | ✓ Good — widget submit re-validates against the STORED schema server-side (D-10) |
+| **v1.3 FOUND-7**: Eval dimensions, not eval harnesses | Each phase registers new dimensions into the Phase-16 harness (streaming correctness, round-trip integrity, anticipatory appropriateness) — never parallel eval mechanisms | ⚠️ Revisit — Phase-25 spike built a standalone fixture harness (dark/spike-scoped); fold its appropriateness dimension into the Phase-16 harness when anticipatory prompting graduates from spike |
+| **v1.3**: Convergence stays behind the procedure allowlist | Dual-channel widgets reach Nauta product data (entities/inbox/knowledge) only via the existing allowed-tRPC-procedures gate — product convergence becomes a config change, not a rearchitecture | — Pending — v1.3 widgets are self-contained (DCUI D-14); live product-data binding left an explicit seam |
+| **v1.3**: Thread style_pack_id through chat + canvas | Chat-generated specs and canvas panels carry style_pack_id (already on the spec envelope) so the v1.4 promptable-design-system conditioning layer lands cleanly | — Pending — envelope carries it; v1.4 conditioning layer consumes it |
 
 ## Evolution
 
@@ -168,4 +165,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-02 — started milestone v1.3 (Conversational GenUI: Chat, Canvas & Dual-Channel); v1.1 + v1.2 moved to Validated*
+*Last updated: 2026-07-06 after v1.3 milestone — Conversational GenUI (Chat, Canvas & Dual-Channel) shipped (Phases 22–25); 24 requirements moved to Validated; FOUND-1..6 marked ✓ Good, FOUND-7 ⚠️ Revisit; Active reset pending next milestone*

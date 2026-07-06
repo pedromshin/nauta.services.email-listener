@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: "Conversational GenUI: Chat, Canvas & Dual-Channel"
-status: verifying
-last_updated: "2026-07-06T04:17:44.553Z"
-last_activity: 2026-07-06 -- Phase 25 Plan 03 (SPIKE findings harness + 25-SPIKE-FINDINGS.md go/no-go verdict, ANTIC-01/ANTIC-02) executed
+status: Awaiting next milestone
+last_updated: "2026-07-06T05:33:41.275Z"
+last_activity: 2026-07-06 — Milestone v1.3 completed and archived
 progress:
   total_phases: 4
   completed_phases: 4
@@ -24,12 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-27)
 
 ## Current Position
 
-Phase: 25 (Anticipatory Prompting (SPIKE)) — COMPLETE (3/3 plans)
-Plan: 3 of 3 (25-01, 25-02, 25-03 all complete)
-Status: Phase 25 complete; v1.3 milestone plans all executed — ready for milestone-level verification/audit
-Last activity: 2026-07-06 -- Phase 25 Plan 03 (SPIKE findings harness + 25-SPIKE-FINDINGS.md go/no-go verdict, ANTIC-01/ANTIC-02) executed
-
-Progress: [██████████] 100%
+Phase: Milestone v1.3 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-07-06 — Milestone v1.3 completed and archived
 
 ## v1.3 Roadmap Summary (2026-07-02)
 
@@ -45,6 +43,28 @@ Phase numbering continues from v1.2 (ended at Phase 20, informal Phase 21 qualit
 Coverage: 24/24 v1.3 requirements mapped, no orphans. Next: `/gsd:plan-phase 22`.
 
 ## Deferred Items
+
+### v1.3 (acknowledged and deferred at the v1.3 milestone close, 2026-07-06)
+
+All 6 are connected-env / live-browser / live-Bedrock verifications — no code gaps. Every mechanism
+is proven in unmocked automated tests (real SpecRenderer + DOM clicks in vitest, real Supabase CAS
+lock, server-side re-validation/staleness/double-submit in pytest). Consistent with this project's
+long-standing pattern (see v1.2 block below). Test scripts live in each phase's `*-HUMAN-UAT.md`.
+
+| Category | Phase | Item | Status | Open |
+|----------|-------|------|--------|------|
+| uat_gap | 22 | 22-HUMAN-UAT.md | partial | 5 (live streaming/browser) |
+| uat_gap | 23 | 23-HUMAN-UAT.md | partial | 5 (drag/pan/zoom, edges, streaming, fidelity) |
+| uat_gap | 24 | 24-HUMAN-UAT.md | partial | 3 (proposal-card + clarify-widget + live-Bedrock round-trips) |
+| verification_gap | 22 | 22-VERIFICATION.md | human_needed | — |
+| verification_gap | 23 | 23-VERIFICATION.md | human_needed | — |
+| verification_gap | 24 | 24-VERIFICATION.md | human_needed | — |
+
+Also carried: 999.3 connected-env measurement (Phase-16 eval-vs-baseline, Playwright code-island
+isolation, live-progress studio streaming) and the Phase-25 SPIKE go/no-go seams (ship-with-conditions,
+7 seams in 25-SPIKE-FINDINGS.md). Phase 25 itself verified `passed` (no deferral).
+
+### v1.2 (deferred at close 2026-07-03)
 
 Acknowledged and deferred at the v1.2 milestone close (2026-07-03) — all are connected-env / browser
 verifications (no code gaps), consistent with this project's long-standing pattern:
@@ -1164,3 +1184,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 25 P01 | 15min | 3 tasks | 8 files |
 | Phase 25 P02 | 23min | 3 tasks | 10 files |
 | Phase 25 P03 | ~20min | 2 tasks | 2 files |
+
+## Operator Next Steps
+
+- Start the next milestone with /gsd-new-milestone

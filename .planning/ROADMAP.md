@@ -5,7 +5,7 @@
 - ✅ **v1.0 — MVP** (Phases 1–11) — inbound email → parse → extract → entities/knowledge (shipped; phase dirs retained under `.planning/phases/`, lifecycle not formally run).
 - ✅ **v1.1 — Generative UI Engine** (Phases 12–15) — spec-first Catalog→Spec→Registry→Renderer→Generation→Cache→Studio. Archived: [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md).
 - ✅ **v1.2 — Generative UI: Realism & Interactivity** (Phases 16–20) — SHIPPED 2026-07-03. Eval harness + style packs + catalog expansion + declarative form engine + jailed-eval code-island (multi-candidate + judge). Archived: [milestones/v1.2-ROADMAP.md](milestones/v1.2-ROADMAP.md) · Audit: [milestones/v1.2-MILESTONE-AUDIT.md](milestones/v1.2-MILESTONE-AUDIT.md).
-- 🚧 **v1.3 — Conversational GenUI: Chat, Canvas & Dual-Channel** (Phases 22–25) — IN PROGRESS. A conversational surface for the genui engine: persistent `/chat` with streamed responses, laid out on a 2D infinite canvas of genui panels, with bidirectional (agent↔user) interactive widgets. Local/sandbox only.
+- ✅ **v1.3 — Conversational GenUI: Chat, Canvas & Dual-Channel** (Phases 22–25) — SHIPPED 2026-07-06. Persistent streamed `/chat` on a 2D infinite canvas of genui panels with bidirectional (agent↔user) interactive widgets, plus an anticipatory-prompting spike. Local/sandbox only. Archived: [milestones/v1.3-ROADMAP.md](milestones/v1.3-ROADMAP.md) · Audit: [milestones/v1.3-MILESTONE-AUDIT.md](milestones/v1.3-MILESTONE-AUDIT.md).
 
 ## Phases
 
@@ -38,112 +38,20 @@ See [milestones/v1.1-ROADMAP.md](milestones/v1.1-ROADMAP.md).
 
 </details>
 
-### 🚧 v1.3 — Conversational GenUI: Chat, Canvas & Dual-Channel (In Progress)
+<details>
+<summary>✅ v1.3 — Conversational GenUI: Chat, Canvas & Dual-Channel (Phases 22–25) — SHIPPED 2026-07-06</summary>
 
-**Milestone Goal:** A conversational surface for the genui engine — a persistent `/chat` with streamed
-responses, laid out on a 2D infinite canvas of genui panels, where the agent and user exchange
-interactive declarative widgets in both directions. Local/sandbox only — no deploy criteria.
+- [x] Phase 22 — Chat Spine + Persistence + Streaming (11/11 plans) — completed 2026-07-04
+- [x] Phase 23 — 2D Canvas + Panels-as-Nodes + Shared State (6/6 plans) — completed 2026-07-05
+- [x] Phase 24 — Dual-Channel GenUI (4/4 plans) — completed 2026-07-06
+- [x] Phase 25 — Anticipatory Prompting (SPIKE) (3/3 plans) — completed 2026-07-06
 
-- [x] **Phase 22: Chat Spine + Persistence + Streaming** - Persistent, streamed `/chat` (text + progressive genui partial-tree specs) with the full table-stakes chat state machine and an application-level cost circuit breaker (completed 2026-07-04)
-- [x] **Phase 23: 2D Canvas + Panels-as-Nodes + Shared State** - genui panels laid out as draggable/pannable nodes on a persistent, responsive infinite canvas with cross-panel shared state and data-carrying edges (completed 2026-07-05)
-- [x] **Phase 24: Dual-Channel GenUI** - Agent↔user widget round-trips (proposal cards → clarify-widgets), safely re-validated and persisted (completed 2026-07-06)
-- [x] **Phase 25: Anticipatory Prompting (SPIKE)** - Eval-gated, frequency-capped proactive-prompt trigger layer (completed 2026-07-06)
+Full detail: [milestones/v1.3-ROADMAP.md](milestones/v1.3-ROADMAP.md). Audit `tech_debt`, 0 gaps,
+24/24 requirements satisfied + cross-phase integration verified; 6 connected-env/browser
+verifications deferred (STATE.md → Deferred Items). SPIKE verdict: ship-with-conditions
+(25-SPIKE-FINDINGS.md).
 
-## Phase Details
-
-### Phase 22: Chat Spine + Persistence + Streaming
-**Goal**: Users can have a persistent, streamed conversation with the agent — text and genui specs
-render progressively, the full table-stakes chat mechanics (stop/regenerate/error-recovery/history)
-work from day one, and an application-level cost circuit breaker guards every turn.
-**Depends on**: Nothing (first v1.3 phase; builds on the existing v1.1/v1.2 genui engine and Bedrock transport)
-**Requirements**: CHAT-01, CHAT-02, CHAT-03, CHAT-04, CHAT-05, CHAT-06, CHAT-07, STREAM-01, STREAM-02, STREAM-03, SEAM-03, SEAM-04
-**Success Criteria** (what must be TRUE):
-  1. User can open `/chat`, send a message, and get a streamed agent response; conversations and messages persist across reload
-  2. User can manage conversations: view a conversation list, switch between chats, rename and delete them
-  3. User can stop an in-flight generation, regenerate the last response without retyping, and recover from a failed turn via an inline, retryable error that never loses the user's in-flight input
-  4. The composer and message rendering behave like a real chat product — multi-line input, send-on-enter, disabled-while-streaming, optimistic render of the user's message, markdown + code-block rendering, auto-scroll with jump-to-bottom — and declarative genui specs render progressively as partial trees during generation (render-what's-valid, placeholder the rest) instead of only appearing after the full response completes
-  5. Every chat turn is capped by an application-level per-turn/per-session cost circuit breaker independent of the AWS budget alert, and the underlying turn/run model is event-based behind an agent/run abstraction (one agent, one run today) so stop/regenerate/resume behave reliably and the schema is reusable by future orchestration
-**Plans**: 11 plans (8 waves)
-- [x] 22-01-PLAN.md — Chat data model + migration 0023 (conversations, messages/parts, runs, run_events, cost ledger; RLS deny-all; [BLOCKING] local push)
-- [x] 22-02-PLAN.md — Model provider system: ChatProvider port + curated registry + Bedrock & OpenRouter streaming adapters + /v1/chat/models + usage capture
-- [x] 22-03-PLAN.md — Markdown/code renderer (react-markdown + remark-gfm + rehype-highlight/sanitize; new dep)
-- [x] 22-04-PLAN.md — Cost ledger + circuit breaker (fail-closed pre-turn + mid-stream abort; D-22 usage-gap fix)
-- [x] 22-05-PLAN.md — Conversation CRUD (tRPC/Drizzle) + /chat rail + home + rename + hard-delete confirm
-- [x] 22-06-PLAN.md — Chat agent/run orchestration + persistence writes (SEAM-03/04; history trim; stop/cost-cap/fail/regenerate)
-- [x] 22-07-PLAN.md — FastAPI SSE stream + regenerate endpoints + emit_ui_spec genui tool (capability-gated)
-- [x] 22-08-PLAN.md — Streamed chat core: Next SSE proxy + stream hook + message list + composer + stop + auto-scroll
-- [x] 22-09-PLAN.md — Rich mechanics: regenerate siblings + inline error/cost-cap recovery + progressive partial-tree genui
-- [x] 22-10-PLAN.md — Model picker (registry-driven, honest capabilities + cost + best-for) + session cost meter
-- [x] 22-11-PLAN.md — In-browser WebLLM prototype (WebGPU, local streaming, canonical-shape persistence, $0 metered)
-**UI hint**: yes
-
-### Phase 23: 2D Canvas + Panels-as-Nodes + Shared State
-**Goal**: Users can see and interact with a chat's genui outputs spatially — a persistent, responsive
-2D infinite canvas where panels carry live-streaming content without lag, and panels share state and
-data across each other.
-**Depends on**: Phase 22 (needs the chat data model and the unmodified `SpecRenderer` it wires up)
-**Requirements**: CANVAS-01, CANVAS-02, CANVAS-03, CANVAS-04, STATE-01, STATE-02
-**Success Criteria** (what must be TRUE):
-  1. User can view a chat's genui outputs as draggable/pannable panels-as-nodes on a 2D infinite canvas
-  2. Canvas layout persists per conversation and restores exactly on reload
-  3. New node types beyond genui-panel and chat can be added later via a versioned node-type registry without breaking existing canvases
-  4. Canvas stays responsive (no visible lag or full-canvas re-render) while panels stream live content
-  5. Panels on the same canvas read and write a shared per-chat state store, and data-carrying edges let one panel's output feed another panel's input
-**Plans**: 6 plans (5 waves)
-- [x] 23-01-PLAN.md — Canvas persistence spine: chat_canvas_layouts (migration 0024, [BLOCKING] local push) + chat.getCanvasLayout/saveCanvasLayout + CanvasSnapshotSchema Zod boundary
-- [x] 23-02-PLAN.md — Versioned node-type registry (content-hash, Zod, inert placeholder) + GenuiPanelNode + CanvasSpecContext
-- [x] 23-03-PLAN.md — Conversation controller refactor + ChatNode + 2D canvas surface + Chat/Canvas view toggle (dagre auto-place, keyboard-operable)
-- [x] 23-04-PLAN.md — Layout persistence (exact restore + debounced ~800ms save) + streaming responsiveness (volatile state outside nodes array)
-- [x] 23-05-PLAN.md — Shared per-chat Zustand store (5-mutation declared-state grammar) + data-carrying edges (Zod-validated, live subscription)
-- [x] 23-06-PLAN.md — GAP CLOSURE: bridge genui button actions -> canvas-store write path (setState ActionRegistry via usePanelData().dispatch) + end-to-end write->edge->target proof
-**UI hint**: yes
-
-### Phase 24: Dual-Channel GenUI
-**Goal**: The agent and user can exchange interactive widgets in both directions — proposal cards
-first, then richer clarify-widgets — with every round-trip safely re-validated.
-**Depends on**: Phase 22 (tool-call/tool-result mechanism), Phase 23 (surface to host/display the widgets)
-**Requirements**: DCUI-01, DCUI-02, DCUI-03, DCUI-04
-**Success Criteria** (what must be TRUE):
-  1. Agent can emit a proposal card; clicking it sends a structured result that resumes the run
-  2. Agent can emit clarify-widgets (forms/pickers from the declarative catalog + v1.2 form engine); submitting one returns a structured result to the agent and resumes the run
-  3. Every widget round-trip is re-validated server-side against its declared schema, locked against double-submit, signals staleness, and requires explicit user action — it never auto-fires
-  4. GenUI turns and widget interactions persist in both the conversation history and the canvas
-**Plans**: 4 plans (4 waves)
-- [x] 24-01-PLAN.md — Widget-interaction spine: chat_widget_interactions (migration 0025, [BLOCKING] local push) + DB-level CAS double-submit lock + staleness query + stored-schema re-validator
-- [x] 24-02-PLAN.md — Round-trip backend: emit_proposal_cards tool + turn-ending finalization + pending-row creation + POST /v1/chat/widget/submit (validate → stale → lock → interaction_result → continuation SSE)
-- [x] 24-03-PLAN.md — Proposal cards UI: GenuiPartBoundary `bare` variant (mandatory prereq) + InteractiveWidgetBoundary/badges/compact entry + submit transport + transcript/canvas parity (D-08)
-- [x] 24-04-PLAN.md — Clarify-widgets: emit_clarify_widget (schema-enforced submitLabel) + FormComponent values-through-registry + submitted compact view + 422 retry + server-side typing-supersedes
-**UI hint**: yes
-
-### Phase 25: Anticipatory Prompting (SPIKE)
-**Goal**: Determine, via a scoped spike, whether a trigger/heuristic layer can safely propose
-proactive prompts from chat+canvas state — gated hard enough that it never becomes trust-destroying.
-**Depends on**: Phase 22, Phase 23, Phase 24 (observes chat + canvas + dual-channel state)
-**Requirements**: ANTIC-01, ANTIC-02
-**Success Criteria** (what must be TRUE):
-  1. A trigger/heuristic layer observing chat+canvas state can propose a candidate proactive prompt
-  2. Every candidate prompt is filtered by an appropriateness eval AND a hard frequency cap (independent checks) before it ever reaches the user, and nothing fires without explicit user acceptance
-  3. The SPIKE concludes with an explicit go/no-go recommendation on shipping anticipatory prompting as a real feature — this phase's exit criterion is a documented decision, not a shipped guarantee
-**Plans**: 3 plans (3 waves, sequential — SPIKE: real but flag-gated OFF, fixture-driven, deliverable = 25-SPIKE-FINDINGS.md)
-- [x] 25-01-PLAN.md — Trigger/heuristic layer: feature flag (default OFF, D-12) + typed AnticipatoryCandidate/snapshot/lifecycle contracts (D-05) + 3 deterministic read-only triggers (D-04/D-06) + 3 scripted fixtures (D-02) — ANTIC-01
-- [x] 25-02-PLAN.md — Gate chain: Haiku appropriateness eval (D-07/D-09) + INDEPENDENT hard frequency cap (D-08/D-10, no new DB table per D-14) + explicit-accept mapping onto the unchanged Phase-24 proposal card (D-11) + run-event-shaped lifecycle log (D-13) + dark-pipeline DI wiring (D-01/D-12) — ANTIC-02
-- [x] 25-03-PLAN.md — Deliverable: deterministic end-to-end fixture harness (the go/no-go evidence matrix) + 25-SPIKE-FINDINGS.md with an explicit ship/don't-ship/ship-with-conditions verdict + named seams (D-03) — ANTIC-01, ANTIC-02
-
-## Progress
-
-**Execution Order:**
-Phases execute in numeric order: 22 → 23 → 24 → 25
-
-| Phase | Plans Complete | Status | Completed |
-|-------|-----------------|--------|-----------|
-| 22. Chat Spine + Persistence + Streaming | 11/11 | Complete   | 2026-07-04 |
-| 23. 2D Canvas + Panels-as-Nodes + Shared State | 6/6 | Complete   | 2026-07-05 |
-| 24. Dual-Channel GenUI | 4/4 | Complete   | 2026-07-06 |
-| 25. Anticipatory Prompting (SPIKE) | 3/3 | Complete   | 2026-07-06 |
-
-## Next
-
-Phase 25 planned (3 plans, 3 waves, sequential). Execute: `/gsd:execute-phase 25`.
+</details>
 
 ## Backlog
 
