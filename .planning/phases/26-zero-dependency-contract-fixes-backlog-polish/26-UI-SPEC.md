@@ -233,14 +233,14 @@ cursor-grab items-center gap-2 border-b border-border/60 bg-muted/60 px-3 active
   ```
 - Header: keep `bg-muted/60` (no accent FILL — accent is a rule/stripe only, never a decorative
   background, per the accent-allowlist "never decoration" rule). Prepend a `MessageSquare` icon
-  (lucide, `size-3.5 text-primary shrink-0`) before the title `span`.
+  (lucide, `size-3 text-primary shrink-0`) before the title `span`.
 
 **Target — `GenuiPanelNode`** (neutral tonal shift, NOT a second hue):
 - Outer shell: unchanged (`border border-border/60`, no left-edge accent).
 - Header: shift fill one step lighter than `ChatNode`'s — `bg-muted/40` instead of `bg-muted/60`
   (a real, visible-but-subtle differentiation using the SAME single gray token at a different
   opacity — honest given `secondary`/`muted`/`accent` are still one gray until Phase 28; do not
-  invent a second hue to compensate). Prepend a `PanelsTopLeft` icon (lucide, `size-3.5
+  invent a second hue to compensate). Prepend a `PanelsTopLeft` icon (lucide, `size-3
   text-muted-foreground shrink-0`) before the "From turn {n}" caption.
 
 Layout dimensions (`min-w`/`min-h`, drag-handle selector, selection ring `ring-2 ring-primary
@@ -293,8 +293,8 @@ no zebra, no header fill, sitting inside an otherwise-polished `Card`.
 ```tsx
 <thead>
   <tr className="border-b border-border/50 bg-muted/40 text-muted-foreground">
-    <th className="px-2 py-1.5 text-left font-semibold">Prop</th>
-    {/* same px-2 py-1.5 font-semibold on the other 3 <th> — see FIX-02 #1-4 */}
+    <th className="px-2 py-2 text-left font-semibold">Prop</th>
+    {/* same px-2 py-2 font-semibold on the other 3 <th> — see FIX-02 #1-4 */}
   </tr>
 </thead>
 <tbody>
@@ -548,7 +548,7 @@ Discretion at plan/execute time per `26-CONTEXT.md`.
 
 ## Spacing Scale
 
-Unchanged 8-point scale (no new values introduced this phase):
+Unchanged 4-point grid (8-point scale plus on-grid half-steps; no new values introduced this phase):
 
 | Token | Value | New usage this phase |
 |-------|-------|------------------------|
@@ -559,7 +559,7 @@ Unchanged 8-point scale (no new values introduced this phase):
 | xl | 32px | `nodesep`/cascade step (POLISH-02, unchanged baseline) |
 | 2xl | 64px | `ranksep` (POLISH-02, unchanged baseline; candidate next `nodesep` value if tuned) |
 
-All new classes introduced by this phase (`pl-3`, `px-2 py-1.5`, `py-1`, `border-l-2`) are on
+All new classes introduced by this phase (`pl-3`, `px-2 py-2`, `py-1`, `border-l-2`) are on
 Tailwind's 4px grid — no arbitrary pixel value anywhere in this document except the two CSS-only
 utilities (FIX-01's SVG stroke props, FIX-10's `::-webkit-scrollbar` width — both intentionally
 mirror `packages/ui/src/scroll-area.tsx`'s existing `w-2.5` = 10px thumb, not a new number).
