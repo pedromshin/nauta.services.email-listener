@@ -111,7 +111,7 @@ first, then richer clarify-widgets — with every round-trip safely re-validated
 **Plans**: 4 plans (4 waves)
 - [x] 24-01-PLAN.md — Widget-interaction spine: chat_widget_interactions (migration 0025, [BLOCKING] local push) + DB-level CAS double-submit lock + staleness query + stored-schema re-validator
 - [x] 24-02-PLAN.md — Round-trip backend: emit_proposal_cards tool + turn-ending finalization + pending-row creation + POST /v1/chat/widget/submit (validate → stale → lock → interaction_result → continuation SSE)
-- [ ] 24-03-PLAN.md — Proposal cards UI: GenuiPartBoundary `bare` variant (mandatory prereq) + InteractiveWidgetBoundary/badges/compact entry + submit transport + transcript/canvas parity (D-08)
+- [x] 24-03-PLAN.md — Proposal cards UI: GenuiPartBoundary `bare` variant (mandatory prereq) + InteractiveWidgetBoundary/badges/compact entry + submit transport + transcript/canvas parity (D-08)
 - [ ] 24-04-PLAN.md — Clarify-widgets: emit_clarify_widget (schema-enforced submitLabel) + FormComponent values-through-registry + submitted compact view + 422 retry + server-side typing-supersedes
 **UI hint**: yes
 
@@ -135,7 +135,7 @@ Phases execute in numeric order: 22 → 23 → 24 → 25
 |-------|-----------------|--------|-----------|
 | 22. Chat Spine + Persistence + Streaming | 11/11 | Complete   | 2026-07-04 |
 | 23. 2D Canvas + Panels-as-Nodes + Shared State | 6/6 | Complete   | 2026-07-05 |
-| 24. Dual-Channel GenUI | 2/4 | In Progress|  |
+| 24. Dual-Channel GenUI | 3/4 | In Progress|  |
 | 25. Anticipatory Prompting (SPIKE) | 0/TBD | Not started | - |
 
 ## Next
