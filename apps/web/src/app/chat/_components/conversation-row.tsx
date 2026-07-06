@@ -62,7 +62,7 @@ export function ConversationRow({
   return (
     <div
       className={cn(
-        "group flex items-center gap-1 rounded-md px-1 py-1",
+        "group flex items-center gap-1 rounded-md px-1 py-1 transition-colors",
         isActive
           ? "bg-primary/10 text-primary"
           : "text-foreground hover:bg-muted",
@@ -102,7 +102,7 @@ export function ConversationRow({
             variant="ghost"
             size="icon"
             aria-label={`More actions for ${conversation.title}`}
-            className="size-11 shrink-0 text-muted-foreground hover:text-foreground"
+            className="size-11 shrink-0 text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <MoreHorizontal className="size-4" aria-hidden />
           </Button>
