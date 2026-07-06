@@ -101,7 +101,7 @@ function EntryPropTable({
       <div
         aria-label={`Props for ${type}`}
         role="region"
-        className="overflow-x-auto"
+        className="overflow-x-auto scrollbar-token"
       >
         {descriptors.length === 0 ? (
           <p className="text-xs text-muted-foreground">No props</p>

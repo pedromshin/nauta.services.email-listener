@@ -368,7 +368,7 @@ export function GenerationSandboxIsland({
                 <div
                   role="region"
                   aria-label="Rendered output"
-                  className="flex h-full flex-col overflow-y-auto"
+                  className="flex h-full flex-col overflow-y-auto scrollbar-token"
                 >
                   {/* Pack provenance badge — D-04: shows which pack was used */}
                   {displayPackName !== undefined && (

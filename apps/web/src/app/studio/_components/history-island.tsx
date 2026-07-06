@@ -423,7 +423,7 @@ function HistoryDetailView({ selectedId }: DetailViewProps): React.ReactElement 
           <div
             role="region"
             aria-label="Rendered output (read-only)"
-            className="h-full overflow-y-auto p-6"
+            className="h-full overflow-y-auto scrollbar-token p-6"
           >
             <SpecRendererIsland spec={spec} />
           </div>

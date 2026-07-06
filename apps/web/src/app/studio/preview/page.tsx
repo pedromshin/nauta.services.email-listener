@@ -66,7 +66,7 @@ export default function StudioPreviewPage(): React.ReactElement {
             <div
               role="region"
               aria-label="Rendered output"
-              className="h-full overflow-y-auto p-6"
+              className="h-full overflow-y-auto scrollbar-token p-6"
             >
               <SpecRendererIsland
                 spec={SHOWCASE_SPEC}

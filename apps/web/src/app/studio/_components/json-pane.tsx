@@ -60,6 +60,7 @@ export function JsonPane({
           type="button"
           variant="ghost"
           size="icon"
+          className="size-11 shrink-0"
           aria-label="Copy JSON"
           onClick={handleCopy}
         >

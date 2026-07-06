@@ -342,7 +342,7 @@ export function PageIdeasIsland({
         role="region"
         aria-label="Page idea cards"
         aria-live="polite"
-        className="flex-1 overflow-y-auto p-4"
+        className="flex-1 overflow-y-auto scrollbar-token p-4"
       >
         {resultCount === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-muted-foreground">

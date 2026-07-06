@@ -85,7 +85,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FIX-01 | Phase 26 | Pending |
+| FIX-01 | Phase 26 | Complete |
 | FIX-02 | Phase 26 | Complete |
 | FIX-03 | Phase 26 | Complete |
 | FIX-04 | Phase 26 | Complete |
@@ -93,8 +93,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FIX-06 | Phase 26 | Complete |
 | FIX-07 | Phase 26 | Complete |
 | FIX-08 | Phase 26 | Complete |
-| FIX-09 | Phase 26 | Pending |
-| FIX-10 | Phase 26 | Pending |
+| FIX-09 | Phase 26 | Complete |
+| FIX-10 | Phase 26 | Complete |
 | FIX-11 | Phase 26 | Complete |
 | POLISH-01 | Phase 26 | Complete |
 | POLISH-02 | Phase 26 | Complete |

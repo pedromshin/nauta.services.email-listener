@@ -122,7 +122,7 @@ export function StudioTabs(): React.ReactElement {
       <TabsContent
         value="catalog"
         aria-label="Component catalog"
-        className="flex-1 overflow-y-auto m-0 border-0"
+        className="flex-1 overflow-y-auto scrollbar-token m-0 border-0"
       >
         <CatalogBrowserIsland />
       </TabsContent>
@@ -140,7 +140,7 @@ export function StudioTabs(): React.ReactElement {
       <TabsContent
         value="code-island"
         aria-label="Sandboxed code-island"
-        className="data-[state=inactive]:hidden flex flex-col flex-1 min-h-0 overflow-y-auto m-0 border-0"
+        className="data-[state=inactive]:hidden flex flex-col flex-1 min-h-0 overflow-y-auto scrollbar-token m-0 border-0"
       >
         <CodeSandboxIsland />
       </TabsContent>
