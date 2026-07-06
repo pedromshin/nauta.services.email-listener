@@ -162,9 +162,13 @@ function SubmittedProposalView({
           <div
             key={option.id}
             className={
+              // Matches the live catalog Card's own chrome (rounded-xl/border/shadow/p-6,
+              // packages/ui/src/card.tsx) — 24-05 fix pass (24-UI-REVIEW.md Top Fix #2):
+              // the submitted (locked) shell must not lose the Card's container identity
+              // at the exact moment a choice locks in.
               isChosen
-                ? "flex flex-col gap-1 rounded-lg bg-primary/5 p-4 ring-2 ring-primary ring-offset-1"
-                : "flex flex-col gap-1 rounded-lg p-4 opacity-50"
+                ? "flex flex-col gap-1 rounded-xl border border-border bg-primary/5 p-6 shadow ring-2 ring-primary ring-offset-1"
+                : "flex flex-col gap-1 rounded-xl border border-border bg-card p-6 shadow opacity-50"
             }
             aria-disabled={isChosen ? undefined : true}
           >
