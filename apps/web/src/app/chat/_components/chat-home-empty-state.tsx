@@ -2,7 +2,7 @@
 
 import { MessageSquarePlus, Plus } from "lucide-react";
 
-import { Button } from "@nauta/ui/button";
+import { EmptyState } from "~/components/empty-state";
 
 interface ChatHomeEmptyStateProps {
   readonly onNewChat: () => void;
@@ -16,34 +16,29 @@ interface ChatHomeEmptyStateProps {
  * landing surface, not a sparse-list state — per 22-UI-SPEC.md Layout §1 +
  * Copywriting Contract. The button here is the same "New chat" CTA as the
  * rail's, surfaced larger for the case the rail is collapsed.
+ *
+ * Thin wrapper (FIX-11, 26-UI-SPEC.md § "FIX-11") around the shared
+ * EmptyState primitive — centered/muted/spacious + a "New chat" action —
+ * kept as its own named export so ./page.tsx's call site stays stable.
  */
 export function ChatHomeEmptyState({
   onNewChat,
   creating = false,
 }: ChatHomeEmptyStateProps): React.ReactElement {
   return (
-    <div className="flex h-full flex-col items-center justify-center px-6 py-24 text-center">
-      <MessageSquarePlus
-        className="mb-4 h-10 w-10 text-muted-foreground/40"
-        aria-hidden
-      />
-      <h1 className="text-2xl font-semibold text-foreground">
-        Start a new conversation
-      </h1>
-      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-        Ask the agent anything — responses stream in and can include
-        interactive widgets.
-      </p>
-      <Button
-        type="button"
-        variant="default"
-        className="mt-6 gap-2"
-        onClick={onNewChat}
-        disabled={creating}
-      >
-        <Plus className="size-4" aria-hidden />
-        New chat
-      </Button>
-    </div>
+    <EmptyState
+      icon={MessageSquarePlus}
+      heading="Start a new conversation"
+      body="Ask the agent anything — responses stream in and can include interactive widgets."
+      layout="centered"
+      tone="muted"
+      size="spacious"
+      action={{
+        label: "New chat",
+        icon: Plus,
+        onClick: onNewChat,
+        disabled: creating,
+      }}
+    />
   );
 }

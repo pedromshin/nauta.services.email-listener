@@ -15,11 +15,19 @@
  *
  * Copy + colors verbatim from 23-UI-SPEC.md's Copywriting Contract / Color
  * table: `bg-muted/40 border-destructive/30`, `AlertTriangle` icon.
+ *
+ * The outer card chrome (border/bg/rounded/min-h/min-w) stays local to this
+ * component — it's a bounded-node-card affordance, not part of the shared
+ * EmptyState primitive. Only the inner icon+text row + caption is delegated
+ * to EmptyState's inline/destructive/compact variant (FIX-11,
+ * 26-UI-SPEC.md § "FIX-11").
  */
 
 import { AlertTriangle } from "lucide-react";
 import { memo } from "react";
 import type { Node, NodeProps } from "@xyflow/react";
+
+import { EmptyState } from "~/components/empty-state";
 
 export type UnknownNodeTypeNodeData = { readonly nodeType: string } & Record<
   string,
@@ -35,16 +43,15 @@ export const UnknownNodeTypePlaceholder = memo(function UnknownNodeTypePlacehold
 }: NodeProps<UnknownNodeTypeNodeType>) {
   return (
     <div className="flex h-full min-h-[240px] w-full min-w-[320px] flex-col gap-2 rounded-lg border border-destructive/30 bg-muted/40 p-4">
-      <div className="flex items-center gap-2">
-        <AlertTriangle className="size-4 shrink-0 text-destructive" aria-hidden />
-        <span className="text-sm font-normal text-foreground">
-          This panel type isn&apos;t supported in this version.
-        </span>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        Type: {data.nodeType} · The canvas layout is unaffected — this panel is
-        skipped safely.
-      </p>
+      <EmptyState
+        icon={AlertTriangle}
+        heading="This panel type isn't supported in this version."
+        body=""
+        layout="inline"
+        tone="destructive"
+        size="compact"
+        caption={`Type: ${data.nodeType} · The canvas layout is unaffected — this panel is skipped safely.`}
+      />
     </div>
   );
 });

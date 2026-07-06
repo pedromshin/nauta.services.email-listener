@@ -9,22 +9,24 @@
  * chat node's own composer / the docked Chat view, not here — this is a
  * transient/defensive state (the chat node is always present once a
  * conversation exists, D-02), not the primary first-run experience.
+ *
+ * Thin wrapper (FIX-11, 26-UI-SPEC.md § "FIX-11") around the shared
+ * EmptyState primitive — centered/muted/compact, no action.
  */
 
 import { LayoutGrid } from "lucide-react";
 
+import { EmptyState } from "~/components/empty-state";
+
 export function CanvasEmptyState(): React.ReactElement {
   return (
-    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center">
-      <LayoutGrid className="size-8 text-muted-foreground" aria-hidden />
-      <div className="space-y-1">
-        <p className="text-base font-semibold">No panels yet</p>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          Genui responses from this chat will appear here as panels. Switch to
-          Chat view to start a conversation.
-        </p>
-      </div>
-      {/* No button — the remedy lives on a different surface/view. */}
-    </div>
+    <EmptyState
+      icon={LayoutGrid}
+      heading="No panels yet"
+      body="Genui responses from this chat will appear here as panels. Switch to Chat view to start a conversation."
+      layout="centered"
+      tone="muted"
+      size="compact"
+    />
   );
 }
