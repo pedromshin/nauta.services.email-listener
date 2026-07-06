@@ -1,10 +1,11 @@
 ---
 phase: 27
 slug: adopted-external-design-picks
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-07-06
+reviewed_at: 2026-07-06
 ---
 
 # Phase 27 — UI Design Contract
