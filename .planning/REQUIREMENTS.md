@@ -38,8 +38,8 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Dual-Channel GenUI
 
-- [ ] **DCUI-01**: Agent can emit proposal cards; clicking one sends a structured result that resumes the run
-- [ ] **DCUI-02**: Agent can emit clarify-widgets (forms/pickers from the declarative catalog + v1.2 form engine); submit returns a structured result to the agent
+- [x] **DCUI-01**: Agent can emit proposal cards; clicking one sends a structured result that resumes the run
+- [x] **DCUI-02**: Agent can emit clarify-widgets (forms/pickers from the declarative catalog + v1.2 form engine); submit returns a structured result to the agent
 - [x] **DCUI-03**: Every widget round-trip is server-side re-validated, double-submit-locked, staleness-signaled, and requires explicit user action (never auto-fired)
 - [x] **DCUI-04**: GenUI turns and widget interactions persist in the conversation history and canvas
 
@@ -134,8 +134,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CANVAS-04 | Phase 23 | Complete |
 | STATE-01 | Phase 23 | Complete |
 | STATE-02 | Phase 23 | Complete |
-| DCUI-01 | Phase 24 | Pending |
-| DCUI-02 | Phase 24 | Pending |
+| DCUI-01 | Phase 24 | Complete |
+| DCUI-02 | Phase 24 | Complete |
 | DCUI-03 | Phase 24 | Complete |
 | DCUI-04 | Phase 24 | Complete |
 | ANTIC-01 | Phase 25 | Pending |
