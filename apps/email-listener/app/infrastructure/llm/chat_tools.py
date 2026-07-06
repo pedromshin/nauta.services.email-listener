@@ -31,6 +31,12 @@ RunChatTurn accepts tool definitions as plain `dict[str, Any]` constructor
 parameters, and app/container.py (the composition root, exempt from that
 contract) calls build_emit_ui_spec_tool()/build_emit_proposal_cards_tool() and
 wires them in.
+
+Phase 24-04 (DCUI-02, D-09): emit_clarify_widget is a THIRD interactive tool —
+its declaration drives the UNMODIFIED Phase-19 form engine client-side. The
+UI-SPEC's MANDATORY posture ("a bare 'Submit' default is never reachable in
+practice") is enforced HERE, in the schema itself: `submitLabel` is `required`
+with `minLength: 1` — not left to prompt guidance.
 """
 
 from __future__ import annotations
@@ -41,6 +47,7 @@ from app.infrastructure.llm.genui_artifacts import load_spec_schema
 
 EMIT_UI_SPEC_TOOL_NAME = "emit_ui_spec"
 EMIT_PROPOSAL_CARDS_TOOL_NAME = "emit_proposal_cards"
+EMIT_CLARIFY_WIDGET_TOOL_NAME = "emit_clarify_widget"
 
 _DESCRIPTION = (
     "Emit a declarative UI spec (a SpecRoot JSON document) for the trusted genui renderer "
@@ -128,4 +135,87 @@ def build_emit_proposal_cards_tool() -> dict[str, Any]:
         "name": EMIT_PROPOSAL_CARDS_TOOL_NAME,
         "description": _PROPOSAL_CARDS_DESCRIPTION,
         "input_schema": _PROPOSAL_CARDS_INPUT_SCHEMA,
+    }
+
+
+_CLARIFY_WIDGET_DESCRIPTION = (
+    "Ask the user a structured clarifying question via a small form (text/select/checkbox/"
+    "radio/etc. fields) when their free-text answer would be ambiguous or you need several "
+    "discrete pieces of information at once. `submitLabel` MUST be a specific verb+noun phrase "
+    "describing what submitting the form does (e.g. 'Send response', 'Confirm details') — never "
+    "a generic word like 'Submit' or 'OK'. Calling this tool ENDS your turn: you will not see the "
+    "user's answers until they explicitly submit the form and the conversation resumes with the "
+    "structured values. Only call this when a genuinely small, well-defined set of fields (max "
+    "12) would resolve the ambiguity — otherwise reply normally."
+)
+
+# Hand-authored, Bedrock-valid input_schema (root type:object, additionalProperties:false, no
+# root $ref) mirroring packages/genui/src/form/validate-form.ts's FormFieldSpec shape 1:1 so the
+# web builder (24-04-PLAN.md's buildClarifyWidgetSpec) can map fields verbatim. `submitLabel` is
+# REQUIRED with `minLength: 1` — the UI-SPEC's MANDATORY enforcement lives in this schema, not in
+# prompt guidance, so a bare/empty submitLabel is structurally unreachable.
+_CLARIFY_WIDGET_FIELD_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "required": ["name", "label"],
+    "additionalProperties": False,
+    "properties": {
+        "name": {"type": "string"},
+        "label": {"type": "string"},
+        "fieldType": {"enum": ["text", "textarea", "select", "radio", "checkbox", "number", "email"]},
+        "required": {"type": "boolean"},
+        "placeholder": {"type": "string"},
+        "helpText": {"type": "string"},
+        "options": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": ["value", "label"],
+                "additionalProperties": False,
+                "properties": {"value": {"type": "string"}, "label": {"type": "string"}},
+            },
+        },
+    },
+}
+
+_CLARIFY_WIDGET_INPUT_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "required": ["submitLabel", "fields"],
+    "additionalProperties": False,
+    "properties": {
+        "title": {"type": "string"},
+        "description": {"type": "string"},
+        "submitLabel": {"type": "string", "minLength": 1},
+        "fields": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 12,
+            "items": _CLARIFY_WIDGET_FIELD_SCHEMA,
+        },
+    },
+}
+
+# Load-time assertion mirroring emit_ui_spec's _assert_bedrock_input_schema guard
+# (genui_artifacts.py) — fail fast if this hand-authored schema ever regresses.
+assert _CLARIFY_WIDGET_INPUT_SCHEMA["type"] == "object", (
+    "emit_clarify_widget input_schema root must be type:object (Bedrock tool-input contract)"
+)
+assert _CLARIFY_WIDGET_INPUT_SCHEMA["properties"]["submitLabel"]["minLength"] == 1, (
+    "emit_clarify_widget submitLabel must require minLength:1 (UI-SPEC MANDATORY enforcement)"
+)
+
+
+def build_emit_clarify_widget_tool() -> dict[str, Any]:
+    """Build the emit_clarify_widget tool dict (Phase 24-04, D-02/D-09, DCUI-02).
+
+    Offered (never forced) alongside emit_ui_spec/emit_proposal_cards to
+    genui-capable models. A completed call finalizes into an
+    `interactive_widget` part (widgetKind "clarify_widget") that ends the
+    turn; the declared_response_schema a later submit is re-validated against
+    is DERIVED server-side from the emitted fields (run_chat_turn_widgets.py),
+    never model-authored.
+    """
+    return {
+        "name": EMIT_CLARIFY_WIDGET_TOOL_NAME,
+        "description": _CLARIFY_WIDGET_DESCRIPTION,
+        "input_schema": _CLARIFY_WIDGET_INPUT_SCHEMA,
     }

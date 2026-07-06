@@ -18,6 +18,11 @@ is_stale (D-12) queries chat_messages directly: the emitting message's
 False) and whether a strictly-newer `turn_index` exists in the same
 conversation (a later turn superseded this pending widget).
 
+supersede_pending (Phase 24-04, D-02) is a conditional UPDATE mirroring
+try_submit's own idiom: `eq("conversation_id", ...)` + `eq("state", "pending")`
+— every pending row in the conversation flips to `superseded` in one
+statement (typing supersedes durably, survives reload).
+
 WR-06: supabase-py's Client is synchronous; every blocking call is offloaded
 to a thread-pool worker via asyncio.to_thread().
 """
@@ -160,3 +165,15 @@ class SupabaseChatWidgetInteractionRepository:
             )
         )
         return bool(newer_turn_result.data)
+
+    async def supersede_pending(self, conversation_id: str) -> int:
+        result = await asyncio.to_thread(
+            lambda: (
+                self._client.table(_TABLE)
+                .update({"state": "superseded", "updated_at": datetime.now(UTC).isoformat()})
+                .eq("conversation_id", conversation_id)
+                .eq("state", "pending")
+                .execute()
+            )
+        )
+        return len(result.data or [])

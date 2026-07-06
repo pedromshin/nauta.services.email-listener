@@ -34,6 +34,13 @@ chat_widget_interactions row is created via the injected
 ChatWidgetInteractionRepository (D-04: one pending widget per turn). Both new
 params default falsy -- additive, existing callers unaffected.
 
+Phase 24-04 (DCUI-02, D-02/D-09): `emit_clarify_widget` extends the same
+interactive_widget_tools seam (widgetKind "clarify_widget"). `run()` also
+calls `ChatWidgetInteractionRepository.supersede_pending(conversation_id)`
+immediately after inserting the new user text message -- typing durably
+supersedes any pending widget (D-02), server-side, so the state survives
+reload. `regenerate()`/`continue_after_widget()` never call it.
+
 Built as an async generator with NO HTTP dependency — the SSE transport (22-07)
 is a thin wrapper over `run()`/`regenerate()`.
 
@@ -181,6 +188,13 @@ class RunChatTurn:
             turn_index=turn_index,
             status="completed",
         )
+        # D-02 (typing supersedes, Phase 24-04): a new user text message
+        # durably supersedes any still-pending widget in this conversation —
+        # done here (not in regenerate(), which is not "typing"; D-12's
+        # staleness check covers that path instead) so the state survives
+        # reload, not just the client's local optimistic mark.
+        if self._widget_interactions is not None:
+            await self._widget_interactions.supersede_pending(conversation_id)
         # The provider must see the CURRENT user turn — history was read before
         # the insert above, so append the persisted row (an empty `messages`
         # array is a Bedrock ValidationException on a fresh conversation).

@@ -358,6 +358,46 @@ async def test_resolved_summary_uses_stored_declaration_for_the_chosen_option() 
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_clarify_widget_summary_resolves_field_labels_from_stored_declaration() -> None:
+    """Phase 24-04 (D-16): clarify_widget summary = one {label, value} entry per submitted
+    field, with the label resolved from the STORED declaration (never a client-supplied one)."""
+    interaction = _interaction(
+        widget_kind="clarify_widget",
+        declaration={
+            "submitLabel": "Send response",
+            "fields": [
+                {"name": "reason", "label": "Reason"},
+                {"name": "priority", "label": "Priority"},
+            ],
+        },
+        declared_response_schema={
+            "type": "object",
+            "required": ["reason"],
+            "additionalProperties": False,
+            "properties": {"reason": {"type": "string"}, "priority": {"enum": ["low", "high"]}},
+        },
+    )
+    widget_interactions = FakeChatWidgetInteractionRepository(interaction=interaction, stale=False)
+    use_case, messages, _runner = _make_use_case(widget_interactions=widget_interactions)
+
+    async for _ in use_case.submit(
+        conversation_id="conv-1",
+        interaction_id="int-1",
+        result={"reason": "Need more time", "priority": "high"},
+        model_id="m1",
+    ):
+        pass
+
+    assert messages.inserted[0].parts[0]["summary"] == {
+        "fields": [
+            {"label": "Reason", "value": "Need more time"},
+            {"label": "Priority", "value": "high"},
+        ]
+    }
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_ordering_is_stale_check_before_cas_lock() -> None:
     """Staleness is checked BEFORE try_submit — a stale submit must never flip a pending row."""
     interaction = _interaction()

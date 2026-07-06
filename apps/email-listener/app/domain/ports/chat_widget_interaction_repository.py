@@ -90,3 +90,14 @@ class ChatWidgetInteractionRepository(Protocol):
     async def is_stale(self, interaction: WidgetInteraction) -> bool:
         """True when the emitting message is inactive or a newer turn exists (D-12)."""
         ...
+
+    async def supersede_pending(self, conversation_id: str) -> int:
+        """Transition every state='pending' row in conversation_id to 'superseded' (D-02).
+
+        Phase 24-04: called by RunChatTurn.run() immediately after inserting
+        a new user text message — typing durably supersedes any pending
+        widget server-side, so the state survives reload. NOT called by
+        regenerate() (a regenerate is not typing; D-12's staleness covers
+        that path instead). Returns the number of rows transitioned.
+        """
+        ...

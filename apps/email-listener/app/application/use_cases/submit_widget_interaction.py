@@ -182,6 +182,19 @@ def _resolve_summary(interaction: WidgetInteraction, result: dict[str, Any]) -> 
         match = next((option for option in options if option.get("id") == option_id), None)
         chosen_title = match["title"] if match else ""
         return {"chosenTitle": chosen_title}
+    if interaction.widget_kind == "clarify_widget":
+        # Phase 24-04 (D-16): one {label, value} entry per DECLARED field that
+        # the submitted result actually carries a key for — mirrors
+        # proposal_cards' own "resolve from the STORED declaration" posture
+        # (the field labels come from the declaration, never trusted from a
+        # client-supplied summary).
+        fields = interaction.declaration.get("fields", [])
+        field_summaries = [
+            {"label": field.get("label", field.get("name", "")), "value": result[field["name"]]}
+            for field in fields
+            if field.get("name") in result
+        ]
+        return {"fields": field_summaries}
     raise ValueError(f"no result resolver registered for widget_kind {interaction.widget_kind!r}")
 
 

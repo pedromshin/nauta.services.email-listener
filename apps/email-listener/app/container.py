@@ -90,7 +90,11 @@ from app.domain.services.cost_circuit_breaker import CostCircuitBreaker
 from app.infrastructure.llm.anthropic_client import get_anthropic_client
 from app.infrastructure.llm.autofill_adapter import AnthropicAutofiller
 from app.infrastructure.llm.bedrock_chat_adapter import BedrockChatAdapter
-from app.infrastructure.llm.chat_tools import build_emit_proposal_cards_tool, build_emit_ui_spec_tool
+from app.infrastructure.llm.chat_tools import (
+    build_emit_clarify_widget_tool,
+    build_emit_proposal_cards_tool,
+    build_emit_ui_spec_tool,
+)
 from app.infrastructure.llm.embedding_adapter import EmbeddingAdapter
 from app.infrastructure.llm.entity_type_classifier_adapter import AnthropicEntityTypeClassifier
 from app.infrastructure.llm.genui_code_generator_adapter import GenuiCodeGeneratorAdapter
@@ -530,10 +534,11 @@ def _provide_run_chat_turn(
     run_chat_turn.py itself) — RunChatTurn takes them as plain dict/tuple
     constructor parameters specifically so the application layer never
     imports app.infrastructure (Phase 22-07, see chat_tools.py's layering
-    note). Phase 24-02: emit_proposal_cards is threaded in as the (currently
-    sole) interactive_widget_tools entry, alongside the widget-interaction
-    repository RunChatTurn needs to create the one pending row per emitted
-    widget (D-04).
+    note). Phase 24-02/24-04: emit_proposal_cards + emit_clarify_widget are
+    threaded in as the interactive_widget_tools entries, alongside the
+    widget-interaction repository RunChatTurn needs to create the one pending
+    row per emitted widget (D-04) and to supersede pending widgets on typing
+    (D-02).
     """
     settings = get_settings()
     return RunChatTurn(
@@ -547,7 +552,7 @@ def _provide_run_chat_turn(
         default_importer_id=settings.DEFAULT_IMPORTER_ID,
         max_output_tokens=settings.CHAT_MAX_OUTPUT_TOKENS,
         widget_interactions=widget_interactions,
-        interactive_widget_tools=(build_emit_proposal_cards_tool(),),
+        interactive_widget_tools=(build_emit_proposal_cards_tool(), build_emit_clarify_widget_tool()),
     )
 
 

@@ -218,3 +218,34 @@ async def test_is_stale_false_when_active_and_no_newer_turn() -> None:
     result = await repo.is_stale(_interaction())
 
     assert result is False
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_supersede_pending_updates_every_pending_row_in_conversation() -> None:
+    """Phase 24-04 (D-02): the conditional UPDATE carries BOTH eq("conversation_id", ...) AND
+    eq("state", "pending") — mirrors try_submit's own CAS idiom."""
+    widget_table = _make_table(execute_data=[_interaction_row(state="superseded"), _interaction_row(id="int-2", state="superseded")])
+    client = _make_client({"chat_widget_interactions": widget_table})
+    repo = SupabaseChatWidgetInteractionRepository(client=client)
+
+    count = await repo.supersede_pending("conv-1")
+
+    assert count == 2
+    update_payload: dict[str, Any] = widget_table.update.call_args.args[0]
+    assert update_payload["state"] == "superseded"
+    eq_calls = [call.args for call in widget_table.eq.call_args_list]
+    assert ("conversation_id", "conv-1") in eq_calls
+    assert ("state", "pending") in eq_calls
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_supersede_pending_returns_zero_when_no_pending_rows() -> None:
+    widget_table = _make_table(execute_data=[])
+    client = _make_client({"chat_widget_interactions": widget_table})
+    repo = SupabaseChatWidgetInteractionRepository(client=client)
+
+    count = await repo.supersede_pending("conv-1")
+
+    assert count == 0
