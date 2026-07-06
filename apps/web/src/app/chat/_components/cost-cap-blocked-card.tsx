@@ -17,7 +17,7 @@ export function CostCapBlockedCard(): React.ReactElement {
     >
       <div className="flex items-center gap-2">
         <AlertTriangle className="size-4 shrink-0 text-destructive" aria-hidden />
-        <span className="text-sm font-medium text-destructive">
+        <span className="text-sm font-semibold text-destructive">
           This turn would exceed today&apos;s cost limit.
         </span>
       </div>
