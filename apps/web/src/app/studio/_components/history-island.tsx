@@ -40,6 +40,7 @@ import { SpecRootSchema, SAFE_FALLBACK_SPEC } from "@nauta/genui/schema";
 import type { SpecRoot } from "@nauta/genui/schema";
 
 import { SpecRendererIsland } from "./spec-renderer-island";
+import { JsonPane } from "./json-pane";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -141,7 +142,7 @@ function HistoryRow({
       <div className="flex items-start justify-between gap-2">
         <p
           title={intentText}
-          className="text-sm font-medium text-foreground leading-snug line-clamp-2 flex-1 min-w-0"
+          className="text-sm text-foreground leading-snug line-clamp-2 flex-1 min-w-0"
         >
           {truncatedIntent}
         </p>
@@ -243,7 +244,7 @@ function FallbackNotice(): React.ReactElement {
   return (
     <div
       role="alert"
-      className="shrink-0 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs text-amber-700 dark:text-amber-400"
+      className="shrink-0 border-b border-destructive/30 bg-destructive/5 px-4 py-2 text-xs text-destructive"
     >
       This spec no longer parses under the current schema — showing fallback output.
     </div>
@@ -402,7 +403,7 @@ function HistoryDetailView({ selectedId }: DetailViewProps): React.ReactElement 
       {/* Read-only badge header */}
       <div className="shrink-0 flex items-center gap-2 border-b border-border/50 px-4 py-2 bg-muted/30">
         <span
-          className="text-xs font-medium text-muted-foreground truncate flex-1"
+          className="text-xs font-normal text-muted-foreground truncate flex-1"
           title={detail.intentText}
         >
           {truncate(detail.intentText, 120)}
@@ -437,16 +438,7 @@ function HistoryDetailView({ selectedId }: DetailViewProps): React.ReactElement 
             aria-label="Spec JSON"
             className="flex h-full flex-col bg-muted"
           >
-            <div className="shrink-0 border-b border-border/50 px-4 py-3">
-              <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Spec JSON
-              </span>
-            </div>
-            <ScrollArea className="flex-1">
-              <pre className="p-4 font-mono text-xs text-foreground">
-                {JSON.stringify(spec, null, 2)}
-              </pre>
-            </ScrollArea>
+            <JsonPane value={spec} />
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
