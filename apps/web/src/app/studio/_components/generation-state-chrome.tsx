@@ -72,7 +72,7 @@ export function GenerationStateChrome({
       >
         <div className="flex items-center gap-2">
           <AlertTriangle className="size-4 shrink-0 text-destructive" aria-hidden />
-          <span className="text-sm font-medium text-destructive">
+          <span className="text-sm font-semibold text-destructive">
             Validation failed — showing a safe fallback
           </span>
         </div>
@@ -105,7 +105,7 @@ export function GenerationStateChrome({
         aria-live="polite"
         className="flex shrink-0 items-center gap-2 border-b border-border/50 px-4 py-2"
       >
-        <Badge className="border border-primary/30 bg-primary/10 text-xs font-medium text-primary">
+        <Badge className="border border-primary/30 bg-primary/10 text-xs text-primary">
           Cache hit · 0 LLM cost
         </Badge>
       </div>

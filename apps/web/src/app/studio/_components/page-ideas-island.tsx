@@ -103,7 +103,7 @@ function IdeaChips({ idea }: { readonly idea: PageIdea }): React.ReactElement {
         Tier {idea.tier}
       </Badge>
       {idea.curveball && (
-        <Badge className="text-xs bg-amber-500/15 text-amber-700 border border-amber-400/40 hover:bg-amber-500/20">
+        <Badge variant="outline" className="text-xs">
           curveball
         </Badge>
       )}
@@ -315,7 +315,7 @@ export function PageIdeasIsland({
       {/* Header strip: title + Surprise me button */}
       <div className="flex shrink-0 items-center justify-between px-4 py-3 border-b border-border/50">
         <div>
-          <span className="text-sm font-medium">Page Ideas</span>
+          <span className="text-sm font-semibold">Page Ideas</span>
           <span className="ml-2 text-xs text-muted-foreground" aria-live="polite">
             {resultCount === totalCount
               ? `${totalCount} ideas`

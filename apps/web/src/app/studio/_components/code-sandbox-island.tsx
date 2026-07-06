@@ -149,7 +149,7 @@ export function CodeSandboxIsland(): React.ReactElement {
 
       {/* LIVE generation from intent */}
       <div className="flex flex-col gap-2 rounded-lg border border-border/60 p-3">
-        <span className="text-sm font-medium">Generate from intent</span>
+        <span className="text-sm font-semibold">Generate from intent</span>
         <Textarea
           value={intent}
           onChange={(e) => setIntent(e.target.value)}
@@ -162,7 +162,7 @@ export function CodeSandboxIsland(): React.ReactElement {
             {gen.isFetching ? <Loader2 className="size-4 animate-spin" aria-hidden /> : <Sparkles className="size-4" aria-hidden />}
             Generate &amp; run
           </Button>
-          {genError ? <span className="text-xs text-red-600">{genError}</span> : null}
+          {genError ? <span className="text-xs text-destructive">{genError}</span> : null}
         </div>
       </div>
 
