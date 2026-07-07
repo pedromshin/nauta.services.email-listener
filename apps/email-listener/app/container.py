@@ -61,6 +61,7 @@ from app.application.use_cases.set_component_relationship import (
 )
 from app.application.use_cases.submit_widget_interaction import SubmitWidgetInteraction
 from app.application.use_cases.suggest_entity_types import SuggestEntityTypesUseCase
+from app.application.use_cases.synthesize_knowledge import KnowledgeSynthesizerService
 from app.domain.ports.anticipatory_ports import AnticipatoryCapStore, AppropriatenessJudge
 from app.domain.ports.attachment_repository import AttachmentRepository
 from app.domain.ports.attachment_storage import AttachmentStorage
@@ -81,6 +82,7 @@ from app.domain.ports.entity_type_repository import EntityTypeRepository
 from app.domain.ports.extraction_repository import ExtractionRepository
 from app.domain.ports.generation_audit_repository import GenerationAuditRepository
 from app.domain.ports.importer_resolver import ImporterResolver
+from app.domain.ports.knowledge_synthesizer import KnowledgeSynthesizer
 from app.domain.ports.parser_registry_port import ParserRegistryPort
 from app.domain.ports.raw_email_store import RawEmailStore
 from app.domain.ports.retrieval_port import RetrievalPort
@@ -122,6 +124,7 @@ from app.infrastructure.supabase.entity_resolution_repository import SupabaseEnt
 from app.infrastructure.supabase.entity_type_repository import SupabaseEntityTypeRepository
 from app.infrastructure.supabase.extraction_repository import SupabaseExtractionRepository
 from app.infrastructure.supabase.importer_repository import SupabaseImporterRepository
+from app.infrastructure.supabase.knowledge_graph_repository import SupabaseKnowledgeGraphRepository
 from app.infrastructure.supabase.retrieval_repository import SupabaseRetrievalRepository
 from app.infrastructure.supabase.supabase_chat_conversation_repository import (
     SupabaseChatConversationRepository,
@@ -328,6 +331,36 @@ def _provide_promote_entity_use_case(
         entity_types=entity_types,
         extractions=extractions,
         resolution_repo=resolution_repo,
+    )
+
+
+def _provide_confirm_region_use_case(
+    components: ComponentRepository,
+    extractions: ExtractionRepository,
+    embedder: EmbeddingProtocol,
+    entity_instances: EntityInstanceRepository,
+    client: Client,
+) -> ConfirmRegionUseCase:
+    """Factory for ConfirmRegionUseCase.
+
+    SupabaseKnowledgeGraphRepository is a concrete infrastructure class (not a
+    port) — dishka cannot bind it via provide(class) because Protocol-typed
+    params require explicit provides=. Mirrors _provide_promote_entity_use_case:
+    instantiates the adapter directly, builds KnowledgeSynthesizerService on top
+    of it, and injects the service into ConfirmRegionUseCase so the D-13
+    synthesis hook is live (SYNTH-01).
+    """
+    knowledge_repo = SupabaseKnowledgeGraphRepository(client=client)
+    knowledge_synthesizer: KnowledgeSynthesizer = KnowledgeSynthesizerService(
+        components=components,
+        knowledge=knowledge_repo,
+        entity_instances=entity_instances,
+    )
+    return ConfirmRegionUseCase(
+        components=components,
+        extractions=extractions,
+        embedder=embedder,
+        knowledge_synthesizer=knowledge_synthesizer,
     )
 
 
@@ -760,7 +793,7 @@ def _build_provider() -> Provider:  # noqa: PLR0915
     # AutofillFieldsUseCase (09-02b) — same Optional embedder/retrieval shape +
     # segmenter for the entity-scoped auto-detect; factory passes them explicitly.
     provider.provide(_provide_autofill_fields_use_case, provides=AutofillFieldsUseCase)
-    provider.provide(ConfirmRegionUseCase)
+    provider.provide(_provide_confirm_region_use_case, provides=ConfirmRegionUseCase)
     # Region-edit write side (Phase 06) — all auto-inject ComponentRepository.
     provider.provide(AcceptRegionUseCase)
     provider.provide(RejectRegionUseCase)
