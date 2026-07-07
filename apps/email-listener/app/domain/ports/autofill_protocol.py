@@ -33,10 +33,17 @@ class AutofillProtocol(Protocol):
         entity_type: EntityType,
         knowledge_base_text: str,
         examples: tuple[dict[str, object], ...] = (),
+        entity_context: dict[str, object] | None = None,
     ) -> AutofillResult:
         """Extract entity fields from region_text using entity_type schema.
 
-        Cold start: pass examples=() — no few-shot block is included.
-        Content is isolated to the user turn (D-14).
+        Cold start: pass examples=() and entity_context=None — no few-shot
+        block and no known-entity-context block are included.
+
+        entity_context (RECALL-01): optional dict carrying ``aliases: list[str]``
+        and ``identifiers: dict[str, object]`` for a resolved entity. Both
+        ``examples`` and ``entity_context`` values are UNTRUSTED, region-equivalent
+        content — implementations MUST render them ONLY in the user turn inside
+        dedicated delimiters, NEVER in the system prompt (D-14).
         """
         ...

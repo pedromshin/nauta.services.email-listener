@@ -39,6 +39,10 @@ logger = structlog.get_logger(__name__)
 _MAX_RETRIES = 3
 _RETRY_DELAYS: tuple[float, float, float] = (2.0, 5.0, 15.0)
 
+# Defensive cap on the number of aliases rendered into the known-entity-context
+# block (T-31-03 — bounds injected-block size / prompt bloat).
+_MAX_RENDERED_ALIASES = 20
+
 _EMPTY_RESULT = AutofillResult(extracted_fields={}, confidence_score=0.0, confidence_breakdown=None)
 
 # extract_fields tool schema for structured output.
@@ -116,6 +120,47 @@ def _build_system_prompt(
 
 
 # ---------------------------------------------------------------------------
+# User-turn content builders (D-14: UNTRUSTED, user-turn only, never system)
+# ---------------------------------------------------------------------------
+
+
+def _render_example_block(example: dict[str, object]) -> str:
+    """Render one few-shot example as a delimited <example> block."""
+    content_text = str(example.get("content_text", ""))
+    extracted_fields_raw = example.get("extracted_fields") or {}
+    extracted_fields = cast("dict[str, object]", extracted_fields_raw)
+    fields_text = "\n".join(f"  - {k}: {v}" for k, v in extracted_fields.items())
+    return f"<example>\n<content>{content_text}</content>\n<extracted_fields>\n{fields_text}\n</extracted_fields>\n</example>"
+
+
+def _render_examples_block(examples: tuple[dict[str, object], ...]) -> str:
+    """Render all few-shot examples as a delimited block, or "" when empty."""
+    if not examples:
+        return ""
+    rendered = "\n".join(_render_example_block(ex) for ex in examples)
+    return f"<few_shot_examples>\n{rendered}\n</few_shot_examples>"
+
+
+def _render_entity_context_block(entity_context: dict[str, object] | None) -> str:
+    """Render the known-entity-context block (aliases + identifiers), or "" when absent/empty."""
+    if not entity_context:
+        return ""
+    aliases_raw = cast("list[object]", entity_context.get("aliases") or [])
+    aliases = list(aliases_raw)[:_MAX_RENDERED_ALIASES]
+    identifiers = cast("dict[str, object]", entity_context.get("identifiers") or {})
+    if not aliases and not identifiers:
+        return ""
+    aliases_text = "\n".join(f"  - {a}" for a in aliases)
+    identifiers_text = "\n".join(f"  - {k}: {v}" for k, v in identifiers.items())
+    return (
+        "<known_entity_context>\n"
+        f"<aliases>\n{aliases_text}\n</aliases>\n"
+        f"<identifiers>\n{identifiers_text}\n</identifiers>\n"
+        "</known_entity_context>"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Adapter
 # ---------------------------------------------------------------------------
 
@@ -140,6 +185,7 @@ class AnthropicAutofiller:
         entity_type: EntityType,
         knowledge_base_text: str,
         examples: tuple[dict[str, object], ...] = (),
+        entity_context: dict[str, object] | None = None,
     ) -> AutofillResult:
         """Extract entity fields from region_text; returns empty result on error."""
         return await self._generate(
@@ -147,6 +193,7 @@ class AnthropicAutofiller:
             entity_type=entity_type,
             knowledge_base_text=knowledge_base_text,
             examples=examples,
+            entity_context=entity_context,
         )
 
     async def _generate(
@@ -156,6 +203,7 @@ class AnthropicAutofiller:
         entity_type: EntityType,
         knowledge_base_text: str,
         examples: tuple[dict[str, object], ...],
+        entity_context: dict[str, object] | None = None,
     ) -> AutofillResult:
         """Call the model with retries; return empty AutofillResult on total failure."""
         # System prompt is built from schema + KB only — never from region content (D-14).
@@ -167,7 +215,17 @@ class AnthropicAutofiller:
         # Region content is ONLY in the user turn, inside delimiters (D-14).
         user_content = f"<document_content>{region_text}</document_content>\n\nExtract the fields as JSON."
 
-        # Cold start: examples=() → single user message only (no few-shot block).
+        # Few-shot examples + known-entity-context (RECALL-01, D-14): UNTRUSTED
+        # content rendered ONLY in the user turn, never the system prompt.
+        examples_block = _render_examples_block(examples)
+        entity_context_block = _render_entity_context_block(entity_context)
+        if examples_block:
+            user_content = f"{user_content}\n\n{examples_block}"
+        if entity_context_block:
+            user_content = f"{user_content}\n\n{entity_context_block}"
+
+        # Cold start: examples=() and no entity_context → single user message,
+        # byte-identical to the region-only form (regression guard).
         messages: list[dict[str, object]] = [{"role": "user", "content": user_content}]
 
         for attempt in range(_MAX_RETRIES):
