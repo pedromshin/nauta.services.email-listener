@@ -56,11 +56,9 @@ lists (Apache-2.0), restated against this app's own vocabulary:
    are banned. This app's surfaces (Code-Island fixture browser, popovers, dropdowns) stay solid
    `bg-background`/`bg-popover` — blur/backdrop-filter is not part of this app's committed material
    palette.
-   *Known exception (documented debt, 2026-07-06):* the `/chat` conversation rail
-   (`conversation-rail.tsx`) has carried `backdrop-blur-md` since Phase 22, where it earns its keep
-   for legibility when the rail overlays live canvas content. Resolve during Phase 28's
-   material/token pass (solid token surface or explicit allowlisting) — do not copy the pattern to
-   new surfaces meanwhile.
+   **Resolved (Phase 28, 2026-07-06):** the `/chat` conversation rail (`conversation-rail.tsx`)
+   previously carried `backdrop-blur-md` as a documented exception; Phase 28 replaced it with a
+   solid `bg-background/95` surface — no glassmorphism exception remains in this app.
 4. **The hero-metric template.** Big number, small label, supporting stats, gradient accent (the
    SaaS-dashboard cliché) is banned. Neither `/chat` nor `/studio` has, or should introduce, a
    landing-style hero-metric surface.
@@ -83,6 +81,14 @@ lists (Apache-2.0), restated against this app's own vocabulary:
 10. **Over-rounded corners.** `border-radius` of 32px or more on cards, panels, or inputs is banned.
     This app's rounding stays in the 8-16px range (`rounded-md`/`rounded-lg`); full-pill rounding is
     reserved for tags and buttons only.
+
+    **Radius allowlist (added Phase 28):** interactive controls (buttons, inputs, badges, chips) use
+    the base radius family (`rounded-md`/`rounded-lg`, i.e. `--radius` and its `-2px`/`-4px`
+    derivations); containers (cards, panels, dialogs, popovers) use `rounded-xl`/`rounded-2xl`
+    (`--radius-xl`/`--radius-2xl`, 12px/16px at the current base). This is guidance for new call
+    sites — existing radius usage elsewhere in the app is not retroactively audited by this note.
+    Source: styles.refero.design's shadcn/ui "clinical blueprint on frosted paper" style extraction
+    (two-value radius allowlist), per `.planning/research/CHAT-STUDIO-DESIGN-UPLIFT.md`.
 11. **Hand-drawn / sketchy illustrations.** Doodle-style SVGs, "paper-grain" filter effects, or crude
     hand-drawn scene illustrations are banned from this app's utilitarian chat/studio surfaces. Use
     `lucide-react` icons, or no illustration at all.

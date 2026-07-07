@@ -108,7 +108,7 @@ export function ConversationRail({
       >
         <div
           className={cn(
-            "h-full shrink-0 overflow-hidden border-r border-border/50 bg-background/70 backdrop-blur-md",
+            "h-full shrink-0 overflow-hidden border-r border-border/50 bg-background/95",
             "t-panel-reveal",
             collapsed ? "w-0" : "w-[280px]",
           )}
