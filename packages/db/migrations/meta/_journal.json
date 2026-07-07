@@ -183,6 +183,13 @@
       "when": 1783276800000,
       "tag": "0025_chat_widget_interactions",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1783363200000,
+      "tag": "0026_knowledge_trust_tier",
+      "breakpoints": true
     }
   ]
 }
