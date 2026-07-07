@@ -129,3 +129,49 @@
     border: 1px solid transparent;
   }
 }
+
+/* ADOPT-03 (27-03-PLAN.md): <GeneratingRing> — hand-ported CSS TECHNIQUE from
+   Magic UI's shine-border + animated-shiny-text (magicuidesign/magicui,
+   MIT, fetched 2026-07-06) — a background-position sweep, not shine-border's
+   own component API. Teal-only via var(--primary). This custom utility is
+   NOT registered as a Tailwind theme animation (it lives in plain
+   globals.css, per 27-CONTEXT.md), so Tailwind's `motion-safe:` variant
+   cannot target it via a class-name prefix — the prefers-reduced-motion
+   query below achieves the identical contract by hand, directly in this
+   stylesheet. */
+@layer utilities {
+  .generating-ring {
+    position: relative;
+    isolation: isolate;
+  }
+  .generating-ring::before {
+    content: "";
+    position: absolute;
+    inset: -2px;
+    border-radius: inherit;
+    padding: 2px;
+    background-image: linear-gradient(
+      90deg,
+      transparent 0%,
+      hsl(var(--primary) / 0.85) 45%,
+      hsl(var(--primary)) 50%,
+      hsl(var(--primary) / 0.85) 55%,
+      transparent 100%
+    );
+    background-size: 250% 100%;
+    background-position: 50% 0%;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+            mask-composite: exclude;
+    pointer-events: none;
+  }
+  @keyframes generating-ring-sweep {
+    from { background-position: 0% 0%; }
+    to   { background-position: 200% 0%; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .generating-ring::before {
+      animation: generating-ring-sweep 2000ms linear infinite;
+    }
+  }
+}
