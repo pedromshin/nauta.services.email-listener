@@ -129,6 +129,7 @@ class FakeAutofiller:
         entity_type: EntityType,
         knowledge_base_text: str,
         examples: tuple[dict[str, object], ...] = (),
+        entity_context: dict[str, object] | None = None,
     ) -> AutofillResult:
         self.calls.append(
             {
@@ -136,6 +137,7 @@ class FakeAutofiller:
                 "entity_type": entity_type,
                 "knowledge_base_text": knowledge_base_text,
                 "examples": examples,
+                "entity_context": entity_context,
             }
         )
         return self._result

@@ -233,14 +233,17 @@ def _provide_autofill_use_case(
     autofiller: AutofillProtocol,
     embedder: EmbeddingProtocol,
     retrieval: RetrievalPort,
+    entity_instances: EntityInstanceRepository,
 ) -> AutofillUseCase:
     """Factory for AutofillUseCase wired with the 04-08 few-shot retrieval ports.
 
-    AutofillUseCase accepts ``embedder``/``retrieval`` as Optional with None
-    defaults so unit tests can omit them; dishka does not auto-inject defaulted
-    Optional params, so this factory passes them explicitly to enable the
-    few-shot path (D-15) in the live container.  When retrieval returns [] the
-    use case still preserves the cold-start path (D-13).
+    AutofillUseCase accepts ``embedder``/``retrieval``/``entity_instances`` as
+    Optional with None defaults so unit tests can omit them; dishka does not
+    auto-inject defaulted Optional params, so this factory passes them
+    explicitly to enable the few-shot path (D-15) and the cheap recall win
+    (RECALL-01, 31-01) in the live container.  When retrieval returns [] the
+    use case still preserves the cold-start path (D-13); a resolved-entity
+    read failure never breaks autofill (best-effort).
     """
     return AutofillUseCase(
         components=components,
@@ -249,6 +252,7 @@ def _provide_autofill_use_case(
         autofiller=autofiller,
         embedder=embedder,
         retrieval=retrieval,
+        entity_instances=entity_instances,
     )
 
 

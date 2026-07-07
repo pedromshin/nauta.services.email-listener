@@ -26,6 +26,7 @@ from app.domain.entities.extraction_record import ExtractionRecord
 from app.domain.ports.autofill_protocol import AutofillProtocol, AutofillResult
 from app.domain.ports.component_repository import ComponentRepository
 from app.domain.ports.embedding_protocol import EmbeddingProtocol
+from app.domain.ports.entity_instance_repository import EntityInstanceRepository
 from app.domain.ports.entity_type_repository import EntityTypeRepository
 from app.domain.ports.extraction_repository import ExtractionRepository
 from app.domain.ports.retrieval_port import RetrievalPort, RetrievedExample
@@ -57,10 +58,21 @@ class AutofillUseCase:
         autofiller: AutofillProtocol — LLM-backed field extraction.
         embedder: EmbeddingProtocol | None — Bedrock Titan embedder (04-08).
         retrieval: RetrievalPort | None — hybrid vector+trgm retrieval (04-08).
+        entity_instances: EntityInstanceRepository | None — resolved-entity read
+            for the cheap recall win (RECALL-01, 31-01). Best-effort: a read
+            failure never breaks autofill.
 
     Cold-start behaviour (D-13):
         When retrieval returns [] (or embedder/retrieval not set), calls autofiller
         with examples=() — no few-shot block is included.
+
+    Cheap recall (RECALL-01):
+        After importer_id is derived, best-effort reads the component's resolved
+        entity via find_selected_instance_for_component, falling back to the top
+        find_unselected_candidate_instances_for_component candidate. When resolved,
+        its aliases/identifiers are passed to the autofiller as entity_context. A
+        read failure (or no entity_instances port) is swallowed — never breaks
+        autofill. routing_reason is unaffected (still driven by examples only).
 
     Tenant isolation (T-04-26):
         find_by_slug is called with importer_id first; if the entity type is not
@@ -76,6 +88,7 @@ class AutofillUseCase:
         autofiller: AutofillProtocol,
         embedder: EmbeddingProtocol | None = None,
         retrieval: RetrievalPort | None = None,
+        entity_instances: EntityInstanceRepository | None = None,
     ) -> None:
         self._components = components
         self._entity_types = entity_types
@@ -83,6 +96,7 @@ class AutofillUseCase:
         self._autofiller = autofiller
         self._embedder = embedder
         self._retrieval = retrieval
+        self._entity_instances = entity_instances
 
     async def execute(
         self,
@@ -132,6 +146,11 @@ class AutofillUseCase:
         # Cold-start KB: entity type description is the default knowledge base (D-13).
         knowledge_base_text = entity_type.description or ""
 
+        # ── Cheap recall: resolved-entity aliases/identifiers (RECALL-01) ────────
+        # Best-effort direct entity_instances read via the existing suggest-only
+        # link paths (NO BFS/graph traversal). A read failure never breaks autofill.
+        entity_context = await self._resolve_entity_context(component_id, log=log)
+
         # ── Few-shot retrieval (04-08 upgrade, D-15) ─────────────────────────────
         # When embedder + retrieval are available, embed the region and retrieve
         # top-N confirmed similar examples to inject as few-shot context.
@@ -173,6 +192,7 @@ class AutofillUseCase:
             entity_type=entity_type,
             knowledge_base_text=knowledge_base_text,
             examples=examples,
+            entity_context=entity_context,
         )
 
         # Persist candidate ExtractionRecord (T-04-25: status=candidate only)
@@ -201,3 +221,42 @@ class AutofillUseCase:
         )
 
         return result
+
+    async def _resolve_entity_context(
+        self,
+        component_id: str,
+        *,
+        log: structlog.stdlib.BoundLogger,
+    ) -> dict[str, object] | None:
+        """Best-effort resolve the component's entity aliases/identifiers (RECALL-01).
+
+        Reads find_selected_instance_for_component first, falling back to the
+        top find_unselected_candidate_instances_for_component candidate. NO
+        BFS/graph traversal — a direct entity_instances read via the existing
+        suggest-only link paths. A read failure is swallowed and logged; it
+        never breaks autofill.
+        """
+        if self._entity_instances is None:
+            return None
+        try:
+            instance = await self._entity_instances.find_selected_instance_for_component(component_id)
+            if instance is None:
+                candidates = await self._entity_instances.find_unselected_candidate_instances_for_component(
+                    component_id
+                )
+                instance = candidates[0] if candidates else None
+            if instance is None:
+                return None
+            log.info(
+                "autofill_entity_context_injected",
+                entity_instance_id=instance.id,
+                alias_count=len(instance.aliases),
+                identifier_count=len(instance.identifiers),
+            )
+            return {
+                "aliases": list(instance.aliases),
+                "identifiers": dict(instance.identifiers),
+            }
+        except Exception:
+            log.warning("autofill_entity_context_read_failed", exc_info=True)
+            return None
