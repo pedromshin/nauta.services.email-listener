@@ -109,7 +109,11 @@ an ordinal trust tier so that provenance is trustworthy from the first row writt
      (`content_raw.tokens`/`location.polygon`) it was derived from, inspectable on the edge row
   4. Re-confirming or superseding an already-confirmed region updates that region's edges without
      creating duplicate or orphaned rows, consistent with the Phase-6 supersede-versioning convention
-**Plans**: TBD
+**Plans**: 4 plans
+  - [ ] 29-01-PLAN.md — Tier-ladder enum + provenance/is_active columns; migration 0026 applied + live-verified (TIER-01)
+  - [ ] 29-02-PLAN.md — Shared token-provenance helper, KnowledgeSynthesizer + KnowledgeGraphRepository ports, Supabase edge/node adapter (SYNTH-02)
+  - [ ] 29-03-PLAN.md — KnowledgeSynthesizerService: 1:1 region node + supersede-safe EXTRACTED edge set (SYNTH-03)
+  - [ ] 29-04-PLAN.md — Best-effort synthesis hook wired into ConfirmRegionUseCase + DI; end-to-end materialization (SYNTH-01)
 
 ### Phase 30: Suggest-Only Promotion Gate
 **Goal**: Synthesis-generated relationships surface only as human-reviewable suggestions — never as
@@ -173,7 +177,7 @@ parallelizable alongside 29/30 if desired (no shared schema/table).
 
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
-| 29. Tier Ladder + Edge Materialization | 0/? | Not started | - |
+| 29. Tier Ladder + Edge Materialization | 0/4 | Planned | - |
 | 30. Suggest-Only Promotion Gate | 0/? | Not started | - |
 | 31. Recall & Measurement | 0/? | Not started | - |
 | 32. Knowledge Canvas: Tiered Graph Exploration | 0/? | Not started | - |
