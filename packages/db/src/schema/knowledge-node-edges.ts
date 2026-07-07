@@ -65,6 +65,12 @@ export const KnowledgeNodeEdges = pgTable(
     // preserved). Mirrors KnowledgeNodes.isActive.
     isActive: boolean("is_active").notNull().default(true),
 
+    // Human-promotion provenance (Phase 30 — TIER-03), distinct from the
+    // synthesis `provenance` column above: { promoted_at, from_tier,
+    // mechanism }. Written ONLY by the guarded promote_edge repo method when
+    // a human reviewer flips an active INFERRED/AMBIGUOUS edge to EXTRACTED.
+    promotion: jsonb("promotion"),
+
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
