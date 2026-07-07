@@ -18,7 +18,7 @@ const theme = resolveConfig(appConfig).theme;
 type ColorFamily = Record<string, unknown>;
 
 const familyOf = (name: string): ColorFamily => {
-  const colors = theme.colors as Record<string, unknown>;
+  const colors = theme.colors as unknown as Record<string, unknown>;
   const family = colors[name];
   expect(family, `theme.colors.${name} must be registered`).toBeDefined();
   return family as ColorFamily;
