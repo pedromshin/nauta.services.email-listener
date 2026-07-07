@@ -38,24 +38,26 @@ export function DeleteConversationDialog({
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Delete this conversation?</AlertDialogTitle>
-          <AlertDialogDescription>
-            This permanently deletes all messages in &quot;
-            {conversationTitle ?? ""}&quot;. This can&apos;t be undone.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Keep conversation</AlertDialogCancel>
-          <AlertDialogAction
-            onClick={onConfirm}
-            disabled={isDeleting}
-            aria-label="Confirm conversation delete"
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-          >
-            Delete
-          </AlertDialogAction>
-        </AlertDialogFooter>
+        <div className="t-modal-reveal">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this conversation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently deletes all messages in &quot;
+              {conversationTitle ?? ""}&quot;. This can&apos;t be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep conversation</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={onConfirm}
+              disabled={isDeleting}
+              aria-label="Confirm conversation delete"
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </div>
       </AlertDialogContent>
     </AlertDialog>
   );

@@ -116,42 +116,46 @@ export function ModelPicker({
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[26rem] p-0">
-        <Command>
-          <CommandInput placeholder="Search models…" />
-          <CommandList>
-            <CommandEmpty>No models available.</CommandEmpty>
-            {TRANSPORT_GROUPS.map(({ transport, heading }) => {
-              const entries = models.filter(
-                (model) => model.transport === transport,
-              );
-              if (entries.length === 0) return null;
-              return (
-                <CommandGroup key={transport} heading={heading}>
-                  {entries.map((model) => (
-                    <CommandItem
-                      key={model.id}
-                      value={`${model.displayName} ${model.id}`}
-                      disabled={
-                        model.executionLocus === "browser" &&
-                        webllm !== undefined &&
-                        !webllm.supported
-                      }
-                      onSelect={() => void handleSelect(model)}
-                    >
-                      <ModelPickerEntry
-                        model={model}
-                        isRecommended={model.id === currentModelId}
-                        webllm={
-                          model.executionLocus === "browser" ? webllm : undefined
+        <div className="t-dropdown-reveal">
+          <Command>
+            <CommandInput placeholder="Search models…" />
+            <CommandList>
+              <CommandEmpty>No models available.</CommandEmpty>
+              {TRANSPORT_GROUPS.map(({ transport, heading }) => {
+                const entries = models.filter(
+                  (model) => model.transport === transport,
+                );
+                if (entries.length === 0) return null;
+                return (
+                  <CommandGroup key={transport} heading={heading}>
+                    {entries.map((model) => (
+                      <CommandItem
+                        key={model.id}
+                        value={`${model.displayName} ${model.id}`}
+                        disabled={
+                          model.executionLocus === "browser" &&
+                          webllm !== undefined &&
+                          !webllm.supported
                         }
-                      />
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              );
-            })}
-          </CommandList>
-        </Command>
+                        onSelect={() => void handleSelect(model)}
+                      >
+                        <ModelPickerEntry
+                          model={model}
+                          isRecommended={model.id === currentModelId}
+                          webllm={
+                            model.executionLocus === "browser"
+                              ? webllm
+                              : undefined
+                          }
+                        />
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                );
+              })}
+            </CommandList>
+          </Command>
+        </div>
       </PopoverContent>
     </Popover>
   );
