@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import type { MessagePart } from "../_hooks/use-chat-stream";
+import { GeneratingRing } from "~/components/generating-ring";
 import { CompactInteractionEntry } from "./compact-interaction-entry";
 import { CostCapBlockedCard } from "./cost-cap-blocked-card";
 import { GenuiPartBoundary } from "./genui-part-boundary";
@@ -148,11 +149,12 @@ export function MessageTurn({
 
               if (part.type === "genui_spec_streaming") {
                 return (
-                  <GenuiPartBoundary
-                    key={index}
-                    specJson={part.partialJson}
-                    isStreaming={true}
-                  />
+                  <GeneratingRing key={index} active className="rounded-lg">
+                    <GenuiPartBoundary
+                      specJson={part.partialJson}
+                      isStreaming={true}
+                    />
+                  </GeneratingRing>
                 );
               }
 
@@ -191,11 +193,12 @@ export function MessageTurn({
                 // for unparseable content) until the finalized part lands via
                 // chat.getHistory (D-01 async-resume).
                 return (
-                  <GenuiPartBoundary
-                    key={index}
-                    specJson={part.partialJson}
-                    isStreaming={true}
-                  />
+                  <GeneratingRing key={index} active className="rounded-lg">
+                    <GenuiPartBoundary
+                      specJson={part.partialJson}
+                      isStreaming={true}
+                    />
+                  </GeneratingRing>
                 );
               }
 

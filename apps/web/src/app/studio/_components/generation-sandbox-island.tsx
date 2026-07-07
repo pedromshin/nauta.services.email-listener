@@ -68,6 +68,7 @@ import type { StylePackId } from "@nauta/genui/theme";
 import { SpecRendererIsland } from "./spec-renderer-island";
 import { GenerationStateChrome } from "./generation-state-chrome";
 import { JsonPane } from "./json-pane";
+import { GeneratingRing } from "~/components/generating-ring";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -349,59 +350,71 @@ export function GenerationSandboxIsland({
       )}
 
       {/* Output area — generation chrome + 55/45 panel split (§6 / D-09) */}
+      {/* ADOPT-03: GeneratingRing wraps #sandbox-output-region, driven by
+          chromeProps.isPending (== q.isFetching). The wrapper carries the
+          flex-1/min-h-0 sizing that used to live on the region div itself
+          (GeneratingRing's own contract is active/className/children only),
+          so the region div now fills the wrapper via h-full instead. The
+          honest "Generating…" label inside GenerationStateChrome (D-02) is
+          UNCHANGED — the ring is a purely additional visual signal. */}
       {showChrome && (
-        <div
-          id="sandbox-output-region"
-          role="region"
-          aria-label="Generation output"
-          aria-expanded={specToRender !== undefined}
-          className="flex flex-1 min-h-0 flex-col"
+        <GeneratingRing
+          active={chromeProps.isPending}
+          className="flex flex-1 min-h-0 flex-col rounded-lg"
         >
-          {/* GenerationStateChrome — four-state chrome row (UI-SPEC §9) */}
-          <GenerationStateChrome {...chromeProps} />
+          <div
+            id="sandbox-output-region"
+            role="region"
+            aria-label="Generation output"
+            aria-expanded={specToRender !== undefined}
+            className="flex h-full min-h-0 flex-col"
+          >
+            {/* GenerationStateChrome — four-state chrome row (UI-SPEC §9) */}
+            <GenerationStateChrome {...chromeProps} />
 
-          {/* 55/45 ResizablePanelGroup — mirrors /studio/preview/page.tsx verbatim (D-09) */}
-          {specToRender !== undefined && (
-            <ResizablePanelGroup direction="horizontal" className="h-full flex-1">
-              {/* Left: rendered spec output */}
-              <ResizablePanel defaultSize={55} minSize={30}>
-                <div
-                  role="region"
-                  aria-label="Rendered output"
-                  className="flex h-full flex-col overflow-y-auto scrollbar-token"
-                >
-                  {/* Pack provenance badge — D-04: shows which pack was used */}
-                  {displayPackName !== undefined && (
-                    <div className="shrink-0 px-6 pt-4 pb-2">
-                      <Badge
-                        variant="secondary"
-                        aria-label={`Visual theme: ${displayPackName}`}
-                      >
-                        Theme: {displayPackName}
-                      </Badge>
+            {/* 55/45 ResizablePanelGroup — mirrors /studio/preview/page.tsx verbatim (D-09) */}
+            {specToRender !== undefined && (
+              <ResizablePanelGroup direction="horizontal" className="h-full flex-1">
+                {/* Left: rendered spec output */}
+                <ResizablePanel defaultSize={55} minSize={30}>
+                  <div
+                    role="region"
+                    aria-label="Rendered output"
+                    className="flex h-full flex-col overflow-y-auto scrollbar-token"
+                  >
+                    {/* Pack provenance badge — D-04: shows which pack was used */}
+                    {displayPackName !== undefined && (
+                      <div className="shrink-0 px-6 pt-4 pb-2">
+                        <Badge
+                          variant="secondary"
+                          aria-label={`Visual theme: ${displayPackName}`}
+                        >
+                          Theme: {displayPackName}
+                        </Badge>
+                      </div>
+                    )}
+                    <div className="flex-1 p-6 pt-2">
+                      <SpecRendererIsland spec={specToRender} actions={actions} />
                     </div>
-                  )}
-                  <div className="flex-1 p-6 pt-2">
-                    <SpecRendererIsland spec={specToRender} actions={actions} />
                   </div>
-                </div>
-              </ResizablePanel>
+                </ResizablePanel>
 
-              <ResizableHandle />
+                <ResizableHandle />
 
-              {/* Right: spec JSON */}
-              <ResizablePanel defaultSize={45} minSize={25}>
-                <div
-                  role="region"
-                  aria-label="Spec JSON"
-                  className="flex h-full flex-col bg-muted"
-                >
-                  <JsonPane value={specToRender} />
-                </div>
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          )}
-        </div>
+                {/* Right: spec JSON */}
+                <ResizablePanel defaultSize={45} minSize={25}>
+                  <div
+                    role="region"
+                    aria-label="Spec JSON"
+                    className="flex h-full flex-col bg-muted"
+                  >
+                    <JsonPane value={specToRender} />
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            )}
+          </div>
+        </GeneratingRing>
       )}
     </div>
   );
