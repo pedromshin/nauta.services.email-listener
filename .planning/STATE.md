@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Knowledge-Graph Uplift
 status: executing
-last_updated: "2026-07-07T18:41:13.025Z"
-last_activity: 2026-07-07 -- Phase 29 plan 01 (tier ladder schema + migration 0026) executed
+last_updated: "2026-07-07T18:54:12.964Z"
+last_activity: 2026-07-07 -- Phase 29 plan 02 (provenance write substrate: helper + ports + Supabase adapter) executed
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
-  percent: 25
+  completed_plans: 2
+  percent: 50
 ---
 
 # State
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 ## Current Position
 
 Phase: 29 (Tier Ladder + Edge Materialization) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Executing Phase 29
-Last activity: 2026-07-07 -- Phase 29 plan 01 (tier ladder schema + migration 0026) executed
+Last activity: 2026-07-07 -- Phase 29 plan 02 (provenance write substrate: helper + ports + Supabase adapter) executed
 
 ## v1.5 Roadmap Summary (2026-07-07)
 
@@ -1195,6 +1195,9 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 - 2026-07-06 (26-04): no dedicated canvas-layout.test.ts exists in the repo — ran the existing use-canvas-persistence + panel-data-flow vitest suites instead (15 tests pass) to confirm the nodesep change doesn't affect saved-position round-trip or overlap-cascade logic
 - 2026-07-06 (27-04): GeneratingRing's interface is locked to active/className/children only (no id/role/aria passthrough) — the Studio mount moves the flex-1/min-h-0 layout classes onto the GeneratingRing wrapper itself (now the flex item within the parent's flex-col) and the #sandbox-output-region div fills it via h-full, rather than dropping those classes and breaking the 55/45 resizable-panel sizing (Rule 1, layout-preservation fix)
 - 2026-07-06 (27-04): Chat mount wraps ONLY the two streaming part branches (genui_spec_streaming, interactive_widget_streaming) with GeneratingRing active — the finalized genui_spec/interactive_widget branches stay unwrapped per the UI-SPEC's "nothing is generating once finalized" contract; GenuiPartBoundary/InteractiveWidgetBoundary/spec-renderer.tsx confirmed untouched via git diff (locked-file grep gate)
+- 2026-07-07 (29-02): capture_provenance() returns {tokens, text} in one call so the future synthesizer (29-03) and edit_region's text-only need share one source of truth for the OCR token∩polygon overlap predicate — no duplicated intersection logic
+- 2026-07-07 (29-02): upsert_node performs read-then-write (find_active_node lookup, then insert or update) rather than a DB-level upsert-on-conflict, because node identity is a business key (importer_id, scope, scope_ref_id), not a single unique column PostgREST can target
+- 2026-07-07 (29-02): pre-existing test-isolation flake found in test_genui_retrieval_provider.py (24 tests fail only when the full suite runs together; pass in isolation; reproduces on unmodified main) — logged to deferred-items.md, out of scope for this plan
 
 ## Performance Metrics
 
@@ -1270,6 +1273,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 26 P07 | 15min | 2 tasks | 2 files |
 | Phase 27 P05 | 15min | 3 tasks | 5 files |
 | Phase 28 P01 | 15min | 3 tasks | 4 files |
+| Phase 29 P02 | 35min | 3 tasks | 5 files — _token_provenance.py shared helper (extracted from edit_region) + KnowledgeSynthesizer/KnowledgeGraphRepository domain ports + SupabaseKnowledgeGraphRepository adapter (tier + provenance jsonb + is_active supersede); 5 new call-shape tests |
 
 ## Operator Next Steps
 
