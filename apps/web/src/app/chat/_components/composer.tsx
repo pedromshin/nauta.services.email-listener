@@ -73,7 +73,7 @@ export function Composer({
   );
 
   return (
-    <div className="w-full shrink-0 border-t border-border/60 bg-background shadow-sm">
+    <div className="w-full shrink-0 border-t border-border/60 bg-background shadow-elevation-2">
       <div className="mx-auto flex w-full max-w-3xl items-end gap-2 px-4 py-4">
         <Textarea
           ref={textareaRef}
