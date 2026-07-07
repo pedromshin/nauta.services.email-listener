@@ -70,7 +70,8 @@ milestone touches `packages/genui/src/renderer/spec-renderer.tsx` or `GenuiPartB
 `InteractiveWidgetBoundary` chrome (already owned/fixed by Phase 24).
 
 - [x] **Phase 26: Zero-Dependency Contract Fixes + Backlog Polish** - `/chat` and `/studio`'s own chrome (React Flow, node differentiation, hardcoded colors, JSON panes, prop table, hover states, role chrome, composer dock, scrollbars, empty states) matches the app's existing token system instead of stock/hardcoded values, plus two small independent backlog fixes (declared-state binding, canvas auto-layout) (completed 2026-07-06)
-- [x] **Phase 27: Adopted External Design Picks** - Impeccable's product-register rules, Magic UI's file-tree + generating-ring CSS technique, ux-designer-skill references, and transitions.dev snippets are folded into the app and its docs at near-zero footprint (completed 2026-07-07)
+- [x] **Phase 27: Adopted External Design Picks** - Impeccable's product-register rules, Magic UI's file-tree + generating-ring CSS technique, ux-designer-skill references, and transitions.dev snippets are folded into the app and its docs at near-zero footprint
+ (completed 2026-07-07)
 - [ ] **Phase 28: Design-System Token Upgrades** - The foundational token set (secondary/muted/accent, chart/sidebar hues, shadow scale, radius steps, entrance animation) is upgraded so every consuming surface benefits at once
 
 ## Phase Details
@@ -132,7 +133,11 @@ already surfaced every place a token gap was papered over with a hardcoded value
   2. Chart series colors and the sidebar visibly use teal-derived hues instead of stock shadcn demo colors
   3. A real elevation/shadow scale (`elevation-1/2/3`, teal-tinted) exists in `packages/tailwind-config/base.ts` and is visibly applied; `xl`/`2xl` radius steps exist and `packages/ui/src/card.tsx` consumes the radius token instead of a hardcoded `rounded-xl`
   4. Genui panel mount and Studio's history/page-ideas list items visibly animate in (entrance/stagger) via the already-installed `tailwindcss-animate`, going beyond bare Radix open/close transitions
-**Plans**: TBD
+**Plans**: 3 plans (wave 1: 28-01 token foundation; wave 2: 28-02, 28-03 consumers — disjoint file sets)
+Plans:
+- [ ] 28-01-PLAN.md — Token foundation: TOKEN-01/02 values + TOKEN-03/04 vars & config (globals.css, base.ts, web.ts) + committed WCAG contrast test
+- [ ] 28-02-PLAN.md — Elevation consumers (card, composer, both canvas nodes) + genui panel mount entrance (TOKEN-03, TOKEN-05a)
+- [ ] 28-03-PLAN.md — Studio history/page-ideas list stagger + conversation-rail blur-debt resolution + bans-doc closure & radius allowlist note (TOKEN-05b/c, TOKEN-04 docs)
 **UI hint**: yes
 
 ## Progress
@@ -145,7 +150,7 @@ papered-over token gap before Phase C touches the token layer)
 |-------|-----------------|--------|-----------|
 | 26. Zero-Dependency Contract Fixes + Backlog Polish | 7/7 | Complete   | 2026-07-06 |
 | 27. Adopted External Design Picks | 5/5 | Complete   | 2026-07-07 |
-| 28. Design-System Token Upgrades | 0/? | Not started | - |
+| 28. Design-System Token Upgrades | 0/3 | Not started | - |
 
 ## Next
 
