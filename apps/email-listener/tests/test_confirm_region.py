@@ -237,6 +237,171 @@ def test_confirm_region_does_not_overwrite_prior_confirmed_value() -> None:
 
 
 # ---------------------------------------------------------------------------
+# Tests: KnowledgeSynthesizer wiring (29-04, D-13 hook activation, SYNTH-01)
+# ---------------------------------------------------------------------------
+
+
+def test_confirm_region_calls_synthesizer_after_update_embedding() -> None:
+    """The synthesizer is awaited AFTER update_embedding, with source=learned_from_correction."""
+    record = _make_extraction(status="candidate")
+    component = _make_component()
+
+    parent = AsyncMock()
+    components = parent.components
+    components.find_by_id.return_value = component
+    components.update_embedding.return_value = None
+
+    extractions = parent.extractions
+    extractions.find_by_component_id.return_value = [record]
+    extractions.save.return_value = record
+
+    embedder = parent.embedder
+    embedder.embed.return_value = _NONZERO_EMBEDDING
+
+    knowledge_synthesizer = parent.knowledge_synthesizer
+    knowledge_synthesizer.synthesize_from_confirmation.return_value = None
+
+    use_case = ConfirmRegionUseCase(
+        components=components,
+        extractions=extractions,
+        embedder=embedder,
+        knowledge_synthesizer=knowledge_synthesizer,
+    )
+    asyncio.run(
+        use_case.execute(
+            component_id=_COMP_ID,
+            importer_id=_IMPORTER_ID,
+            corrected_fields=None,
+        )
+    )
+
+    knowledge_synthesizer.synthesize_from_confirmation.assert_awaited_once()
+    call_kwargs = knowledge_synthesizer.synthesize_from_confirmation.call_args[1]
+    assert call_kwargs["component_id"] == _COMP_ID
+    assert call_kwargs["importer_id"] == _IMPORTER_ID
+    assert call_kwargs["source"] == "learned_from_correction"
+
+    # Ordering: update_embedding must precede the synthesis call (via shared parent mock).
+    call_names = [c[0] for c in parent.mock_calls]
+    update_embedding_idx = call_names.index("components.update_embedding")
+    synth_idx = call_names.index("knowledge_synthesizer.synthesize_from_confirmation")
+    assert update_embedding_idx < synth_idx
+
+
+def test_confirm_region_synthesis_failure_is_best_effort() -> None:
+    """A raising synthesizer does NOT fail confirm; prior side effects still ran."""
+    record = _make_extraction(status="candidate")
+    component = _make_component()
+
+    components = AsyncMock()
+    components.find_by_id.return_value = component
+    components.update_embedding.return_value = None
+    components.update_status.return_value = None
+
+    extractions = AsyncMock()
+    extractions.find_by_component_id.return_value = [record]
+    extractions.save.return_value = record
+
+    embedder = AsyncMock()
+    embedder.embed.return_value = _NONZERO_EMBEDDING
+
+    knowledge_synthesizer = AsyncMock()
+    knowledge_synthesizer.synthesize_from_confirmation.side_effect = RuntimeError("boom")
+
+    use_case = ConfirmRegionUseCase(
+        components=components,
+        extractions=extractions,
+        embedder=embedder,
+        knowledge_synthesizer=knowledge_synthesizer,
+    )
+    # Must not raise even though the synthesizer failed.
+    asyncio.run(
+        use_case.execute(
+            component_id=_COMP_ID,
+            importer_id=_IMPORTER_ID,
+            corrected_fields=None,
+        )
+    )
+
+    knowledge_synthesizer.synthesize_from_confirmation.assert_awaited_once()
+    components.update_status.assert_called_once_with(_COMP_ID, "confirmed")
+    components.update_embedding.assert_called_once_with(_COMP_ID, _NONZERO_EMBEDDING)
+
+
+def test_confirm_region_no_candidate_passes_none_confirmed_record_to_synthesizer() -> None:
+    """No-candidate path: confirmed_record passed to the synthesizer is None (no UnboundLocalError)."""
+    confirmed_record = _make_extraction(status="confirmed")
+    component = _make_component()
+
+    components = AsyncMock()
+    components.find_by_id.return_value = component
+    components.update_embedding.return_value = None
+
+    extractions = AsyncMock()
+    extractions.find_by_component_id.return_value = [confirmed_record]
+    extractions.save.return_value = confirmed_record
+
+    embedder = AsyncMock()
+    embedder.embed.return_value = _NONZERO_EMBEDDING
+
+    knowledge_synthesizer = AsyncMock()
+    knowledge_synthesizer.synthesize_from_confirmation.return_value = None
+
+    use_case = ConfirmRegionUseCase(
+        components=components,
+        extractions=extractions,
+        embedder=embedder,
+        knowledge_synthesizer=knowledge_synthesizer,
+    )
+    asyncio.run(
+        use_case.execute(
+            component_id=_COMP_ID,
+            importer_id=_IMPORTER_ID,
+            corrected_fields=None,
+        )
+    )
+
+    knowledge_synthesizer.synthesize_from_confirmation.assert_awaited_once()
+    call_kwargs = knowledge_synthesizer.synthesize_from_confirmation.call_args[1]
+    assert call_kwargs["confirmed_record"] is None
+
+
+def test_confirm_endpoint_invokes_wired_synthesizer() -> None:
+    """POST confirm through a real ConfirmRegionUseCase reaches the synthesizer (HTTP seam)."""
+    record = _make_extraction(status="candidate")
+    component = _make_component()
+
+    components = AsyncMock()
+    components.find_by_id.return_value = component
+    components.update_embedding.return_value = None
+
+    extractions = AsyncMock()
+    extractions.find_by_component_id.return_value = [record]
+    extractions.save.return_value = record
+
+    embedder = AsyncMock()
+    embedder.embed.return_value = _NONZERO_EMBEDDING
+
+    knowledge_synthesizer = AsyncMock()
+    knowledge_synthesizer.synthesize_from_confirmation.return_value = None
+
+    real_use_case = ConfirmRegionUseCase(
+        components=components,
+        extractions=extractions,
+        embedder=embedder,
+        knowledge_synthesizer=knowledge_synthesizer,
+    )
+
+    client = _make_confirm_client(real_use_case)
+    resp = client.post(
+        f"/v1/components/{_COMP_ID}/confirm",
+        json={},
+    )
+    assert resp.status_code == 200
+    knowledge_synthesizer.synthesize_from_confirmation.assert_awaited_once()
+
+
+# ---------------------------------------------------------------------------
 # Tests: AutofillUseCase few-shot upgrade
 # (These assertions do NOT touch test_autofill_use_case.py)
 # ---------------------------------------------------------------------------
