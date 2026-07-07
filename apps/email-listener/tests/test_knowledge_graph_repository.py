@@ -1,0 +1,181 @@
+"""Call-shape tests for SupabaseKnowledgeGraphRepository.
+
+Uses unittest.mock to assert table/op/filter call shapes -- no live DB.
+Async methods are tested via asyncio.run() since pytest-asyncio is not available.
+"""
+
+from __future__ import annotations
+
+import asyncio
+from unittest.mock import MagicMock
+
+from app.infrastructure.supabase.knowledge_graph_repository import SupabaseKnowledgeGraphRepository
+
+
+def _make_chain_mock(return_data: list[dict] | None = None) -> MagicMock:
+    """Build a chainable mock for PostgREST-style supabase calls."""
+    execute_result = MagicMock()
+    execute_result.data = return_data or []
+    chain = MagicMock()
+    chain.execute.return_value = execute_result
+    chain.eq.return_value = chain
+    chain.is_.return_value = chain
+    chain.upsert.return_value = chain
+    chain.insert.return_value = chain
+    chain.update.return_value = chain
+    chain.select.return_value = chain
+    chain.delete.return_value = chain
+    return chain
+
+
+def _make_client_mock(return_data: list[dict] | None = None) -> MagicMock:
+    """Build a mock supabase Client that chains table().op().execute()."""
+    client = MagicMock()
+    chain = _make_chain_mock(return_data)
+    client.table.return_value = chain
+    return client
+
+
+PROVENANCE = {
+    "component_id": "comp-001",
+    "page_index": 0,
+    "polygon": [[0.0, 0.0], [1.0, 0.0], [1.0, 1.0], [0.0, 1.0]],
+    "tokens": [{"text": "hello", "bbox": [0.0, 0.0, 0.1, 0.1]}],
+}
+
+
+def test_insert_edge_writes_is_active_true_tier_and_provenance() -> None:
+    client = _make_client_mock()
+    repo = SupabaseKnowledgeGraphRepository(client)
+
+    asyncio.run(
+        repo.insert_edge(
+            source_node_id="node-001",
+            target_ref_id="entity-001",
+            target_ref_type="entity_instance",
+            relation_type="describes",
+            tier="EXTRACTED",
+            source="learned_from_correction",
+            provenance=PROVENANCE,
+        )
+    )
+
+    client.table.assert_called_with("knowledge_node_edges")
+    chain = client.table.return_value
+    assert chain.insert.called, "insert_edge must call insert"
+    payload = chain.insert.call_args.args[0]
+    assert payload["is_active"] is True
+    assert payload["tier"] == "EXTRACTED"
+    assert payload["source_node_id"] == "node-001"
+    provenance = payload["provenance"]
+    assert set(provenance.keys()) >= {"component_id", "page_index", "polygon", "tokens"}
+    assert provenance["component_id"] == "comp-001"
+
+
+def test_deactivate_edges_for_node_updates_never_deletes() -> None:
+    client = _make_client_mock()
+    repo = SupabaseKnowledgeGraphRepository(client)
+
+    asyncio.run(repo.deactivate_edges_for_node("node-001"))
+
+    client.table.assert_called_with("knowledge_node_edges")
+    chain = client.table.return_value
+    assert chain.update.called, "deactivate_edges_for_node must call update"
+    payload = chain.update.call_args.args[0]
+    assert payload == {"is_active": False}
+    eq_calls = [str(c) for c in chain.eq.call_args_list]
+    combined = " ".join(eq_calls)
+    assert "source_node_id" in combined, f"source_node_id filter missing: {eq_calls}"
+    assert "is_active" in combined, f"is_active filter missing: {eq_calls}"
+    assert not chain.delete.called, "deactivate must never call delete (audit trail)"
+
+
+def test_find_active_edges_for_node_filters_source_and_active() -> None:
+    client = _make_client_mock(
+        return_data=[
+            {
+                "id": "edge-001",
+                "source_node_id": "node-001",
+                "target_ref_id": "entity-001",
+                "target_ref_type": "entity_instance",
+                "relation_type": "describes",
+                "tier": "EXTRACTED",
+                "source": "learned_from_correction",
+                "provenance": PROVENANCE,
+                "is_active": True,
+            }
+        ]
+    )
+    repo = SupabaseKnowledgeGraphRepository(client)
+
+    result = asyncio.run(repo.find_active_edges_for_node("node-001"))
+
+    client.table.assert_called_with("knowledge_node_edges")
+    chain = client.table.return_value
+    eq_calls = [str(c) for c in chain.eq.call_args_list]
+    combined = " ".join(eq_calls)
+    assert "source_node_id" in combined
+    assert "is_active" in combined
+    assert len(result) == 1
+    assert result[0]["id"] == "edge-001"
+
+
+def test_upsert_node_inserts_when_no_active_node_found() -> None:
+    """find_active_node returns [] first (select) then insert returns a row."""
+    client = MagicMock()
+    select_chain = _make_chain_mock(return_data=[])
+    insert_chain = _make_chain_mock(return_data=[{"id": "node-new"}])
+
+    def _table_side_effect(name: str) -> MagicMock:
+        return select_chain
+
+    client.table.side_effect = None
+    client.table.return_value = select_chain
+    # select() path returns select_chain; insert() path also comes off the same
+    # table() call in this repo's implementation, so make insert() on the
+    # select_chain itself return a chain with the insert-result execute().
+    select_chain.insert.return_value = insert_chain
+
+    repo = SupabaseKnowledgeGraphRepository(client)
+    node_id = asyncio.run(
+        repo.upsert_node(
+            importer_id="imp-abc",
+            title="Acme Corp",
+            content="Acme Corp is a shipper.",
+            scope="entity_instance",
+            scope_ref_id="entity-001",
+            scope_ref_type="entity_instance",
+            source="learned_from_correction",
+            tier="EXTRACTED",
+        )
+    )
+
+    assert node_id == "node-new"
+    assert select_chain.insert.called, "upsert_node must insert when no active node exists"
+
+
+def test_upsert_node_updates_existing_active_node() -> None:
+    """find_active_node returns an existing row -> upsert_node updates it in place."""
+    client = MagicMock()
+    select_chain = _make_chain_mock(return_data=[{"id": "node-existing"}])
+    client.table.return_value = select_chain
+
+    repo = SupabaseKnowledgeGraphRepository(client)
+    node_id = asyncio.run(
+        repo.upsert_node(
+            importer_id="imp-abc",
+            title="Acme Corp",
+            content="Acme Corp is a shipper.",
+            scope="entity_instance",
+            scope_ref_id="entity-001",
+            scope_ref_type="entity_instance",
+            source="learned_from_correction",
+            tier="EXTRACTED",
+        )
+    )
+
+    assert node_id == "node-existing"
+    assert select_chain.update.called, "upsert_node must update the existing active node"
+    update_payload = select_chain.update.call_args.args[0]
+    assert update_payload["title"] == "Acme Corp"
+    assert not select_chain.insert.called, "must not insert a duplicate when a node was reused"
