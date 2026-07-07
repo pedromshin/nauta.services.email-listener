@@ -267,6 +267,49 @@ class SupabaseEntityInstanceRepository:
         entity_instance_id = cast("dict[str, Any]", result.data[0])["entity_instance_id"]
         return await self.find_by_id(cast("str", entity_instance_id))
 
+    async def find_unconfirmed_entity_components_for_email(
+        self,
+        email_id: str,
+    ) -> list[Component]:
+        """Return NOT-yet-confirmed role='entity' components for this email (INFERRED source).
+
+        Deterministic, LLM-free co-occurrence signal: components sharing the email that have
+        not themselves been confirmed yet.
+        """
+        result = (
+            self._client.table("email_components")
+            .select("*")
+            .eq("email_id", email_id)
+            .eq("role", "entity")
+            .neq("extraction_status", "confirmed")
+            .execute()
+        )
+        return [_from_component_row(cast("dict[str, Any]", row)) for row in result.data]
+
+    async def find_unselected_candidate_instances_for_component(
+        self,
+        component_id: str,
+    ) -> list[EntityInstance]:
+        """Return non-selected candidate entity instances for this component (AMBIGUOUS source).
+
+        Reads component_entity_candidate_links for was_selected=False links, resolves each
+        entity_instance_id, and drops any that fail to resolve.
+        """
+        result = (
+            self._client.table("component_entity_candidate_links")
+            .select("*")
+            .eq("component_id", component_id)
+            .eq("was_selected", False)
+            .execute()
+        )
+        instances: list[EntityInstance] = []
+        for row in result.data:
+            entity_instance_id = cast("dict[str, Any]", row)["entity_instance_id"]
+            instance = await self.find_by_id(cast("str", entity_instance_id))
+            if instance is not None:
+                instances.append(instance)
+        return instances
+
     async def select_candidate_link(
         self,
         *,

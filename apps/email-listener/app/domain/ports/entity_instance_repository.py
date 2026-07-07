@@ -142,6 +142,32 @@ class EntityInstanceRepository(Protocol):
         """
         ...
 
+    async def find_unconfirmed_entity_components_for_email(
+        self,
+        email_id: str,
+    ) -> list[Component]:
+        """Return NOT-yet-confirmed role='entity' components for this email (INFERRED source).
+
+        Filters: email_id = <given id>, role='entity', extraction_status != 'confirmed'.
+        Deterministic, LLM-free — the co-occurrence signal for suggestion (INFERRED-tier)
+        edges: components that share an email with a just-confirmed region but have not
+        themselves been confirmed yet. Used by KnowledgeSynthesizerService.
+        """
+        ...
+
+    async def find_unselected_candidate_instances_for_component(
+        self,
+        component_id: str,
+    ) -> list[EntityInstance]:
+        """Return non-selected candidate entity instances for this component (AMBIGUOUS source).
+
+        Reads component_entity_candidate_links where component_id = <given id> and
+        was_selected = False, then resolves each entity_instance_id. Entries that fail to
+        resolve (e.g. dangling/inactive) are dropped. Deterministic, LLM-free — the weak-signal
+        source for suggestion (AMBIGUOUS-tier) edges. Used by KnowledgeSynthesizerService.
+        """
+        ...
+
     async def set_merge_state(
         self,
         entity_instance_id: str,
