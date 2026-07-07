@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.4
 milestone_name: Chat & Studio Design Uplift
-status: executing
-last_updated: "2026-07-07T01:40:05Z"
-last_activity: "2026-07-07 -- **28-02 EXECUTED:** elevation-scale consumers (card/composer/canvas nodes) + genui panel mount entrance"
+status: verifying
+last_updated: "2026-07-06T22:51:44-03:00"
+last_activity: "2026-07-06 -- **28-03 EXECUTED (PHASE 28 COMPLETE, v1.4 MILESTONE PLANS ALL EXECUTED):** Studio history/page-ideas stagger + conversation-rail blur-debt resolution + bans-doc closure"
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 15
-  completed_plans: 14
-  percent: 93
+  completed_plans: 15
+  percent: 100
 ---
 
 # State
@@ -20,14 +20,28 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-27)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** Phase 28 — Design-System Token Upgrades
+**Current focus:** Phase 28 — Design-System Token Upgrades — COMPLETE; v1.4 milestone plans all executed
 
 ## Current Position
 
-Phase: 28 (Design-System Token Upgrades) — EXECUTING
-Plan: 3 of 3
-Status: Executing Phase 28
-Last activity: 2026-07-07 -- **28-02 EXECUTED:** elevation-scale consumers (TOKEN-03) + genui panel
+Phase: 28 (Design-System Token Upgrades) — COMPLETE (3/3 plans)
+Plan: 3 of 3 (28-01, 28-02, 28-03 all complete)
+Status: Phase 28 complete; v1.4 milestone plans all executed — ready for milestone-level verification/close
+Last activity: 2026-07-06 -- **28-03 EXECUTED (PHASE 28 COMPLETE):** Studio history-island/
+  page-ideas-island list stagger (TOKEN-05b, capped-6 40ms-step cascade via `Math.min(index, 5) * 40`,
+  `motion-reduce:animate-none`) + `conversation-rail.tsx`'s backdrop-blur-md glassmorphism debt
+  resolved (`bg-background/70 backdrop-blur-md` -> `bg-background/95`, the UI-SPEC's default/
+  first-attempt branch — live-canvas legibility spot-check deferred to the user, fallbacks documented
+  in 28-UI-SPEC.md if `/95` reads wrong) + `docs/design/product-register-and-bans.md` item 3's
+  "documented debt, 2026-07-06" note replaced with a dated "Resolved (Phase 28, ...)" closure, item 10
+  gained the TOKEN-04 radius-allowlist forward-guidance note (cites styles.refero.design via
+  `.planning/research/CHAT-STUDIO-DESIGN-UPLIFT.md`). Full `apps/web` vitest (24 files / 174 tests) +
+  typecheck green throughout. No deviations — all 4 cited interface strings matched verbatim.
+  **TOKEN-04 and TOKEN-05 both marked complete — every v1.4 requirement (TOKEN-01..05, plus Phases
+  26/27's FIX/POLISH/ADOPT sets) is now closed.** Commits: 5e03dc1 (Task 1), d583cfb (Task 2), 53a8f22
+  (Task 3). See 28-03-SUMMARY.md. **All 3 v1.4 milestone phases (26, 27, 28) now have executed plans —
+  next: milestone-level verification/close.**
+2026-07-07 -- **28-02 EXECUTED:** elevation-scale consumers (TOKEN-03) + genui panel
   mount entrance (TOKEN-05a). `card.tsx` (`shadow` -> `shadow-elevation-1`) and `composer.tsx`'s dock
   (`shadow-sm` -> `shadow-elevation-2`) now visibly consume 28-01's elevation scale; `chat-node.tsx`/
   `genui-panel-node.tsx` gained a resting/selected split (`shadow-elevation-1` at rest,
