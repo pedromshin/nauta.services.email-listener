@@ -153,7 +153,9 @@ autofill run's retrieval outcome is measured well enough to tell whether the def
      context was injected, whether the human later corrected the field)
   4. A retrieval-miss rate is computable from the instrumented data (a query/report over the
      persisted records) — the concrete artifact that gates the stage-3 BFS go/no-go decision
-**Plans**: TBD
+**Plans**: 2 plans
+- [ ] 31-01-PLAN.md — Few-shot rendering gap + alias/identifier injection (RECALL-01)
+- [ ] 31-02-PLAN.md — Retrieval instrumentation event table + miss-rate artifact (RECALL-02)
 
 ### Phase 32: Knowledge Canvas: Tiered Graph Exploration
 **Goal**: Reviewers can see and explore the confidence-tiered knowledge graph directly on
