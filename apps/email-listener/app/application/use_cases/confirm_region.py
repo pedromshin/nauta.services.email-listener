@@ -22,6 +22,7 @@ from app.domain.entities.extraction_record import ExtractionRecord
 from app.domain.ports.component_repository import ComponentRepository
 from app.domain.ports.embedding_protocol import EmbeddingProtocol
 from app.domain.ports.extraction_repository import ExtractionRepository
+from app.domain.ports.knowledge_synthesizer import KnowledgeSynthesizer
 
 logger = structlog.get_logger(__name__)
 
@@ -51,10 +52,12 @@ class ConfirmRegionUseCase:
         components: ComponentRepository,
         extractions: ExtractionRepository,
         embedder: EmbeddingProtocol,
+        knowledge_synthesizer: KnowledgeSynthesizer | None = None,
     ) -> None:
         self._components = components
         self._extractions = extractions
         self._embedder = embedder
+        self._knowledge_synthesizer = knowledge_synthesizer
 
     async def execute(
         self,
@@ -106,6 +109,10 @@ class ConfirmRegionUseCase:
         )
 
         now = datetime.now(UTC)
+
+        # Hoisted to None so it is always in scope for the synthesis hook below,
+        # even on the no-candidate path where it is never assigned.
+        confirmed_record: ExtractionRecord | None = None
 
         if candidate is not None:
             # Promote the candidate: construct a new (frozen) ExtractionRecord with
@@ -168,24 +175,20 @@ class ConfirmRegionUseCase:
 
         # D-13 — 4e synthesis-trigger injection point.
         #
-        # After the embedding is persisted, Phase 11 (knowledge graph) will inject a
-        # `knowledge_synthesizer` collaborator here to derive knowledge_node rows from
-        # the confirmed region.  Today knowledge_synthesizer is absent (None), so no
-        # call is made and this block is a no-op.
-        #
-        # When added, the call will look like:
-        #
-        #   if self._knowledge_synthesizer is not None:
-        #       await self._knowledge_synthesizer.synthesize_from_confirmation(
-        #           component_id=component_id,
-        #           importer_id=importer_id,
-        #           confirmed_record=confirmed_record,
-        #           corrected_fields=corrected_fields,
-        #           source="learned_from_correction",  # knowledge_node_edges.source value
-        #       )
-        #
-        # `source="learned_from_correction"` distinguishes edges derived from a human
-        # confirmation from those inferred by automated extraction (D-13 design note).
-        # The synthesizer must be a domain port (no infrastructure imports here).
+        # Best-effort: a synthesis failure must never fail the confirm (the embedding
+        # and status updates above have already succeeded). `source="learned_from_correction"`
+        # distinguishes edges derived from a human confirmation from those inferred by
+        # automated extraction (D-13 design note).
+        if self._knowledge_synthesizer is not None:
+            try:
+                await self._knowledge_synthesizer.synthesize_from_confirmation(
+                    component_id=component_id,
+                    importer_id=importer_id,
+                    confirmed_record=confirmed_record,
+                    corrected_fields=corrected_fields,
+                    source="learned_from_correction",
+                )
+            except Exception:
+                log.warning("confirm_region_synthesis_failed", exc_info=True)
 
         log.info("confirm_region_done", component_id=component_id)
