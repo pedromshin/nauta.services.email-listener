@@ -37,7 +37,7 @@ export function DeleteConversationDialog({
 }: DeleteConversationDialogProps): React.ReactElement {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className="data-[state=open]:animate-none data-[state=closed]:animate-none">
         <div className="t-modal-reveal">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete this conversation?</AlertDialogTitle>

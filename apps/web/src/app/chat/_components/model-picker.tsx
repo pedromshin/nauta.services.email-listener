@@ -115,7 +115,10 @@ export function ModelPicker({
           {currentModel?.displayName ?? currentModelId}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[26rem] p-0">
+      <PopoverContent
+        align="start"
+        className="w-[26rem] p-0 data-[state=open]:animate-none data-[state=closed]:animate-none"
+      >
         <div className="t-dropdown-reveal">
           <Command>
             <CommandInput placeholder="Search models…" />

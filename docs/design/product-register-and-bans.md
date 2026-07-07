@@ -56,6 +56,11 @@ lists (Apache-2.0), restated against this app's own vocabulary:
    are banned. This app's surfaces (Code-Island fixture browser, popovers, dropdowns) stay solid
    `bg-background`/`bg-popover` — blur/backdrop-filter is not part of this app's committed material
    palette.
+   *Known exception (documented debt, 2026-07-06):* the `/chat` conversation rail
+   (`conversation-rail.tsx`) has carried `backdrop-blur-md` since Phase 22, where it earns its keep
+   for legibility when the rail overlays live canvas content. Resolve during Phase 28's
+   material/token pass (solid token surface or explicit allowlisting) — do not copy the pattern to
+   new surfaces meanwhile.
 4. **The hero-metric template.** Big number, small label, supporting stats, gradient accent (the
    SaaS-dashboard cliché) is banned. Neither `/chat` nor `/studio` has, or should introduce, a
    landing-style hero-metric surface.

@@ -84,7 +84,7 @@ function FileTreeLevel({
       type="multiple"
       value={[...expandedIds]}
       onValueChange={onExpandedChange}
-      className="flex flex-col gap-0.5"
+      className="flex flex-col gap-1"
     >
       {nodes.map((node) => {
         if (node.type === "file") {
