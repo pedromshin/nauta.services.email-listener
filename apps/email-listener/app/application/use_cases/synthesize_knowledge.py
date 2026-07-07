@@ -31,6 +31,8 @@ if TYPE_CHECKING:
 logger = structlog.get_logger(__name__)
 
 _TIER_EXTRACTED = "EXTRACTED"
+_TIER_INFERRED = "INFERRED"
+_TIER_AMBIGUOUS = "AMBIGUOUS"
 _SCOPE_ENTITY_TYPE = "entity_type"
 _TARGET_TYPE_COMPONENT = "email_component"
 _TARGET_TYPE_ENTITY_INSTANCE = "entity_instance"
@@ -165,6 +167,43 @@ class KnowledgeSynthesizerService:
                 relation_type="about",
                 tier=_TIER_EXTRACTED,
                 source=source,
+                provenance=None,
+            )
+
+        # Suggestion edges (SUGGEST-ONLY, T-30-01): display-only INFERRED/AMBIGUOUS
+        # relations, always source='synthesis', never tier='EXTRACTED'. Runs after
+        # the deactivate-then-insert supersede above so re-confirm re-derives fresh
+        # suggestions alongside the fresh EXTRACTED set.
+
+        # INFERRED: unconfirmed entity components co-occurring in the same email.
+        unconfirmed = await self._entity_instances.find_unconfirmed_entity_components_for_email(
+            component.email_id
+        )
+        for other in unconfirmed:
+            if other.id == component_id:
+                continue
+            await self._knowledge.insert_edge(
+                source_node_id=node_id,
+                target_ref_id=other.id,
+                target_ref_type=_TARGET_TYPE_COMPONENT,
+                relation_type="co_occurs_with",
+                tier=_TIER_INFERRED,
+                source="synthesis",
+                provenance=None,
+            )
+
+        # AMBIGUOUS: non-selected candidate entity instances for this component.
+        unselected_candidates = await self._entity_instances.find_unselected_candidate_instances_for_component(
+            component_id
+        )
+        for candidate in unselected_candidates:
+            await self._knowledge.insert_edge(
+                source_node_id=node_id,
+                target_ref_id=candidate.id,
+                target_ref_type=_TARGET_TYPE_ENTITY_INSTANCE,
+                relation_type="possibly_about",
+                tier=_TIER_AMBIGUOUS,
+                source="synthesis",
                 provenance=None,
             )
 
