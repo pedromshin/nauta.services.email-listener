@@ -188,3 +188,28 @@ class SupabaseKnowledgeGraphRepository:
             .execute()
         )
         return [cast("dict[str, object]", row) for row in result.data]
+
+    async def list_injectable_edges(self, importer_id: str) -> list[dict[str, object]]:
+        """THE single sanctioned auto-injection read path (T-30-02).
+
+        Resolves the importer's knowledge_nodes ids, then selects
+        knowledge_node_edges scoped to those ids with
+        tier='EXTRACTED' AND is_active=True. INFERRED/AMBIGUOUS suggestion
+        edges and inactive edges are excluded by construction -- see port
+        docstring. No other consumer may read knowledge_node_edges for
+        auto-injection purposes.
+        """
+        nodes_result = self._client.table("knowledge_nodes").select("id").eq("importer_id", importer_id).execute()
+        node_ids = [str(cast("dict[str, Any]", row)["id"]) for row in nodes_result.data]
+        if not node_ids:
+            return []
+
+        result = (
+            self._client.table("knowledge_node_edges")
+            .select("*")
+            .in_("source_node_id", node_ids)
+            .eq("tier", "EXTRACTED")
+            .eq("is_active", True)
+            .execute()
+        )
+        return [cast("dict[str, object]", row) for row in result.data]

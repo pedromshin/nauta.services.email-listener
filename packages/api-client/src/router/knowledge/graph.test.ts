@@ -19,7 +19,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   graphInputSchema,
+  shapeExplicitEdgeRow,
   shapeGraphResponse,
+  type ExplicitEdgeRow,
   type GraphEdge,
   type GraphNode,
 } from "./graph";
@@ -143,5 +145,54 @@ describe("graphInputSchema — nodeTypes type check", () => {
     expect(() =>
       graphInputSchema.parse({ nodeTypes: "entity_type" }),
     ).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 30 (30-01): shapeExplicitEdgeRow — tier visibility + inactive exclusion
+// ---------------------------------------------------------------------------
+
+describe("shapeExplicitEdgeRow", () => {
+  it("Test 9: an active edge carries its tier", () => {
+    const row: ExplicitEdgeRow = {
+      id: "edge-active-inferred",
+      sourceNodeId: "00000000-0000-0000-0000-000000000001",
+      targetRefId: "00000000-0000-0000-0000-000000000002",
+      relationType: "co_occurs_with",
+      tier: "INFERRED",
+      isActive: true,
+    };
+
+    const shaped = shapeExplicitEdgeRow(row);
+
+    expect(shaped).not.toBeNull();
+    expect(shaped?.id).toBe("kne-edge-active-inferred");
+    expect(shaped?.tier).toBe("INFERRED");
+  });
+
+  it("Test 10: an inactive edge is not shaped (excluded entirely)", () => {
+    const row: ExplicitEdgeRow = {
+      id: "edge-inactive-extracted",
+      sourceNodeId: "00000000-0000-0000-0000-000000000001",
+      targetRefId: "00000000-0000-0000-0000-000000000002",
+      relationType: "evidenced_by",
+      tier: "EXTRACTED",
+      isActive: false,
+    };
+
+    expect(shapeExplicitEdgeRow(row)).toBeNull();
+  });
+
+  it("Test 11: a row with no targetRefId is not shaped", () => {
+    const row: ExplicitEdgeRow = {
+      id: "edge-no-target",
+      sourceNodeId: "00000000-0000-0000-0000-000000000001",
+      targetRefId: null,
+      relationType: "co_occurs_with",
+      tier: "EXTRACTED",
+      isActive: true,
+    };
+
+    expect(shapeExplicitEdgeRow(row)).toBeNull();
   });
 });

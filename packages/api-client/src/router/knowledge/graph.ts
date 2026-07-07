@@ -86,6 +86,7 @@ export interface GraphEdge {
   readonly source: string;
   readonly target: string;
   readonly relationType: string;
+  readonly tier?: string;
 }
 
 export interface GraphResponse {
@@ -110,6 +111,40 @@ export function shapeGraphResponse(
   return {
     nodes: [...nodes],
     edges: [...edges],
+  };
+}
+
+/**
+ * ExplicitEdgeRow — the shape selected off knowledge_node_edges for the D-11
+ * provider-seam UNION (D-11/Phase 30 SC1). Plain data, no DB types leak out.
+ */
+export interface ExplicitEdgeRow {
+  readonly id: string;
+  readonly sourceNodeId: string;
+  readonly targetRefId: string | null | undefined;
+  readonly relationType: string;
+  readonly tier: string | null | undefined;
+  readonly isActive: boolean | null | undefined;
+}
+
+/**
+ * shapeExplicitEdgeRow — pure row -> GraphEdge shaper for knowledge_node_edges
+ * (Phase 30 SC1/SC2 data-layer note). Excludes inactive (dismissed/superseded)
+ * edges and rows with no targetRefId; carries `tier` so suggestion tiers
+ * (INFERRED/AMBIGUOUS) are visibly distinguished from EXTRACTED wherever the
+ * graph payload is consumed. Returns a NEW object; never mutates the row.
+ * Exported for DB-free testing (mirrors the shapeGraphResponse idiom).
+ */
+export function shapeExplicitEdgeRow(row: ExplicitEdgeRow): GraphEdge | null {
+  if (row.isActive !== true) return null;
+  if (row.targetRefId === null || row.targetRefId === undefined) return null;
+
+  return {
+    id: `kne-${row.id}`,
+    source: row.sourceNodeId,
+    target: row.targetRefId,
+    relationType: row.relationType,
+    tier: row.tier ?? undefined,
   };
 }
 
@@ -509,7 +544,13 @@ export const knowledgeGraphProcedures = {
       //     D-09: this is a SELECT-only operation; zero writes anywhere.
       // -----------------------------------------------------------------------
 
-      const explicitEdgeWhere = isNotNull(KnowledgeNodeEdges.id);
+      // Suggestion tiers (INFERRED/AMBIGUOUS) are visibly distinguished via `tier`
+      // (ROADMAP SC1); inactive (dismissed/superseded) edges are excluded from the
+      // payload entirely — never surfaced, even as a distinguished suggestion.
+      const explicitEdgeWhere = and(
+        isNotNull(KnowledgeNodeEdges.id),
+        eq(KnowledgeNodeEdges.isActive, true),
+      );
 
       const explicitEdgeRows = await ctx.db
         .select({
@@ -517,18 +558,15 @@ export const knowledgeGraphProcedures = {
           sourceNodeId: KnowledgeNodeEdges.sourceNodeId,
           targetRefId: KnowledgeNodeEdges.targetRefId,
           relationType: KnowledgeNodeEdges.relationType,
+          tier: KnowledgeNodeEdges.tier,
+          isActive: KnowledgeNodeEdges.isActive,
         })
         .from(KnowledgeNodeEdges)
         .where(explicitEdgeWhere);
 
       for (const row of explicitEdgeRows) {
-        if (row.targetRefId === null || row.targetRefId === undefined) continue;
-        edges.push({
-          id: `kne-${row.id}`,
-          source: row.sourceNodeId,
-          target: row.targetRefId,
-          relationType: row.relationType,
-        });
+        const shaped = shapeExplicitEdgeRow(row);
+        if (shaped !== null) edges.push(shaped);
       }
 
       // Return via the pure shaping helper (spread copies — immutable)

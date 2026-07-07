@@ -72,3 +72,16 @@ class KnowledgeGraphRepository(Protocol):
     async def find_active_edges_for_node(self, source_node_id: str) -> list[dict[str, object]]:
         """Return all active edges for the given source node."""
         ...
+
+    async def list_injectable_edges(self, importer_id: str) -> list[dict[str, object]]:
+        """Return the ONLY sanctioned auto-injection edge set for an importer.
+
+        Scoped to the importer's knowledge_nodes, filtered to
+        tier='EXTRACTED' AND is_active=True. INFERRED/AMBIGUOUS suggestion
+        edges and inactive (deactivated/superseded) edges are excluded by
+        construction -- no future prompt-injection consumer may bypass this
+        gate to read knowledge_node_edges directly (T-30-02, suggest-only
+        hard constraint: only human-confirmed EXTRACTED edges are ever
+        trusted for auto-injection).
+        """
+        ...

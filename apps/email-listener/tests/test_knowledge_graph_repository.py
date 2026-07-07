@@ -154,6 +154,84 @@ def test_upsert_node_inserts_when_no_active_node_found() -> None:
     assert select_chain.insert.called, "upsert_node must insert when no active node exists"
 
 
+class _FilterableTableDouble:
+    """A supabase table() double that honors .eq()/.in_() filters over an in-memory row list.
+
+    Mirrors real PostgREST filter semantics closely enough to prove the
+    three-tier exclusion invariant without a live DB.
+    """
+
+    def __init__(self, rows: list[dict[str, object]]) -> None:
+        self._rows = rows
+        self._filters: list[tuple[str, object]] = []
+        self._in_filters: list[tuple[str, list[object]]] = []
+
+    def select(self, _columns: str) -> _FilterableTableDouble:
+        return self
+
+    def eq(self, column: str, value: object) -> _FilterableTableDouble:
+        self._filters.append((column, value))
+        return self
+
+    def in_(self, column: str, values: list[object]) -> _FilterableTableDouble:
+        self._in_filters.append((column, values))
+        return self
+
+    def execute(self) -> MagicMock:
+        matched = [
+            row
+            for row in self._rows
+            if all(row.get(col) == val for col, val in self._filters)
+            and all(row.get(col) in vals for col, vals in self._in_filters)
+        ]
+        result = MagicMock()
+        result.data = matched
+        return result
+
+
+def test_list_injectable_edges_excludes_suggestion_tiers() -> None:
+    """SC2 (ROADMAP): seeded three-tier exclusion -- only active EXTRACTED comes back."""
+    nodes = [{"id": "node-001", "importer_id": "imp-abc"}]
+    edges = [
+        {
+            "id": "edge-extracted-active",
+            "source_node_id": "node-001",
+            "tier": "EXTRACTED",
+            "is_active": True,
+        },
+        {
+            "id": "edge-inferred-active",
+            "source_node_id": "node-001",
+            "tier": "INFERRED",
+            "is_active": True,
+        },
+        {
+            "id": "edge-ambiguous-active",
+            "source_node_id": "node-001",
+            "tier": "AMBIGUOUS",
+            "is_active": True,
+        },
+        {
+            "id": "edge-extracted-inactive",
+            "source_node_id": "node-001",
+            "tier": "EXTRACTED",
+            "is_active": False,
+        },
+    ]
+
+    tables = {
+        "knowledge_nodes": _FilterableTableDouble(nodes),
+        "knowledge_node_edges": _FilterableTableDouble(edges),
+    }
+    client = MagicMock()
+    client.table.side_effect = lambda name: tables[name]
+
+    repo = SupabaseKnowledgeGraphRepository(client)
+    result = asyncio.run(repo.list_injectable_edges("imp-abc"))
+
+    assert [row["id"] for row in result] == ["edge-extracted-active"]
+
+
 def test_upsert_node_updates_existing_active_node() -> None:
     """find_active_node returns an existing row -> upsert_node updates it in place."""
     client = MagicMock()
