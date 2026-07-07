@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Knowledge-Graph Uplift
 status: planning
-last_updated: "2026-07-07T03:54:35.308Z"
+last_updated: "2026-07-07T04:30:00.000Z"
 last_activity: 2026-07-07
 progress:
-  total_phases: 0
+  total_phases: 4
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -20,14 +20,34 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** v1.5 Knowledge-Graph Uplift — defining requirements
+**Current focus:** v1.5 roadmap created (Phases 29-32); next: `/gsd:plan-phase 29`. Prior: v1.4 shipped 2026-07-07.
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Not started (roadmap created, ready for phase planning)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-07-07 — Milestone v1.5 started
+Status: Roadmap created (Phases 29-32, 11/11 requirements mapped)
+Last activity: 2026-07-07 — Milestone v1.5 roadmap created (Phases 29-32)
+
+## v1.5 Roadmap Summary (2026-07-07)
+
+Phase numbering continues from v1.4 (ended at Phase 28). v1.5 = Phases 29-32, derived from backlog
+999.10's staged cost/benefit plan (`.planning/phases/999.10-knowledge-graph-uplift-graphify-adoption/NOTE.md`):
+stage 1 (wire the dormant synthesis hook) + stage 2 (tier ladder + suggest-only promotion gate) +
+the cheap recall win, with stage 3 (BFS-into-prompts) explicitly deferred until RECALL-02 measures a
+real retrieval-miss rate. Full detail: .planning/ROADMAP.md § Phase Details.
+
+| Phase | Goal | Requirements |
+|-------|------|--------------|
+| 29 - Tier Ladder + Edge Materialization | Confirming a region durably materializes provenance-carrying, tiered knowledge graph edges so corrections compound | TIER-01, SYNTH-01, SYNTH-02, SYNTH-03 |
+| 30 - Suggest-Only Promotion Gate | Synthesis-generated relationships surface only as human-reviewable suggestions; a human promotes a suggestion to EXTRACTED before it is ever trusted for auto-injection | TIER-02, TIER-03 |
+| 31 - Recall & Measurement | Autofill prompts recall known aliases/identifiers cheaply, and retrieval outcomes are measured to gate the deferred stage-3 BFS work | RECALL-01, RECALL-02 |
+| 32 - Knowledge Canvas: Tiered Graph Exploration | `/knowledge` renders edge tiers distinctly, supports bounded click-to-expand-neighbours, and filters by tier | GRAPH-01, GRAPH-02, GRAPH-03 |
+
+Coverage: 11/11 v1.5 requirements mapped, no orphans. Dependency order: Phase 29 -> Phase 30 -> Phase 32
+(30 needs 29's tier column; 32 needs both 29's and 30's materialized/tiered edges); Phase 31 is
+independent (reads `entity_instances.aliases[]`/`identifiers` directly, no shared schema with
+29/30) and may execute in parallel. Next: `/gsd:plan-phase 29`.
 
 ## v1.4 Roadmap Summary (2026-07-06)
 

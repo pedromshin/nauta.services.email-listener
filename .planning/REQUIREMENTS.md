@@ -96,13 +96,23 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| — | — | — |
+| TIER-01 | Phase 29 | Pending |
+| SYNTH-01 | Phase 29 | Pending |
+| SYNTH-02 | Phase 29 | Pending |
+| SYNTH-03 | Phase 29 | Pending |
+| TIER-02 | Phase 30 | Pending |
+| TIER-03 | Phase 30 | Pending |
+| RECALL-01 | Phase 31 | Pending |
+| RECALL-02 | Phase 31 | Pending |
+| GRAPH-01 | Phase 32 | Pending |
+| GRAPH-02 | Phase 32 | Pending |
+| GRAPH-03 | Phase 32 | Pending |
 
 **Coverage:**
 - v1.5 requirements: 11 total
-- Mapped to phases: 0
-- Unmapped: 11 ⚠️ (roadmap pending)
+- Mapped to phases: 11
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-07-07*
-*Last updated: 2026-07-07 after initial definition (autonomous run)*
+*Last updated: 2026-07-07 after roadmap creation — 11/11 requirements mapped to Phases 29-32, no orphans*
