@@ -35,6 +35,25 @@ export const knowledgeNodeScopeEnum = pgEnum("knowledge_node_scope", [
 ]);
 
 // ---------------------------------------------------------------------------
+// knowledge_trust_tier enum (Phase 29 — TIER-01, ordinal trust ladder)
+//
+// Ordinal semantics (most -> least trusted):
+//   EXTRACTED — human-confirmed via the review UI (most trust; the only tier
+//               ever eligible for prompt auto-injection, Phase 30 TIER-02/03)
+//   INFERRED  — synthesis-derived suggestion, not yet human-reviewed
+//   AMBIGUOUS — default / least trust (fail-toward-least-trust on write)
+//
+// Independent of the existing `confidence real` column, which remains the
+// intra-tier similarity/quality score — tier and confidence answer different
+// questions (provenance trust vs. match quality).
+// ---------------------------------------------------------------------------
+export const knowledgeTrustTierEnum = pgEnum("knowledge_trust_tier", [
+  "EXTRACTED",
+  "INFERRED",
+  "AMBIGUOUS",
+]);
+
+// ---------------------------------------------------------------------------
 // knowledge_nodes
 // ---------------------------------------------------------------------------
 export const KnowledgeNodes = pgTable(
@@ -58,6 +77,10 @@ export const KnowledgeNodes = pgTable(
     source: text("source").notNull().default("manual"),
 
     confidence: real("confidence").notNull().default(1.0),
+
+    // Ordinal trust tier (Phase 29 — TIER-01). See knowledgeTrustTierEnum doc
+    // comment above for ordinal semantics. Independent of `confidence`.
+    tier: knowledgeTrustTierEnum("tier").notNull().default("AMBIGUOUS"),
 
     // halfvec(1536) — semantic embedding for retrieval (RESEARCH §3.6, §4.1)
     // HNSW index added via custom SQL migration (drizzle-kit cannot emit halfvec_cosine_ops)

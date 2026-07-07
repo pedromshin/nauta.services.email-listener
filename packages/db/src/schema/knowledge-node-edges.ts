@@ -16,8 +16,11 @@
  * in Phase 11. All writes come from direct DB scripts or future synthesis jobs.
  */
 
+import { sql } from "drizzle-orm";
 import {
+  boolean,
   index,
+  jsonb,
   pgTable,
   real,
   text,
@@ -25,7 +28,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import { KnowledgeNodes } from "./knowledge-nodes";
+import { KnowledgeNodes, knowledgeTrustTierEnum } from "./knowledge-nodes";
 
 // ---------------------------------------------------------------------------
 // knowledge_node_edges
@@ -49,6 +52,19 @@ export const KnowledgeNodeEdges = pgTable(
     // How this edge originated: "manual" | "synthesis" | "learned_from_correction"
     source: text("source").notNull().default("manual"),
 
+    // Ordinal trust tier (Phase 29 — TIER-01). See knowledgeTrustTierEnum doc
+    // comment (knowledge-nodes.ts) for ordinal semantics.
+    tier: knowledgeTrustTierEnum("tier").notNull().default("AMBIGUOUS"),
+
+    // OCR token-polygon provenance (Phase 29 — SYNTH-02), populated in 29-03:
+    // { component_id, page_index, polygon, tokens }.
+    provenance: jsonb("provenance"),
+
+    // Supersede flag (Phase 29 — SYNTH-03): re-confirm deactivates the prior
+    // confirmation's edges and writes fresh ones (never DELETE — audit trail
+    // preserved). Mirrors KnowledgeNodes.isActive.
+    isActive: boolean("is_active").notNull().default(true),
+
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -60,6 +76,13 @@ export const KnowledgeNodeEdges = pgTable(
     knowledgeNodeEdgesTargetIdx: index(
       "idx_knowledge_node_edges_target_ref_id",
     ).on(t.targetRefId),
+    // Deterministic active-edge identity (Phase 29 — SYNTH-03) supporting
+    // supersede: at most one active edge per (source, target, relation).
+    knowledgeNodeEdgesActiveIdentityIdx: index(
+      "idx_knowledge_node_edges_active_identity",
+    )
+      .on(t.sourceNodeId, t.targetRefId, t.relationType)
+      .where(sql`is_active`),
   }),
 );
 
