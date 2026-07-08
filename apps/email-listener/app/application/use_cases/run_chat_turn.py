@@ -503,6 +503,10 @@ class RunChatTurn:
         # branches `return` directly from inside the loop, same as before.
         while round_count <= _MAX_TOOL_ROUNDS:
             round_start_part_count = len(state.parts)
+            # COST-05 (Phase 35): baselines a round-scoped cost check diffs
+            # against — captured fresh at the top of EVERY round.
+            round_start_output_tokens = state.output_tokens
+            round_start_text_len = len(_accumulated_text_for_estimate(state))
 
             # `state` is reassigned DIRECTLY inside this loop (not via a
             # returned value from an awaited coroutine) so that a
@@ -519,6 +523,8 @@ class RunChatTurn:
                     provider_messages=provider_messages,
                     tools=tools,
                     state=state,
+                    round_start_output_tokens=round_start_output_tokens,
+                    round_start_text_len=round_start_text_len,
                 ):
                     state = updated_state
                     if event is not None:
@@ -570,6 +576,8 @@ class RunChatTurn:
                 state=state,
                 model=model,
                 round_start_part_count=round_start_part_count,
+                round_start_output_tokens=round_start_output_tokens,
+                round_start_text_len=round_start_text_len,
                 round_count=round_count,
                 provider_messages=provider_messages,
                 conversation_id=conversation_id,
@@ -660,12 +668,17 @@ class RunChatTurn:
         *,
         model: ChatModel,
         state: _TurnState,
+        round_start_output_tokens: int,
+        round_start_text_len: int,
     ) -> ChatMessageStatus | None:
         """Return the terminal status this delta forces, or None to keep streaming.
 
         A StreamEnd(error) always fails the turn (D-19). A TextDelta/UsageDelta
         that pushes the (estimated, then real) running cost past should_abort's
-        threshold cost-caps the turn mid-stream (D-21).
+        threshold cost-caps the turn mid-stream (D-21). Once the per-turn
+        check clears, the SAME delta is also checked against the COST-05
+        round-scoped cap (`should_abort_round`) — either trip cost-caps the
+        turn, mid-round, before the round's own streaming even finishes.
         """
         if isinstance(delta, StreamEnd) and delta.stop_reason == "error":
             return "failed"
@@ -673,11 +686,27 @@ class RunChatTurn:
             estimated_cost = self._estimated_cost_so_far(model=model, state=state)
             if self._breaker.should_abort(estimated_cost):
                 return "cost_capped"
+            round_cost = self._estimated_round_cost_so_far(
+                model=model,
+                state=state,
+                round_start_output_tokens=round_start_output_tokens,
+                round_start_text_len=round_start_text_len,
+            )
+            if self._breaker.should_abort_round(round_cost):
+                return "cost_capped"
         elif isinstance(delta, UsageDelta):
             real_cost = self._breaker.estimate_turn_cost(
                 model=model, prompt_tokens_est=state.input_tokens, max_output_tokens=state.output_tokens
             )
             if self._breaker.should_abort(real_cost):
+                return "cost_capped"
+            round_cost = self._estimated_round_cost_so_far(
+                model=model,
+                state=state,
+                round_start_output_tokens=round_start_output_tokens,
+                round_start_text_len=round_start_text_len,
+            )
+            if self._breaker.should_abort_round(round_cost):
                 return "cost_capped"
         return None
 
@@ -792,6 +821,26 @@ class RunChatTurn:
         tokens_so_far = estimate_prompt_tokens(len(_accumulated_text_for_estimate(state)))
         return self._breaker.estimate_turn_cost(model=model, prompt_tokens_est=0, max_output_tokens=tokens_so_far)
 
+    def _estimated_round_cost_so_far(
+        self,
+        *,
+        model: ChatModel,
+        state: _TurnState,
+        round_start_output_tokens: int,
+        round_start_text_len: int,
+    ) -> Decimal:
+        """COST-05 round-scoped cost ESTIMATE, scoped to output produced SINCE the round began.
+
+        Mirrors `_estimated_cost_so_far`'s heuristic exactly, but diffs
+        against the round's own baseline instead of the whole turn — takes
+        the LARGER of the mid-stream text-length estimate and the real
+        per-round token delta, whichever is available at the call site.
+        """
+        text_len_delta = max(0, len(_accumulated_text_for_estimate(state)) - round_start_text_len)
+        token_delta = max(0, state.output_tokens - round_start_output_tokens)
+        tokens_so_far = max(estimate_prompt_tokens(text_len_delta), token_delta)
+        return self._breaker.estimate_turn_cost(model=model, prompt_tokens_est=0, max_output_tokens=tokens_so_far)
+
     async def _emit(self, run_id: str, event_type: ChatRunEventType, data: dict[str, Any]) -> ChatRunEvent:
         """Persist one run event (append-only) and return it for the caller to yield."""
         return await self._runs.append_event(run_id=run_id, event_type=event_type, data=data)
@@ -806,6 +855,8 @@ class RunChatTurn:
         provider_messages: list[dict[str, Any]],
         tools: tuple[dict[str, Any], ...],
         state: _TurnState,
+        round_start_output_tokens: int,
+        round_start_text_len: int,
     ) -> AsyncIterator[tuple[_TurnState, ChatRunEvent | None]]:
         """Stream ONE round's deltas, yielding (updated_state, event_or_none) pairs.
 
@@ -839,7 +890,13 @@ class RunChatTurn:
                 else:
                     yield state, None
 
-                terminal_status = self._terminal_status_for(delta, model=model, state=state)
+                terminal_status = self._terminal_status_for(
+                    delta,
+                    model=model,
+                    state=state,
+                    round_start_output_tokens=round_start_output_tokens,
+                    round_start_text_len=round_start_text_len,
+                )
                 if terminal_status is not None:
                     raise _MidStreamTerminalError(terminal_status, state)
 
@@ -850,6 +907,8 @@ class RunChatTurn:
         state: _TurnState,
         model: ChatModel,
         round_start_part_count: int,
+        round_start_output_tokens: int,
+        round_start_text_len: int,
         round_count: int,
         provider_messages: list[dict[str, Any]],
         conversation_id: str,
@@ -868,10 +927,9 @@ class RunChatTurn:
         03/LOOP-02 visible text for the latter two. A well-formed server-tool
         call executes via `_run_server_tool_round`, then either continues the
         SAME run with a new round ("continue") or, if the post-round breaker
-        re-check trips (T-34-01), persists + terminates 'cost_capped' HERE
-        and returns "terminal" (same spend commitment as continuing to
-        stream, no new breaker method this phase — per-round ceiling is
-        COST-05/Phase 35).
+        re-check trips (T-34-01, now also checking the COST-05/Phase 35
+        per-round ceiling implemented in `_run_server_tool_round`), persists
+        + terminates 'cost_capped' HERE and returns "terminal".
         """
         if state.pending_tool_id is None:
             # No tool call at all this round — plain text turn (unchanged).
@@ -922,6 +980,8 @@ class RunChatTurn:
             arguments=arguments,
             this_round_lead_parts=this_round_lead_parts,
             provider_messages=provider_messages,
+            round_start_output_tokens=round_start_output_tokens,
+            round_start_text_len=round_start_text_len,
         )
         if round_result.provider_messages is not None:
             return _RoundAdvance(
@@ -963,6 +1023,8 @@ class RunChatTurn:
         arguments: dict[str, Any],
         this_round_lead_parts: list[dict[str, Any]],
         provider_messages: list[dict[str, Any]],
+        round_start_output_tokens: int,
+        round_start_text_len: int,
     ) -> _ServerRoundResult:
         """Execute one server-tool round (Phase 34-03, LOOP-01): dispatch, cap, feed back.
 
@@ -1020,9 +1082,19 @@ class RunChatTurn:
         )
 
         # T-34-01: a round is the same spend commitment as continuing to
-        # stream — re-check the breaker at the round boundary (no new breaker
-        # method this phase, per-round ceiling is COST-05/Phase 35).
-        if self._breaker.should_abort(self._estimated_cost_so_far(model=model, state=state)):
+        # stream — re-check the breaker at the round boundary. COST-05
+        # (Phase 35): ALSO re-check the round-scoped ceiling here — either
+        # the per-turn OR the per-round cap tripping aborts the turn.
+        if self._breaker.should_abort(
+            self._estimated_cost_so_far(model=model, state=state)
+        ) or self._breaker.should_abort_round(
+            self._estimated_round_cost_so_far(
+                model=model,
+                state=state,
+                round_start_output_tokens=round_start_output_tokens,
+                round_start_text_len=round_start_text_len,
+            )
+        ):
             return _ServerRoundResult(state=state, events=tuple(events), provider_messages=None)
 
         tool_use_block = {"type": "tool_use", "id": tool_id, "name": tool_name, "input": arguments}

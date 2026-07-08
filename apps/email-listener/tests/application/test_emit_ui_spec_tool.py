@@ -180,6 +180,9 @@ class FakeCostCircuitBreaker:
     def should_abort(self, running_cost: Decimal) -> bool:
         return False
 
+    def should_abort_round(self, round_cost: Decimal) -> bool:
+        return False
+
     def estimate_turn_cost(self, *, model: ChatModel, prompt_tokens_est: int, max_output_tokens: int) -> Decimal:
         return Decimal("0")
 

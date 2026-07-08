@@ -218,12 +218,21 @@ class _MultiRoundFakeChatProvider:
 class FakeCostCircuitBreaker:
     """A CostCircuitBreaker test double with a scripted pre-turn decision + abort behavior."""
 
-    def __init__(self, *, decision: PreTurnDecision | None = None, abort_after: int | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        decision: PreTurnDecision | None = None,
+        abort_after: int | None = None,
+        round_abort_after: int | None = None,
+    ) -> None:
         self._decision = decision or PreTurnDecision.allow()
         self._abort_after = abort_after
         self._abort_calls = 0
+        self._round_abort_after = round_abort_after
+        self._round_abort_calls = 0
         self.pre_turn_calls: list[dict[str, Any]] = []
         self.should_abort_calls = 0
+        self.should_abort_round_calls = 0
 
     async def check_pre_turn(self, **kwargs: Any) -> PreTurnDecision:
         self.pre_turn_calls.append(kwargs)
@@ -235,6 +244,13 @@ class FakeCostCircuitBreaker:
             return False
         self._abort_calls += 1
         return self._abort_calls > self._abort_after
+
+    def should_abort_round(self, round_cost: Decimal) -> bool:
+        self.should_abort_round_calls += 1
+        if self._round_abort_after is None:
+            return False
+        self._round_abort_calls += 1
+        return self._round_abort_calls > self._round_abort_after
 
     def estimate_turn_cost(self, *, model: ChatModel, prompt_tokens_est: int, max_output_tokens: int) -> Decimal:
         price_in = Decimal(str(model.price_in_per_mtok))
@@ -498,6 +514,82 @@ async def test_breaker_rechecked_at_round_boundary_cost_caps_before_next_round()
     messages: FakeChatMessageRepository = fakes["messages"]
     assistant_messages = [m for m in messages.messages if m.role == "assistant"]
     assert assistant_messages[-1].status == "cost_capped"
+
+
+# ---------------------------------------------------------------------------
+# COST-05: DISTINCT per-round cost ceiling
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_round_scoped_cap_distinct_from_per_turn_cap_aborts_at_round_boundary() -> None:
+    provider = _MultiRoundFakeChatProvider(
+        rounds=[
+            # No TextDelta/UsageDelta in round 1 -- should_abort is NEVER
+            # called mid-stream, isolating the round-BOUNDARY re-check.
+            [ToolCallDelta(tool_name="echo", id="tool-1", partial_json="{}"), StreamEnd(stop_reason="tool_use")],
+            [TextDelta(text="never reached"), StreamEnd(stop_reason="end_turn")],
+        ]
+    )
+    # round_abort_after=0: the FIRST should_abort_round() call (the
+    # post-round re-check) already returns True -- round 2 must never
+    # start. abort_after stays at its default None, so the per-turn
+    # should_abort() NEVER trips on its own -- proves the round-boundary
+    # check is a SEPARATE gate from the per-turn one.
+    breaker = FakeCostCircuitBreaker(round_abort_after=0)
+    use_case, fakes = _make_use_case(provider=provider, tool_executors={"echo": EchoToolExecutor()}, breaker=breaker)
+
+    events = [
+        event async for event in use_case.run(conversation_id=_CONVERSATION_ID, user_text="hi", model_id=_TOOL_ROUND_MODEL.id)
+    ]
+
+    assert events[-1].type == "cost_capped"
+    assert breaker.should_abort_round_calls == 1, "should_abort_round must be called at the round boundary"
+    assert len(provider.stream_calls) == 1, "round 2 must never start once the round-boundary breaker trips"
+
+    messages: FakeChatMessageRepository = fakes["messages"]
+    assistant_messages = [m for m in messages.messages if m.role == "assistant"]
+    assert assistant_messages[-1].status == "cost_capped"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_mid_round_text_cost_cap_aborts_with_visible_partial_text() -> None:
+    provider = _MultiRoundFakeChatProvider(
+        rounds=[
+            # Round 1: a tool call, no TextDelta/UsageDelta -- isolates the
+            # round-1 boundary call (should_abort_round call #1).
+            [ToolCallDelta(tool_name="echo", id="tool-1", partial_json="{}"), StreamEnd(stop_reason="tool_use")],
+            # Round 2: two TextDeltas -- the FIRST one trips mid-round
+            # (should_abort_round call #2); the second must never be seen.
+            [
+                TextDelta(text="partial round 2 text"),
+                TextDelta(text="never reached"),
+                StreamEnd(stop_reason="end_turn"),
+            ],
+        ]
+    )
+    # round_abort_after=1: round 1's single boundary call is call #1,
+    # allowed (1 > 1 is False); round 2's FIRST TextDelta is call #2, trips
+    # (2 > 1 is True).
+    breaker = FakeCostCircuitBreaker(round_abort_after=1)
+    use_case, fakes = _make_use_case(provider=provider, tool_executors={"echo": EchoToolExecutor()}, breaker=breaker)
+
+    events = [
+        event async for event in use_case.run(conversation_id=_CONVERSATION_ID, user_text="hi", model_id=_TOOL_ROUND_MODEL.id)
+    ]
+
+    assert events[-1].type == "cost_capped"
+
+    messages: FakeChatMessageRepository = fakes["messages"]
+    assistant_messages = [m for m in messages.messages if m.role == "assistant"]
+    text_parts = [p for p in assistant_messages[-1].parts if p["type"] == "text"]
+    assert text_parts[-1]["text"] == "partial round 2 text"
+    assert all("never reached" not in p.get("text", "") for p in assistant_messages[-1].parts)
+
+    assert breaker.should_abort_round_calls == 2
+    assert len(provider.stream_calls) == 2, "round 2's OWN stream DID start (distinguishes this from the round-boundary test)"
 
 
 # ---------------------------------------------------------------------------
