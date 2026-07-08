@@ -87,6 +87,8 @@ export interface GraphEdge {
   readonly target: string;
   readonly relationType: string;
   readonly tier?: string;
+  readonly confidence?: number;
+  readonly provenanceSummary?: string;
 }
 
 export interface GraphResponse {
@@ -125,6 +127,37 @@ export interface ExplicitEdgeRow {
   readonly relationType: string;
   readonly tier: string | null | undefined;
   readonly isActive: boolean | null | undefined;
+  readonly confidence?: number | null | undefined;
+  readonly provenance?: unknown;
+  readonly source?: string | null | undefined;
+}
+
+/**
+ * SOURCE_PROVENANCE_SUMMARIES — plain, reviewer-facing descriptors keyed by
+ * `knowledge_node_edges.source` ("manual" | "synthesis" |
+ * "learned_from_correction"). Deliberately NEVER surfaces the raw `provenance`
+ * jsonb (OCR token/polygon blob, Phase 29 SYNTH-02) — only a short human string
+ * (32-UI-SPEC popover row 5 / T-11-05 plain-text discipline).
+ */
+const SOURCE_PROVENANCE_SUMMARIES: Readonly<Record<string, string>> = {
+  synthesis: "Synthesized from region confirmation",
+  learned_from_correction: "Learned from a correction",
+  manual: "Added manually",
+};
+
+/**
+ * buildProvenanceSummary — derives the popover's "Source" row text. Returns
+ * `undefined` (never the literal "undefined" or a JSON blob) whenever
+ * `provenance` is null/undefined or `source` maps to no known descriptor.
+ * Exported for DB-free testing.
+ */
+export function buildProvenanceSummary(
+  source: string | null | undefined,
+  provenance: unknown,
+): string | undefined {
+  if (provenance === null || provenance === undefined) return undefined;
+  if (source == null) return undefined;
+  return SOURCE_PROVENANCE_SUMMARIES[source];
 }
 
 /**
@@ -132,8 +165,10 @@ export interface ExplicitEdgeRow {
  * (Phase 30 SC1/SC2 data-layer note). Excludes inactive (dismissed/superseded)
  * edges and rows with no targetRefId; carries `tier` so suggestion tiers
  * (INFERRED/AMBIGUOUS) are visibly distinguished from EXTRACTED wherever the
- * graph payload is consumed. Returns a NEW object; never mutates the row.
- * Exported for DB-free testing (mirrors the shapeGraphResponse idiom).
+ * graph payload is consumed. Also carries `confidence` + a safe
+ * `provenanceSummary` string (Phase 32 popover data-layer prerequisite,
+ * 32-UI-SPEC) — never the raw jsonb. Returns a NEW object; never mutates the
+ * row. Exported for DB-free testing (mirrors the shapeGraphResponse idiom).
  */
 export function shapeExplicitEdgeRow(row: ExplicitEdgeRow): GraphEdge | null {
   if (row.isActive !== true) return null;
@@ -145,6 +180,8 @@ export function shapeExplicitEdgeRow(row: ExplicitEdgeRow): GraphEdge | null {
     target: row.targetRefId,
     relationType: row.relationType,
     tier: row.tier ?? undefined,
+    confidence: row.confidence ?? undefined,
+    provenanceSummary: buildProvenanceSummary(row.source, row.provenance),
   };
 }
 
@@ -560,6 +597,9 @@ export const knowledgeGraphProcedures = {
           relationType: KnowledgeNodeEdges.relationType,
           tier: KnowledgeNodeEdges.tier,
           isActive: KnowledgeNodeEdges.isActive,
+          confidence: KnowledgeNodeEdges.confidence,
+          provenance: KnowledgeNodeEdges.provenance,
+          source: KnowledgeNodeEdges.source,
         })
         .from(KnowledgeNodeEdges)
         .where(explicitEdgeWhere);

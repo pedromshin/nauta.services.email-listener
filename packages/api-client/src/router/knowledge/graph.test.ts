@@ -18,6 +18,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  buildProvenanceSummary,
   graphInputSchema,
   shapeExplicitEdgeRow,
   shapeGraphResponse,
@@ -194,5 +195,102 @@ describe("shapeExplicitEdgeRow", () => {
     };
 
     expect(shapeExplicitEdgeRow(row)).toBeNull();
+  });
+
+  it("Test 12: an active edge carries its confidence", () => {
+    const row: ExplicitEdgeRow = {
+      id: "edge-confidence",
+      sourceNodeId: "00000000-0000-0000-0000-000000000001",
+      targetRefId: "00000000-0000-0000-0000-000000000002",
+      relationType: "co_occurs_with",
+      tier: "INFERRED",
+      isActive: true,
+      confidence: 0.82,
+    };
+
+    const shaped = shapeExplicitEdgeRow(row);
+
+    expect(shaped?.confidence).toBe(0.82);
+  });
+
+  it("Test 13: provenanceSummary is a plain string when provenance/source is present", () => {
+    const row: ExplicitEdgeRow = {
+      id: "edge-provenance",
+      sourceNodeId: "00000000-0000-0000-0000-000000000001",
+      targetRefId: "00000000-0000-0000-0000-000000000002",
+      relationType: "co_occurs_with",
+      tier: "INFERRED",
+      isActive: true,
+      source: "synthesis",
+      provenance: { component_id: "c-1", page_index: 0, polygon: [], tokens: [] },
+    };
+
+    const shaped = shapeExplicitEdgeRow(row);
+
+    expect(shaped?.provenanceSummary).toBe("Synthesized from region confirmation");
+    expect(shaped?.provenanceSummary).not.toContain("{");
+  });
+
+  it("Test 14: provenanceSummary is undefined when provenance is null", () => {
+    const row: ExplicitEdgeRow = {
+      id: "edge-no-provenance",
+      sourceNodeId: "00000000-0000-0000-0000-000000000001",
+      targetRefId: "00000000-0000-0000-0000-000000000002",
+      relationType: "co_occurs_with",
+      tier: "EXTRACTED",
+      isActive: true,
+      source: "manual",
+      provenance: null,
+    };
+
+    const shaped = shapeExplicitEdgeRow(row);
+
+    expect(shaped?.provenanceSummary).toBeUndefined();
+  });
+
+  it("Test 15: inactive and null-target regressions preserved with the new optional fields present", () => {
+    const inactiveRow: ExplicitEdgeRow = {
+      id: "edge-inactive-2",
+      sourceNodeId: "00000000-0000-0000-0000-000000000001",
+      targetRefId: "00000000-0000-0000-0000-000000000002",
+      relationType: "evidenced_by",
+      tier: "EXTRACTED",
+      isActive: false,
+      confidence: 1,
+      source: "manual",
+      provenance: { anything: true },
+    };
+    expect(shapeExplicitEdgeRow(inactiveRow)).toBeNull();
+
+    const nullTargetRow: ExplicitEdgeRow = {
+      id: "edge-null-target-2",
+      sourceNodeId: "00000000-0000-0000-0000-000000000001",
+      targetRefId: undefined,
+      relationType: "co_occurs_with",
+      tier: "EXTRACTED",
+      isActive: true,
+      confidence: 1,
+    };
+    expect(shapeExplicitEdgeRow(nullTargetRow)).toBeNull();
+  });
+});
+
+describe("buildProvenanceSummary", () => {
+  it("Test 16: returns undefined when provenance is undefined", () => {
+    expect(buildProvenanceSummary("synthesis", undefined)).toBeUndefined();
+  });
+
+  it("Test 17: returns undefined for an unrecognized source even with provenance present", () => {
+    expect(buildProvenanceSummary("unknown_source", { a: 1 })).toBeUndefined();
+  });
+
+  it("Test 18: maps each known source to its plain-text descriptor", () => {
+    expect(buildProvenanceSummary("synthesis", { a: 1 })).toBe(
+      "Synthesized from region confirmation",
+    );
+    expect(buildProvenanceSummary("learned_from_correction", { a: 1 })).toBe(
+      "Learned from a correction",
+    );
+    expect(buildProvenanceSummary("manual", { a: 1 })).toBe("Added manually");
   });
 });
