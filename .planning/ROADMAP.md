@@ -206,7 +206,7 @@ attach eval hooks to)
      is a measurable Phase-16 harness dimension
 **Plans**: 3 plans (coarse; Wave 1 = 35-01 + 35-02 in parallel, Wave 2 = 35-03)
 Plans:
-- [ ] 35-01-PLAN.md — Distinct per-round CostCircuitBreaker ceiling wired into the round loop (mid-round + round boundary) [COST-05]
+- [x] 35-01-PLAN.md — Distinct per-round CostCircuitBreaker ceiling wired into the round loop (mid-round + round boundary) [COST-05]
 - [ ] 35-02-PLAN.md — Retrieval-quality/citation-faithfulness/injection-resistance eval dimensions registered into packages/genui/src/eval [EVAL-06, EVAL-07]
 - [ ] 35-03-PLAN.md — Python pytest bridge scoring the shared fixtures against the Phase-34 echo stub [EVAL-06, EVAL-07]
 
@@ -225,7 +225,10 @@ to ship, but only after the loop itself exists)
      `intent_summary`) in every returned envelope — never the raw email body
   4. Both tools' results carry `citations[]` of `{kind, id, route}` that resolve to real
      `/emails/[id]` or `/entities/[id]` routes
-**Plans**: TBD
+**Plans**: 2 plans (coarse; Wave 1 = 36-01, Wave 2 = 36-02)
+Plans:
+- [ ] 36-01-PLAN.md — ToolExecutor importer_id contract + shared citation/envelope module + LookupEntityExecutor [TOOL-01]
+- [ ] 36-02-PLAN.md — SearchEmailsExecutor + container wiring + real tool-schema advertisement [TOOL-02]
 
 ### Phase 37: Knowledge Search + Python Read-Side
 **Goal**: User can search or expand the knowledge graph from chat via `search_knowledge`, backed by
@@ -345,8 +348,8 @@ execute last.
 |-------|-----------------|--------|-----------|
 | 33. Live Bindings Plumbing | 2/2 | Complete   | 2026-07-08 |
 | 34. Tool-Loop Mechanics (stub/echo executor) | 3/3 | Complete   | 2026-07-08 |
-| 35. Cost + Eval Scaffolding | 0/3 | Not started | - |
-| 36. Thin-Wrapper Tools | 0/? | Not started | - |
+| 35. Cost + Eval Scaffolding | 1/3 | In Progress|  |
+| 36. Thin-Wrapper Tools | 0/2 | Not started | - |
 | 37. Knowledge Search + Python Read-Side | 0/? | Not started | - |
 | 38. Quarantine + Adversarial Eval | 0/? | Not started | - |
 | 39. Tool-Round UI + Citation Chips | 0/? | Not started | - |
