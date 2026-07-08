@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Chat × Knowledge Convergence
-status: planning
-last_updated: "2026-07-08T01:32:34.427Z"
-last_activity: 2026-07-08
+status: executing
+last_updated: "2026-07-08T04:09:20.090Z"
+last_activity: 2026-07-08 -- Phase 34 execution started
 progress:
   total_phases: 9
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 5
+  completed_plans: 1
   percent: 0
 ---
 
@@ -20,14 +20,33 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** Phase 33 — Live Bindings Plumbing
+**Current focus:** Phase 34 — tool-loop-mechanics-stub-echo-executor
 
 ## Current Position
 
-Phase: Phase 33 — Live Bindings Plumbing (not yet planned; Phase 34 is also plan-ready in parallel)
-Plan: —
-Status: Roadmap created (Phases 33-41, 19/19 requirements mapped) — ready for `/gsd:plan-phase 33`
-Last activity: 2026-07-08 — v1.6 roadmap created
+Phase: 34 (tool-loop-mechanics-stub-echo-executor) — EXECUTING
+Plan: 2 of 3
+Status: Executing Phase 34
+Last activity: 2026-07-08 -- 34-01 executed
+
+## Phase 34 — Tool-Loop Mechanics (stub/echo executor) (executing 2026-07-08)
+
+- **34-01 EXECUTED:** LOOP-01 contract layer. New `app/domain/ports/tool_executor.py` (`ToolExecutor`
+  Protocol + frozen `ToolExecutionResult` dataclass, `MAX_TOOL_OUTPUT_CHARS=2000`, docstring states the
+  Fork 3⊗4 never-raw quarantine obligation enforced in Phase 38/QUAR-01). `ChatModelCapabilities`
+  gained `max_tool_rounds: int = 0` (doubles as the capability gate, no second boolean); only the 2
+  Bedrock Claude registry entries set it to 4, every OpenRouter/browser entry stays 0 (new test proves
+  the split). New `app/application/use_cases/run_chat_turn_tool_loop.py` — pure helpers only (mirrors
+  `run_chat_turn_widgets.py`): `build_tool_invocation_part`/`build_tool_invocation_result_part` (new
+  `tool_invocation`/`tool_invocation_result` part types, NOT reusing `interactive_widget`),
+  `build_synthetic_tool_result_message` (native Bedrock `tool_result` block), `classify_tool_dispatch`
+  (server > widget > emit_ui_spec > unknown precedence), `cap_tool_output`, and the exact
+  `PARSE_FAILURE_TEXT`/`ROUND_CAP_EXHAUSTED_TEXT` visible-surface strings for the "never silent" motto.
+  New `tests/support/echo_tool_executor.py` — `EchoToolExecutor` test double (round-trips args,
+  `__force_error__`/`__sleep__` test hooks, output capped). None of this touches `run_chat_turn.py` —
+  it's the frozen contract layer Plan 34-03 wires into `_execute_turn`. 32/32 targeted tests pass,
+  `lint-imports` 3 kept/0 broken, mypy clean on all 3 touched/created source modules. No deviations.
+  See 34-01-SUMMARY.md. **Next: 34-02** (the real streaming round loop wiring — not yet planned).
 
 ## v1.6 Roadmap Summary (2026-07-08)
 
