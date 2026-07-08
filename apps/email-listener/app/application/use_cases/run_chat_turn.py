@@ -58,18 +58,26 @@ import uuid
 from dataclasses import dataclass, replace
 from decimal import Decimal
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Literal, cast
 
 import structlog
 
-from app.application.use_cases.run_chat_turn_tool_loop import PARSE_FAILURE_TEXT
+from app.application.use_cases.run_chat_turn_tool_loop import (
+    PARSE_FAILURE_TEXT,
+    ROUND_CAP_EXHAUSTED_TEXT,
+    build_synthetic_tool_result_message,
+    build_tool_invocation_part,
+    build_tool_invocation_result_part,
+    cap_tool_output,
+    classify_tool_dispatch,
+)
 from app.application.use_cases.run_chat_turn_widgets import (
     INTERACTIVE_WIDGET_TOOL_NAMES,
     build_create_pending_kwargs,
     build_interactive_widget_part,
     content_block_stand_in,
 )
-from app.domain.ports.chat_provider import StreamEnd, TextDelta, ToolCallDelta, UsageDelta
+from app.domain.ports.chat_provider import StreamEnd, TextDelta, ToolCallDelta, ToolResultDelta, UsageDelta
 from app.domain.ports.chat_repositories import (
     ChatConversationRepository,
     ChatMessage,
@@ -83,6 +91,7 @@ from app.domain.ports.chat_repositories import (
 )
 from app.domain.ports.chat_widget_interaction_repository import ChatWidgetInteractionRepository
 from app.domain.ports.cost_ledger_repository import CostLedgerRepository, UsageEvent
+from app.domain.ports.tool_executor import ToolExecutionResult
 from app.domain.services.chat_model_registry import ChatModel, get_model
 from app.domain.services.chat_provider_router import ChatModelNotFoundError, ChatProviderRouter
 from app.domain.services.cost_circuit_breaker import CostCircuitBreaker, estimate_prompt_tokens
@@ -105,6 +114,19 @@ _SYSTEM_PROMPT = (
 
 _TITLE_SNIPPET_MAX_LEN = 60
 
+# Phase 34-03 (LOOP-01): bounded mid-turn server-tool round loop. A round is
+# one "model calls a server tool -> executor runs -> result fed back" cycle
+# inside the SAME _execute_turn call/run (no new ChatRun per round, SEAM-04).
+# At most _MAX_TOOL_ROUNDS executor.execute() calls happen per turn -- a
+# request for a 5th server tool call after the cap is exhaustion (LOOP-03),
+# never a 5th execution.
+_MAX_TOOL_ROUNDS = 4
+# Per-tool execution ceiling (T-34-01) -- a timeout never raises out of the
+# loop, it becomes an is_error ToolExecutionResult instead.
+_TOOL_EXECUTION_TIMEOUT_SECONDS = 10.0
+_TOOL_TIMEOUT_TEXT = "Tool execution timed out."
+_TOOL_EXECUTION_ERROR_TEXT = "Tool execution failed."
+
 
 @dataclass(frozen=True)
 class _TurnState:
@@ -124,6 +146,61 @@ class _TurnState:
     pending_tool_json: str = ""
     input_tokens: int = 0
     output_tokens: int = 0
+
+
+@dataclass(frozen=True)
+class _ServerRoundResult:
+    """Outcome of one server-tool round (Phase 34-03, LOOP-01) — see `_run_server_tool_round`.
+
+    provider_messages is None exactly when the post-round breaker re-check
+    (T-34-01) trips — the caller must terminate the turn `cost_capped`.
+    Otherwise it carries the NEXT round's provider_messages and the caller
+    increments round_count and continues streaming in the SAME run.
+    """
+
+    state: _TurnState
+    events: tuple[ChatRunEvent, ...]
+    provider_messages: list[dict[str, Any]] | None
+
+
+@dataclass(frozen=True)
+class _RoundAdvance:
+    """Outcome of classifying+advancing one round's finalized pending tool call.
+
+    outcome == "break": a non-server dispatch (widget/emit_ui_spec/unknown,
+    unchanged behavior), no tool call at all, a round-cap exhaustion
+    (LOOP-03), or a server-tool JSON parse failure (LOOP-02) — the caller
+    falls through to the completed-finalize path.
+    outcome == "terminal": the post-round breaker re-check tripped
+    (T-34-01) — `_advance_round` already persisted + terminated
+    'cost_capped' and `events` already carries that terminal event; the
+    caller just yields `events` then returns.
+    outcome == "continue": a server-tool round executed successfully —
+    `provider_messages` carries the NEXT round's messages and the caller
+    increments round_count and streams again in the SAME run (LOOP-01).
+    `provider_messages` is unused (passed through unchanged) for the other
+    two outcomes — always populated (never None) to keep the type simple.
+    """
+
+    state: _TurnState
+    events: tuple[ChatRunEvent, ...]
+    outcome: Literal["break", "terminal", "continue"]
+    provider_messages: list[dict[str, Any]]
+
+
+class _MidStreamTerminalError(Exception):
+    """Internal control-flow signal (Phase 34-03) — never escapes `_execute_turn`.
+
+    Raised by `_stream_round_deltas` the instant `_terminal_status_for` flags
+    a status (StreamEnd error / mid-stream cost_capped) — the caller catches
+    it to persist the partial + terminate via `_terminate` (D-15/D-19/D-21:
+    the accumulated state at the moment of the terminal is never dropped).
+    """
+
+    def __init__(self, status: ChatMessageStatus, state: _TurnState) -> None:
+        super().__init__(status)
+        self.status = status
+        self.state = state
 
 
 class RunChatTurn:
@@ -357,6 +434,33 @@ class RunChatTurn:
         ):
             yield event
 
+    def _build_tool_offer(self, model: ChatModel) -> tuple[dict[str, Any], ...]:
+        """The tools offered to the provider for this turn (pure w.r.t. `model`).
+
+        D-05: emit_ui_spec (+ Phase 24-02 interactive_widget_tools, e.g.
+        emit_proposal_cards) is offered ONLY to genui-capable models; a
+        text-only model never even sees a tool exists (D-02/D-03). Phase
+        34-03 (LOOP-01, T-34-05): server tool schemas (self._tool_executors)
+        are ALSO offered, independently of genui, but ONLY when the model's
+        max_tool_rounds capability gate is open AND at least one executor is
+        wired — a max_tool_rounds==0 model (every OpenRouter/browser entry)
+        never sees a server tool and can never enter a round.
+        """
+        tools: tuple[dict[str, Any], ...] = (
+            (self._emit_ui_spec_tool, *self._interactive_widget_tools) if model.capabilities.genui else ()
+        )
+        if not (model.capabilities.max_tool_rounds > 0 and self._tool_executors):
+            return tools
+        server_tools = tuple(
+            {
+                "name": tool_name,
+                "description": f"Server tool: {tool_name}",
+                "input_schema": {"type": "object", "additionalProperties": False},
+            }
+            for tool_name in self._server_tool_names
+        )
+        return (*tools, *server_tools)
+
     async def _execute_turn(
         self,
         *,
@@ -384,103 +488,151 @@ class RunChatTurn:
 
         trimmed_history = _trim_history_to_budget(history, context_tokens=model.capabilities.context_tokens)
         provider_messages = _build_provider_messages(trimmed_history)
+        tools = self._build_tool_offer(model)
 
-        # D-05: emit_ui_spec (+ Phase 24-02 interactive_widget_tools, e.g.
-        # emit_proposal_cards) is offered ONLY to genui-capable models; a
-        # text-only model never even sees a tool exists (D-02/D-03). Phase
-        # 34-03 (LOOP-01, T-34-05): server tool schemas (self._tool_executors)
-        # are ALSO offered, independently of genui, but ONLY when the model's
-        # max_tool_rounds capability gate is open AND at least one executor is
-        # wired — a max_tool_rounds==0 model (every OpenRouter/browser entry)
-        # never sees a server tool and can never enter a round.
-        tools: tuple[dict[str, Any], ...] = (
-            (self._emit_ui_spec_tool, *self._interactive_widget_tools) if model.capabilities.genui else ()
-        )
-        if model.capabilities.max_tool_rounds > 0 and self._tool_executors:
-            tools = (
-                *tools,
-                *(
-                    {
-                        "name": tool_name,
-                        "description": f"Server tool: {tool_name}",
-                        "input_schema": {"type": "object", "additionalProperties": False},
-                    }
-                    for tool_name in self._server_tool_names
-                ),
-            )
-
-        # Cast: ChatProvider.stream() is typed AsyncIterator[ChatDelta] on the Protocol
-        # (deliberately loose so a future non-generator implementation stays valid),
-        # but every real adapter (BedrockChatAdapter/OpenRouterChatAdapter) IS an
-        # `async def ...: yield ...` generator — aclosing() needs the narrower
-        # AsyncGenerator type to guarantee .aclose().
-        raw_stream = cast(
-            "AsyncGenerator[ChatDelta, None]",
-            provider.stream(
-                model_id=model_id,
-                system=_SYSTEM_PROMPT,
-                messages=provider_messages,
-                tools=tools,
-                max_tokens=self._max_output_tokens,
-            ),
-        )
         state = _TurnState()
-        try:
-            async with contextlib.aclosing(raw_stream) as delta_stream:
-                async for delta in delta_stream:
-                    state, events = _apply_delta(delta, state)
-                    for event_type, event_data in events:
-                        yield await self._emit(run.id, event_type, event_data)
+        round_count = 0
+        # Phase 34-03 (LOOP-01): a round is one "stream -> [server tool call ->
+        # execute -> feed result back]" cycle, all inside this SAME run/state —
+        # no recursion, no new ChatRun per round (SEAM-04 preserved). The loop
+        # breaks to the completed-finalize path below for every terminal
+        # outcome: a non-server tool call (widget/emit_ui_spec/unknown,
+        # unchanged behavior), no tool call at all, a server-tool JSON parse
+        # failure (LOOP-02, visible text), or round-cap exhaustion (LOOP-03,
+        # visible text). Mid-stream cost_capped/stopped/failed terminal
+        # branches `return` directly from inside the loop, same as before.
+        while round_count <= _MAX_TOOL_ROUNDS:
+            round_start_part_count = len(state.parts)
 
-                    terminal_status = self._terminal_status_for(delta, model=model, state=state)
-                    if terminal_status is not None:
-                        async for event in self._terminate(
-                            run=run,
-                            conversation_id=conversation_id,
-                            turn_index=turn_index,
-                            state=state,
-                            status=terminal_status,
-                            model=model,
-                            importer_id=importer_id,
-                            sibling_group_id=sibling_group_id,
-                            version=version,
-                        ):
-                            yield event
-                        return
-        except asyncio.CancelledError:
-            async for event in self._terminate(
+            # `state` is reassigned DIRECTLY inside this loop (not via a
+            # returned value from an awaited coroutine) so that a
+            # CancelledError raised mid-stream still leaves `state` holding
+            # the latest accumulated partial in THIS scope for the except
+            # branch below (D-15) -- an awaited-coroutine boundary would lose
+            # it, since a coroutine that raises never reaches its `return`.
+            try:
+                async for updated_state, event in self._stream_round_deltas(
+                    run=run,
+                    provider=provider,
+                    model=model,
+                    model_id=model_id,
+                    provider_messages=provider_messages,
+                    tools=tools,
+                    state=state,
+                ):
+                    state = updated_state
+                    if event is not None:
+                        yield event
+            except asyncio.CancelledError:
+                async for event in self._terminate(
+                    run=run,
+                    conversation_id=conversation_id,
+                    turn_index=turn_index,
+                    state=state,
+                    status="stopped",
+                    model=model,
+                    importer_id=importer_id,
+                    sibling_group_id=sibling_group_id,
+                    version=version,
+                ):
+                    yield event
+                raise
+            except Exception as exc:
+                # _MidStreamTerminalError (a mid-stream cost_capped/failed
+                # StreamEnd) carries its own status/state; any OTHER exception
+                # is an unhandled provider failure -> 'failed' (D-19), state
+                # as accumulated so far this round.
+                terminal_status: ChatMessageStatus = "failed"
+                if isinstance(exc, _MidStreamTerminalError):
+                    terminal_status = exc.status
+                    state = exc.state
+                async for event in self._terminate(
+                    run=run,
+                    conversation_id=conversation_id,
+                    turn_index=turn_index,
+                    state=state,
+                    status=terminal_status,
+                    model=model,
+                    importer_id=importer_id,
+                    sibling_group_id=sibling_group_id,
+                    version=version,
+                ):
+                    yield event
+                return
+
+            # Inner stream ended without a mid-stream terminal status (StreamEnd
+            # was non-error and never cost-capped). Classify + advance the
+            # round (LOOP-01/LOOP-02/LOOP-03/T-34-01 -- see _advance_round
+            # docstring; a post-round cost cap is ALSO a terminal outcome
+            # handled internally there).
+            advance = await self._advance_round(
                 run=run,
+                state=state,
+                model=model,
+                round_start_part_count=round_start_part_count,
+                round_count=round_count,
+                provider_messages=provider_messages,
                 conversation_id=conversation_id,
                 turn_index=turn_index,
-                state=state,
-                status="stopped",
-                model=model,
                 importer_id=importer_id,
                 sibling_group_id=sibling_group_id,
                 version=version,
-            ):
+            )
+            for event in advance.events:
                 yield event
-            raise
-        except Exception:
-            async for event in self._terminate(
-                run=run,
-                conversation_id=conversation_id,
-                turn_index=turn_index,
-                state=state,
-                status="failed",
-                model=model,
-                importer_id=importer_id,
-                sibling_group_id=sibling_group_id,
-                version=version,
-            ):
-                yield event
-            return
+            state = advance.state
 
-        # Completed normally — the last delta was a StreamEnd with a non-error stop_reason.
-        # Finalize any pending emit_ui_spec call HERE so its tool_result event
-        # reaches the client (persist's own _finalize_state would silently
-        # swallow it — found live 2026-07-04: spec persisted but no tool_result
-        # streamed, leaving the client's live view stuck on "streaming").
+            if advance.outcome == "terminal":
+                return
+            if advance.outcome == "break":
+                break
+
+            provider_messages = advance.provider_messages
+            round_count += 1
+
+        # Completed normally — either a terminal (non-server) tool call, no
+        # tool call at all, a round-cap exhaustion, or a server-tool parse
+        # failure fell through to here (never a mid-stream/cost_capped
+        # terminal — those already `return`d above).
+        async for event in self._finalize_turn_completed(
+            run=run,
+            state=state,
+            model=model,
+            conversation_id=conversation_id,
+            turn_index=turn_index,
+            importer_id=importer_id,
+            sibling_group_id=sibling_group_id,
+            version=version,
+            model_id=model_id,
+            is_first_turn=is_first_turn,
+            user_text=user_text,
+        ):
+            yield event
+
+    async def _finalize_turn_completed(
+        self,
+        *,
+        run: ChatRun,
+        state: _TurnState,
+        model: ChatModel,
+        conversation_id: str,
+        turn_index: int,
+        importer_id: str,
+        sibling_group_id: str,
+        version: int,
+        model_id: str,
+        is_first_turn: bool,
+        user_text: str,
+    ) -> AsyncIterator[ChatRunEvent]:
+        """Finalize any still-pending tool call, persist 'completed', touch the conversation.
+
+        Finalize any STILL-pending emit_ui_spec/widget call HERE so its
+        tool_result event reaches the client (persist's own _finalize_state
+        would silently swallow it — found live 2026-07-04: spec persisted but
+        no tool_result streamed, leaving the client's live view stuck on
+        "streaming"). A server-round parse failure/exhaustion already cleared
+        pending_tool_id before reaching this path, so this is a no-op there.
+        """
         state, tool_result_event = _finalize_pending_tool(state)
         if tool_result_event is not None:
             yield await self._emit(run.id, tool_result_event[0], tool_result_event[1])
@@ -499,12 +651,8 @@ class RunChatTurn:
         yield await self._emit(run.id, "usage", {"input_tokens": state.input_tokens, "output_tokens": state.output_tokens})
         yield await self._emit(run.id, "completed", {})
 
-        if is_first_turn:
-            await self._conversations.touch(
-                conversation_id=conversation_id, model_id=model_id, title=_title_snippet(user_text)
-            )
-        else:
-            await self._conversations.touch(conversation_id=conversation_id, model_id=model_id)
+        title = _title_snippet(user_text) if is_first_turn else None
+        await self._conversations.touch(conversation_id=conversation_id, model_id=model_id, title=title)
 
     def _terminal_status_for(
         self,
@@ -647,6 +795,243 @@ class RunChatTurn:
     async def _emit(self, run_id: str, event_type: ChatRunEventType, data: dict[str, Any]) -> ChatRunEvent:
         """Persist one run event (append-only) and return it for the caller to yield."""
         return await self._runs.append_event(run_id=run_id, event_type=event_type, data=data)
+
+    async def _stream_round_deltas(
+        self,
+        *,
+        run: ChatRun,
+        provider: ChatProvider,
+        model: ChatModel,
+        model_id: str,
+        provider_messages: list[dict[str, Any]],
+        tools: tuple[dict[str, Any], ...],
+        state: _TurnState,
+    ) -> AsyncIterator[tuple[_TurnState, ChatRunEvent | None]]:
+        """Stream ONE round's deltas, yielding (updated_state, event_or_none) pairs.
+
+        Always yields at least once per delta processed — even when
+        `_apply_delta` produces no run event (e.g. UsageDelta) — so the
+        caller's `state` is never stale between yields. Raises
+        `_MidStreamTerminalError` (never escapes `_execute_turn`) the instant
+        `_terminal_status_for` flags a status; the caller persists + terminates.
+        """
+        # Cast: ChatProvider.stream() is typed AsyncIterator[ChatDelta] on the Protocol
+        # (deliberately loose so a future non-generator implementation stays valid),
+        # but every real adapter (BedrockChatAdapter/OpenRouterChatAdapter) IS an
+        # `async def ...: yield ...` generator — aclosing() needs the narrower
+        # AsyncGenerator type to guarantee .aclose().
+        raw_stream = cast(
+            "AsyncGenerator[ChatDelta, None]",
+            provider.stream(
+                model_id=model_id,
+                system=_SYSTEM_PROMPT,
+                messages=provider_messages,
+                tools=tools,
+                max_tokens=self._max_output_tokens,
+            ),
+        )
+        async with contextlib.aclosing(raw_stream) as delta_stream:
+            async for delta in delta_stream:
+                state, events = _apply_delta(delta, state)
+                if events:
+                    for event_type, event_data in events:
+                        yield state, await self._emit(run.id, event_type, event_data)
+                else:
+                    yield state, None
+
+                terminal_status = self._terminal_status_for(delta, model=model, state=state)
+                if terminal_status is not None:
+                    raise _MidStreamTerminalError(terminal_status, state)
+
+    async def _advance_round(
+        self,
+        *,
+        run: ChatRun,
+        state: _TurnState,
+        model: ChatModel,
+        round_start_part_count: int,
+        round_count: int,
+        provider_messages: list[dict[str, Any]],
+        conversation_id: str,
+        turn_index: int,
+        importer_id: str,
+        sibling_group_id: str,
+        version: int,
+    ) -> _RoundAdvance:
+        """Classify the round's finalized pending tool call (if any) and advance.
+
+        See `_RoundAdvance`'s docstring for the three outcomes. This is the
+        Phase 34-03 (LOOP-01/LOOP-02/LOOP-03/T-34-01) dispatch point: no
+        pending tool call, a non-server dispatch (widget/emit_ui_spec/
+        unknown), a round-cap exhaustion, or a malformed server-tool call are
+        all terminal ("break") -- unchanged behavior for the first two, LOOP-
+        03/LOOP-02 visible text for the latter two. A well-formed server-tool
+        call executes via `_run_server_tool_round`, then either continues the
+        SAME run with a new round ("continue") or, if the post-round breaker
+        re-check trips (T-34-01), persists + terminates 'cost_capped' HERE
+        and returns "terminal" (same spend commitment as continuing to
+        stream, no new breaker method this phase — per-round ceiling is
+        COST-05/Phase 35).
+        """
+        if state.pending_tool_id is None:
+            # No tool call at all this round — plain text turn (unchanged).
+            return _RoundAdvance(state=state, events=(), outcome="break", provider_messages=provider_messages)
+
+        # Captured immediately after the guard above (before any `state =
+        # replace(...)` reassignment below) so mypy narrows tool_id: str once,
+        # cleanly — a repeated `state.pending_tool_id` attribute read further
+        # down loses that narrowing the instant `state` is reassigned anywhere
+        # in this function's control flow.
+        tool_name = state.pending_tool_name or ""
+        tool_id: str = state.pending_tool_id
+        raw_json = state.pending_tool_json
+
+        dispatch = classify_tool_dispatch(tool_name, self._server_tool_names)
+        if dispatch != "server":
+            # widget / emit_ui_spec / unknown — terminal, unchanged behavior:
+            # _finalize_pending_tool (after the loop) does the finalization.
+            return _RoundAdvance(state=state, events=(), outcome="break", provider_messages=provider_messages)
+
+        if round_count >= _MAX_TOOL_ROUNDS:
+            # LOOP-03: the model STILL wants a server tool after the cap —
+            # fail closed with a visible text part, never a bare stopped
+            # state, and never a 5th tool execution.
+            state = replace(state, pending_tool_name=None, pending_tool_id=None, pending_tool_json="")
+            state = replace(state, parts=(*state.parts, {"type": "text", "text": ROUND_CAP_EXHAUSTED_TEXT}))
+            return _RoundAdvance(state=state, events=(), outcome="break", provider_messages=provider_messages)
+
+        this_round_lead_parts = list(state.parts[round_start_part_count:])
+        state = replace(state, pending_tool_name=None, pending_tool_id=None, pending_tool_json="")
+
+        try:
+            arguments: dict[str, Any] = json.loads(raw_json) if raw_json else {}
+        except (json.JSONDecodeError, TypeError):
+            # LOOP-02 (server-path fix): never silently drop a malformed
+            # server-tool call — surface the same visible text as the
+            # existing widget/emit_ui_spec parse-failure paths.
+            logger.warning("server_tool_call_parse_failed", tool_id=tool_id, tool_name=tool_name)
+            state = replace(state, parts=(*state.parts, {"type": "text", "text": PARSE_FAILURE_TEXT}))
+            return _RoundAdvance(state=state, events=(), outcome="break", provider_messages=provider_messages)
+
+        round_result = await self._run_server_tool_round(
+            run=run,
+            state=state,
+            model=model,
+            tool_name=tool_name,
+            tool_id=tool_id,
+            arguments=arguments,
+            this_round_lead_parts=this_round_lead_parts,
+            provider_messages=provider_messages,
+        )
+        if round_result.provider_messages is not None:
+            return _RoundAdvance(
+                state=round_result.state,
+                events=round_result.events,
+                outcome="continue",
+                provider_messages=round_result.provider_messages,
+            )
+
+        terminate_events = [
+            event
+            async for event in self._terminate(
+                run=run,
+                conversation_id=conversation_id,
+                turn_index=turn_index,
+                state=round_result.state,
+                status="cost_capped",
+                model=model,
+                importer_id=importer_id,
+                sibling_group_id=sibling_group_id,
+                version=version,
+            )
+        ]
+        return _RoundAdvance(
+            state=round_result.state,
+            events=(*round_result.events, *terminate_events),
+            outcome="terminal",
+            provider_messages=provider_messages,
+        )
+
+    async def _run_server_tool_round(
+        self,
+        *,
+        run: ChatRun,
+        state: _TurnState,
+        model: ChatModel,
+        tool_name: str,
+        tool_id: str,
+        arguments: dict[str, Any],
+        this_round_lead_parts: list[dict[str, Any]],
+        provider_messages: list[dict[str, Any]],
+    ) -> _ServerRoundResult:
+        """Execute one server-tool round (Phase 34-03, LOOP-01): dispatch, cap, feed back.
+
+        A per-tool timeout (`asyncio.wait_for`, ~10s, T-34-01) or ANY raised
+        exception NEVER escapes this method — both become an `is_error`
+        `ToolExecutionResult` (port contract, `tool_executor.py`). The
+        `tool_invocation`/`tool_invocation_result` parts and the `tool_call`/
+        `tool_result` run events are always recorded, whatever the outcome.
+        """
+        events: list[ChatRunEvent] = []
+        invocation_part = build_tool_invocation_part(tool_name, tool_id, arguments)
+        state = replace(state, parts=(*state.parts, invocation_part))
+        events.append(
+            await self._emit(run.id, "tool_call", {"tool_name": tool_name, "id": tool_id, "arguments": arguments})
+        )
+
+        executor = self._tool_executors[tool_name]
+        try:
+            result = await asyncio.wait_for(
+                executor.execute(name=tool_name, arguments=arguments),
+                timeout=_TOOL_EXECUTION_TIMEOUT_SECONDS,
+            )
+        except TimeoutError:
+            logger.warning("server_tool_execution_timed_out", tool_id=tool_id, tool_name=tool_name)
+            result = ToolExecutionResult(tool_use_id=tool_id, content=_TOOL_TIMEOUT_TEXT, is_error=True)
+        except Exception:  # an executor MUST NEVER raise out of the loop (port contract)
+            logger.warning("server_tool_execution_failed", tool_id=tool_id, tool_name=tool_name)
+            result = ToolExecutionResult(tool_use_id=tool_id, content=_TOOL_EXECUTION_ERROR_TEXT, is_error=True)
+
+        # T-34-04 defense-in-depth / protocol correctness: the fed-back native
+        # tool_result block's tool_use_id MUST match the tool_use block's id
+        # exactly (Anthropic/Bedrock correlation contract) -- the ToolExecutor
+        # port's execute() signature doesn't even receive tool_use_id as an
+        # input, so an executor's own result.tool_use_id is NEVER trusted for
+        # this; always overridden with the id the model actually streamed.
+        result = replace(result, tool_use_id=tool_id, content=cap_tool_output(result.content))
+        result_part = build_tool_invocation_result_part(result, tool_name)
+        state = replace(state, parts=(*state.parts, result_part))
+        # ToolResultDelta (chat_provider.py) — modeled, never emitted until now
+        # (LOOP-01): its fields feed the persisted tool_result run event.
+        tool_result_delta = ToolResultDelta(
+            tool_use_id=result.tool_use_id, content=result.content, is_error=result.is_error
+        )
+        events.append(
+            await self._emit(
+                run.id,
+                "tool_result",
+                {
+                    "tool_name": tool_name,
+                    "id": tool_id,
+                    "content": tool_result_delta.content,
+                    "isError": tool_result_delta.is_error,
+                },
+            )
+        )
+
+        # T-34-01: a round is the same spend commitment as continuing to
+        # stream — re-check the breaker at the round boundary (no new breaker
+        # method this phase, per-round ceiling is COST-05/Phase 35).
+        if self._breaker.should_abort(self._estimated_cost_so_far(model=model, state=state)):
+            return _ServerRoundResult(state=state, events=tuple(events), provider_messages=None)
+
+        tool_use_block = {"type": "tool_use", "id": tool_id, "name": tool_name, "input": arguments}
+        next_provider_messages = [
+            *provider_messages,
+            {"role": "assistant", "content": [*this_round_lead_parts, tool_use_block]},
+            build_synthetic_tool_result_message(result),
+        ]
+        return _ServerRoundResult(state=state, events=tuple(events), provider_messages=next_provider_messages)
 
 
 def _apply_delta(
