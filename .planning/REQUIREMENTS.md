@@ -45,9 +45,9 @@ graph-expand is ever justified.
 Graphify's query algorithm as the `/knowledge` canvas interaction model — one graph-walk
 implementation serving reviewer exploration now, and (if stage 3 is ever justified) retrieval later.
 
-- [ ] **GRAPH-01**: `/knowledge` renders edge tiers with distinct visual encoding (EXTRACTED solid / INFERRED dashed / AMBIGUOUS faint), reusing the existing edge-style conventions
+- [x] **GRAPH-01**: `/knowledge` renders edge tiers with distinct visual encoding (EXTRACTED solid / INFERRED dashed / AMBIGUOUS faint), reusing the existing edge-style conventions
 - [x] **GRAPH-02**: Reviewer can click a node to expand its neighbours via a bounded (≤2-hop) server-side graph query
-- [ ] **GRAPH-03**: Reviewer can filter the graph by tier (detail control: EXTRACTED-only → include suggestions), the budget-prune analog
+- [x] **GRAPH-03**: Reviewer can filter the graph by tier (detail control: EXTRACTED-only → include suggestions), the budget-prune analog
 
 ## Future Requirements
 
@@ -104,9 +104,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TIER-03 | Phase 30 | Complete |
 | RECALL-01 | Phase 31 | Complete |
 | RECALL-02 | Phase 31 | Complete |
-| GRAPH-01 | Phase 32 | Pending |
+| GRAPH-01 | Phase 32 | Complete |
 | GRAPH-02 | Phase 32 | Complete |
-| GRAPH-03 | Phase 32 | Pending |
+| GRAPH-03 | Phase 32 | Complete |
 
 **Coverage:**
 - v1.5 requirements: 11 total

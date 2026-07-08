@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Knowledge-Graph Uplift
 status: executing
-last_updated: "2026-07-08T00:28:48.082Z"
-last_activity: 2026-07-08 -- Phase 32 execution started
+last_updated: "2026-07-08T00:40:07.874Z"
+last_activity: 2026-07-08 -- 32-02 executed (GRAPH-01 tier styling + GRAPH-03 tier filter)
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 11
-  completed_plans: 9
+  completed_plans: 10
   percent: 75
 ---
 
@@ -25,13 +25,28 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 ## Current Position
 
 Phase: 32 (Knowledge Canvas: Tiered Graph Exploration) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Executing Phase 32
-Last activity: 2026-07-08 -- 32-01 executed (GRAPH-02 bounded click-expand)
+Last activity: 2026-07-08 -- 32-02 executed (GRAPH-01 tier styling + GRAPH-03 tier filter)
 column), PromoteEdgeUseCase (fail-closed guard), authenticated POST /v1/knowledge/edges/{id}/promote
 endpoint. Phase 30 (TIER-02 + TIER-03) fully shipped.
 
 ## Phase 32 — Knowledge Canvas: Tiered Graph Exploration (executing 2026-07-08)
+
+- **32-02 EXECUTED:** GRAPH-01 + GRAPH-03 — tier now a first-class visual concept on `/knowledge`.
+  `tierEdgeStyle(tier)` (pure, token-only: `INFERRED` dashed muted / `AMBIGUOUS` faint muted + dimmer
+  label / `EXTRACTED`+undefined default) applied in `toFlowEdges` ONLY to `kne-*` edges — structural FK
+  edges provably untouched. `GraphLegend` (bottom-left React Flow `Panel`) renders plain "Confirmed" /
+  "Suggested" / "Uncertain" labels reusing `tierEdgeStyle` as single source of truth. `tierAllowsEdge`
+  (pure cumulative predicate, structural edges always pass, unknown-tier conservative at widest state) +
+  `TierFilterControl` (`role="radiogroup"`, exact labels "Confirmed only"/"+ Inferred"/"+ Ambiguous",
+  arrow-key nav, reuses `filter-rail.tsx`'s active/inactive tokens) wired into `GraphToolbar`'s new
+  `children` slot; session-only `tierFilter` state (default "ambiguous" — widest) layered onto the
+  existing both-endpoints-visible edge filter. 10/10 new vitest green (4 tier-edge-style + 6
+  tier-filter), `tsc --noEmit` clean, `npm run build --workspace=@nauta/web` green. **Known scope gap
+  (documented, non-blocking):** GRAPH-02's click-expand merge path doesn't re-apply the tier filter to
+  newly-merged edges. No deviations. See 32-02-SUMMARY.md. **Next: 32-03** (Promote affordance —
+  Phase-30 deferral closure — not yet planned).
 
 - **32-01 EXECUTED:** GRAPH-02 — bounded (<=2-hop) server-side click-to-expand. New read-only
   `knowledge.expandNode` tRPC `.query` (`clampDepth` [1,2]/`capBudget` ~50-node/`walkKnowledgeGraph`
@@ -45,7 +60,7 @@ endpoint. Phase 30 (TIER-02 + TIER-03) fully shipped.
   (Claude's Discretion, documented):** UI-SPEC's literal `useMutation` wording conflicts with Task 1's
   own `.query` procedure type — resolved via the UI-SPEC's own stated fallback ("or a lazy query").
   `tsc --noEmit` clean (api-client + web), `npm run build --workspace=@nauta/web` green. See
-  32-01-SUMMARY.md. **Next: 32-02** (GRAPH-01 tier styling + GRAPH-03 tier filter — not yet planned).
+  32-01-SUMMARY.md.
 
 ## Phase 31 — Recall & Measurement (COMPLETE 2026-07-07)
 
