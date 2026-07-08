@@ -7,6 +7,7 @@
 
 import { createTRPCRouter } from "../../trpc";
 import { knowledgeDetailProcedures } from "./detail";
+import { knowledgeExpandProcedures } from "./expand";
 import { knowledgeGraphProcedures } from "./graph";
 import { knowledgeListProcedures } from "./list";
 
@@ -14,4 +15,5 @@ export const knowledgeRouter = createTRPCRouter({
   ...knowledgeGraphProcedures,
   ...knowledgeListProcedures,
   ...knowledgeDetailProcedures,
+  ...knowledgeExpandProcedures,
 });
