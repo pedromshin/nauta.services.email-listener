@@ -8,7 +8,7 @@
  *
  * `~/trpc/react`'s `api.useQueries` is mocked as a plain `vi.fn()` that
  * invokes the hook's callback against a lightweight fake `t` proxy whose
- * `<router>.<procedure>.queryOptions(input, opts)` returns
+ * `<router>.<procedure>(input, opts)` returns
  * `{ queryKey: [router, procedure], __input: input, ...opts }` — letting
  * assertions inspect exactly what the switch constructed. The mock then
  * returns one stub `UseQueryResult`-shaped object per constructed query,
@@ -25,8 +25,9 @@ import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // ---------------------------------------------------------------------------
-// Fake `t` proxy — mirrors the trpc-react-query v11 `queryOptions` shape
-// (`t.<router>.<procedure>.queryOptions(input, opts)`).
+// Fake `t` proxy — mirrors the installed trpc-react-query v11 `useQueries`
+// proxy shape (`t.<router>.<procedure>(input, opts)` called directly,
+// returning the query-options object — no `.queryOptions` sub-method).
 // ---------------------------------------------------------------------------
 
 interface FakeQueryOptions {
@@ -46,27 +47,25 @@ interface FakeQueryResult {
  * loading (data undefined) when a key has no explicit entry. */
 let RESULTS: Record<string, FakeQueryResult> = {};
 
-function makeProcedureLeaf(router: string, procedure: string) {
-  return {
-    queryOptions: (input: unknown, opts?: { enabled?: boolean; staleTime?: number }): FakeQueryOptions => ({
-      queryKey: [router, procedure],
-      __input: input,
-      ...opts,
-    }),
-  };
+function makeProcedureCall(router: string, procedure: string) {
+  return (input: unknown, opts?: { enabled?: boolean; staleTime?: number }): FakeQueryOptions => ({
+    queryKey: [router, procedure],
+    __input: input,
+    ...opts,
+  });
 }
 
 const FAKE_T = {
   entities: {
-    byId: makeProcedureLeaf("entities", "byId"),
-    list: makeProcedureLeaf("entities", "list"),
+    byId: makeProcedureCall("entities", "byId"),
+    list: makeProcedureCall("entities", "list"),
   },
   emails: {
-    detail: makeProcedureLeaf("emails", "detail"),
+    detail: makeProcedureCall("emails", "detail"),
   },
   knowledge: {
-    byId: makeProcedureLeaf("knowledge", "byId"),
-    graph: makeProcedureLeaf("knowledge", "graph"),
+    byId: makeProcedureCall("knowledge", "byId"),
+    graph: makeProcedureCall("knowledge", "graph"),
   },
 };
 
@@ -75,6 +74,12 @@ const useQueriesMock = vi.fn((callback: (t: typeof FAKE_T) => unknown[]) => {
   const queries = callback(FAKE_T) as FakeQueryOptions[];
   capturedQueries = queries;
   return queries.map((q) => {
+    // Mirrors TanStack's own `enabled:false` idiom: a disabled query never
+    // surfaces cached/stub data, regardless of what a same-keyed enabled
+    // query elsewhere in the same test returned.
+    if (q.enabled === false) {
+      return { data: undefined, isLoading: false, isError: false };
+    }
     const key = q.queryKey.join(".");
     return RESULTS[key] ?? { data: undefined, isLoading: true, isError: false };
   });
