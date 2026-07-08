@@ -61,6 +61,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import structlog
 
+from app.application.use_cases.run_chat_turn_tool_loop import PARSE_FAILURE_TEXT
 from app.application.use_cases.run_chat_turn_widgets import (
     INTERACTIVE_WIDGET_TOOL_NAMES,
     build_create_pending_kwargs,
@@ -636,7 +637,10 @@ def _apply_delta(
     (or finalizes a DIFFERENT prior tool call before starting this one), then
     accumulates this chunk's partial_json and emits a tool_call event so the
     client can render the partial tree progressively (STREAM-02).
-    UsageDelta: records the real captured token counts; no part/event change.
+    UsageDelta: records the real captured token counts, ACCUMULATING across
+    multiple UsageDelta events (a multi-round turn emits one per round,
+    LOOP-02 bugfix — the prior overwrite silently under-reported cost the
+    moment a turn spans more than one round); no part/event change.
     A non-error StreamEnd needs no mid-loop handling (D-03/22-06 precedent).
     """
     if isinstance(delta, TextDelta):
@@ -663,7 +667,11 @@ def _apply_delta(
         return state, events
 
     if isinstance(delta, UsageDelta):
-        state = replace(state, input_tokens=delta.input_tokens, output_tokens=delta.output_tokens)
+        state = replace(
+            state,
+            input_tokens=state.input_tokens + delta.input_tokens,
+            output_tokens=state.output_tokens + delta.output_tokens,
+        )
         return state, []
 
     return state, []
@@ -687,7 +695,10 @@ def _finalize_pending_tool(
     (e.g. emit_proposal_cards) finalize into an `interactive_widget` part
     instead (run_chat_turn_widgets.py owns the parse logic) -- never both. A
     tool call whose JSON never parses, or whose shape is unusable (e.g. cut
-    off mid-stream), is dropped rather than persisting an invalid part.
+    off mid-stream), NEVER persists an invalid part and NEVER drops silently
+    (LOOP-02 bugfix) -- it appends a visible PARSE_FAILURE_TEXT text part so
+    the user sees the lookup failed, while the server-side logger.warning
+    detail is retained.
     """
     if state.pending_tool_id is None:
         return state, None
@@ -700,7 +711,7 @@ def _finalize_pending_tool(
         widget_part = build_interactive_widget_part(tool_name, raw_json)
         if widget_part is None:
             logger.warning("interactive_widget_tool_call_parse_failed", tool_id=tool_id, tool_name=tool_name)
-            return cleared, None
+            return replace(cleared, parts=(*cleared.parts, {"type": "text", "text": PARSE_FAILURE_TEXT})), None
         finalized = replace(cleared, parts=(*cleared.parts, widget_part))
         return finalized, (
             "tool_result",
@@ -711,7 +722,7 @@ def _finalize_pending_tool(
         spec: dict[str, Any] = json.loads(raw_json) if raw_json else {}
     except (json.JSONDecodeError, TypeError):
         logger.warning("emit_ui_spec_tool_call_parse_failed", tool_id=tool_id, tool_name=tool_name)
-        return cleared, None
+        return replace(cleared, parts=(*cleared.parts, {"type": "text", "text": PARSE_FAILURE_TEXT})), None
     finalized = replace(cleared, parts=(*cleared.parts, {"type": "genui_spec", "spec": spec}))
     return finalized, ("tool_result", {"tool_name": tool_name, "id": tool_id, "spec": spec})
 
