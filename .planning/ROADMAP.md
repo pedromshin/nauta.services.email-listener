@@ -123,7 +123,7 @@ only G2 (already satisfied) and can run parallel to 36–39, but its `widget_kin
 numbered after whichever v1.6 migration merges first. `{41}` is the single most-gated phase (needs
 G3 + Phase 39's `<ProvenanceLink>`) — plan and execute last.
 
-- [ ] **Phase 33: Live Bindings Plumbing** - Genui canvas panels render live product data via `spec.bindings`, resolved through a compile-time allowlist switch, staying fresh via staleTime tiers + event-driven invalidation — zero renderer edits
+- [x] **Phase 33: Live Bindings Plumbing** - Genui canvas panels render live product data via `spec.bindings`, resolved through a compile-time allowlist switch, staying fresh via staleTime tiers + event-driven invalidation — zero renderer edits (completed 2026-07-08)
 - [ ] **Phase 34: Tool-Loop Mechanics (stub/echo executor)** - Chat agent runs a bounded (≤4-round) mid-turn tool loop against a stub/echo `ToolExecutor`, proving the round mechanics and fixing 2 latent bugs, before any real tool exists
 - [ ] **Phase 35: Cost + Eval Scaffolding** - A per-round cost ceiling with fail-closed abort semantics is enforced on the FOUND-3 ledger, and retrieval-quality/citation-faithfulness/injection-resistance become measurable Phase-16 harness dimensions — both built against Phase 34's stub
 - [ ] **Phase 36: Thin-Wrapper Tools** - User can ask about a known entity or find related emails from chat via `lookup_entity`/`search_emails`, thin wrappers over existing repos with zero new backend
@@ -157,7 +157,7 @@ tool-loop track, can run fully in parallel to Phase 34)
 **Plans**: 2 plans (coarse; Wave 1 = 33-01, Wave 2 = 33-02)
 Plans:
 - [x] 33-01-PLAN.md — use-data-bindings.ts hook: compile-time procedure switch, params-from-context convention, staleTime tiers
-- [ ] 33-02-PLAN.md — wire hook into GenuiPanelNodeBody, promotion-success invalidation, SC2 locked-file diff verification
+- [x] 33-02-PLAN.md — wire hook into GenuiPanelNodeBody, promotion-success invalidation, SC2 locked-file diff verification
 **UI hint**: yes
 
 ### Phase 34: Tool-Loop Mechanics (stub/echo executor)
@@ -339,7 +339,7 @@ execute last.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
-| 33. Live Bindings Plumbing | 1/2 | In Progress|  |
+| 33. Live Bindings Plumbing | 2/2 | Complete   | 2026-07-08 |
 | 34. Tool-Loop Mechanics (stub/echo executor) | 2/3 | In Progress|  |
 | 35. Cost + Eval Scaffolding | 0/? | Not started | - |
 | 36. Thin-Wrapper Tools | 0/? | Not started | - |

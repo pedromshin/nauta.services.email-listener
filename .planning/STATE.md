@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Chat × Knowledge Convergence
 status: executing
-last_updated: "2026-07-08T04:26:18.881Z"
-last_activity: 2026-07-08 -- 34-02 executed
+last_updated: "2026-07-08T04:45:08.903Z"
+last_activity: 2026-07-08 -- 33-02 executed (Phase 33 complete)
 progress:
   total_phases: 9
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 5
-  completed_plans: 3
-  percent: 0
+  completed_plans: 4
+  percent: 11
 ---
 
 # State
@@ -29,7 +29,7 @@ Plan: 3 of 3
 Status: Executing Phase 34
 Last activity: 2026-07-08 -- 34-02 executed
 
-## Phase 33 — Live Bindings Plumbing (executing 2026-07-08, parallel track to Phase 34)
+## Phase 33 — Live Bindings Plumbing (COMPLETE 2026-07-08, parallel track to Phase 34)
 
 - **33-01 EXECUTED:** `use-data-bindings.ts` — standalone hook resolving genui `spec.bindings` into
   live tRPC query data via a compile-time `switch` over exactly the 5 wired allowlisted procedures
@@ -55,6 +55,28 @@ Last activity: 2026-07-08 -- 34-02 executed
   half — `BIND-01`/`BIND-02` stay `Pending` in REQUIREMENTS.md until that plan lands). See
   33-01-SUMMARY.md. **Next: 33-02** (wire the hook into `GenuiPanelNodeBody` + promotion-mutation
   invalidation — already planned, `33-02-PLAN.md` exists).
+
+- **33-02 EXECUTED — PHASE 33 COMPLETE:** BIND-01 + BIND-02, closing the last two open v1.6 requirements
+  for this phase. `GenuiPanelNodeBody` now calls `useDataBindings({specJson, isStreaming, panelData})`
+  right after `usePanelData` and merges the result over `panelData`
+  (`{...panelData, ...liveBindingData}`, live keys win on collision) on the non-interactive-widget
+  `GenuiPartBoundary` branch — the `InteractiveWidgetBoundary` branch (a separate D-08 surface) is
+  untouched. `knowledge-graph.tsx`'s promotion success path now invalidates
+  `knowledge.byId`/`knowledge.graph` via a new standalone `promoteEdge(edgeId, importerId, utils)`
+  export; invalidation fires ONLY after a successful `/api/knowledge/edges/{id}/promote` response
+  (T-33-06 — a `!ok` response returns early, invalidate never called). `git diff --stat` against the
+  3 locked renderer files (`spec-renderer.tsx`/`render-node.tsx`/`genui-part-boundary.tsx`) confirmed
+  EMPTY (SC2 proof artifact); `ALLOWED_PROCEDURES` grep confirmed unchanged (original 9 entries, SC5).
+  6/6 targeted vitest tests green (3 `panel-data-flow.test.tsx` + 3 new
+  `knowledge-graph-invalidate.test.tsx`), `npm run typecheck -w apps/web` clean, zero new npm
+  dependencies. **Deviations (both documented, non-architectural):** (Rule 3) extracted
+  `handlePromote`'s inline fetch+invalidate logic into the standalone exported `promoteEdge` function
+  because this repo has no ResizeObserver/DOMMatrixReadOnly jsdom polyfills and no existing test mounts
+  the real `<ReactFlow>` — mirrors `knowledge-graph.tsx`'s own `mergeGraph`/`tierAllowsEdge`
+  pure-helper convention; (Rule 1) reused the component's pre-existing `api.useUtils()` declaration
+  (already used by `expandNode`) instead of a duplicate `const utils` declaration, which would be a
+  syntax error. See 33-02-SUMMARY.md. **All Phase 33 requirements (BIND-01, BIND-02) now complete —
+  Phase 33 (Live Bindings Plumbing) is DONE.**
 
 ## Phase 34 — Tool-Loop Mechanics (stub/echo executor) (executing 2026-07-08)
 

@@ -23,8 +23,8 @@ Kickoff verifications (mandated by the synthesis, performed 2026-07-08): migrati
 *above* the renderer — `spec-renderer.tsx`, `render-node.tsx`, `genui-part-boundary.tsx` stay
 byte-identical (locked files).
 
-- [ ] **BIND-01**: A genui canvas panel whose spec declares `bindings` renders live product data, resolved through a compile-time `switch` over the 5 already-allowlisted procedures (`entities.byId/list`, `emails.detail`, `knowledge.byId/graph`) with params injected from render context (never model-authored) — `ALLOWED_PROCEDURES` is NOT expanded
-- [ ] **BIND-02**: Bound panel data stays fresh via TanStack Query staleTime tiers per procedure plus event-driven invalidation when a promotion mutation succeeds — no bespoke polling
+- [x] **BIND-01**: A genui canvas panel whose spec declares `bindings` renders live product data, resolved through a compile-time `switch` over the 5 already-allowlisted procedures (`entities.byId/list`, `emails.detail`, `knowledge.byId/graph`) with params injected from render context (never model-authored) — `ALLOWED_PROCEDURES` is NOT expanded
+- [x] **BIND-02**: Bound panel data stays fresh via TanStack Query staleTime tiers per procedure plus event-driven invalidation when a promotion mutation succeeds — no bespoke polling
 
 ### Mid-Turn Tool Loop (LOOP / COST)
 
@@ -148,8 +148,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| BIND-01 | Phase 33 | Pending |
-| BIND-02 | Phase 33 | Pending |
+| BIND-01 | Phase 33 | Complete |
+| BIND-02 | Phase 33 | Complete |
 | LOOP-01 | Phase 34 | Complete |
 | LOOP-02 | Phase 34 | Complete |
 | LOOP-03 | Phase 34 | Pending |
