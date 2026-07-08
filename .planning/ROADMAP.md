@@ -126,7 +126,7 @@ G3 + Phase 39's `<ProvenanceLink>`) — plan and execute last.
 - [x] **Phase 33: Live Bindings Plumbing** - Genui canvas panels render live product data via `spec.bindings`, resolved through a compile-time allowlist switch, staying fresh via staleTime tiers + event-driven invalidation — zero renderer edits (completed 2026-07-08)
 - [x] **Phase 34: Tool-Loop Mechanics (stub/echo executor)** - Chat agent runs a bounded (≤4-round) mid-turn tool loop against a stub/echo `ToolExecutor`, proving the round mechanics and fixing 2 latent bugs, before any real tool exists (completed 2026-07-08)
 - [ ] **Phase 35: Cost + Eval Scaffolding** - A per-round cost ceiling with fail-closed abort semantics is enforced on the FOUND-3 ledger, and retrieval-quality/citation-faithfulness/injection-resistance become measurable Phase-16 harness dimensions — both built against Phase 34's stub
-- [ ] **Phase 36: Thin-Wrapper Tools** - User can ask about a known entity or find related emails from chat via `lookup_entity`/`search_emails`, thin wrappers over existing repos with zero new backend
+- [x] **Phase 36: Thin-Wrapper Tools** - User can ask about a known entity or find related emails from chat via `lookup_entity`/`search_emails`, thin wrappers over existing repos with zero new backend (completed 2026-07-08)
 - [ ] **Phase 37: Knowledge Search + Python Read-Side** - User can search or expand the knowledge graph from chat via `search_knowledge`, backed by a NEW Python `KnowledgeGraphRepository` + a DB-level `extracted_only` view — built but not yet exposed to users
 - [ ] **Phase 38: Quarantine + Adversarial Eval** - Every wired `ToolExecutor` structurally enforces tier-filtered envelopes, proven against an adversarial fixture suite + live-model harness; `search_knowledge` becomes safely user-facing
 - [ ] **Phase 39: Tool-Round UI + Citation Chips** - `/chat` visibly surfaces in-progress tool rounds and renders citation chips through one shared `<ProvenanceLink>` primitive
@@ -228,7 +228,7 @@ to ship, but only after the loop itself exists)
 **Plans**: 2 plans (coarse; Wave 1 = 36-01, Wave 2 = 36-02)
 Plans:
 - [x] 36-01-PLAN.md — ToolExecutor importer_id contract + shared citation/envelope module + LookupEntityExecutor [TOOL-01]
-- [ ] 36-02-PLAN.md — SearchEmailsExecutor + container wiring + real tool-schema advertisement [TOOL-02]
+- [x] 36-02-PLAN.md — SearchEmailsExecutor + container wiring + real tool-schema advertisement [TOOL-02]
 
 ### Phase 37: Knowledge Search + Python Read-Side
 **Goal**: User can search or expand the knowledge graph from chat via `search_knowledge`, backed by
@@ -358,7 +358,7 @@ execute last.
 | 33. Live Bindings Plumbing | 2/2 | Complete   | 2026-07-08 |
 | 34. Tool-Loop Mechanics (stub/echo executor) | 3/3 | Complete   | 2026-07-08 |
 | 35. Cost + Eval Scaffolding | 3/3 | Complete   | 2026-07-08 |
-| 36. Thin-Wrapper Tools | 1/2 | In Progress|  |
+| 36. Thin-Wrapper Tools | 2/2 | Complete   | 2026-07-08 |
 | 37. Knowledge Search + Python Read-Side | 0/2 | Not started | - |
 | 38. Quarantine + Adversarial Eval | 0/? | Not started | - |
 | 39. Tool-Round UI + Citation Chips | 0/? | Not started | - |

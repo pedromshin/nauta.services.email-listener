@@ -43,8 +43,8 @@ stays a separate-turn human gate.
 (`additionalProperties:false`, enum/maxLength defense-in-depth). Every envelope carries
 `citations[]` of `{kind, id, route}`.
 
-- [ ] **TOOL-01**: User can ask the chat agent about a known entity and get grounded results via `lookup_entity` — a thin wrapper over the existing `find_candidates()` (top-5, zero new backend)
-- [ ] **TOOL-02**: User can ask the chat agent to find related emails via `search_emails` — a thin wrapper over the existing `find_similar_confirmed()` (top-5, zero new backend) that returns the quarantine adapter's output, never raw email body
+- [x] **TOOL-01**: User can ask the chat agent about a known entity and get grounded results via `lookup_entity` — a thin wrapper over the existing `find_candidates()` (top-5, zero new backend)
+- [x] **TOOL-02**: User can ask the chat agent to find related emails via `search_emails` — a thin wrapper over the existing `find_similar_confirmed()` (top-5, zero new backend) that returns the quarantine adapter's output, never raw email body
 - [ ] **TOOL-03**: User can ask the chat agent to search or expand the knowledge graph via `search_knowledge(query, mode: search|expand)` backed by a NEW Python `KnowledgeGraphRepository` + new RPCs (migrations 0029+; top-8 results, 300-char truncation)
 - [ ] **TOOL-04**: Non-EXTRACTED tiers can never leak free text into model context because prompt-facing text fields are omitted (not flag-gated), backed by a DB-level `extracted_only` view created this milestone
 
@@ -154,8 +154,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LOOP-02 | Phase 34 | Complete |
 | LOOP-03 | Phase 34 | Complete |
 | COST-05 | Phase 35 | Complete |
-| TOOL-01 | Phase 36 | Pending |
-| TOOL-02 | Phase 36 | Pending |
+| TOOL-01 | Phase 36 | Complete |
+| TOOL-02 | Phase 36 | Complete |
 | TOOL-03 | Phase 37 | Pending |
 | TOOL-04 | Phase 37 | Pending |
 | QUAR-01 | Phase 38 | Pending |

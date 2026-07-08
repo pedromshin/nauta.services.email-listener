@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Chat × Knowledge Convergence
 status: executing
-last_updated: "2026-07-08T23:01:36.418Z"
-last_activity: 2026-07-08 -- Completed 36-01-PLAN.md (ToolExecutor importer_id + LookupEntityExecutor); next 36-02
+last_updated: "2026-07-08T23:35:54.689Z"
+last_activity: 2026-07-08 -- Completed 36-02-PLAN.md (SearchEmailsExecutor + container.py wiring for both real tools); Phase 36 COMPLETE
 progress:
   total_phases: 9
-  completed_phases: 3
-  total_plans: 14
-  completed_plans: 9
-  percent: 33
+  completed_phases: 4
+  total_plans: 16
+  completed_plans: 10
+  percent: 44
 ---
 
 # State
@@ -24,12 +24,43 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 
 ## Current Position
 
-Phase: 36 (thin-wrapper-tools) — EXECUTING
+Phase: 36 (thin-wrapper-tools) — COMPLETE
 Plan: 2 of 2
-Status: Executing Phase 36
-Last activity: 2026-07-08 -- Completed 36-01-PLAN.md (ToolExecutor importer_id + LookupEntityExecutor); next 36-02
+Status: Phase 36 complete; ready for verification / next phase
+Last activity: 2026-07-08 -- Completed 36-02-PLAN.md (SearchEmailsExecutor + container.py wiring for both real tools); Phase 36 COMPLETE
 
-## Phase 36 — Thin-Wrapper Tools (executing 2026-07-08)
+## Phase 36 — Thin-Wrapper Tools (COMPLETE 2026-07-08)
+
+- **36-02 EXECUTED — PHASE 36 COMPLETE:** TOOL-02 + the container-wiring gap 36-01 deliberately left
+  open. New `app/infrastructure/tools/search_emails_executor.py` — the SECOND real, production
+  `ToolExecutor` (`SEARCH_EMAILS_TOOL_NAME`, `build_search_emails_tool()`, `SearchEmailsExecutor`,
+  `EmailSearchResult`): a thin wrapper over the EXISTING
+  `RetrievalPort.find_similar_confirmed()` — zero new repository methods, zero new SQL/migrations/
+  RPCs. Loops the retrieval call once PER active entity type (no single cross-entity-type RPC
+  exists), resolves each surviving `RetrievedExample` to its parent email via
+  `ComponentRepository.find_by_id`/`EmailRepository.find_by_id`, dedupes by `email_id` (keeps the
+  highest-scoring example per email), ranks descending, caps at top 5 emails. `EmailSearchResult`
+  carries ONLY `email_id`/`subject`/`sender_name`/`sender_address`/`received_at`/
+  `extracted_fields`/`score` — no raw-source-text field exists on the type at all, so the Tier-2
+  "never raw body" rule (this tool's own requirement text) is structurally unreachable to violate
+  by omission, verified end-to-end by a marker-string-absence test AND a zero-match grep for the 4
+  forbidden identifiers anywhere in the executor source (including comments). Tenant
+  defense-in-depth (T-36-06): a resolved component OR email whose own `importer_id` disagrees with
+  the caller's is skipped entirely, even though the RPC is already importer-scoped. `container.py`'s
+  `_provide_run_chat_turn` now wires BOTH real tools — `tool_executors` is no longer the empty `{}`
+  Phase-34 stub — and `RunChatTurn` gained a `server_tool_defs` constructor param so
+  `_build_tool_offer` advertises each tool's REAL `input_schema.properties` (falling back to the
+  original generic stub only for a tool name with no matching def, e.g. a test-only executor) —
+  closing the schema-advertisement gap 36-CONTEXT.md flagged. 58/58 targeted tests pass across the
+  full phase-level sweep (8 new SearchEmailsExecutor unit tests + 27 container/run_chat_turn tests +
+  3 new wiring/integration regression tests + the existing 34-03 e2e suite, 0 failures), mypy clean
+  on all 6 touched/created source files (12 pre-existing errors in unrelated infrastructure files
+  confirmed identical via git-stash before/after comparison), lint-imports 3 kept/0 broken, zero new
+  `.rpc(` names (grep-verified — the HARD "zero new backend" constraint). Live DI resolution
+  smoke-tested against the real container before commit: both tools resolve to their concrete
+  executor types with real schemas advertised. See 36-02-SUMMARY.md. **All Phase 36 requirements
+  (TOOL-01, TOOL-02) now complete — Phase 36 (Thin-Wrapper Tools) is DONE. Next: Phase 37**
+  (Knowledge Search + Python Read-Side — not yet planned).
 
 - **36-01 EXECUTED:** `ToolExecutor.execute` gained a REQUIRED keyword-only `importer_id: str`
   parameter (no default), threaded end-to-end from `_advance_round` through
@@ -1621,6 +1652,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 34 P03 | 90 min | 3 tasks | 3 files |
 | Phase 35 P01 | ~35min | 2 tasks | 9 files |
 | Phase 36 P01 | ~55 min | 2 tasks | 10 files |
+| Phase 36 P02 | 70m | 3 tasks | 5 files |
 
 ## Operator Next Steps
 
