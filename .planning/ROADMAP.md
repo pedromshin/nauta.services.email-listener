@@ -124,7 +124,7 @@ numbered after whichever v1.6 migration merges first. `{41}` is the single most-
 G3 + Phase 39's `<ProvenanceLink>`) — plan and execute last.
 
 - [x] **Phase 33: Live Bindings Plumbing** - Genui canvas panels render live product data via `spec.bindings`, resolved through a compile-time allowlist switch, staying fresh via staleTime tiers + event-driven invalidation — zero renderer edits (completed 2026-07-08)
-- [ ] **Phase 34: Tool-Loop Mechanics (stub/echo executor)** - Chat agent runs a bounded (≤4-round) mid-turn tool loop against a stub/echo `ToolExecutor`, proving the round mechanics and fixing 2 latent bugs, before any real tool exists
+- [x] **Phase 34: Tool-Loop Mechanics (stub/echo executor)** - Chat agent runs a bounded (≤4-round) mid-turn tool loop against a stub/echo `ToolExecutor`, proving the round mechanics and fixing 2 latent bugs, before any real tool exists (completed 2026-07-08)
 - [ ] **Phase 35: Cost + Eval Scaffolding** - A per-round cost ceiling with fail-closed abort semantics is enforced on the FOUND-3 ledger, and retrieval-quality/citation-faithfulness/injection-resistance become measurable Phase-16 harness dimensions — both built against Phase 34's stub
 - [ ] **Phase 36: Thin-Wrapper Tools** - User can ask about a known entity or find related emails from chat via `lookup_entity`/`search_emails`, thin wrappers over existing repos with zero new backend
 - [ ] **Phase 37: Knowledge Search + Python Read-Side** - User can search or expand the knowledge graph from chat via `search_knowledge`, backed by a NEW Python `KnowledgeGraphRepository` + a DB-level `extracted_only` view — built but not yet exposed to users
@@ -183,7 +183,7 @@ silent tool-parse-failure drop) are fixed.
 **Plans**: 3 plans (coarse; Wave 1 = 34-01 + 34-02 in parallel, Wave 2 = 34-03)
 - [x] 34-01-PLAN.md — ToolExecutor port + max_tool_rounds gate (2 Bedrock entries) + pure loop helpers + echo stub [LOOP-01]
 - [x] 34-02-PLAN.md — the 2 latent bug fixes: UsageDelta accumulation + never-silent tool-parse-failure [LOOP-02]
-- [ ] 34-03-PLAN.md — bounded in-stream round loop in _execute_turn + round-cap exhaustion visible text [LOOP-01, LOOP-03]
+- [x] 34-03-PLAN.md — bounded in-stream round loop in _execute_turn + round-cap exhaustion visible text [LOOP-01, LOOP-03]
 
 ### Phase 35: Cost + Eval Scaffolding
 **Goal**: A per-round cost ceiling distinct from the existing per-turn/session/day caps is enforced
@@ -340,7 +340,7 @@ execute last.
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
 | 33. Live Bindings Plumbing | 2/2 | Complete   | 2026-07-08 |
-| 34. Tool-Loop Mechanics (stub/echo executor) | 2/3 | In Progress|  |
+| 34. Tool-Loop Mechanics (stub/echo executor) | 3/3 | Complete   | 2026-07-08 |
 | 35. Cost + Eval Scaffolding | 0/? | Not started | - |
 | 36. Thin-Wrapper Tools | 0/? | Not started | - |
 | 37. Knowledge Search + Python Read-Side | 0/? | Not started | - |

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Chat × Knowledge Convergence
-status: executing
-last_updated: "2026-07-08T04:45:08.903Z"
-last_activity: 2026-07-08 -- 33-02 executed (Phase 33 complete)
+status: completed
+last_updated: "2026-07-08T05:30:26.441Z"
+last_activity: 2026-07-08 -- 34-03 executed (Phase 34 complete)
 progress:
   total_phases: 9
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 4
-  percent: 11
+  completed_plans: 5
+  percent: 22
 ---
 
 # State
@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** Phase 34 — tool-loop-mechanics-stub-echo-executor
+**Current focus:** Phase 34 complete (gate G4 satisfied) — Phase 35 next (Cost + Eval Scaffolding, not yet planned)
 
 ## Current Position
 
-Phase: 34 (tool-loop-mechanics-stub-echo-executor) — EXECUTING
-Plan: 3 of 3
-Status: Executing Phase 34
-Last activity: 2026-07-08 -- 34-02 executed
+Phase: 34 (tool-loop-mechanics-stub-echo-executor) — COMPLETE
+Plan: 3 of 3 (all executed)
+Status: Phase 34 complete — gate G4 satisfied for Phases 35-39
+Last activity: 2026-07-08 -- 34-03 executed (Phase 34 complete)
 
 ## Phase 33 — Live Bindings Plumbing (COMPLETE 2026-07-08, parallel track to Phase 34)
 
@@ -78,7 +78,7 @@ Last activity: 2026-07-08 -- 34-02 executed
   syntax error. See 33-02-SUMMARY.md. **All Phase 33 requirements (BIND-01, BIND-02) now complete —
   Phase 33 (Live Bindings Plumbing) is DONE.**
 
-## Phase 34 — Tool-Loop Mechanics (stub/echo executor) (executing 2026-07-08)
+## Phase 34 — Tool-Loop Mechanics (stub/echo executor) (COMPLETE 2026-07-08)
 
 - **34-01 EXECUTED:** LOOP-01 contract layer. New `app/domain/ports/tool_executor.py` (`ToolExecutor`
   Protocol + frozen `ToolExecutionResult` dataclass, `MAX_TOOL_OUTPUT_CHARS=2000`, docstring states the
@@ -114,7 +114,40 @@ Last activity: 2026-07-08 -- 34-02 executed
   `test_run_chat_turn_interactive_widget.py`/`test_run_chat_turn_clarify_widget.py` for the
   fakes/`_make_use_case` scaffold — neither file exists in this repo; used the actual home,
   `test_run_chat_turn.py`, instead (same shape, correct location). See 34-02-SUMMARY.md.
-  **Next: 34-03** (the real streaming round loop wiring — not yet planned).
+
+- **34-03 EXECUTED — PHASE 34 COMPLETE (gate G4 satisfied):** LOOP-01 + LOOP-03 — the bounded
+  in-stream server-tool round loop wired into `_execute_turn`. `RunChatTurn` gained
+  `tool_executors: Mapping[str, ToolExecutor] = MappingProxyType({})` (additive default);
+  `_execute_turn`'s tools offer additionally includes minimal server-tool schemas ONLY when
+  `max_tool_rounds > 0 AND tool_executors` is non-empty (T-34-05 — an OpenRouter/browser
+  `max_tool_rounds==0` model never sees one, proven by a dedicated e2e test). The stream body is now
+  `while round_count <= _MAX_TOOL_ROUNDS (4)`, the SAME `ChatRun`/`_TurnState` across every round
+  (SEAM-04 preserved, proven by a `create_run`-called-once e2e assertion). A server-tool round
+  parses the accumulated JSON (parse failure → visible `PARSE_FAILURE_TEXT`, the server-path half of
+  LOOP-02), executes via `asyncio.wait_for(~10s)` (timeout/any exception → `is_error` result, never
+  raises — T-34-01), caps output, persists `tool_invocation`/`tool_invocation_result` parts +
+  `tool_call`/`tool_result` run events (constructing the previously-unemitted `ToolResultDelta`),
+  re-checks `breaker.should_abort()` at the round boundary, then feeds the result back as a native
+  `tool_result` block for the next round. Round-cap exhaustion (LOOP-03) fails closed with a visible
+  `ROUND_CAP_EXHAUSTED_TEXT` part and finishes `completed` (never a bare `stopped`), bounded at
+  exactly 4 `executor.execute()` calls. `container.py` wires `tool_executors={}` in production (no
+  real server tool until Phase 36). `_execute_turn` was decomposed into 5 helper methods
+  (`_build_tool_offer`/`_stream_round_deltas`/`_advance_round`/`_run_server_tool_round`/
+  `_finalize_turn_completed`) to satisfy ruff's cyclomatic-complexity limits once the round loop
+  landed. 9 new end-to-end tests against `EchoToolExecutor` (34-01) in
+  `test_run_chat_turn_tool_loop_e2e.py`; 66/66 targeted tests green across the full chat-turn
+  surface; mypy/lint-imports clean; zero errors in touched files from a whole-tree `ruff check`.
+  **2 notable deviations (both documented, non-architectural):** (Rule 1/2) overrode the executor's
+  returned `tool_use_id` with the model-streamed one before building the synthetic `tool_result`
+  message — the `ToolExecutor.execute()` port never receives `tool_use_id` as input, so an
+  executor's own value can never be trusted for Anthropic/Bedrock tool_use/tool_result correlation;
+  (Rule 1, bug caught by a pre-existing regression test) an earlier refactor extracted
+  `CancelledError` handling into an awaited helper coroutine, which silently lost the accumulated
+  partial `_TurnState` the instant cancellation propagated (a coroutine that raises never reaches
+  its `return`) — reverted to keep that specific except-branch inline in `_execute_turn`, verified
+  by the pre-existing `test_cancellation_persists_partial_stopped_and_reraises` passing again. See
+  34-03-SUMMARY.md. **All Phase 34 requirements (LOOP-01, LOOP-02, LOOP-03) now complete — gate G4
+  is satisfied for Phases 35-39. Next: Phase 35** (Cost + Eval Scaffolding — not yet planned).
 
 ## v1.6 Roadmap Summary (2026-07-08)
 
@@ -1550,6 +1583,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 30 P01 | 45 | - tasks | - files |
 | Phase 32 P01 | 55 | 2 tasks | 6 files |
 | Phase 34 P02 | 20min | 2 tasks | 2 files |
+| Phase 34 P03 | 90 min | 3 tasks | 3 files |
 
 ## Operator Next Steps
 
