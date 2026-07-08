@@ -24,19 +24,28 @@ import { Button } from "@nauta/ui/button";
 interface GraphToolbarProps {
   readonly total: number;
   readonly onFitView: () => void;
+  /** GRAPH-03 — the tier-filter control, inserted between the title and the right-aligned action group. */
+  readonly children?: React.ReactNode;
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function GraphToolbar({ total, onFitView }: GraphToolbarProps): React.ReactElement {
+export function GraphToolbar({
+  total,
+  onFitView,
+  children,
+}: GraphToolbarProps): React.ReactElement {
   return (
     <div
       className="flex h-11 shrink-0 items-center justify-between border-b border-border/50 bg-background/70 px-4 backdrop-blur-md"
     >
       {/* Left: page title */}
       <span className="text-sm font-semibold">Knowledge</span>
+
+      {/* Middle: tier-filter control (GRAPH-03) — NOT inside FilterRail */}
+      {children}
 
       {/* Right: toolbar actions */}
       <div className="flex items-center gap-1">

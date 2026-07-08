@@ -72,6 +72,8 @@ import { layoutGraph } from "./graph-layout";
 import { nodeTypes } from "./graph-nodes";
 import { tierEdgeStyle } from "./tier-edge-style";
 import { GraphLegend } from "./graph-legend";
+import { tierAllowsEdge, type TierFilterState } from "./tier-filter";
+import { TierFilterControl } from "./tier-filter-control";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -192,6 +194,11 @@ export function KnowledgeGraph({ className }: KnowledgeGraphProps): React.ReactE
 
   const [showInstances, setShowInstances] = useState<boolean>(false);
 
+  // GRAPH-03 — cumulative tier filter, session-only (no localStorage). Defaults to
+  // the WIDEST state ("ambiguous" — all shown) so the confirm -> see-suggestions
+  // demo path works out of the box.
+  const [tierFilter, setTierFilter] = useState<TierFilterState>("ambiguous");
+
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   // GRAPH-02 — the node currently mid-expand (pulse-ring loading state).
@@ -270,22 +277,31 @@ export function KnowledgeGraph({ className }: KnowledgeGraphProps): React.ReactE
     if (data == null) return [];
     const flowNodes = toFlowNodes(data.nodes, visibleTypes);
     const flowEdges = toFlowEdges(data.edges);
-    // Only pass edges whose source + target are both visible
+    // Only pass edges whose source + target are both visible AND whose tier
+    // passes the current tier filter (GRAPH-03) — layered on top of the
+    // existing both-endpoints-visible check so orphaned nodes degrade exactly
+    // as today.
     const visibleIds = new Set(flowNodes.map((n) => n.id));
     const filteredEdges = flowEdges.filter(
-      (e) => visibleIds.has(e.source) && visibleIds.has(e.target),
+      (e) =>
+        visibleIds.has(e.source) &&
+        visibleIds.has(e.target) &&
+        tierAllowsEdge(e, tierFilter),
     );
     return layoutGraph(flowNodes, filteredEdges);
-  }, [data, visibleTypes]);
+  }, [data, visibleTypes, tierFilter]);
 
   const initialEdges = useMemo<FlowEdge[]>(() => {
     if (data == null) return [];
     const allEdges = toFlowEdges(data.edges);
     const visibleIds = new Set(initialNodes.map((n) => n.id));
     return allEdges.filter(
-      (e) => visibleIds.has(e.source) && visibleIds.has(e.target),
+      (e) =>
+        visibleIds.has(e.source) &&
+        visibleIds.has(e.target) &&
+        tierAllowsEdge(e, tierFilter),
     );
-  }, [data, initialNodes]);
+  }, [data, initialNodes, tierFilter]);
 
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -435,6 +451,10 @@ export function KnowledgeGraph({ className }: KnowledgeGraphProps): React.ReactE
     setShowInstances(value);
   }, []);
 
+  const handleTierFilterChange = useCallback((next: TierFilterState) => {
+    setTierFilter(next);
+  }, []);
+
   // -------------------------------------------------------------------------
   // Banner dismiss handler
   // -------------------------------------------------------------------------
@@ -491,7 +511,9 @@ export function KnowledgeGraph({ className }: KnowledgeGraphProps): React.ReactE
   return (
     <div className={`flex h-full w-full flex-col ${className ?? ""}`}>
       {/* Top Toolbar — spans full width above the three-zone panel group */}
-      <GraphToolbar total={nodes.length} onFitView={handleFitView} />
+      <GraphToolbar total={nodes.length} onFitView={handleFitView}>
+        <TierFilterControl value={tierFilter} onChange={handleTierFilterChange} />
+      </GraphToolbar>
 
       {/* Three-zone ResizablePanelGroup */}
       <ResizablePanelGroup
