@@ -123,8 +123,10 @@ only G2 (already satisfied) and can run parallel to 36–39, but its `widget_kin
 numbered after whichever v1.6 migration merges first. `{41}` is the single most-gated phase (needs
 G3 + Phase 39's `<ProvenanceLink>`) — plan and execute last.
 
-- [x] **Phase 33: Live Bindings Plumbing** - Genui canvas panels render live product data via `spec.bindings`, resolved through a compile-time allowlist switch, staying fresh via staleTime tiers + event-driven invalidation — zero renderer edits (completed 2026-07-08)
-- [x] **Phase 34: Tool-Loop Mechanics (stub/echo executor)** - Chat agent runs a bounded (≤4-round) mid-turn tool loop against a stub/echo `ToolExecutor`, proving the round mechanics and fixing 2 latent bugs, before any real tool exists (completed 2026-07-08)
+- [x] **Phase 33: Live Bindings Plumbing** - Genui canvas panels render live product data via `spec.bindings`, resolved through a compile-time allowlist switch, staying fresh via staleTime tiers + event-driven invalidation — zero renderer edits
+ (completed 2026-07-08)
+- [x] **Phase 34: Tool-Loop Mechanics (stub/echo executor)** - Chat agent runs a bounded (≤4-round) mid-turn tool loop against a stub/echo `ToolExecutor`, proving the round mechanics and fixing 2 latent bugs, before any real tool exists
+ (completed 2026-07-08)
 - [ ] **Phase 35: Cost + Eval Scaffolding** - A per-round cost ceiling with fail-closed abort semantics is enforced on the FOUND-3 ledger, and retrieval-quality/citation-faithfulness/injection-resistance become measurable Phase-16 harness dimensions — both built against Phase 34's stub
 - [ ] **Phase 36: Thin-Wrapper Tools** - User can ask about a known entity or find related emails from chat via `lookup_entity`/`search_emails`, thin wrappers over existing repos with zero new backend
 - [ ] **Phase 37: Knowledge Search + Python Read-Side** - User can search or expand the knowledge graph from chat via `search_knowledge`, backed by a NEW Python `KnowledgeGraphRepository` + a DB-level `extracted_only` view — built but not yet exposed to users
@@ -204,7 +206,11 @@ attach eval hooks to)
      hallucinated) is a measurable Phase-16 harness dimension
   5. Injection-resistance (visible text never leaks quarantined content, beyond "didn't call a tool")
      is a measurable Phase-16 harness dimension
-**Plans**: TBD
+**Plans**: 3 plans (coarse; Wave 1 = 35-01 + 35-02 in parallel, Wave 2 = 35-03)
+Plans:
+- [ ] 35-01-PLAN.md — Distinct per-round CostCircuitBreaker ceiling wired into the round loop (mid-round + round boundary) [COST-05]
+- [ ] 35-02-PLAN.md — Retrieval-quality/citation-faithfulness/injection-resistance eval dimensions registered into packages/genui/src/eval [EVAL-06, EVAL-07]
+- [ ] 35-03-PLAN.md — Python pytest bridge scoring the shared fixtures against the Phase-34 echo stub [EVAL-06, EVAL-07]
 
 ### Phase 36: Thin-Wrapper Tools
 **Goal**: User can ask the chat agent about a known entity or find related emails and get grounded,
@@ -341,7 +347,7 @@ execute last.
 |-------|-----------------|--------|-----------|
 | 33. Live Bindings Plumbing | 2/2 | Complete   | 2026-07-08 |
 | 34. Tool-Loop Mechanics (stub/echo executor) | 3/3 | Complete   | 2026-07-08 |
-| 35. Cost + Eval Scaffolding | 0/? | Not started | - |
+| 35. Cost + Eval Scaffolding | 0/3 | Not started | - |
 | 36. Thin-Wrapper Tools | 0/? | Not started | - |
 | 37. Knowledge Search + Python Read-Side | 0/? | Not started | - |
 | 38. Quarantine + Adversarial Eval | 0/? | Not started | - |
