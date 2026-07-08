@@ -182,7 +182,7 @@ silent tool-parse-failure drop) are fixed.
      a bare `stopped` state
 **Plans**: 3 plans (coarse; Wave 1 = 34-01 + 34-02 in parallel, Wave 2 = 34-03)
 - [x] 34-01-PLAN.md — ToolExecutor port + max_tool_rounds gate (2 Bedrock entries) + pure loop helpers + echo stub [LOOP-01]
-- [ ] 34-02-PLAN.md — the 2 latent bug fixes: UsageDelta accumulation + never-silent tool-parse-failure [LOOP-02]
+- [x] 34-02-PLAN.md — the 2 latent bug fixes: UsageDelta accumulation + never-silent tool-parse-failure [LOOP-02]
 - [ ] 34-03-PLAN.md — bounded in-stream round loop in _execute_turn + round-cap exhaustion visible text [LOOP-01, LOOP-03]
 
 ### Phase 35: Cost + Eval Scaffolding
@@ -340,7 +340,7 @@ execute last.
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
 | 33. Live Bindings Plumbing | 1/2 | In Progress|  |
-| 34. Tool-Loop Mechanics (stub/echo executor) | 1/3 | In Progress|  |
+| 34. Tool-Loop Mechanics (stub/echo executor) | 2/3 | In Progress|  |
 | 35. Cost + Eval Scaffolding | 0/? | Not started | - |
 | 36. Thin-Wrapper Tools | 0/? | Not started | - |
 | 37. Knowledge Search + Python Read-Side | 0/? | Not started | - |
