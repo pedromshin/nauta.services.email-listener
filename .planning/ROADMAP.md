@@ -85,8 +85,10 @@ retrieval-miss rate).
 
 - [x] **Phase 29: Tier Ladder + Edge Materialization** - Confirming a region durably materializes provenance-carrying knowledge graph edges, tagged with an ordinal trust tier, so corrections compound instead of evaporating
  (completed 2026-07-07)
-- [x] **Phase 30: Suggest-Only Promotion Gate** - Synthesis-generated relationships surface only as human-reviewable suggestions; a human promotes a suggestion to EXTRACTED before it is ever trusted for auto-injection (completed 2026-07-07)
-- [x] **Phase 31: Recall & Measurement** - Autofill prompts recall an entity's known aliases/identifiers cheaply, and every autofill run's retrieval outcome is measured well enough to gate the deferred stage-3 BFS work (completed 2026-07-07)
+- [x] **Phase 30: Suggest-Only Promotion Gate** - Synthesis-generated relationships surface only as human-reviewable suggestions; a human promotes a suggestion to EXTRACTED before it is ever trusted for auto-injection
+ (completed 2026-07-07)
+- [x] **Phase 31: Recall & Measurement** - Autofill prompts recall an entity's known aliases/identifiers cheaply, and every autofill run's retrieval outcome is measured well enough to gate the deferred stage-3 BFS work
+ (completed 2026-07-07)
 - [ ] **Phase 32: Knowledge Canvas: Tiered Graph Exploration** - `/knowledge` renders edge tiers distinctly, supports bounded click-to-expand-neighbours, and filters by tier
 
 ## Phase Details
@@ -171,7 +173,10 @@ ones — to have anything meaningful to render, expand, or filter)
      query — not an unbounded or client-only walk
   3. A tier filter control lets the reviewer narrow the view to EXTRACTED-only or widen it to
      include INFERRED/AMBIGUOUS suggestions
-**Plans**: TBD
+**Plans**: 3 plans
+  - [ ] 32-01-PLAN.md — Bounded click-expand: expandNode server procedure + client dedupe-merge (GRAPH-02)
+  - [ ] 32-02-PLAN.md — Tier visual encoding + tier filter control + legend (GRAPH-01, GRAPH-03)
+  - [ ] 32-03-PLAN.md — Promote affordance: edge payload + Next proxy + suggestion-edge popover (TIER-03 UI closure)
 **UI hint**: yes
 
 ## Progress
