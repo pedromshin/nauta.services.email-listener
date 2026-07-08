@@ -982,6 +982,7 @@ class RunChatTurn:
             provider_messages=provider_messages,
             round_start_output_tokens=round_start_output_tokens,
             round_start_text_len=round_start_text_len,
+            importer_id=importer_id,
         )
         if round_result.provider_messages is not None:
             return _RoundAdvance(
@@ -1025,6 +1026,7 @@ class RunChatTurn:
         provider_messages: list[dict[str, Any]],
         round_start_output_tokens: int,
         round_start_text_len: int,
+        importer_id: str,
     ) -> _ServerRoundResult:
         """Execute one server-tool round (Phase 34-03, LOOP-01): dispatch, cap, feed back.
 
@@ -1044,7 +1046,7 @@ class RunChatTurn:
         executor = self._tool_executors[tool_name]
         try:
             result = await asyncio.wait_for(
-                executor.execute(name=tool_name, arguments=arguments),
+                executor.execute(name=tool_name, arguments=arguments, importer_id=importer_id),
                 timeout=_TOOL_EXECUTION_TIMEOUT_SECONDS,
             )
         except TimeoutError:

@@ -51,8 +51,15 @@ class ToolExecutor(Protocol):
     (enforcement lands in Phase 38 / QUAR-01).
     """
 
-    async def execute(self, *, name: str, arguments: dict[str, Any]) -> ToolExecutionResult:
+    async def execute(self, *, name: str, arguments: dict[str, Any], importer_id: str) -> ToolExecutionResult:
         """Execute the named tool with the given arguments and return its result.
+
+        `importer_id` is REQUIRED (no default) -- mirrors this codebase's
+        explicit importer_id-as-required-kwarg convention on
+        `find_candidates`/`find_similar_confirmed`. Implementations MUST scope
+        every downstream query to this importer_id: no cross-tenant leakage,
+        ever (the concrete enforcement mechanism for this class's quarantine
+        obligation above).
 
         Implementations must never raise past this boundary in the loop's
         happy path -- the caller wraps this in `asyncio.wait_for` with a

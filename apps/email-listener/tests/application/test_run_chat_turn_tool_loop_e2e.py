@@ -290,8 +290,8 @@ class _FakeRouter:
 class _RaisingToolExecutor:
     """A ToolExecutor test double that always raises -- drives the generic-Exception path."""
 
-    async def execute(self, *, name: str, arguments: dict[str, Any]) -> ToolExecutionResult:
-        del name, arguments
+    async def execute(self, *, name: str, arguments: dict[str, Any], importer_id: str) -> ToolExecutionResult:
+        del name, arguments, importer_id
         raise RuntimeError("boom")
 
 
@@ -302,9 +302,9 @@ class _CountingEchoToolExecutor:
         self._delegate = EchoToolExecutor()
         self.call_count = 0
 
-    async def execute(self, *, name: str, arguments: dict[str, Any]) -> ToolExecutionResult:
+    async def execute(self, *, name: str, arguments: dict[str, Any], importer_id: str) -> ToolExecutionResult:
         self.call_count += 1
-        return await self._delegate.execute(name=name, arguments=arguments)
+        return await self._delegate.execute(name=name, arguments=arguments, importer_id=importer_id)
 
 
 def _make_use_case(

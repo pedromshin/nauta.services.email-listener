@@ -30,8 +30,8 @@ class EchoToolExecutor:
       caller can drive the per-tool timeout path (34-03).
     """
 
-    async def execute(self, *, name: str, arguments: dict[str, Any]) -> ToolExecutionResult:
-        del name  # unused -- echo behavior is identical regardless of tool name
+    async def execute(self, *, name: str, arguments: dict[str, Any], importer_id: str) -> ToolExecutionResult:
+        del name, importer_id  # unused -- echo behavior is identical regardless of tool name/tenant
         tool_use_id = arguments.get("tool_use_id", "echo")
 
         sleep_seconds = arguments.get("__sleep__")
