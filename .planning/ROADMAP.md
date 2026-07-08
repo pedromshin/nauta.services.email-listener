@@ -174,7 +174,7 @@ ones — to have anything meaningful to render, expand, or filter)
   3. A tier filter control lets the reviewer narrow the view to EXTRACTED-only or widen it to
      include INFERRED/AMBIGUOUS suggestions
 **Plans**: 3 plans
-  - [ ] 32-01-PLAN.md — Bounded click-expand: expandNode server procedure + client dedupe-merge (GRAPH-02)
+  - [x] 32-01-PLAN.md — Bounded click-expand: expandNode server procedure + client dedupe-merge (GRAPH-02)
   - [ ] 32-02-PLAN.md — Tier visual encoding + tier filter control + legend (GRAPH-01, GRAPH-03)
   - [ ] 32-03-PLAN.md — Promote affordance: edge payload + Next proxy + suggestion-edge popover (TIER-03 UI closure)
 **UI hint**: yes
@@ -190,7 +190,7 @@ parallelizable alongside 29/30 if desired (no shared schema/table).
 | 29. Tier Ladder + Edge Materialization | 4/4 | Complete   | 2026-07-07 |
 | 30. Suggest-Only Promotion Gate | 2/2 | Complete   | 2026-07-07 |
 | 31. Recall & Measurement | 2/2 | Complete   | 2026-07-07 |
-| 32. Knowledge Canvas: Tiered Graph Exploration | 0/? | Not started | - |
+| 32. Knowledge Canvas: Tiered Graph Exploration | 1/3 | In Progress|  |
 
 ## Next
 

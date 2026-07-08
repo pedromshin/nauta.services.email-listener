@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Knowledge-Graph Uplift
 status: executing
-last_updated: "2026-07-07T23:59:00.000Z"
-last_activity: 2026-07-07 -- Phase 31 Plan 02 (RECALL-02) executed — Phase 31 COMPLETE
+last_updated: "2026-07-08T00:28:48.082Z"
+last_activity: 2026-07-08 -- Phase 32 execution started
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 9
+  total_plans: 11
   completed_plans: 9
-  percent: 88
+  percent: 75
 ---
 
 # State
@@ -24,12 +24,28 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 
 ## Current Position
 
-Phase: 31 (Recall & Measurement) — COMPLETE (RECALL-01, RECALL-02 both shipped)
-Plan: 2 of 2 (31-01 EXECUTED, 31-02 EXECUTED)
-Status: Phase 31 complete. Next: Phase 32 (not yet planned).
-Last activity: 2026-07-07 -- Phase 31 Plan 02 (RECALL-02) executed — Phase 31 COMPLETE
+Phase: 32 (Knowledge Canvas: Tiered Graph Exploration) — EXECUTING
+Plan: 2 of 3
+Status: Executing Phase 32
+Last activity: 2026-07-08 -- 32-01 executed (GRAPH-02 bounded click-expand)
 column), PromoteEdgeUseCase (fail-closed guard), authenticated POST /v1/knowledge/edges/{id}/promote
 endpoint. Phase 30 (TIER-02 + TIER-03) fully shipped.
+
+## Phase 32 — Knowledge Canvas: Tiered Graph Exploration (executing 2026-07-08)
+
+- **32-01 EXECUTED:** GRAPH-02 — bounded (<=2-hop) server-side click-to-expand. New read-only
+  `knowledge.expandNode` tRPC `.query` (`clampDepth` [1,2]/`capBudget` ~50-node/`walkKnowledgeGraph`
+  edges-for-node-callback BFS, all DB-free pure-tested, 15/15 green) tenant-scoped via a
+  `KnowledgeNodeEdges.sourceNodeId -> KnowledgeNodes.importerId` join (fail-closed empty response on
+  an unknown/inactive seed). Client: `graph-merge.ts`'s `mergeGraph` (pure, idempotent, dedupe-by-id,
+  5/5 green) + `knowledge-graph.tsx` wiring — a node click fires both selection AND
+  `utils.knowledge.expandNode.fetch(...)` (a lazy query, not `useMutation`, since the procedure is
+  read-only), merges the result, re-runs the existing dagre `layoutGraph`, shows a pulse-ring while in
+  flight, and surfaces the UI-SPEC's exact budget-exceeded toast copy on truncation. **Deviation
+  (Claude's Discretion, documented):** UI-SPEC's literal `useMutation` wording conflicts with Task 1's
+  own `.query` procedure type — resolved via the UI-SPEC's own stated fallback ("or a lazy query").
+  `tsc --noEmit` clean (api-client + web), `npm run build --workspace=@nauta/web` green. See
+  32-01-SUMMARY.md. **Next: 32-02** (GRAPH-01 tier styling + GRAPH-03 tier filter — not yet planned).
 
 ## Phase 31 — Recall & Measurement (COMPLETE 2026-07-07)
 
@@ -1369,6 +1385,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 28 P01 | 15min | 3 tasks | 4 files |
 | Phase 29 P02 | 35min | 3 tasks | 5 files — _token_provenance.py shared helper (extracted from edit_region) + KnowledgeSynthesizer/KnowledgeGraphRepository domain ports + SupabaseKnowledgeGraphRepository adapter (tier + provenance jsonb + is_active supersede); 5 new call-shape tests |
 | Phase 30 P01 | 45 | - tasks | - files |
+| Phase 32 P01 | 55 | 2 tasks | 6 files |
 
 ## Operator Next Steps
 
