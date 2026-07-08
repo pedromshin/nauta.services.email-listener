@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.5
 milestone_name: Knowledge-Graph Uplift
-status: executing
-last_updated: "2026-07-08T00:53:27.402Z"
-last_activity: 2026-07-08 -- 32-03 executed, PHASE 32 COMPLETE (promote affordance, TIER-03 closure)
+status: Awaiting next milestone
+last_updated: "2026-07-08T01:12:58.262Z"
+last_activity: 2026-07-08 — Milestone v1.5 completed and archived
 progress:
   total_phases: 4
   completed_phases: 4
@@ -24,12 +24,10 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 
 ## Current Position
 
-Phase: 32 (Knowledge Canvas: Tiered Graph Exploration) — EXECUTED, awaiting verification
-Plan: 3 of 3 (all plans executed)
-Status: Phase 32 execution complete
-Last activity: 2026-07-08 -- 32-03 executed, PHASE 32 COMPLETE (promote affordance, TIER-03 closure)
-column), PromoteEdgeUseCase (fail-closed guard), authenticated POST /v1/knowledge/edges/{id}/promote
-endpoint. Phase 30 (TIER-02 + TIER-03) fully shipped.
+Phase: Milestone v1.5 complete
+Plan: —
+Status: Awaiting next milestone
+Last activity: 2026-07-08 — Milestone v1.5 completed and archived
 
 ## Phase 32 — Knowledge Canvas: Tiered Graph Exploration (executing 2026-07-08)
 
@@ -235,6 +233,23 @@ Coverage: 24/24 v1.3 requirements mapped, no orphans. Next: `/gsd:plan-phase 22`
   **Next: 30-02** (TIER-03 promotion endpoint — not yet planned).
 
 ## Deferred Items
+
+### v1.5 (acknowledged and deferred at the v1.5 milestone close, 2026-07-07)
+
+All verification gaps are live-environment checks — no code gaps (Phases 30/31 verified `passed`;
+29/32 scored full marks on code-level verification; milestone audit: 11/11 requirements, 6/6
+integration seams WIRED). Acknowledged autonomously per the user's standing directive.
+
+| Category | Item | Status |
+|----------|------|--------|
+| verification_gap | 29-VERIFICATION.md | human_needed — live confirm-and-query + re-confirm/supersede (needs Bedrock embedder + browser) |
+| verification_gap | 32-VERIFICATION.md | human_needed — 5 live-browser checks (tier visuals, expand pulse/merge/toast, filter, promote round-trip, legend/reduced-motion) |
+| todo | 2026-07-06-salvage-truncated-tool-calls | pending — chat-scoped, carried from v1.4 |
+| todo | 2026-07-07-knowledge-preexisting-ui-debt | pending — pre-existing /knowledge glassmorphism ban violations + raw ⊞ glyph (found by 32-UI-REVIEW) |
+
+Also carried: `list_injectable_edges` is a designed dead seam (the stage-3 KGX injection gate,
+shipped before its consumer — see milestones/v1.5-MILESTONE-AUDIT.md WARNING); 999.3 connected-env
+measurement; anticipatory-prompting go/no-go seams.
 
 ### v1.4 (acknowledged and deferred at the v1.4 milestone close, 2026-07-07)
 

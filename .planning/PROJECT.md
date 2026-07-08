@@ -13,7 +13,35 @@ Reliably receive every inbound email destined for agent@magnitudetech.com.br and
 observable — nothing lost, everything logged — as the foundation for later parsing,
 persistence, and the agentic pipeline.
 
-## Current Milestone: v1.5 Knowledge-Graph Uplift
+## Current State (v1.5 shipped 2026-07-08)
+
+**Shipped:** **v1.5 — Knowledge-Graph Uplift** (Phases 29–32, 11 plans, 11/11 requirements,
+6/6 integration seams WIRED, audit `tech_debt` with 0 blockers). The dormant Phase-11 knowledge-graph
+substrate is ACTIVE: confirming a region materializes `knowledge_nodes` + EXTRACTED-tier
+`knowledge_node_edges` with OCR token-polygon provenance (best-effort D-13 hook, confirm never fails
+on synthesis errors); every node/edge carries the `knowledge_trust_tier` ladder (EXTRACTED | INFERRED
+| AMBIGUOUS, default AMBIGUOUS — fail toward least trust) with `confidence real` as intra-tier score;
+the same synthesizer emits deterministic INFERRED/AMBIGUOUS *suggestions* that a human promotes via
+`POST /v1/knowledge/edges/{id}/promote` (fail-closed CAS, promotion provenance distinct from
+synthesis provenance); `list_injectable_edges` is the single EXTRACTED-only sanctioned injection read
+path (shipped ahead of its stage-3 consumer, by design). The Bedrock autofill adapter's never-built
+few-shot rendering seam is closed and the resolved entity's `aliases[]`/`identifiers` now reach the
+prompt; every autofill run is instrumented (`autofill_retrieval_events`, migration 0028) and
+`packages/db/scripts/retrieval-miss-rate.ts` computes the stage-3 (KGX-01..03) go/no-go number.
+`/knowledge` is a tiered exploration canvas: solid/dashed/faint tier encoding + legend, cumulative
+tier filter, bounded (≤2-hop, ~50-node) `expandNode` click-to-expand, and a suggestion-edge popover
+whose "Promote to confirmed" round-trips through a server-keyed Next proxy. Migrations 0026–0028
+applied + live-verified locally. Deferred: 2 human_needed live-env verification gaps (29/32) + 2
+pending todos (STATE.md → Deferred Items). Selected + executed fully autonomously
+(`/gsd:new-milestone /gsd:autonomous`).
+
+**Next:** run `/gsd:new-milestone`. Candidates: **v1.6 chat↔knowledge integration** (research
+drafted in `.planning/research/v1.6-chat-knowledge/`), **999.4 Design Engine**, **999.5
+Orchestration Visualizer**, **999.7 editable genui panels**, **999.3 connected-env verification**,
+**999.11 polytoken.ai vision ladder** (post-v1.6).
+
+<details>
+<summary>v1.5 original milestone goal (opened 2026-07-07)</summary>
 
 **Goal:** Activate the dormant knowledge-graph substrate — human confirms materialize
 confidence-tiered edges (with OCR token provenance) through a suggest-only promotion gate — adopting
@@ -48,7 +76,9 @@ into autofill prompts, budget-aware tier-pruning of prompts, snapshot/diff + sta
 retrieval miss is measured); graphify's static `graph.json` build model and LLM-from-prose extractor
 (never borrow); hyperedges (premature).
 
-## Current State (v1.4 shipped 2026-07-07)
+</details>
+
+## Prior State (v1.4 shipped 2026-07-07)
 
 **Shipped:** **v1.4 — Chat & Studio Design Uplift** (Phases 26–28, 15 plans, 23/23 requirements).
 `/chat` + `/studio`'s hand-built chrome now fully honors the app's own design contracts — zero new
@@ -65,11 +95,7 @@ nodesep). Live-testing fixes shipped same-day: chat output cap 4096→12000 (tru
 tool calls silently dropped — salvage/surface todo filed), globals.css comment self-termination
 build break. Audit `tech_debt`: deferred items are browser/OS visual checks only.
 
-**Next:** v1.5 Knowledge-Graph Uplift opened 2026-07-07 (see Current Milestone above). Remaining
-candidates carried forward: **999.4 Design Engine** (DSGN-01..04), **999.5 Orchestration
-Visualizer** (ORCH-01), **999.7 editable genui panels / studio-on-canvas**, the
-anticipatory-prompting go/no-go follow-through, and **999.3 connected-env verification** (live
-Bedrock + browser).
+*(v1.4's "Next" resolved: 999.10 became v1.5, shipped 2026-07-08 — see Current State above.)*
 
 <details>
 <summary>v1.4 original milestone goal (opened 2026-07-06)</summary>
@@ -190,17 +216,13 @@ already proven locally. Research: `.planning/research/` (SUMMARY.md + 6 deep doc
 - ✓ GenUI realism + interactivity: eval harness + LLM-judge, 6 DTCG style packs + assembly RAG, expanded catalog (16 entries), zero-eval form engine, jailed-eval sandboxed code-island (verified live on Bedrock, multi-candidate + judge, $30 cost guard) — v1.2, Phases 16–20
 - ✓ Conversational GenUI: persistent streamed `/chat` (cost breaker, regenerate-siblings, progressive spec render, multi-provider + WebGPU registry) + 2D infinite canvas of genui panels (React Flow, versioned node registry, shared per-chat state + data edges, exact persistence) + dual-channel widgets (proposal cards + clarify-widgets, server-re-validated + double-submit-locked round-trip, persisted in history+canvas) + anticipatory-prompting SPIKE (ship-with-conditions) — v1.3, Phases 22–25 (24/24 reqs; 6 connected-env verifications deferred)
 - ✓ Chat & Studio design uplift: zero-dep contract fixes (FIX-01..11 — React Flow chrome, app-wide font-medium purge incl. primitive leaks, token discipline, node differentiation, shared JsonPane/EmptyState, hover/dock/scrollbar/role chrome) + narrowly-adopted external picks (ADOPT-01..05 — impeccable bans appendix, FileTree port, GeneratingRing, ux refs, hand-authored reveal transitions after license block) + token upgrades (TOKEN-01..05 — hue-164 neutral split, teal chart/sidebar rebase, elevation scale, radius steps, entrances; WCAG + registration regression gates) + POLISH-01/02 backlog folds — v1.4, Phases 26–28 (23/23 reqs; browser/OS visual checks deferred)
+- ✓ Knowledge-graph uplift: tier ladder (knowledge_trust_tier enum, migrations 0026–0028) + live D-13 synthesis hook (confirm → EXTRACTED edges with OCR token-polygon provenance, supersede-safe) + suggest-only promotion gate (deterministic INFERRED/AMBIGUOUS suggestions, fail-closed promote endpoint, EXTRACTED-only injection read path) + cheap recall win (few-shot rendering seam closed, aliases/identifiers injected) + retrieval-miss-rate instrumentation (the stage-3 go/no-go artifact) + `/knowledge` tiered exploration canvas (tier encoding, cumulative filter, bounded expandNode, promote popover) — v1.5, Phases 29–32 (11/11 reqs; 2 live-env verification gaps deferred)
 
 ### Active
 
-<!-- v1.5 Knowledge-Graph Uplift (backlog 999.10 stages 1–2 + cheap recall win) -->
+<!-- No active milestone. Run /gsd:new-milestone to open the next one. Candidates in "Current State → Next". -->
 
-- [ ] Confirming a region materializes knowledge nodes + EXTRACTED-tier edges with OCR token-polygon provenance (the `confirm_region.py:169` hook goes live)
-- [ ] Ordinal trust tier (EXTRACTED | INFERRED | AMBIGUOUS) on knowledge nodes/edges; float confidence kept as intra-tier score
-- [ ] Suggest-only promotion gate: synthesis emits INFERRED/AMBIGUOUS display-only suggestions; human confirm promotes to EXTRACTED; only EXTRACTED eligible for prompt injection
-- [x] Autofill few-shot prompts include the resolved entity's aliases/identifiers (cheap recall win, no BFS)
-- [x] Retrieval outcomes instrumented so a retrieval-miss rate is measurable (stage-3 go/no-go gate)
-- [ ] `/knowledge` graph renders edge tiers distinctly, supports bounded click-to-expand-neighbours, and filters by tier
+_(none — v1.5 shipped; next milestone not yet opened)_
 
 ### Out of Scope
 
@@ -247,6 +269,10 @@ already proven locally. Research: `.planning/research/` (SUMMARY.md + 6 deep doc
 | **v1.4**: Clean-room hand-authoring over unlicensed external copy (ADOPT-05) | transitions.dev had no license grant; numeric timing values are unprotectable facts, so original CSS implementing the locked values is license-safe and preserves the requirement's substance | ✓ Good — shipped with full vetting evidence trail |
 | **v1.4**: Committed regression gates over one-off checks (WCAG contrast test + token-family registration test) | Point-in-time verifications rot; the "var exists but utility never registered" bug class and contrast regressions now fail CI-style on every run | ✓ Good — registration test would have caught the sidebar-ring blue-fallback bug this milestone found |
 | **v1.4**: CHAT_MAX_OUTPUT_TOKENS 4096→12000 (interim) | Large emit_ui_spec tool calls truncated at the cap and were silently dropped — user-facing "prompt not working" | — Pending — real fix is salvage/surface of truncated tool calls (todo filed 2026-07-06) |
+| **v1.5**: Trust tier as independent ordinal enum, NOT NULL DEFAULT 'AMBIGUOUS' | Fail toward least trust; `source` stays mechanism-provenance, `confidence real` stays intra-tier score — graphify's ladder page with governance graphify never needed | ✓ Good — the suggest-only promotion gate is a property of the tier, defensible column-by-column |
+| **v1.5**: Knowledge node 1:1 with confirmed region (scope_ref=email_component) | Makes deactivate_edges_for_node(node) supersede exactly that region's edges — no sibling-region collateral, clean deactivate-then-insert, resolves the promote-after-confirm pipeline-ordering hazard | ✓ Good — SYNTH-03 verified with no duplicates/orphans |
+| **v1.5**: Injection gate ships before its consumer (`list_injectable_edges`, zero callers) | The EXTRACTED-only read path exists BEFORE stage-3 BFS can be built, so the consumer can never ship ungated; alias injection reads entity_instances directly and doesn't need it | — Pending — becomes load-bearing only if KGX-01 is ever justified by the miss-rate artifact |
+| **v1.5**: Stage-3 graph-expand gated on a MEASURED retrieval miss (0028 events + miss-rate script) | 999.10's own honest discount: flat RRF is fine for similar documents; graph apparatus only pays off against a demonstrated miss rate — measurement-gated architecture evolution | — Pending — artifact live; needs correction volume to produce a meaningful number |
 
 ## Evolution
 
@@ -266,4 +292,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-07 after opening milestone v1.5 — Knowledge-Graph Uplift (backlog 999.10 promoted; selected autonomously, rationale in Current Milestone → Key context)*
+*Last updated: 2026-07-08 after v1.5 milestone — Knowledge-Graph Uplift shipped (Phases 29–32, 11/11 requirements moved to Validated); Key Decisions updated with 4 v1.5 entries; Active reset pending next milestone*

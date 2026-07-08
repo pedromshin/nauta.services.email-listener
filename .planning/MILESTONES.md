@@ -1,5 +1,32 @@
 # Milestones
 
+## v1.5 Knowledge-Graph Uplift (Shipped: 2026-07-08)
+
+**Phases completed:** 4 phases (29–32), 11 plans, 30 tasks
+
+**Delivered:** Activated the dormant knowledge-graph substrate — human confirms now materialize
+confidence-tiered `knowledge_node_edges` (with OCR token-polygon provenance) through a suggest-only
+promotion gate — adopting graphify's *algorithms* (tier ladder, bounded neighbour-expand,
+tier-pruned detail) onto the live Postgres store per backlog 999.10's staged plan. Stage-3
+(BFS-into-prompts) stays explicitly deferred behind the new measurable retrieval-miss-rate gate.
+11/11 requirements; audit `tech_debt` (0 blockers, 6/6 integration seams WIRED). Selected and
+executed fully autonomously (`/gsd:new-milestone /gsd:autonomous`).
+
+Known deferred items at close: 4 (2 human_needed verification gaps — live Bedrock/browser checks
+for Phases 29+32; 2 pending todos — truncated-tool-call salvage (carried), pre-existing /knowledge
+UI debt; see STATE.md Deferred Items).
+
+**Key accomplishments:**
+
+- **Tier ladder live (migration 0026):** `knowledge_trust_tier` enum (EXTRACTED | INFERRED | AMBIGUOUS, NOT NULL DEFAULT 'AMBIGUOUS' — fail toward least trust) on both knowledge tables, plus `provenance jsonb` + `is_active` + an active-identity partial index on edges; `confidence real` kept as the intra-tier score.
+- **The D-13 synthesis hook is real:** `ConfirmRegionUseCase` calls a `KnowledgeSynthesizer` domain port best-effort (confirm never fails on synthesis errors); `KnowledgeSynthesizerService` writes a node 1:1 with the confirmed region and EXTRACTED edges (component anchor, conditional entity-instance "about", co-occurrence) with OCR token∩polygon provenance via a helper extracted from `edit_region.py`; re-confirm supersedes deactivate-then-insert — never DELETE, no duplicates/orphans.
+- **Suggest-only promotion gate:** the same synthesizer emits INFERRED/AMBIGUOUS *suggestion* edges (deterministic heuristics, no LLM); `list_injectable_edges` is the single EXTRACTED-only sanctioned injection read path (seeded three-tier exclusion test); migration 0027 adds `promotion jsonb`; `POST /v1/knowledge/edges/{id}/promote` promotes fail-closed (load → tenant → active → tier → CAS) recording promotion provenance distinct from synthesis provenance.
+- **Cheap recall win + the stage-3 gate:** closed the never-built few-shot rendering seam in the Bedrock autofill adapter (retrieved examples now actually reach the model) and injected the resolved entity's `aliases[]`/`identifiers` as a delimited user-turn block; migration 0028's `autofill_retrieval_events` records every run best-effort, and `packages/db/scripts/retrieval-miss-rate.ts` (+ written Type-A/Type-B miss definition) computes the number that gates KGX-01..03.
+- **/knowledge became a tiered exploration canvas:** EXTRACTED solid / INFERRED dashed / AMBIGUOUS faint edge encoding + legend (token-only), a cumulative tier filter ("Confirmed only" → "+ Inferred" → "+ Ambiguous") that also governs expand-merged edges, `knowledge.expandNode` bounded BFS (depth ≤2, ~50-node budget, importer-scoped) behind click-to-expand, and an edge-detail popover whose "Promote to confirmed" button round-trips through a server-keyed Next proxy to the FastAPI promote endpoint.
+- **Design-case narrative now literally true in the schema:** "a confidence-graded knowledge graph with a suggest-only promotion gate, grounded in OCR token provenance" — every clause is a queryable column, a tested gate, or a visible canvas behavior.
+
+---
+
 ## v1.4 Chat & Studio Design Uplift (Shipped: 2026-07-07)
 
 **Phases completed:** 3 phases, 15 plans, 36 tasks

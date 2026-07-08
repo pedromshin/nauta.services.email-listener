@@ -93,6 +93,60 @@ fixes (chat output-cap truncation, globals.css comment self-termination).
 - Notable: 15 sequential executors (worktrees disabled) was the wall-clock bottleneck; disjoint
   files_modified across all plans made ordering trivially safe.
 
+## Milestone: v1.5 — Knowledge-Graph Uplift
+
+**Shipped:** 2026-07-08
+**Phases:** 4 (29–32) | **Plans:** 11
+
+### What Was Built
+Activated the dormant Phase-11 knowledge-graph substrate: tier ladder (migrations 0026–0028) +
+live D-13 synthesis hook (confirm → EXTRACTED edges with OCR token-polygon provenance) + suggest-only
+promotion gate (deterministic suggestions, fail-closed promote endpoint, EXTRACTED-only injection
+read path) + the cheap recall win (few-shot rendering seam closed, aliases/identifiers injected) +
+retrieval-miss-rate instrumentation + `/knowledge` tiered exploration canvas (encoding, filter,
+bounded expandNode, promote popover).
+
+### What Worked
+- Scope taken verbatim from the user's own theory note (999.10 NOTE.md) — its staged cost/benefit
+  ordering became the phase structure with almost no translation loss; "do NOT borrow" lists in the
+  scope source made scope-creep rejection mechanical.
+- One up-front Explore scout fed all four phases' CONTEXT files; its biggest catch (the few-shot
+  rendering seam was never built) re-shaped Phase 31 before planning started.
+- The [BLOCKING] migration-apply + live-pg-verify task pattern (0026/0027/0028 each with a
+  committed verify script) caught nothing this time precisely because it forced executors to start
+  Docker/Supabase and prove schema live — no false-positive verification.
+- Cross-plan gap flagging worked: 32-02 documented that expand-merged edges skipped the tier
+  filter; 32-03 was instructed to close it and did — the integration checker later verified the fix
+  in code.
+
+### What Was Inefficient
+- Two session-limit cutoffs mid-executor (29 planning, 30-01 execution) required recovery passes;
+  the RED-test-on-disk recovery for 30-01 worked cleanly but cost a re-read of plan state.
+- The SDK's `milestone.complete` accomplishment extraction produced junk ("Task 1 — …" fragments)
+  and a wrong task count — hand-rewritten; MILESTONES.md quality still needs the human-grade pass.
+- UI review (19/24) surfaced a real spec violation (active-segment weight) the executor missed —
+  advisory reviews still catch contract drift the acceptance criteria didn't encode.
+
+### Patterns Established
+- Measurement-gated architecture evolution: stage-3 graph work is behind a committed, runnable
+  miss-rate artifact, not a judgment call.
+- "Gate ships before consumer": `list_injectable_edges` exists with zero callers so the future
+  consumer can never bypass it.
+- Tier-as-governance: trust tier is a schema property with a fail-toward-least-trust default,
+  promotion is the only trust-raising action, and it is human-only.
+
+### Key Lessons
+- Autonomous milestone selection is safe when there is a same-day user-authored scope note to
+  anchor to; the smart-discuss "auto-accept + document" mode preserved decision legibility.
+- Pre-existing debt found by phase-scoped audits (glassmorphism on /knowledge) should be logged as
+  todos, not fixed inline — scope discipline held.
+
+### Cost Observations
+- Model mix: orchestrator on Fable-5; planners on Opus; executors/verifiers/UI agents on Sonnet.
+- Sessions: ~4 (two session/weekly-limit cutoffs with mid-plan recovery, one user-interrupt resume).
+- Notable: 11 sequential executors (worktrees disabled); Phase 31 was fully independent and could
+  have run parallel to 29/30 had worktrees been enabled.
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Shipped | Audit | Deferred (connected-env) |
@@ -101,5 +155,6 @@ fixes (chat output-cap truncation, globals.css comment self-termination).
 | v1.2 | 16–20 | — | 2026-07-03 | tech_debt | 15 |
 | v1.3 | 22–25 | 25 | 2026-07-06 | tech_debt | 6 |
 | v1.4 | 26–28 | 15 | 2026-07-07 | tech_debt | 4 |
+| v1.5 | 29–32 | 11 | 2026-07-08 | tech_debt | 4 |
 
-**Recurring theme:** this project consistently ships code-complete milestones with a small set of live-browser/Bedrock verifications deferred to a connected-env pass — a stable, honest pattern, not slippage. The locked-renderer + reusable-registry discipline (FOUND-2) has held across four milestones, and the deferred-item count keeps shrinking (15 → 6 → 4) as committed regression gates replace one-off checks.
+**Recurring theme:** this project consistently ships code-complete milestones with a small set of live-browser/Bedrock verifications deferred to a connected-env pass — a stable, honest pattern, not slippage. The locked-renderer + reusable-registry discipline (FOUND-2) has held across five milestones, and the deferred-item count has stabilized at ~4 (15 → 6 → 4 → 4) as committed regression gates and live-DB migration verify scripts replace one-off checks. v1.5 adds a new discipline: architecture evolution gated on committed measurement artifacts rather than judgment.
