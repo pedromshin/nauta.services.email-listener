@@ -177,7 +177,10 @@ silent tool-parse-failure drop) are fixed.
      failed, never a silent drop
   5. Exhausting the round cap ends the turn with a visible "couldn't fully resolve" text part, never
      a bare `stopped` state
-**Plans**: TBD
+**Plans**: 3 plans (coarse; Wave 1 = 34-01 + 34-02 in parallel, Wave 2 = 34-03)
+- [ ] 34-01-PLAN.md — ToolExecutor port + max_tool_rounds gate (2 Bedrock entries) + pure loop helpers + echo stub [LOOP-01]
+- [ ] 34-02-PLAN.md — the 2 latent bug fixes: UsageDelta accumulation + never-silent tool-parse-failure [LOOP-02]
+- [ ] 34-03-PLAN.md — bounded in-stream round loop in _execute_turn + round-cap exhaustion visible text [LOOP-01, LOOP-03]
 
 ### Phase 35: Cost + Eval Scaffolding
 **Goal**: A per-round cost ceiling distinct from the existing per-turn/session/day caps is enforced
