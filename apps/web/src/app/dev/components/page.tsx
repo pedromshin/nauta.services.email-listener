@@ -1,0 +1,180 @@
+"use client";
+
+/**
+ * Dev-only showcase for the vendored registry components (Magic UI + Kibo UI).
+ * Visual verification surface — not linked from any nav. Safe to extend as
+ * more components are vendored. See .claude/skills/nauta-design-system/.
+ */
+
+import { useRef } from "react";
+
+import { AnimatedBeam } from "@nauta/ui/animated-beam";
+import { AnimatedList } from "@nauta/ui/animated-list";
+import { Avatar, AvatarFallback } from "@nauta/ui/avatar";
+import { AvatarStack } from "@nauta/ui/avatar-stack";
+import { BlurFade } from "@nauta/ui/blur-fade";
+import { BorderBeam } from "@nauta/ui/border-beam";
+import { ConfettiButton } from "@nauta/ui/confetti";
+import { DotPattern } from "@nauta/ui/dot-pattern";
+import { MagicCard } from "@nauta/ui/magic-card";
+import { Marquee } from "@nauta/ui/marquee";
+import { NumberTicker } from "@nauta/ui/number-ticker";
+import { ShimmerButton } from "@nauta/ui/shimmer-button";
+import { ShineBorder } from "@nauta/ui/shine-border";
+import { Spinner } from "@nauta/ui/spinner";
+import { TypingAnimation } from "@nauta/ui/typing-animation";
+
+const Section = ({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) => (
+  <section
+    data-section={title}
+    className="rounded-lg border border-border bg-card p-4"
+  >
+    <h2 className="mb-3 text-sm font-medium text-muted-foreground">{title}</h2>
+    {children}
+  </section>
+);
+
+const DevComponentsPage = () => {
+  const beamContainerRef = useRef<HTMLDivElement>(null);
+  const beamFromRef = useRef<HTMLDivElement>(null);
+  const beamToRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <main className="mx-auto grid max-w-5xl gap-4 p-8 md:grid-cols-2">
+      <h1 className="text-lg font-semibold md:col-span-2">
+        Vendored component showcase
+      </h1>
+
+      <Section title="marquee">
+        <Marquee className="[--duration:12s]" data-testid="marquee">
+          {["nauta", "knowledge", "canvas", "genui", "email"].map((word) => (
+            <span
+              key={word}
+              className="mx-2 rounded-full bg-secondary px-3 py-1 text-sm"
+            >
+              {word}
+            </span>
+          ))}
+        </Marquee>
+      </Section>
+
+      <Section title="border-beam">
+        <div className="relative h-24 overflow-hidden rounded-xl border border-border p-4">
+          <span className="text-sm">panel with traveling border beam</span>
+          <BorderBeam size={60} duration={5} />
+        </div>
+      </Section>
+
+      <Section title="shine-border">
+        <div className="relative h-24 rounded-xl p-4">
+          <ShineBorder shineColor={["#2b6e5f", "#9c40ff"]} />
+          <span className="text-sm">panel with animated shine border</span>
+        </div>
+      </Section>
+
+      <Section title="shimmer-button">
+        <ShimmerButton background="hsl(164 39% 22%)">
+          <span className="text-sm">shimmer</span>
+        </ShimmerButton>
+      </Section>
+
+      <Section title="number-ticker">
+        <NumberTicker
+          value={1234}
+          className="text-3xl font-semibold"
+          data-testid="ticker"
+        />
+      </Section>
+
+      <Section title="typing-animation">
+        <TypingAnimation className="text-base" duration={40}>
+          Streaming text affordance for chat panels.
+        </TypingAnimation>
+      </Section>
+
+      <Section title="blur-fade">
+        <BlurFade delay={0.2}>
+          <p className="text-sm">This paragraph blur-fades in.</p>
+        </BlurFade>
+      </Section>
+
+      <Section title="animated-list">
+        <AnimatedList delay={800} className="gap-2">
+          {["edge promoted", "entity linked", "email ingested"].map((item) => (
+            <div
+              key={item}
+              className="rounded-md border border-border px-3 py-1.5 text-sm"
+            >
+              {item}
+            </div>
+          ))}
+        </AnimatedList>
+      </Section>
+
+      <Section title="dot-pattern">
+        <div className="relative h-24 overflow-hidden rounded-xl border border-border">
+          <DotPattern className="opacity-60" />
+        </div>
+      </Section>
+
+      <Section title="magic-card">
+        <MagicCard className="rounded-xl p-6">
+          <span className="text-sm">hover for spotlight</span>
+        </MagicCard>
+      </Section>
+
+      <Section title="animated-beam">
+        <div
+          ref={beamContainerRef}
+          className="relative flex h-24 items-center justify-between px-8"
+        >
+          <div
+            ref={beamFromRef}
+            className="z-10 rounded-full border border-border bg-background p-3 text-xs"
+          >
+            A
+          </div>
+          <div
+            ref={beamToRef}
+            className="z-10 rounded-full border border-border bg-background p-3 text-xs"
+          >
+            B
+          </div>
+          <AnimatedBeam
+            containerRef={beamContainerRef}
+            fromRef={beamFromRef}
+            toRef={beamToRef}
+          />
+        </div>
+      </Section>
+
+      <Section title="confetti-button">
+        <ConfettiButton className="rounded-md border border-border px-4 py-2 text-sm">
+          celebrate
+        </ConfettiButton>
+      </Section>
+
+      <Section title="spinner">
+        <Spinner className="size-6 text-primary" />
+      </Section>
+
+      <Section title="avatar-stack">
+        <AvatarStack>
+          {["PS", "NA", "KG"].map((initials) => (
+            <Avatar key={initials}>
+              <AvatarFallback>{initials}</AvatarFallback>
+            </Avatar>
+          ))}
+        </AvatarStack>
+      </Section>
+    </main>
+  );
+};
+
+export default DevComponentsPage;
