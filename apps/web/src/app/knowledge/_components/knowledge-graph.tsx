@@ -74,6 +74,7 @@ import { tierEdgeStyle } from "./tier-edge-style";
 import { GraphLegend } from "./graph-legend";
 import { tierAllowsEdge, type TierFilterState } from "./tier-filter";
 import { TierFilterControl } from "./tier-filter-control";
+import { EdgeDetailPopover, type AnchorPoint, type PopoverEdge } from "./edge-detail-popover";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -108,6 +109,8 @@ interface GraphEdge {
   readonly target: string;
   readonly relationType: string;
   readonly tier?: string;
+  readonly confidence?: number;
+  readonly provenanceSummary?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -115,6 +118,18 @@ interface GraphEdge {
 // ---------------------------------------------------------------------------
 
 const TAXONOMY_RELATION_TYPES = new Set<string>(["has_field"]);
+
+// ---------------------------------------------------------------------------
+// Promote affordance (Phase-30 TIER-03 closure) — single-tenant fallback,
+// mirrors DEFAULT_IMPORTER_ID (packages/api-client/src/router/chat/browser-turn.ts
+// / apps/email-listener/app/settings.py). Not imported directly — that module's
+// import chain requires server env vars and crashes client-side (23-04
+// precedent), so the constant is duplicated here (documented, not accidental).
+// ---------------------------------------------------------------------------
+
+const DEFAULT_IMPORTER_ID = "00000000-0000-0000-0000-000000000001";
+
+const SUGGESTION_TIERS = new Set<string>(["INFERRED", "AMBIGUOUS"]);
 
 // ---------------------------------------------------------------------------
 // Conversion helpers — GraphNode/GraphEdge → React Flow Node/Edge
@@ -148,8 +163,13 @@ function toFlowEdges(graphEdges: ReadonlyArray<GraphEdge>): FlowEdge[] {
       target: ge.target,
       label: ge.relationType,
       type: "smoothstep",
-      // Carried through so a merged edge keeps its tier for future re-styling.
-      data: { tier: ge.tier },
+      // Carried through so a merged edge keeps its tier for future re-styling,
+      // and so the promote-affordance popover has confidence/provenance to render.
+      data: {
+        tier: ge.tier,
+        confidence: ge.confidence,
+        provenanceSummary: ge.provenanceSummary,
+      },
       ...tierStyle,
       ...(isTaxonomy
         ? {}
@@ -205,6 +225,15 @@ export function KnowledgeGraph({ className }: KnowledgeGraphProps): React.ReactE
   const [pendingExpandNodeId, setPendingExpandNodeId] = useState<
     string | null
   >(null);
+
+  // Promote affordance (Phase-30 closure) — the suggestion-tier edge whose
+  // detail popover is open, the click coordinates it opened at, and whether
+  // its promote request is in flight.
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null);
+  const [edgePopoverAnchor, setEdgePopoverAnchor] = useState<AnchorPoint | null>(
+    null,
+  );
+  const [promotePending, setPromotePending] = useState<boolean>(false);
 
   const [bannerDismissed, setBannerDismissed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -347,10 +376,17 @@ export function KnowledgeGraph({ className }: KnowledgeGraphProps): React.ReactE
         const newFlowNodes = toFlowNodes(result.nodes, visibleTypes);
         const newFlowEdges = toFlowEdges(result.edges);
         const merged = mergeGraph(nodes, edges, newFlowNodes, newFlowEdges);
-        const laidOutNodes = layoutGraph(merged.nodes, merged.edges);
+        // Deviation (Rule 1 fix, cross-plan gap flagged in 32-02-SUMMARY.md):
+        // re-apply the tier filter to the MERGED edge set so expand-click can't
+        // bypass a narrowed filter (e.g. "Confirmed only") by pulling in
+        // INFERRED/AMBIGUOUS edges that the filter would otherwise hide.
+        const filteredMergedEdges = merged.edges.filter((e) =>
+          tierAllowsEdge(e, tierFilter),
+        );
+        const laidOutNodes = layoutGraph(merged.nodes, filteredMergedEdges);
 
         setNodes(laidOutNodes);
-        setEdges(merged.edges);
+        setEdges(filteredMergedEdges);
 
         if (result.truncated) {
           toast.info(
@@ -361,7 +397,7 @@ export function KnowledgeGraph({ className }: KnowledgeGraphProps): React.ReactE
         setPendingExpandNodeId(null);
       }
     },
-    [utils, nodes, edges, visibleTypes, setNodes, setEdges],
+    [utils, nodes, edges, visibleTypes, tierFilter, setNodes, setEdges],
   );
 
   // -------------------------------------------------------------------------
@@ -418,7 +454,96 @@ export function KnowledgeGraph({ className }: KnowledgeGraphProps): React.ReactE
 
   const handlePaneClick = useCallback(() => {
     setSelectedNodeId(null);
+    setSelectedEdgeId(null);
   }, []);
+
+  // -------------------------------------------------------------------------
+  // Promote affordance (Phase-30 closure) — clicking a suggestion-tier kne-
+  // edge opens the detail popover. EXTRACTED and structural edges are inert
+  // (no popover, no cursor change per UI-SPEC).
+  // -------------------------------------------------------------------------
+
+  const handleEdgeClick = useCallback(
+    (event: React.MouseEvent, edge: FlowEdge) => {
+      const tier = (edge.data as { tier?: string } | undefined)?.tier;
+      if (!edge.id.startsWith("kne-") || tier === undefined || !SUGGESTION_TIERS.has(tier)) {
+        return;
+      }
+      setSelectedEdgeId(edge.id);
+      setEdgePopoverAnchor({ x: event.clientX, y: event.clientY });
+    },
+    [],
+  );
+
+  const selectedPopoverEdge = useMemo<PopoverEdge | null>(() => {
+    if (selectedEdgeId == null) return null;
+    const e = edges.find((edge) => edge.id === selectedEdgeId);
+    if (e == null) return null;
+    const data = e.data as
+      | { tier?: string; confidence?: number; provenanceSummary?: string }
+      | undefined;
+    const tier = data?.tier;
+    if (tier === undefined || !SUGGESTION_TIERS.has(tier)) return null;
+    return {
+      id: e.id,
+      relationType: typeof e.label === "string" ? e.label : "",
+      tier: tier as "INFERRED" | "AMBIGUOUS",
+      confidence: data?.confidence,
+      provenanceSummary: data?.provenanceSummary,
+    };
+  }, [selectedEdgeId, edges]);
+
+  const handleEdgePopoverOpenChange = useCallback((open: boolean) => {
+    if (!open) {
+      setSelectedEdgeId(null);
+      setEdgePopoverAnchor(null);
+    }
+  }, []);
+
+  const handlePromote = useCallback(async () => {
+    if (selectedPopoverEdge == null) return;
+    const edgeId = selectedPopoverEdge.id.replace(/^kne-/, "");
+    setPromotePending(true);
+    try {
+      const response = await fetch(
+        `/api/knowledge/edges/${edgeId}/promote`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ importerId: DEFAULT_IMPORTER_ID }),
+        },
+      );
+
+      if (!response.ok) {
+        const body = (await response.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        toast.error(
+          `Couldn't promote — ${body?.error ?? "This suggestion could not be promoted."}`,
+        );
+        return;
+      }
+
+      const promotedEdgeId = selectedPopoverEdge.id;
+      setEdges((prev) =>
+        prev.map((e) => {
+          if (e.id !== promotedEdgeId) return e;
+          const { style: _style, labelStyle: _labelStyle, ...rest } = e;
+          return {
+            ...rest,
+            data: { ...(e.data ?? {}), tier: "EXTRACTED" },
+          };
+        }),
+      );
+      setSelectedEdgeId(null);
+      setEdgePopoverAnchor(null);
+    } catch (error) {
+      console.error("[knowledge-graph] promote request failed:", error);
+      toast.error("Couldn't promote — Promote request failed.");
+    } finally {
+      setPromotePending(false);
+    }
+  }, [selectedPopoverEdge, setEdges]);
 
   // Escape key deselects
   useEffect(() => {
@@ -550,6 +675,7 @@ export function KnowledgeGraph({ className }: KnowledgeGraphProps): React.ReactE
                 onEdgesChange={onEdgesChange}
                 onNodeClick={handleNodeClick}
                 onNodeDoubleClick={handleNodeDoubleClick}
+                onEdgeClick={handleEdgeClick}
                 onPaneClick={handlePaneClick}
                 onInit={handleInit}
                 fitView
@@ -578,6 +704,15 @@ export function KnowledgeGraph({ className }: KnowledgeGraphProps): React.ReactE
                 )}
               </ReactFlowJSX>
             )}
+
+            {/* Promote affordance (Phase-30 closure) — one popover, one button */}
+            <EdgeDetailPopover
+              edge={selectedPopoverEdge}
+              anchorPosition={edgePopoverAnchor}
+              pending={promotePending}
+              onOpenChange={handleEdgePopoverOpenChange}
+              onPromote={() => void handlePromote()}
+            />
           </div>
         </ResizablePanel>
 
