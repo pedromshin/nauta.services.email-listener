@@ -62,8 +62,8 @@ The FOUND-7 gap no fork covered: how retrieval quality, citation accuracy, and
 injection-resistance get *measured* — registered into the Phase-16 harness, never a parallel
 mechanism.
 
-- [ ] **EVAL-06**: Retrieval quality is measurable against a golden query→expected-ids set (recall/precision) registered as a Phase-16 harness dimension
-- [ ] **EVAL-07**: Citation faithfulness (every claim traces to a real `citations[]` entry, none hallucinated) and injection resistance (did visible text leak quarantined content, beyond "didn't call a tool") are measurable eval dimensions
+- [x] **EVAL-06**: Retrieval quality is measurable against a golden query→expected-ids set (recall/precision) registered as a Phase-16 harness dimension
+- [x] **EVAL-07**: Citation faithfulness (every claim traces to a real `citations[]` entry, none hallucinated) and injection resistance (did visible text leak quarantined content, beyond "didn't call a tool") are measurable eval dimensions
 
 ### Tool-Round UI (TUI)
 
@@ -160,8 +160,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TOOL-04 | Phase 37 | Pending |
 | QUAR-01 | Phase 38 | Pending |
 | QUAR-02 | Phase 38 | Pending |
-| EVAL-06 | Phase 35 | Pending |
-| EVAL-07 | Phase 35 | Pending |
+| EVAL-06 | Phase 35 | Complete |
+| EVAL-07 | Phase 35 | Complete |
 | TUI-01 | Phase 39 | Pending |
 | TUI-02 | Phase 39 | Pending |
 | CONF-01 | Phase 40 | Pending |

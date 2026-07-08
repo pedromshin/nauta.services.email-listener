@@ -351,7 +351,7 @@ execute last.
 |-------|-----------------|--------|-----------|
 | 33. Live Bindings Plumbing | 2/2 | Complete   | 2026-07-08 |
 | 34. Tool-Loop Mechanics (stub/echo executor) | 3/3 | Complete   | 2026-07-08 |
-| 35. Cost + Eval Scaffolding | 1/3 | In Progress|  |
+| 35. Cost + Eval Scaffolding | 3/3 | Complete   | 2026-07-08 |
 | 36. Thin-Wrapper Tools | 0/2 | Not started | - |
 | 37. Knowledge Search + Python Read-Side | 0/2 | Not started | - |
 | 38. Quarantine + Adversarial Eval | 0/? | Not started | - |
