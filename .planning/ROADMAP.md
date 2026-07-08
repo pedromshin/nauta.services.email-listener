@@ -207,8 +207,8 @@ attach eval hooks to)
 **Plans**: 3 plans (coarse; Wave 1 = 35-01 + 35-02 in parallel, Wave 2 = 35-03)
 Plans:
 - [x] 35-01-PLAN.md — Distinct per-round CostCircuitBreaker ceiling wired into the round loop (mid-round + round boundary) [COST-05]
-- [ ] 35-02-PLAN.md — Retrieval-quality/citation-faithfulness/injection-resistance eval dimensions registered into packages/genui/src/eval [EVAL-06, EVAL-07]
-- [ ] 35-03-PLAN.md — Python pytest bridge scoring the shared fixtures against the Phase-34 echo stub [EVAL-06, EVAL-07]
+- [x] 35-02-PLAN.md — Retrieval-quality/citation-faithfulness/injection-resistance eval dimensions registered into packages/genui/src/eval [EVAL-06, EVAL-07]
+- [x] 35-03-PLAN.md — Python pytest bridge scoring the shared fixtures against the Phase-34 echo stub [EVAL-06, EVAL-07]
 
 ### Phase 36: Thin-Wrapper Tools
 **Goal**: User can ask the chat agent about a known entity or find related emails and get grounded,
@@ -250,7 +250,10 @@ are structurally unable to leak free text into model context by field omission, 
      seeding all three tiers
   5. `search_knowledge` is NOT yet offered as a user-facing tool choice at the end of this phase —
      exposure ships only once Phase 38's quarantine/tier-filter wiring lands (synthesis P6 rule)
-**Plans**: TBD
+**Plans**: 2 plans (coarse; Wave 1 = 37-01, Wave 2 = 37-02)
+Plans:
+- [ ] 37-01-PLAN.md — Migration 0029 (extracted_only view + BlendedRAG search RPCs + indexes, live-verified) + KnowledgeGraphRepository.search_nodes/expand_neighbours (belt 1)
+- [ ] 37-02-PLAN.md — SearchKnowledgeExecutor (belt 2 field omission) + flag-gated container wiring (SEARCH_KNOWLEDGE_TOOL_ENABLED default False)
 
 ### Phase 38: Quarantine + Adversarial Eval
 **Goal**: Every `ToolExecutor` returns tier-filtered typed envelopes as an interface obligation,
@@ -350,7 +353,7 @@ execute last.
 | 34. Tool-Loop Mechanics (stub/echo executor) | 3/3 | Complete   | 2026-07-08 |
 | 35. Cost + Eval Scaffolding | 1/3 | In Progress|  |
 | 36. Thin-Wrapper Tools | 0/2 | Not started | - |
-| 37. Knowledge Search + Python Read-Side | 0/? | Not started | - |
+| 37. Knowledge Search + Python Read-Side | 0/2 | Not started | - |
 | 38. Quarantine + Adversarial Eval | 0/? | Not started | - |
 | 39. Tool-Round UI + Citation Chips | 0/? | Not started | - |
 | 40. Confirm-Action Widgets | 0/? | Not started | - |
