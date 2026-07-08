@@ -2,6 +2,7 @@
 created: 2026-07-06
 title: Salvage or surface truncated/unparseable chat tool calls instead of silent drop
 area: chat/streaming (run_chat_turn)
+resolves_phase: 34
 files:
   - apps/email-listener/app/application/use_cases/run_chat_turn.py
 ---
