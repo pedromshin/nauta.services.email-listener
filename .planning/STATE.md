@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Chat × Knowledge Convergence
 status: executing
-last_updated: "2026-07-08T04:09:20.090Z"
-last_activity: 2026-07-08 -- Phase 34 execution started
+last_updated: "2026-07-08T04:26:18.881Z"
+last_activity: 2026-07-08 -- 34-02 executed
 progress:
   total_phases: 9
   completed_phases: 0
   total_plans: 5
-  completed_plans: 1
+  completed_plans: 3
   percent: 0
 ---
 
@@ -25,9 +25,36 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 ## Current Position
 
 Phase: 34 (tool-loop-mechanics-stub-echo-executor) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Executing Phase 34
-Last activity: 2026-07-08 -- 34-01 executed
+Last activity: 2026-07-08 -- 34-02 executed
+
+## Phase 33 — Live Bindings Plumbing (executing 2026-07-08, parallel track to Phase 34)
+
+- **33-01 EXECUTED:** `use-data-bindings.ts` — standalone hook resolving genui `spec.bindings` into
+  live tRPC query data via a compile-time `switch` over exactly the 5 wired allowlisted procedures
+  (`entities.byId/list`, `emails.detail`, `knowledge.byId/graph`); the other 4 `ALLOWED_PROCEDURES`
+  entries hit an explicit, documented runtime-skip default arm (not dynamic dispatch,
+  `ALLOWED_PROCEDURES` untouched). The 3 by-id procedures source their id ONLY from `panelData`
+  (`selectedEntityId`/`selectedEmailId`/`selectedNodeId`), never `binding.params` (query
+  `enabled:false` + binding resolves `undefined` when absent — BIND-01's core control, T-33-01).
+  `entities.list`/`knowledge.graph` pass an explicit field-allowlist from `binding.params`;
+  `knowledge.graph`'s `importerId` is always `panelData.importerId ?? DEFAULT_IMPORTER_ID`, never
+  `binding.params` (T-33-02 defense-in-depth). `STALE_TIME_MS` per-procedure tiers wired (10s
+  `knowledge.*`, 30s `entities.*`, 60s `emails.detail` — the staleTime half of BIND-02).
+  `extractBindings` degrades to `{}` on any streaming/malformed/schema-invalid input via
+  `attemptRepairJson` (imported, not modified) + `safeParse`, never throws. **Deviation (Rule 3,
+  documented):** the installed `@trpc/react-query@11.8.0` `useQueries` proxy calls router leaves
+  directly (`t.<router>.<procedure>(input, opts)`, no `.queryOptions` sub-method the plan's
+  interfaces section assumed) and its tuple-inferring generic signature cannot type a dynamic
+  runtime-length heterogeneous query array — resolved with one documented `as unknown as` cast at a
+  single declaration site (`useBindingQueries`), proven safe by the 12-test suite. 12/12 targeted
+  vitest tests green, `npm run typecheck -w apps/web` clean, zero diff on the 3 locked renderer
+  files + `allowed-procedures.ts`, zero new npm dependencies. **Not yet wired into
+  `genui-panel-node.tsx`** (that's 33-02, which also carries BIND-02's event-driven invalidation
+  half — `BIND-01`/`BIND-02` stay `Pending` in REQUIREMENTS.md until that plan lands). See
+  33-01-SUMMARY.md. **Next: 33-02** (wire the hook into `GenuiPanelNodeBody` + promotion-mutation
+  invalidation — already planned, `33-02-PLAN.md` exists).
 
 ## Phase 34 — Tool-Loop Mechanics (stub/echo executor) (executing 2026-07-08)
 
@@ -46,7 +73,26 @@ Last activity: 2026-07-08 -- 34-01 executed
   `__force_error__`/`__sleep__` test hooks, output capped). None of this touches `run_chat_turn.py` —
   it's the frozen contract layer Plan 34-03 wires into `_execute_turn`. 32/32 targeted tests pass,
   `lint-imports` 3 kept/0 broken, mypy clean on all 3 touched/created source modules. No deviations.
-  See 34-01-SUMMARY.md. **Next: 34-02** (the real streaming round loop wiring — not yet planned).
+  See 34-01-SUMMARY.md.
+
+- **34-02 EXECUTED:** LOOP-02 — the 2 latent single-round bugs fixed with a TDD RED/GREEN gate
+  (test commit `560d0fd` then feat commit `d50324d`), BEFORE 34-03's round loop amplifies them.
+  `_apply_delta`'s `UsageDelta` branch in `run_chat_turn.py` now ACCUMULATES
+  (`state.input_tokens + delta.input_tokens`) instead of overwriting — a multi-round turn emits one
+  UsageDelta per round, so the old overwrite silently under-reported cost. `_finalize_pending_tool`'s
+  two silent `return cleared, None` drops (widget parse failure + `emit_ui_spec` JSONDecodeError) now
+  both append a visible `{"type":"text","text": PARSE_FAILURE_TEXT}` part instead (imported from
+  34-01's `run_chat_turn_tool_loop.py`) — resolves the REQUIRED "never silent" behavior of the pending
+  todo `2026-07-06-salvage-truncated-tool-calls` (server-side `logger.warning` detail retained). New
+  `tests/application/test_run_chat_turn_tool_loop_bugfixes.py` (4 tests: summed-usage, single-round
+  passthrough regression guard, malformed-emit_ui_spec visible-text, malformed-emit_proposal_cards
+  visible-text). 38/38 targeted tests pass (4 new + 34 existing across
+  test_run_chat_turn/_tool_loop/emit_ui_spec_tool), mypy/lint-imports/ruff clean. **Deviation
+  (file-location correction, non-architectural):** the plan's `<read_first>` pointed to
+  `test_run_chat_turn_interactive_widget.py`/`test_run_chat_turn_clarify_widget.py` for the
+  fakes/`_make_use_case` scaffold — neither file exists in this repo; used the actual home,
+  `test_run_chat_turn.py`, instead (same shape, correct location). See 34-02-SUMMARY.md.
+  **Next: 34-03** (the real streaming round loop wiring — not yet planned).
 
 ## v1.6 Roadmap Summary (2026-07-08)
 
@@ -1481,6 +1527,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 29 P02 | 35min | 3 tasks | 5 files — _token_provenance.py shared helper (extracted from edit_region) + KnowledgeSynthesizer/KnowledgeGraphRepository domain ports + SupabaseKnowledgeGraphRepository adapter (tier + provenance jsonb + is_active supersede); 5 new call-shape tests |
 | Phase 30 P01 | 45 | - tasks | - files |
 | Phase 32 P01 | 55 | 2 tasks | 6 files |
+| Phase 34 P02 | 20min | 2 tasks | 2 files |
 
 ## Operator Next Steps
 

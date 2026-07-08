@@ -156,7 +156,7 @@ tool-loop track, can run fully in parallel to Phase 34)
   5. `ALLOWED_PROCEDURES` has no new entries after this phase (still exactly the 5 existing ones)
 **Plans**: 2 plans (coarse; Wave 1 = 33-01, Wave 2 = 33-02)
 Plans:
-- [ ] 33-01-PLAN.md — use-data-bindings.ts hook: compile-time procedure switch, params-from-context convention, staleTime tiers
+- [x] 33-01-PLAN.md — use-data-bindings.ts hook: compile-time procedure switch, params-from-context convention, staleTime tiers
 - [ ] 33-02-PLAN.md — wire hook into GenuiPanelNodeBody, promotion-success invalidation, SC2 locked-file diff verification
 **UI hint**: yes
 
@@ -339,7 +339,7 @@ execute last.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|-----------------|--------|-----------|
-| 33. Live Bindings Plumbing | 0/? | Not started | - |
+| 33. Live Bindings Plumbing | 1/2 | In Progress|  |
 | 34. Tool-Loop Mechanics (stub/echo executor) | 1/3 | In Progress|  |
 | 35. Cost + Eval Scaffolding | 0/? | Not started | - |
 | 36. Thin-Wrapper Tools | 0/? | Not started | - |
