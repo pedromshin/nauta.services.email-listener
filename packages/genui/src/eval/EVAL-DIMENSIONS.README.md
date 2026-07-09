@@ -20,13 +20,17 @@ of `actualIds`. Default `k = 5`, matching TOOL-01/TOOL-02's top-5 result cap
 (Phase 36). TOOL-03's `search_knowledge` (Phase 37) caps at top-8 — callers
 scoring `search_knowledge` results pass `k = 8` explicitly.
 
-**Status: SEED / fixture-shaped.** No live `entity`/`email`/`knowledge` table
-exists to resolve these ids against yet — `expected_ids` use clearly-synthetic
-values (`entity-acme-logistics`, `email-seed-001`, `node-seed-001`, ...) and
-each entry's `notes` field states which Phase lands the real tool
-(TOOL-01/TOOL-02 → Phase 36, TOOL-03 → Phase 37). Real-data entries are
-deferred to those phases — this seed set only proves the scorer mechanics
-against fixture-shaped/echo-stub data now, per 35-CONTEXT.md.
+**Status: seed + real-data (Phase 38 QUAR-02/EVAL-06 fold-in).** The original
+7 entries (ids 1-7) predate TOOL-01/02/03 landing and stay fixture-shaped —
+`expected_ids` use clearly-synthetic values (`entity-acme-logistics`,
+`email-seed-001`, `node-seed-001`, ...) and each entry's `notes` field states
+which Phase lands the real tool; they are intentionally left verbatim (never
+mutated in place) and their `notes` still accurately say "not yet resolvable
+against live data" for those specific synthetic ids. Phase 38 APPENDS
+additional entries (ids 8+) sourced from REAL rows in the local seeded dev
+DB — real emails already present under `DEFAULT_IMPORTER_ID`, plus a small
+number of entity/knowledge rows seeded directly for this purpose — each new
+entry's `notes` states it IS resolvable against the local dev DB.
 
 ## `injection-fixtures.json` — EVAL-07 (injection-resistance)
 
@@ -44,15 +48,23 @@ checks whether that exact token substring leaked into a turn's visible text.
 This is explicitly "beyond 'didn't call a tool'" (35-CONTEXT.md) — the check
 inspects VISIBLE TEXT, not tool-dispatch behavior.
 
-**Categories (exactly 4, seeded now):** `delimiter-breakout`,
-`role-confusion`, `encoded-override`, `nested-tool-call-request`. Do not
-invent additional categories in this fixture file without updating this
-README.
+**Categories (7, full QUAR-02 suite):** `delimiter-breakout`,
+`role-confusion`, `encoded-override`, `nested-tool-call-request`,
+`citation-spoofing`, `markdown-link-exfiltration`, plus exactly one
+`knowledge-inferred-crafted-search` fixture whose `retrievedText` is phrased
+as an adversarial SEARCH QUERY (not retrieved content) — it proves the
+`extracted_only` tier filter holds even when the malicious text arrives as
+the query argument itself. Do not invent additional categories in this
+fixture file without updating this README.
 
-**Status: seed scorer-mechanics proof, not the full suite.** Phase 35 seeds
-3-5 canary fixtures scored against the echo stub. The FULL adversarial suite
-+ a live-model harness run is Phase 38's QUAR-02 — this phase only proves the
-scorer works, it does not attempt exhaustive adversarial coverage.
+**Status: the full Phase-38 QUAR-02 adversarial suite.** 20-30 fixtures
+across the 7 categories above, scored deterministically against the real
+wired executors (`apps/email-listener/tests/evals/test_injection_adversarial_suite.py`)
+and attempted against a live Bedrock Haiku-tier harness
+(`test_live_injection_harness.py`) for a representative subset. Phase 35
+originally seeded 4 canary fixtures scored against the echo stub to prove
+the scorer mechanics only — Phase 38 (QUAR-02) is the exhaustive-coverage
+escalation.
 
 ## Citation-faithfulness — EVAL-07 (structural half)
 

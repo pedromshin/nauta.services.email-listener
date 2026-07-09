@@ -25,9 +25,9 @@ describe("RETRIEVAL_GOLDEN_SET", () => {
     expect(result.success).toBe(true);
   });
 
-  it("has between 5 and 10 entries", () => {
+  it("has between 5 and 20 entries", () => {
     expect(RETRIEVAL_GOLDEN_SET.length).toBeGreaterThanOrEqual(5);
-    expect(RETRIEVAL_GOLDEN_SET.length).toBeLessThanOrEqual(10);
+    expect(RETRIEVAL_GOLDEN_SET.length).toBeLessThanOrEqual(20);
   });
 
   it("every id is unique", () => {
@@ -68,9 +68,9 @@ describe("INJECTION_FIXTURES", () => {
     expect(result.success).toBe(true);
   });
 
-  it("has between 3 and 5 entries", () => {
-    expect(INJECTION_FIXTURES.length).toBeGreaterThanOrEqual(3);
-    expect(INJECTION_FIXTURES.length).toBeLessThanOrEqual(5);
+  it("has between 20 and 30 entries", () => {
+    expect(INJECTION_FIXTURES.length).toBeGreaterThanOrEqual(20);
+    expect(INJECTION_FIXTURES.length).toBeLessThanOrEqual(30);
   });
 
   it("every name is unique", () => {
