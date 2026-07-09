@@ -137,16 +137,43 @@ class TestContainerResolution:
 
 
 class TestSearchKnowledgeExposureGate:
-    """T-37-09 permanent CI guard: search_knowledge ships DARK unless the flag is explicitly true.
+    """T-37-09 permanent CI guard: search_knowledge's exposure is settings-driven, never dead code.
 
     Synthesis P6 rule (37-CONTEXT.md "Exposure gating"): the executor + its
     full test suite exist regardless of the flag; only container.py's
     production tool_executors/server_tool_defs wiring reads it. Phase 38
-    flips the default after the adversarial fixture suite passes.
+    (Plan 38-02, QUAR-02) flipped the default to True after the full
+    deterministic adversarial-fixture suite passed in the same execution run
+    (SC5) -- the flag stays a REAL, working kill-switch/rollback lever
+    post-flip (see test_container_search_knowledge_can_still_be_disabled_via_flag).
     """
 
-    def test_container_search_knowledge_disabled_by_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_container_search_knowledge_enabled_by_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("SEARCH_KNOWLEDGE_TOOL_ENABLED", raising=False)
+        get_settings.cache_clear()
+        try:
+            with _patched_container():
+                container = create_container()
+                run_chat_turn = asyncio.run(container.get(RunChatTurn))
+
+            executors = run_chat_turn._tool_executors
+            assert "search_knowledge" in executors
+            assert isinstance(executors["search_knowledge"], SearchKnowledgeExecutor)
+            tool_def = run_chat_turn._server_tool_defs["search_knowledge"]
+            assert "mode" in tool_def["input_schema"]["properties"]
+            # Additive, not a regression: Phase 36's wiring must stay intact.
+            assert "lookup_entity" in executors
+            assert "search_emails" in executors
+            assert "lookup_entity" in run_chat_turn._server_tool_defs
+            assert "search_emails" in run_chat_turn._server_tool_defs
+        finally:
+            get_settings.cache_clear()
+
+    def test_container_search_knowledge_can_still_be_disabled_via_flag(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Post-flip regression: SEARCH_KNOWLEDGE_TOOL_ENABLED=false still structurally OMITS the
+        key -- the flag remains a real rollback lever, not dead code, after Phase 38's default flip.
+        """
+        monkeypatch.setenv("SEARCH_KNOWLEDGE_TOOL_ENABLED", "false")
         get_settings.cache_clear()
         try:
             with _patched_container():
@@ -158,8 +185,6 @@ class TestSearchKnowledgeExposureGate:
             # Additive, not a regression: Phase 36's wiring must stay intact.
             assert "lookup_entity" in run_chat_turn._tool_executors
             assert "search_emails" in run_chat_turn._tool_executors
-            assert "lookup_entity" in run_chat_turn._server_tool_defs
-            assert "search_emails" in run_chat_turn._server_tool_defs
         finally:
             get_settings.cache_clear()
 

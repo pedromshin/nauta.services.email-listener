@@ -45,6 +45,7 @@ from app.infrastructure.tools.search_emails_executor import (
     SearchEmailsExecutor,
     build_search_emails_tool,
 )
+from app.settings import get_settings
 
 _IMPORTER_ID = "importer-1"
 _CONVERSATION_ID = "conv-1"
@@ -303,20 +304,31 @@ async def test_build_tool_offer_advertises_real_lookup_entity_and_search_emails_
 
 
 @pytest.mark.unit
-def test_container_wires_both_real_tool_executors() -> None:
-    with (
-        patch("app.container.get_supabase_client", return_value=MagicMock()),
-        patch("app.container.get_anthropic_client", return_value=MagicMock()),
-        patch("app.container.boto3") as boto3_mock,
-    ):
-        boto3_mock.client.return_value = MagicMock()
-        container = create_container()
-        run_chat_turn = asyncio.run(container.get(RunChatTurn))
+def test_container_wires_both_real_tool_executors(monkeypatch: pytest.MonkeyPatch) -> None:
+    # This test is scoped to Phase 36's additive wiring proof (lookup_entity +
+    # search_emails), independent of Phase 37/38's separate search_knowledge
+    # exposure gate (tests/test_container.py's TestSearchKnowledgeExposureGate
+    # owns that assertion) -- explicitly force the flag off so this test's
+    # meaning stays stable regardless of SEARCH_KNOWLEDGE_TOOL_ENABLED's
+    # current default (Phase 38 flipped it to True).
+    monkeypatch.setenv("SEARCH_KNOWLEDGE_TOOL_ENABLED", "false")
+    get_settings.cache_clear()
+    try:
+        with (
+            patch("app.container.get_supabase_client", return_value=MagicMock()),
+            patch("app.container.get_anthropic_client", return_value=MagicMock()),
+            patch("app.container.boto3") as boto3_mock,
+        ):
+            boto3_mock.client.return_value = MagicMock()
+            container = create_container()
+            run_chat_turn = asyncio.run(container.get(RunChatTurn))
 
-    executors = run_chat_turn._tool_executors
-    assert set(executors.keys()) == {LOOKUP_ENTITY_TOOL_NAME, SEARCH_EMAILS_TOOL_NAME}
-    assert isinstance(executors[LOOKUP_ENTITY_TOOL_NAME], LookupEntityExecutor)
-    assert isinstance(executors[SEARCH_EMAILS_TOOL_NAME], SearchEmailsExecutor)
+        executors = run_chat_turn._tool_executors
+        assert set(executors.keys()) == {LOOKUP_ENTITY_TOOL_NAME, SEARCH_EMAILS_TOOL_NAME}
+        assert isinstance(executors[LOOKUP_ENTITY_TOOL_NAME], LookupEntityExecutor)
+        assert isinstance(executors[SEARCH_EMAILS_TOOL_NAME], SearchEmailsExecutor)
+    finally:
+        get_settings.cache_clear()
 
 
 # ---------------------------------------------------------------------------
