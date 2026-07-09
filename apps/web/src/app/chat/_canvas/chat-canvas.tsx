@@ -43,6 +43,7 @@ import {
   type Edge as FlowEdge,
   type EdgeChange,
   type Node as FlowNode,
+  type NodeChange,
   type ReactFlowInstance,
   type ReactFlowProps,
   type Viewport,
@@ -62,11 +63,18 @@ import type {
   ChatHistoryRow,
   ConversationController,
 } from "../_hooks/use-conversation-controller";
+import { AddKnowledgePreviewPopover } from "./add-knowledge-preview-popover";
 import { CanvasEmptyState } from "./canvas-empty-state";
 import {
   CanvasKeyboardHint,
   KEYBOARD_HINT_DISMISSED_KEY,
 } from "./canvas-keyboard-hint";
+import {
+  CANVAS_NODE_DIMENSIONS,
+  DEFAULT_CANVAS_NODE_DIMENSIONS,
+  offsetCascadePosition,
+  type CanvasRect,
+} from "./canvas-layout";
 import { CanvasSkeleton } from "./canvas-skeleton";
 import { CanvasSpecProvider, type CanvasSpecEntry } from "./canvas-spec-context";
 import {
@@ -411,6 +419,58 @@ export function ChatCanvas({
     [onEdgesChange, persistence, canvasStore],
   );
 
+  // PREV-01: node removal (the knowledge-preview node's own remove button,
+  // or React Flow's own Backspace-key deletion) now triggers the SAME
+  // debounced save handleEdgesChange already uses for edge add/remove —
+  // mirrors handleEdgesChange's exact shape. "add" is deliberately NOT
+  // checked here — handleAddKnowledgePreview below calls scheduleSave
+  // directly at the moment it appends the new node.
+  const handleNodesChange = useCallback(
+    (changes: NodeChange<FlowNode>[]) => {
+      onNodesChange(changes);
+      if (changes.some((change) => change.type === "remove")) {
+        persistence.scheduleSave(canvasStore);
+      }
+    },
+    [onNodesChange, persistence, canvasStore],
+  );
+
+  // PREV-01: AddKnowledgePreviewPopover's onAdd — materializes a new
+  // knowledge-preview node near the current viewport center, selected
+  // (discoverable chrome), cascading away from any overlapping existing
+  // node (mirrors D-03's offsetCascadePosition fallback).
+  const handleAddKnowledgePreview = useCallback(
+    (focusNodeId: string, label: string | undefined) => {
+      const center = rfInstanceRef.current?.screenToFlowPosition({
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2,
+      }) ?? { x: 0, y: 0 };
+      const existingRects: CanvasRect[] = nodes.map((node) => ({
+        x: node.position.x,
+        y: node.position.y,
+        ...(CANVAS_NODE_DIMENSIONS[node.type ?? ""] ?? DEFAULT_CANVAS_NODE_DIMENSIONS),
+      }));
+      const position = offsetCascadePosition(
+        { x: center.x, y: center.y, width: 320, height: 240 },
+        existingRects,
+      );
+      const newNode: FlowNode = {
+        id: `knowledge-preview:${crypto.randomUUID()}`,
+        type: "knowledge-preview",
+        position,
+        dragHandle: DRAG_HANDLE_SELECTOR,
+        selected: true,
+        data: { focusNodeId, ...(label ? { label } : {}) },
+      };
+      setNodes((prev) => [
+        ...prev.map((node) => (node.selected ? { ...node, selected: false } : node)),
+        newNode,
+      ]);
+      persistence.scheduleSave(canvasStore);
+    },
+    [nodes, setNodes, persistence, canvasStore],
+  );
+
   const handleMoveEnd = useCallback(
     (_event: MouseEvent | TouchEvent | null, nextViewport: Viewport) => {
       setViewportState(nextViewport);
@@ -623,7 +683,7 @@ export function ChatCanvas({
                     edges={edges}
                     nodeTypes={nodeTypes}
                     edgeTypes={edgeTypes}
-                    onNodesChange={onNodesChange}
+                    onNodesChange={handleNodesChange}
                     onEdgesChange={handleEdgesChange}
                     onNodeDragStop={handleNodeDragStop}
                     onConnect={handleConnect}
@@ -651,17 +711,20 @@ export function ChatCanvas({
                       />
                     )}
                     <Panel position="top-right">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-pressed={showMiniMap}
-                        aria-label="Toggle minimap"
-                        className="size-11 bg-background/70 backdrop-blur-md"
-                        onClick={handleToggleMiniMap}
-                      >
-                        <MapIcon className="size-4" aria-hidden />
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <AddKnowledgePreviewPopover onAdd={handleAddKnowledgePreview} />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          aria-pressed={showMiniMap}
+                          aria-label="Toggle minimap"
+                          className="size-11 bg-background/70 backdrop-blur-md"
+                          onClick={handleToggleMiniMap}
+                        >
+                          <MapIcon className="size-4" aria-hidden />
+                        </Button>
+                      </div>
                     </Panel>
                   </ReactFlowJSX>
                 )}
