@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Chat × Knowledge Convergence
 status: executing
-last_updated: "2026-07-09T12:36:53.474Z"
-last_activity: 2026-07-09 -- 41-01 executed (data layer foundation); Phase 41 plan 1/2 complete
+last_updated: "2026-07-09T16:14:06.554Z"
+last_activity: 2026-07-09 -- 41-02 executed (node shell + mini-graph + add-preview popover); Phase 41 COMPLETE; all v1.6 phases (33-41) now complete
 progress:
   total_phases: 9
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 20
-  completed_plans: 19
-  percent: 89
+  completed_plans: 20
+  percent: 100
 ---
 
 # State
@@ -20,16 +20,62 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** Phase 41 — knowledge-preview-canvas-node
+**Current focus:** v1.6 (Chat × Knowledge Convergence) — all 9 phases (33-41) now complete; milestone audit/ship pending
 
 ## Current Position
 
-Phase: 41 (knowledge-preview-canvas-node) — EXECUTING
-Plan: 2 of 2 (41-01 complete, 41-02 not yet started)
-Status: Executing Phase 41
-Last activity: 2026-07-09 -- 41-01 executed (data layer foundation); Phase 41 plan 1/2 complete
+Phase: 41 (knowledge-preview-canvas-node) — COMPLETE
+Plan: 2 of 2 (41-01 complete, 41-02 complete)
+Status: All Phase 41 plans executed; v1.6 milestone phases (33-41) all complete
+Last activity: 2026-07-09 -- 41-02 executed (node shell + mini-graph + add-preview popover); Phase 41 COMPLETE
 
-## Phase 41 — Knowledge-Preview Canvas Node (IN PROGRESS 2026-07-09)
+## Phase 41 — Knowledge-Preview Canvas Node (COMPLETE 2026-07-09)
+
+- **41-02 EXECUTED — PHASE 41 COMPLETE:** PREV-01 (the node's full visible surface, Wave 2 of 2 —
+  resumed after a prior executor run was interrupted mid-plan; Task 1's uncommitted output was
+  verified against the plan's behaviors/acceptance criteria and committed as-is, no rewrite needed).
+  New `knowledge-preview-mini-graph.tsx` — `KnowledgePreviewMiniGraph`, a purely presentational,
+  prop-driven renderer (zero tRPC calls of its own): one `<svg aria-hidden>` layer of tier-styled
+  `PreviewEdge` lines (via Plan 41-01's `trimPreviewGraph`/`orderTwoHopByParent`/`layoutPreview`,
+  tier encoding imported 1:1 from `tier-edge-style.ts`) stacked under one `role="group"` layer of
+  real `<Link href={hrefFor("knowledge", id)}>` node dots (distance-keyed sizing/color/icon/label,
+  every dot `Tooltip`-wrapped with a `min-h-6 min-w-6` hit-target), branching
+  loading/error/empty-not-found/empty-no-connections/success per 41-UI-SPEC.md section 4. New
+  `knowledge-preview-node.tsx` — `KnowledgePreviewNode`, the 3rd React Flow custom node: fixed
+  `h-[240px] w-[320px]` shell (not `min-h`/`min-w` — content is bounded by construction), header
+  (`Share2` + truncating `headerLabel` + the canvas's FIRST node-level remove button, wired to
+  `useReactFlow().deleteElements`), `KnowledgePreviewMiniGraph` body fed by
+  `api.knowledge.expandNode.useQuery({nodeId, depth: 2}, {staleTime: KNOWLEDGE_PREVIEW_STALE_TIME_MS
+  = 10_000})`, and an always-rendered footer deep-link. Exports `resolveHeaderLabel` (explicit label
+  -> resolved focus node's own title -> `"Knowledge preview"` fallback) and `resolveFooterCopy`
+  (`"Open in Knowledge →"` / `"+N more — Open in Knowledge →"`) as pure helpers matching
+  41-UI-SPEC.md verbatim. `node-types.ts` gained `"knowledge-preview": KnowledgePreviewNode` as its
+  3rd `nodeTypes` entry. New `add-knowledge-preview-popover.tsx` — `AddKnowledgePreviewPopover`, a
+  controlled-open toolbar `Popover` (paste-a-UUID form, `z.string().uuid().safeParse` gates `onAdd`
+  per T-41-07, inline error keeps the popover open on an invalid id, "Cancel" never calls `onAdd`).
+  `chat-canvas.tsx` gained `handleNodesChange` (mirrors `handleEdgesChange`'s exact shape — the
+  pre-existing gap this plan closes: node removal, via this plan's remove button OR React Flow's
+  native Backspace-key deletion, now actually triggers `persistence.scheduleSave`) and
+  `handleAddKnowledgePreview` (viewport-center placement via `screenToFlowPosition` +
+  `offsetCascadePosition`, deselects existing nodes, appends the new selected node, schedules a
+  save); `AddKnowledgePreviewPopover` mounted first inside the existing top-right toolbar `Panel`.
+  23/23 new targeted tests pass (9 mini-graph + 8 node + 6 popover) + 128/128 full
+  `chat/_canvas`-directory sweep (0 regressions), `tsc --noEmit` clean, zero new npm dependencies,
+  the 3 locked genui renderer files confirmed byte-identical (`git diff --stat` empty), zero nested
+  `<ReactFlow>`/`ReactFlowProvider` mounts (grep-verified in both new UI files). **Deviations (3, all
+  non-architectural, all test-harness/mock-shape only — zero production-code architectural
+  changes):** wrapped `KnowledgePreviewNode` test mounts in a real `ReactFlowProvider` (the real,
+  unmocked `Handle` component needs the zustand store context it provides); added an explicit
+  `import * as React from "react"` to `knowledge-preview-node.tsx` (mirrors Phase 39's
+  `provenance-link.tsx` precedent — this repo's vitest config uses esbuild's classic JSX transform
+  under test, not `@vitejs/plugin-react`); the popover's test queries `document.body` (not the
+  mounted container) for form-field assertions since `packages/ui`'s `PopoverContent` renders
+  through a Radix `Portal`, with `root.unmount()` added to `afterEach` to prevent cross-test DOM
+  pollution. See 41-02-SUMMARY.md. **All Phase 41 requirements (PREV-01) now complete — Phase 41
+  (Knowledge-Preview Canvas Node) is DONE. All 9 v1.6 phases (33-41) are now complete. Next:**
+  milestone audit / ship v1.6 (not yet run this session — out of this executor's scope).
+
+## Phase 41 — Knowledge-Preview Canvas Node — Wave 1 History
 
 - **41-01 EXECUTED:** Data-layer foundation (interface-first, Wave 1 of 2). `node-data-schemas.ts`
   gained `KnowledgePreviewNodeDataSchema` (`focusNodeId: z.string().uuid()` + optional `label`
@@ -1954,6 +2000,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 39 P01 | 25m | 1 tasks | 3 files |
 | Phase 39 P02 | 50min | 3 tasks | 8 files |
 | Phase 41 P01 | 35min | 2 tasks | 6 files |
+| Phase 41 P41-02 | 50min | 3 tasks | 8 files |
 
 ## Operator Next Steps
 

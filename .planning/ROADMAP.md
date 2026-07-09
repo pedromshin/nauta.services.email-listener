@@ -131,7 +131,7 @@ G3 + Phase 39's `<ProvenanceLink>`) — plan and execute last.
 - [x] **Phase 38: Quarantine + Adversarial Eval** - Every wired `ToolExecutor` structurally enforces tier-filtered envelopes, proven against an adversarial fixture suite + live-model harness; `search_knowledge` becomes safely user-facing (completed 2026-07-09)
 - [x] **Phase 39: Tool-Round UI + Citation Chips** - `/chat` visibly surfaces in-progress tool rounds and renders citation chips through one shared `<ProvenanceLink>` primitive (completed 2026-07-09)
 - [x] **Phase 40: Confirm-Action Widgets** - Agent can end a turn with a confirm-action widget letting a human promote/reject a knowledge suggestion, over the existing Phase-24 CAS spine, with an edge-tier staleness re-check (completed 2026-07-09)
-- [ ] **Phase 41: Knowledge-Preview Canvas Node** - User can place a bounded, non-interactive knowledge-graph preview on the `/chat` canvas that deep-links out to `/knowledge`
+- [x] **Phase 41: Knowledge-Preview Canvas Node** - User can place a bounded, non-interactive knowledge-graph preview on the `/chat` canvas that deep-links out to `/knowledge` (completed 2026-07-09)
 
 ## Phase Details
 
@@ -346,7 +346,7 @@ satisfied — needs the ≤2-hop expand endpoint). Most-gated phase; plan and ex
 **Plans**: 2 plans (coarse; Wave 1 = 41-01, Wave 2 = 41-02)
 Plans:
 - [x] 41-01-PLAN.md — KnowledgePreviewNodeDataSchema + 3rd NODE_TYPE_REGISTRY entry + pure knowledge-preview-layout.ts (hop distance/cap-trim/two-ring layout)
-- [ ] 41-02-PLAN.md — KnowledgePreviewMiniGraph + KnowledgePreviewNode + AddKnowledgePreviewPopover + chat-canvas.tsx wiring
+- [x] 41-02-PLAN.md — KnowledgePreviewMiniGraph + KnowledgePreviewNode + AddKnowledgePreviewPopover + chat-canvas.tsx wiring
 **UI hint**: yes
 
 ## Progress
@@ -369,7 +369,7 @@ execute last.
 | 38. Quarantine + Adversarial Eval | 2/2 | Complete   | 2026-07-09 |
 | 39. Tool-Round UI + Citation Chips | 2/2 | Complete    | 2026-07-09 |
 | 40. Confirm-Action Widgets | 2/2 | Complete   | 2026-07-09 |
-| 41. Knowledge-Preview Canvas Node | 1/2 | In Progress|  |
+| 41. Knowledge-Preview Canvas Node | 2/2 | Complete   | 2026-07-09 |
 
 ## Next
 

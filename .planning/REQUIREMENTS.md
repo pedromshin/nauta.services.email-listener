@@ -87,7 +87,7 @@ schema-revalidation + staleness spine already exists; the LLM never supplies tie
 Nested React Flow is REJECTED (duplicate providers, competing wheel/drag capture, persistence
 blindness — a confirmed hazard). A bounded preview that deep-links out.
 
-- [ ] **PREV-01**: User can place a `knowledge-preview` node on the `/chat` canvas (3rd `NODE_TYPE_REGISTRY` entry) rendering a bounded, non-interactive subgraph from the v1.5 ≤2-hop endpoint, deep-linking to `/knowledge?focus={id}` on click
+- [x] **PREV-01**: User can place a `knowledge-preview` node on the `/chat` canvas (3rd `NODE_TYPE_REGISTRY` entry) rendering a bounded, non-interactive subgraph from the v1.5 ≤2-hop endpoint, deep-linking to `/knowledge?focus={id}` on click
 
 ## Future Requirements
 
@@ -166,7 +166,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TUI-02 | Phase 39 | Complete |
 | CONF-01 | Phase 40 | Complete |
 | CONF-02 | Phase 40 | Complete |
-| PREV-01 | Phase 41 | Pending |
+| PREV-01 | Phase 41 | Complete |
 
 **Coverage:**
 - v1.6 requirements: 19 total
