@@ -278,7 +278,7 @@ already proven locally. Research: `.planning/research/` (SUMMARY.md + 6 deep doc
 - [ ] Knowledge tool surface: `lookup_entity`, `search_emails`, `search_knowledge` + Python `KnowledgeGraphRepository` + `extracted_only` DB view (TOOL-01..04)
 - [ ] Structural prompt-injection quarantine as ToolExecutor contract + adversarial harness (QUAR-01/02)
 - [ ] Retrieval-quality / citation-faithfulness / injection-resistance eval dimensions in the Phase-16 harness (EVAL-06/07)
-- [ ] Tool-round UI surface + citation chips via shared `<ProvenanceLink>` (TUI-01/02)
+- [x] Tool-round UI surface + citation chips via shared `<ProvenanceLink>` (TUI-01/02) — Validated in Phase 39 (2026-07-09)
 - [ ] Confirm-action widgets over the Phase-24 CAS spine + edge-tier staleness re-check (CONF-01/02)
 - [ ] Knowledge-preview canvas node, bounded + non-interactive, deep-linking `/knowledge?focus={id}` (PREV-01)
 
@@ -350,4 +350,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-08 after opening milestone v1.6 Chat × Knowledge Convergence (autonomous; goals from the locked `.planning/research/v1.6-chat-knowledge/SYNTHESIS.md`; kickoff verifications: migrations 0029+, no `extracted_only` view → build in-milestone)*
+*Last updated: 2026-07-09 after Phase 39 (Tool-Round UI + Citation Chips) completion — TUI-01/TUI-02 validated: non-persisted `server_tool_call`/`server_tool_result` SSE mirror frames, `ToolRoundActivityRow`/`ToolInvocationResultRow` transcript surfaces, shared `<ProvenanceLink>` citation-chip primitive (exported for Phase 41), and the live `applyRunEvent` naming-collision bug fixed + regression-guarded. Remaining v1.6 phases: 40 (Confirm-Action Widgets), 41 (Knowledge-Preview Canvas Node).*
