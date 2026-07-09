@@ -39,7 +39,7 @@ let queryResult: FakeExpandNodeResult = {
   refetch: vi.fn(),
 };
 
-const useQueryMock = vi.fn(() => queryResult);
+const useQueryMock = vi.fn((..._args: unknown[]) => queryResult);
 
 vi.mock("~/trpc/react", () => ({
   api: {
