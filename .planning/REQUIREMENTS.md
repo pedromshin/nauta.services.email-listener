@@ -71,8 +71,8 @@ The `tool_call`/`tool_result` run-event types exist in the DB CHECK constraint b
 emitted as UI deltas — the chat surface for tool rounds is undecided territory this milestone
 decides.
 
-- [ ] **TUI-01**: `/chat` visibly surfaces in-progress tool rounds ("searching knowledge…") via emitted tool-round UI deltas while a round runs
-- [ ] **TUI-02**: Tool results render citation chips through ONE shared `<ProvenanceLink kind id />` primitive deep-linking `/emails/[id]`, `/entities/[id]`, `/knowledge?focus={id}` — the same primitive the knowledge-preview node consumes (decided once, used twice)
+- [x] **TUI-01**: `/chat` visibly surfaces in-progress tool rounds ("searching knowledge…") via emitted tool-round UI deltas while a round runs
+- [x] **TUI-02**: Tool results render citation chips through ONE shared `<ProvenanceLink kind id />` primitive deep-linking `/emails/[id]`, `/entities/[id]`, `/knowledge?focus={id}` — the same primitive the knowledge-preview node consumes (decided once, used twice)
 
 ### Confirm-Action Widgets (CONF)
 
@@ -162,8 +162,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | QUAR-02 | Phase 38 | Complete |
 | EVAL-06 | Phase 35 | Complete |
 | EVAL-07 | Phase 35 | Complete |
-| TUI-01 | Phase 39 | Pending |
-| TUI-02 | Phase 39 | Pending |
+| TUI-01 | Phase 39 | Complete |
+| TUI-02 | Phase 39 | Complete |
 | CONF-01 | Phase 40 | Complete |
 | CONF-02 | Phase 40 | Complete |
 | PREV-01 | Phase 41 | Pending |

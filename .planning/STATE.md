@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Chat × Knowledge Convergence
 status: executing
-last_updated: "2026-07-09T07:11:04.132Z"
-last_activity: 2026-07-09 -- Phase 39 execution started
+last_updated: "2026-07-09T08:00:40.639Z"
+last_activity: 2026-07-09 -- 39-02 executed (web); Phase 39 (TUI-01, TUI-02) COMPLETE
 progress:
   total_phases: 9
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 18
-  completed_plans: 17
-  percent: 78
+  completed_plans: 18
+  percent: 89
 ---
 
 # State
@@ -20,16 +20,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** Phase 39 — tool-round-ui-citation-chips
+**Current focus:** Phase 39 — tool-round-ui-citation-chips (COMPLETE) — next: Phase 41 (Knowledge-Preview Canvas Node)
 
 ## Current Position
 
-Phase: 39 (tool-round-ui-citation-chips) — EXECUTING
-Plan: 2 of 2
-Status: Executing Phase 39
-Last activity: 2026-07-09 -- 39-01 executed (Python SSE mirror frames); 39-02 (web) next
+Phase: 39 (tool-round-ui-citation-chips) — COMPLETE
+Plan: 2 of 2 (both executed)
+Status: Phase complete — ready for verification
+Last activity: 2026-07-09 -- 39-02 executed (web: use-chat-stream contracts + collision fix + ProvenanceLink + tool-round rows) — Phase 39 (TUI-01, TUI-02) COMPLETE
 
-## Phase 39 — Tool-Round UI + Citation Chips (executing 2026-07-09)
+## Phase 39 — Tool-Round UI + Citation Chips (COMPLETE 2026-07-09)
 
 - **39-01 EXECUTED:** TUI-01 (Python half). `ChatRunEventType` widened additively with
   `server_tool_call`/`server_tool_result` (transport-only, never persisted, no migration —
@@ -49,6 +49,39 @@ Last activity: 2026-07-09 -- 39-01 executed (Python SSE mirror frames); 39-02 (w
   check`, the real lint gate, passes clean). See 39-01-SUMMARY.md. **Next: 39-02** (web/TypeScript
   side — `useChatStream`/`message-turn.tsx`/`<ProvenanceLink>`, consumes these 2 frame types
   verbatim per 39-UI-SPEC.md's SSE/Part Contract table).
+
+- **39-02 EXECUTED — PHASE 39 COMPLETE:** TUI-01 + TUI-02 (web half). `MessagePart` gained
+  `tool_invocation_streaming`/`tool_invocation`/`tool_invocation_result` (field-for-field matching
+  `build_tool_invocation_part`/`build_tool_invocation_result_part`'s persisted shape);
+  `ChatRunEventType`/`CHAT_RUN_EVENT_TYPES` gained `server_tool_call`/`server_tool_result`. **Fixed
+  a real, already-live naming collision:** `applyRunEvent`'s `tool_call` branch (built for the
+  emit_ui_spec/interactive-widget streaming case, keyed on `partial_json`) was silently mis-folding
+  a real server-tool round's PERSISTED `tool_call` event (`arguments`, never `partial_json`) into a
+  permanently-stuck, empty `interactive_widget_streaming` skeleton — a structural
+  `typeof event.data.partial_json !== "string"` guard as the branch's first statement now no-ops
+  instead, proven by a dedicated regression test (`"a PERSISTED-shaped tool_call event (no
+  partial_json, carries arguments) leaves parts completely UNCHANGED — the naming-collision fix"`)
+  plus all 15 pre-existing `applyRunEvent` tests passing unchanged. New standalone
+  `apps/web/src/components/provenance-link.tsx`: `ProvenanceLink`/`hrefFor`/`fallbackLabel` (named
+  exports only) — `hrefFor` recomputes `/emails|entities/{id}` or `/knowledge?focus={id}` from a
+  fixed internal kind+id switch, NEVER trusting a citation's own `route` string (T-39-05). New
+  `ToolRoundActivityRow` (bare status line, `Loader2` + per-tool gerund label, deliberately NOT
+  `GeneratingRing`-wrapped) + `ToolInvocationResultRow` (collapsed result summary + deduped/capped
+  `ProvenanceLink` chips, fixed per-tool error copy — raw `content` never rendered verbatim, JSON.parse
+  failure degrades gracefully). `message-turn.tsx`'s part switch wired with 3 new branches; the 3
+  locked renderer files (`spec-renderer.tsx`/`render-node.tsx`/`genui-part-boundary.tsx`) confirmed
+  byte-identical (`git diff --stat` empty). 37/37 targeted tests + 181/181 full chat-surface sweep
+  (0 regressions), `tsc --noEmit -p apps/web` clean, zero new npm dependencies, zero brand-accent
+  usage. **Deviations:** none (plan executed exactly as written) beyond one non-architectural
+  addition — `provenance-link.tsx` needed an explicit `import * as React from "react"` (unlike its
+  precedent `entity-chips.tsx`) because this repo's vitest config lacks `@vitejs/plugin-react` and
+  relies on esbuild's classic JSX transform under test. **Visual check: `human_needed`** — no
+  `playwright-core` installation found in this repo's dependency tree, and standing up the full
+  local chat stack (FastAPI backend + Bedrock-credentialed live tool round) is not cheap in this
+  execution session; cross-checked structurally against 39-UI-SPEC.md instead (per the v1.4/v1.5
+  precedent). See 39-02-SUMMARY.md. **All Phase 39 requirements (TUI-01, TUI-02) now complete —
+  Phase 39 (Tool-Round UI + Citation Chips) is DONE. Next: Phase 41** (Knowledge-Preview Canvas
+  Node — UI design contract already exists at `41-UI-SPEC.md`, not yet planned).
 
 ## Phase 38 — Quarantine + Adversarial Eval (COMPLETE 2026-07-09)
 
@@ -1000,7 +1033,7 @@ User direction after v1.1: keep LOCAL + `/studio` sandbox (no deploy/convergence
 
 - **Resume file:** 
 
-39-02-PLAN.md
+None
   col); resolution = **suggest-only, never auto** → **parallel BlendedRAG (dense HNSW + lexical
   pg_trgm exact/fuzzy) fused by RRF(k=60)**, on-confirm + re-runnable backfill, confirm writes back
   aliases (flywheel), reranker deferred, degrades to lexical-only without Bedrock. Gallery = table
@@ -1888,6 +1921,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 38 P01 | ~30min | 3 tasks | 4 files |
 | Phase 38 P02 | ~55min | 3 tasks | 12 files |
 | Phase 39 P01 | 25m | 1 tasks | 3 files |
+| Phase 39 P02 | 50min | 3 tasks | 8 files |
 
 ## Operator Next Steps
 

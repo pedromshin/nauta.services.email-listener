@@ -129,7 +129,7 @@ G3 + Phase 39's `<ProvenanceLink>`) — plan and execute last.
 - [x] **Phase 36: Thin-Wrapper Tools** - User can ask about a known entity or find related emails from chat via `lookup_entity`/`search_emails`, thin wrappers over existing repos with zero new backend (completed 2026-07-08)
 - [x] **Phase 37: Knowledge Search + Python Read-Side** - User can search or expand the knowledge graph from chat via `search_knowledge`, backed by a NEW Python `KnowledgeGraphRepository` + a DB-level `extracted_only` view — built but not yet exposed to users (completed 2026-07-09)
 - [x] **Phase 38: Quarantine + Adversarial Eval** - Every wired `ToolExecutor` structurally enforces tier-filtered envelopes, proven against an adversarial fixture suite + live-model harness; `search_knowledge` becomes safely user-facing (completed 2026-07-09)
-- [ ] **Phase 39: Tool-Round UI + Citation Chips** - `/chat` visibly surfaces in-progress tool rounds and renders citation chips through one shared `<ProvenanceLink>` primitive
+- [x] **Phase 39: Tool-Round UI + Citation Chips** - `/chat` visibly surfaces in-progress tool rounds and renders citation chips through one shared `<ProvenanceLink>` primitive (completed 2026-07-09)
 - [x] **Phase 40: Confirm-Action Widgets** - Agent can end a turn with a confirm-action widget letting a human promote/reject a knowledge suggestion, over the existing Phase-24 CAS spine, with an edge-tier staleness re-check (completed 2026-07-09)
 - [ ] **Phase 41: Knowledge-Preview Canvas Node** - User can place a bounded, non-interactive knowledge-graph preview on the `/chat` canvas that deep-links out to `/knowledge`
 
@@ -300,7 +300,7 @@ the primitive Phase 41's preview node will also consume.
 **Plans**: 2 plans (coarse; both Wave 1, no file overlap — Python SSE emission / web rendering)
 Plans:
 - [x] 39-01-PLAN.md — non-persisted server_tool_call/server_tool_result SSE mirror frames + naming-collision context
-- [ ] 39-02-PLAN.md — use-chat-stream.ts extension (collision fix) + ProvenanceLink + ToolRoundActivityRow/ToolInvocationResultRow wired into message-turn.tsx
+- [x] 39-02-PLAN.md — use-chat-stream.ts extension (collision fix) + ProvenanceLink + ToolRoundActivityRow/ToolInvocationResultRow wired into message-turn.tsx
 **UI hint**: yes
 
 ### Phase 40: Confirm-Action Widgets
@@ -364,7 +364,7 @@ execute last.
 | 36. Thin-Wrapper Tools | 2/2 | Complete   | 2026-07-08 |
 | 37. Knowledge Search + Python Read-Side | 2/2 | Complete   | 2026-07-09 |
 | 38. Quarantine + Adversarial Eval | 2/2 | Complete   | 2026-07-09 |
-| 39. Tool-Round UI + Citation Chips | 1/2 | In Progress|  |
+| 39. Tool-Round UI + Citation Chips | 2/2 | Complete   | 2026-07-09 |
 | 40. Confirm-Action Widgets | 2/2 | Complete   | 2026-07-09 |
 | 41. Knowledge-Preview Canvas Node | 0/? | Not started | - |
 
