@@ -8,11 +8,46 @@ wrapped in strip_nul, table().upsert/insert/update().execute() call shapes.
 
 from __future__ import annotations
 
+import logging
 from typing import Any, cast
 
 from supabase import Client
 
+from app.domain.ports.knowledge_graph_repository import DEFAULT_SEARCH_LIMIT
 from app.infrastructure.supabase.sanitize import strip_nul
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# RRF helpers (pure functions -- testable in isolation). Copied verbatim from
+# entity_resolution_repository.py's pattern rather than imported cross-module
+# (this codebase's established convention: each Supabase repo file is
+# self-contained).
+# ---------------------------------------------------------------------------
+
+_K_DEFAULT = 60
+
+_VECTOR_RPC = "match_knowledge_nodes_by_embedding"
+_TRGM_RPC = "match_knowledge_nodes_by_trgm"
+_SEARCH_CANDIDATE_LIMIT = 20
+
+
+def _rrf_score(rank: int, k: int = _K_DEFAULT) -> float:
+    """Reciprocal rank fusion score: 1 / (k + rank). rank is 0-based (rank=0 is the top result)."""
+    return 1.0 / (k + rank)
+
+
+def _merge_rrf(ranked_lists: list[list[str]]) -> list[str]:
+    """Merge multiple ranked lists of ids using RRF.
+
+    Returns a deduplicated list of ids sorted by descending summed RRF scores.
+    Handles empty lists safely.
+    """
+    scores: dict[str, float] = {}
+    for ranked in ranked_lists:
+        for rank, item_id in enumerate(ranked):
+            scores[item_id] = scores.get(item_id, 0.0) + _rrf_score(rank)
+    return sorted(scores, key=lambda eid: scores[eid], reverse=True)
 
 
 def _node_to_row(
@@ -258,3 +293,79 @@ class SupabaseKnowledgeGraphRepository:
             .execute()
         )
         return bool(result.data)
+
+    async def search_nodes(
+        self,
+        *,
+        query_text: str,
+        query_embedding: list[float] | None,
+        importer_id: str,
+        limit: int = DEFAULT_SEARCH_LIMIT,
+    ) -> list[dict[str, object]]:
+        """BlendedRAG search over knowledge_nodes_extracted_only (migration 0029).
+
+        Mirrors SupabaseEntityResolutionRepository.find_candidates's structure:
+        vector arm skipped when query_embedding is None (D-12), lexical arm
+        always runs, both degrade to [] independently on an RPC failure
+        (never raises), fused via RRF(k=60), deduped by id, capped at limit.
+        No additional filtering here -- the RPCs already enforce
+        EXTRACTED-only via migration 0029's belt 3.
+        """
+        vector_rows: list[dict[str, Any]] = []
+        if query_embedding is not None:
+            vector_rows = await self._vector_search_query(embedding=list(query_embedding), importer_id=importer_id)
+
+        trgm_rows = await self._trgm_search_query(query_text=query_text, importer_id=importer_id)
+
+        if not vector_rows and not trgm_rows:
+            return []
+
+        vector_ids = [str(row["id"]) for row in vector_rows]
+        trgm_ids = [str(row["id"]) for row in trgm_rows]
+        merged_ids = _merge_rrf([vector_ids, trgm_ids])[:limit]
+
+        row_map: dict[str, dict[str, Any]] = {}
+        for row in trgm_rows:
+            row_map.setdefault(str(row["id"]), row)
+        for row in vector_rows:
+            row_map.setdefault(str(row["id"]), row)
+
+        return [cast("dict[str, object]", dict(row_map[node_id])) for node_id in merged_ids if node_id in row_map]
+
+    async def _vector_search_query(self, *, embedding: list[float], importer_id: str) -> list[dict[str, Any]]:
+        """Dense cosine similarity query over knowledge_nodes.embedding (HNSW)."""
+        try:
+            result = self._client.rpc(
+                _VECTOR_RPC,
+                {
+                    "query_embedding": embedding,
+                    "match_importer_id": importer_id,
+                    "match_count": _SEARCH_CANDIDATE_LIMIT,
+                },
+            ).execute()
+            return cast("list[dict[str, Any]]", result.data or [])
+        except Exception:
+            logger.exception(
+                "SupabaseKnowledgeGraphRepository: vector search query failed -- returning empty",
+                extra={"importer_id": importer_id},
+            )
+            return []
+
+    async def _trgm_search_query(self, *, query_text: str, importer_id: str) -> list[dict[str, Any]]:
+        """pg_trgm similarity query over knowledge_nodes title/content."""
+        try:
+            result = self._client.rpc(
+                _TRGM_RPC,
+                {
+                    "query_text": query_text,
+                    "match_importer_id": importer_id,
+                    "match_count": _SEARCH_CANDIDATE_LIMIT,
+                },
+            ).execute()
+            return cast("list[dict[str, Any]]", result.data or [])
+        except Exception:
+            logger.exception(
+                "SupabaseKnowledgeGraphRepository: trigram search query failed -- returning empty",
+                extra={"importer_id": importer_id},
+            )
+            return []
