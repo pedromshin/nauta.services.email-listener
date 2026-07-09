@@ -17,11 +17,13 @@ import type { NodeTypes } from "@xyflow/react";
 import { resolveNodeType } from "./node-type-registry";
 import { ChatNode } from "./chat-node";
 import { GenuiPanelNode } from "./genui-panel-node";
+import { KnowledgePreviewNode } from "./knowledge-preview-node";
 import { UnknownNodeTypePlaceholder } from "./unknown-node-type-placeholder";
 
 export const nodeTypes: NodeTypes = {
   chat: ChatNode,
   "genui-panel": GenuiPanelNode,
+  "knowledge-preview": KnowledgePreviewNode,
   // Plan 23-04 (restore + degrade, T-23-09/CANVAS-03): a node reconciled from
   // a persisted layout whose type this session's registry doesn't recognize
   // is rewritten to this fixed key (original type preserved in
