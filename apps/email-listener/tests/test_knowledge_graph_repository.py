@@ -7,6 +7,7 @@ Async methods are tested via asyncio.run() since pytest-asyncio is not available
 from __future__ import annotations
 
 import asyncio
+from typing import Any
 from unittest.mock import MagicMock
 
 from app.infrastructure.supabase.knowledge_graph_repository import SupabaseKnowledgeGraphRepository
@@ -34,6 +35,27 @@ def _make_client_mock(return_data: list[dict] | None = None) -> MagicMock:
     client = MagicMock()
     chain = _make_chain_mock(return_data)
     client.table.return_value = chain
+    return client
+
+
+def _make_rpc_client_mock(rpc_side_effect: Any) -> MagicMock:
+    """Build a mock supabase Client where .rpc(name, params).execute() returns per-call data.
+
+    `rpc_side_effect(name, params)` returns a list of row dicts, or raises to
+    simulate an RPC failure (search_nodes must catch this and degrade, never
+    propagate).
+    """
+    client = MagicMock()
+
+    def _rpc(name: str, params: dict[str, Any]) -> MagicMock:
+        rows = rpc_side_effect(name, params)  # may raise -- intentional, tests degradation
+        chain = MagicMock()
+        result = MagicMock()
+        result.data = rows
+        chain.execute.return_value = result
+        return chain
+
+    client.rpc.side_effect = _rpc
     return client
 
 
@@ -334,3 +356,170 @@ def test_promote_edge_returns_false_when_cas_matches_no_row() -> None:
     )
 
     assert updated is False
+
+
+# ---------------------------------------------------------------------------
+# search_nodes (Phase 37-01, Task 2) -- BlendedRAG over the extracted_only view
+# ---------------------------------------------------------------------------
+
+_VECTOR_RPC = "match_knowledge_nodes_by_embedding"
+_TRGM_RPC = "match_knowledge_nodes_by_trgm"
+
+
+def _node_row(node_id: str, *, extra: dict[str, Any] | None = None) -> dict[str, Any]:
+    return {
+        "id": node_id,
+        "title": f"Title {node_id}",
+        "content": f"Content {node_id}",
+        "scope": "importer_global",
+        "scope_ref_id": None,
+        "tier": "EXTRACTED",
+        "confidence": 1.0,
+        **(extra or {}),
+    }
+
+
+def test_search_nodes_merges_vector_and_trgm_via_rrf_deduped_and_capped() -> None:
+    vector_rows = [_node_row("node-1", extra={"distance": 0.1}), _node_row("node-2", extra={"distance": 0.2})]
+    trgm_rows = [_node_row("node-2", extra={"sim": 0.9}), _node_row("node-3", extra={"sim": 0.5})]
+
+    def _rpc_side_effect(name: str, params: dict[str, Any]) -> list[dict[str, Any]]:
+        if name == _VECTOR_RPC:
+            assert params["query_embedding"] == [0.1, 0.2]
+            assert params["match_importer_id"] == "imp-abc"
+            return vector_rows
+        if name == _TRGM_RPC:
+            assert params["query_text"] == "acme"
+            assert params["match_importer_id"] == "imp-abc"
+            return trgm_rows
+        raise AssertionError(f"unexpected rpc name: {name}")
+
+    client = _make_rpc_client_mock(_rpc_side_effect)
+    repo = SupabaseKnowledgeGraphRepository(client)
+
+    result = asyncio.run(
+        repo.search_nodes(query_text="acme", query_embedding=[0.1, 0.2], importer_id="imp-abc", limit=8)
+    )
+
+    ids = [row["id"] for row in result]
+    assert set(ids) == {"node-1", "node-2", "node-3"}
+    assert len(ids) == len(set(ids)), "results must be deduped by id"
+
+    rpc_names = [call.args[0] for call in client.rpc.call_args_list]
+    assert _VECTOR_RPC in rpc_names
+    assert _TRGM_RPC in rpc_names
+
+
+def test_search_nodes_skips_vector_arm_when_embedding_none() -> None:
+    trgm_rows = [_node_row("node-1", extra={"sim": 0.9})]
+
+    def _rpc_side_effect(name: str, params: dict[str, Any]) -> list[dict[str, Any]]:
+        if name == _TRGM_RPC:
+            return trgm_rows
+        raise AssertionError(f"vector RPC must never be called when embedding is None, got: {name}")
+
+    client = _make_rpc_client_mock(_rpc_side_effect)
+    repo = SupabaseKnowledgeGraphRepository(client)
+
+    result = asyncio.run(repo.search_nodes(query_text="acme", query_embedding=None, importer_id="imp-abc"))
+
+    rpc_names = [call.args[0] for call in client.rpc.call_args_list]
+    assert _VECTOR_RPC not in rpc_names
+    assert [row["id"] for row in result] == ["node-1"]
+
+
+def test_search_nodes_vector_failure_degrades_to_trgm_only() -> None:
+    trgm_rows = [_node_row("node-1", extra={"sim": 0.9})]
+
+    def _rpc_side_effect(name: str, params: dict[str, Any]) -> list[dict[str, Any]]:
+        if name == _VECTOR_RPC:
+            raise RuntimeError("vector RPC boom")
+        if name == _TRGM_RPC:
+            return trgm_rows
+        raise AssertionError(f"unexpected rpc name: {name}")
+
+    client = _make_rpc_client_mock(_rpc_side_effect)
+    repo = SupabaseKnowledgeGraphRepository(client)
+
+    result = asyncio.run(
+        repo.search_nodes(query_text="acme", query_embedding=[0.1], importer_id="imp-abc")
+    )
+
+    assert [row["id"] for row in result] == ["node-1"]
+
+
+def test_search_nodes_trgm_failure_degrades_to_vector_only() -> None:
+    vector_rows = [_node_row("node-1", extra={"distance": 0.1})]
+
+    def _rpc_side_effect(name: str, params: dict[str, Any]) -> list[dict[str, Any]]:
+        if name == _VECTOR_RPC:
+            return vector_rows
+        if name == _TRGM_RPC:
+            raise RuntimeError("trgm RPC boom")
+        raise AssertionError(f"unexpected rpc name: {name}")
+
+    client = _make_rpc_client_mock(_rpc_side_effect)
+    repo = SupabaseKnowledgeGraphRepository(client)
+
+    result = asyncio.run(
+        repo.search_nodes(query_text="acme", query_embedding=[0.1], importer_id="imp-abc")
+    )
+
+    assert [row["id"] for row in result] == ["node-1"]
+
+
+def test_search_nodes_both_arms_empty_returns_empty_list() -> None:
+    def _rpc_side_effect(name: str, params: dict[str, Any]) -> list[dict[str, Any]]:
+        return []
+
+    client = _make_rpc_client_mock(_rpc_side_effect)
+    repo = SupabaseKnowledgeGraphRepository(client)
+
+    result = asyncio.run(
+        repo.search_nodes(query_text="acme", query_embedding=[0.1], importer_id="imp-abc")
+    )
+
+    assert result == []
+
+
+def test_search_nodes_scopes_every_rpc_call_to_importer_id() -> None:
+    def _rpc_side_effect(name: str, params: dict[str, Any]) -> list[dict[str, Any]]:
+        return []
+
+    client = _make_rpc_client_mock(_rpc_side_effect)
+    repo = SupabaseKnowledgeGraphRepository(client)
+
+    asyncio.run(repo.search_nodes(query_text="acme", query_embedding=[0.1], importer_id="imp-xyz"))
+
+    assert client.rpc.call_args_list, "expected at least one .rpc() call"
+    for call in client.rpc.call_args_list:
+        params = call.args[1]
+        assert params["match_importer_id"] == "imp-xyz"
+
+
+def test_search_nodes_respects_limit_keeping_highest_rrf_scored_rows() -> None:
+    vector_rows = [_node_row(f"v-{i}", extra={"distance": float(i)}) for i in range(10)]
+    trgm_rows = [_node_row(f"t-{i}", extra={"sim": 1.0 - float(i) / 10}) for i in range(10)]
+
+    def _rpc_side_effect(name: str, params: dict[str, Any]) -> list[dict[str, Any]]:
+        if name == _VECTOR_RPC:
+            return vector_rows
+        if name == _TRGM_RPC:
+            return trgm_rows
+        raise AssertionError(f"unexpected rpc name: {name}")
+
+    client = _make_rpc_client_mock(_rpc_side_effect)
+    repo = SupabaseKnowledgeGraphRepository(client)
+
+    result = asyncio.run(
+        repo.search_nodes(query_text="acme", query_embedding=[0.1], importer_id="imp-abc", limit=5)
+    )
+
+    assert len(result) == 5
+    ids = {row["id"] for row in result}
+    # The lowest-ranked (highest-index, lowest-RRF-score) candidates from each
+    # arm must be excluded -- only the top-ranked rows survive the cap.
+    assert "v-9" not in ids
+    assert "t-9" not in ids
+    assert "v-0" in ids
+    assert "t-0" in ids

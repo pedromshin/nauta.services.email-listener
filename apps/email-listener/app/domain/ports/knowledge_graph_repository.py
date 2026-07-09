@@ -10,6 +10,9 @@ from __future__ import annotations
 
 from typing import Protocol
 
+# Fork 5's top-8 default result count for search_nodes (Phase 37 -- TOOL-03/TOOL-04).
+DEFAULT_SEARCH_LIMIT = 8
+
 
 class KnowledgeGraphRepository(Protocol):
     """Port for persisting and retrieving knowledge_nodes / knowledge_node_edges rows."""
@@ -111,5 +114,33 @@ class KnowledgeGraphRepository(Protocol):
         provenance column, and is NEVER a delete. Returns whether a row was
         updated (False when the CAS filter matched no row -- edge already
         promoted/deactivated concurrently).
+        """
+        ...
+
+    async def search_nodes(
+        self,
+        *,
+        query_text: str,
+        query_embedding: list[float] | None,
+        importer_id: str,
+        limit: int = DEFAULT_SEARCH_LIMIT,
+    ) -> list[dict[str, object]]:
+        """BlendedRAG search over the extracted_only view (migration 0029), RRF(k=60)-fused.
+
+        Rows are ALWAYS EXTRACTED-tier -- belt 3, enforced at the RPC level
+        (both `match_knowledge_nodes_by_embedding` and
+        `match_knowledge_nodes_by_trgm` filter tier = 'EXTRACTED' explicitly,
+        on top of the view's own belt-1 text-nulling). Returned dicts carry
+        `id`/`title`/`content`/`scope`/`scope_ref_id`/`tier`/`confidence`.
+
+        Vector arm is skipped (never called) when `query_embedding` is None;
+        the lexical arm always runs. Either arm degrades to an empty result
+        independently on an RPC failure -- this method never raises.
+
+        Callers (the search_knowledge ToolExecutor) MUST still apply their
+        own field-omission belt before these rows ever enter a prompt --
+        this port alone is not the final defense (defense-in-depth, mirrors
+        the existing `list_injectable_edges` / `ToolExecutor.execute`
+        docstring convention in this codebase).
         """
         ...
