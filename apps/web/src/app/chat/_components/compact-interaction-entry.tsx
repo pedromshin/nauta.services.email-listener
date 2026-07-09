@@ -10,14 +10,18 @@
  * justify-end` + `max-w-[85%] rounded-lg bg-muted px-4 py-2`) — not a new
  * visual treatment, a direct reuse (24-UI-SPEC.md Spacing Scale exceptions).
  *
- * proposal_cards: `Selected "{chosenTitle}"`. clarify_widget (24-04, D-16;
- * key-value-list routing 24-05): one `{label}: {value}` row per submitted
- * field, resolved server-side from the summary's `fields: [{label, value}]`
- * shape (submit_widget_interaction.py's `_resolve_summary`) — a boolean value
- * renders as "Yes"/"No" — rendered via the mandated `key-value-list` catalog
- * primitive (`aria-label="Your response"`), the SAME mechanism
- * `SubmittedClarifyView` (interactive-widget-boundary.tsx) already uses, NOT
- * a hand-rolled `<dl>` (24-UI-REVIEW.md Copywriting Contract violation #2).
+ * proposal_cards: `Selected "{chosenTitle}"`. confirm_action (Phase 40-02,
+ * CONF-02) reuses this SAME `ProposalSummary` path verbatim — its server-side
+ * `_resolve_summary` output is `{chosenTitle: "Confirm" | "Reject"}`, an
+ * identical shape to proposal_cards' — zero new web components. clarify_widget
+ * (24-04, D-16; key-value-list routing 24-05): one `{label}: {value}` row per
+ * submitted field, resolved server-side from the summary's
+ * `fields: [{label, value}]` shape (submit_widget_interaction.py's
+ * `_resolve_summary`) — a boolean value renders as "Yes"/"No" — rendered via
+ * the mandated `key-value-list` catalog primitive
+ * (`aria-label="Your response"`), the SAME mechanism `SubmittedClarifyView`
+ * (interactive-widget-boundary.tsx) already uses, NOT a hand-rolled `<dl>`
+ * (24-UI-REVIEW.md Copywriting Contract violation #2).
  */
 
 import * as React from "react";
@@ -85,7 +89,7 @@ export function CompactInteractionEntry({
   return (
     <div className="flex justify-end">
       <div className={BUBBLE_CLASS}>
-        {widgetKind === "proposal_cards" ? (
+        {widgetKind === "proposal_cards" || widgetKind === "confirm_action" ? (
           <ProposalSummary summary={summary} />
         ) : (
           <ClarifySummary summary={summary} />

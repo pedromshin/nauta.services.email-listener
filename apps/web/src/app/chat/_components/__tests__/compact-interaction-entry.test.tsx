@@ -50,6 +50,14 @@ describe("CompactInteractionEntry", () => {
     expect(container.textContent).toContain('Selected "Ship next week"');
   });
 
+  it("confirm_action: reuses ProposalSummary — renders 'Selected \"Confirm\"', not the clarify key-value-list path", async () => {
+    const container = await mount(
+      <CompactInteractionEntry widgetKind="confirm_action" summary={{ chosenTitle: "Confirm" }} />,
+    );
+    expect(container.textContent).toContain('Selected "Confirm"');
+    expect(container.querySelector('dl[aria-label="Your response"]')).toBeNull();
+  });
+
   it("clarify_widget: routes through the key-value-list catalog primitive with aria-label='Your response'", async () => {
     const container = await mount(
       <CompactInteractionEntry
