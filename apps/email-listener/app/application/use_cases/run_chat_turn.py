@@ -1213,6 +1213,11 @@ class RunChatTurn:
         events.append(
             await self._emit(run.id, "tool_call", {"tool_name": tool_name, "id": tool_id, "arguments": arguments})
         )
+        # Phase 39 (TUI-01): non-persisted SSE mirror frame -- constructed
+        # DIRECTLY (never routed through self._emit/self._runs.append_event),
+        # id/run_id/seq stay at their dataclass defaults (None). Deliberately
+        # omits `arguments` (see 39-UI-SPEC.md's SSE / Part Contract).
+        events.append(ChatRunEvent(type="server_tool_call", data={"tool_name": tool_name, "id": tool_id}))
 
         executor = self._tool_executors[tool_name]
         try:
@@ -1266,6 +1271,20 @@ class RunChatTurn:
                     "isError": tool_result_delta.is_error,
                 },
             )
+        )
+        # Phase 39 (TUI-01): non-persisted SSE mirror frame, same convention
+        # as the server_tool_call mirror above -- identical `data` shape to
+        # the persisted tool_result event (byte-identical mirror, per
+        # 39-UI-SPEC.md), so the client can build the SAME
+        # tool_invocation_result part client-side without a "flash" on
+        # terminal chat.getHistory refetch.
+        events.append(
+            ChatRunEvent(type="server_tool_result", data={
+                "tool_name": tool_name,
+                "id": tool_id,
+                "content": tool_result_delta.content,
+                "isError": tool_result_delta.is_error,
+            })
         )
 
         # T-34-01: a round is the same spend commitment as continuing to

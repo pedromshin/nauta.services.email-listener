@@ -46,6 +46,14 @@ ChatRunEventType = Literal[
     "failed",
     "cost_capped",
     "interrupted",
+    # Phase 39 (TUI-01): "server_tool_call"/"server_tool_result" are
+    # transport-only SSE mirror types for the in-progress/completed
+    # tool-round UI affordance -- never passed to
+    # ChatRunRepository.append_event, never part of the chat_run_events
+    # table's CHECK constraint, no migration required (see
+    # _run_server_tool_round's 2 non-persisted ChatRunEvent constructions).
+    "server_tool_call",
+    "server_tool_result",
 ]
 
 

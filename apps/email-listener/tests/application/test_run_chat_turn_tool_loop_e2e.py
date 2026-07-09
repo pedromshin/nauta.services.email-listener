@@ -671,6 +671,111 @@ async def test_round_cap_exhaustion_bounded_even_with_asyncio_timeout_stub(monke
 
 
 # ---------------------------------------------------------------------------
+# Phase 39 (TUI-01): non-persisted server_tool_call/server_tool_result SSE
+# mirror frames -- emitted at the SAME 2 dispatch points as the existing
+# persisted tool_call/tool_result run events, never routed through
+# append_event.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_server_tool_round_emits_non_persisted_sse_mirror_events() -> None:
+    provider = _MultiRoundFakeChatProvider(
+        rounds=[
+            # Round 1: the model calls the echo tool.
+            [
+                ToolCallDelta(tool_name="echo", id="tool-1", partial_json='{"q": "hi"}'),
+                UsageDelta(input_tokens=10, output_tokens=20),
+                StreamEnd(stop_reason="tool_use"),
+            ],
+            # Round 2: the model continues with plain text (SAME run).
+            [
+                TextDelta(text="Done!"),
+                UsageDelta(input_tokens=5, output_tokens=3),
+                StreamEnd(stop_reason="end_turn"),
+            ],
+        ]
+    )
+    use_case, fakes = _make_use_case(provider=provider, tool_executors={"echo": EchoToolExecutor()})
+
+    events = [
+        event
+        async for event in use_case.run(
+            conversation_id=_CONVERSATION_ID, user_text="look something up", model_id=_TOOL_ROUND_MODEL.id
+        )
+    ]
+
+    event_types = [e.type for e in events]
+
+    # Behavior 1: "tool_call" (persisted) is followed later by "server_tool_call"
+    # (mirror), whose data is exactly {"tool_name", "id"} -- arguments absent.
+    tool_call_index = event_types.index("tool_call")
+    server_tool_call_index = event_types.index("server_tool_call")
+    assert server_tool_call_index > tool_call_index
+    server_tool_call_event = events[server_tool_call_index]
+    assert server_tool_call_event.data == {"tool_name": "echo", "id": "tool-1"}
+    assert set(server_tool_call_event.data.keys()) == {"tool_name", "id"}
+
+    # Behavior 2: "tool_result" (persisted) is followed later by
+    # "server_tool_result" (mirror), whose data is a byte-identical mirror
+    # of the persisted tool_result event's own data.
+    tool_result_index = event_types.index("tool_result")
+    server_tool_result_index = event_types.index("server_tool_result")
+    assert server_tool_result_index > tool_result_index
+    tool_result_event = events[tool_result_index]
+    server_tool_result_event = events[server_tool_result_index]
+    assert set(server_tool_result_event.data.keys()) == {"tool_name", "id", "content", "isError"}
+    assert server_tool_result_event.data["content"] == tool_result_event.data["content"]
+    assert server_tool_result_event.data["isError"] == tool_result_event.data["isError"]
+
+    # Behavior 3: both new events are never persisted -- id/run_id/seq all None.
+    for mirror_event in (server_tool_call_event, server_tool_result_event):
+        assert mirror_event.id is None
+        assert mirror_event.run_id is None
+        assert mirror_event.seq is None
+
+    # Behavior 4: the persisted-event log (populated only via append_event)
+    # NEVER contains the 2 new mirror types -- the actual non-persistence
+    # proof, stronger than Behavior 3 alone.
+    runs: FakeChatRunRepository = fakes["runs"]
+    persisted_event_types = {e.type for e in runs.events}
+    assert "server_tool_call" not in persisted_event_types
+    assert "server_tool_result" not in persisted_event_types
+    assert "tool_call" in persisted_event_types
+    assert "tool_result" in persisted_event_types
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_server_tool_error_round_mirror_event_matches_persisted_error_result() -> None:
+    """The server_tool_result mirror also holds for an is_error result (T-34-01 error path)."""
+    provider = _MultiRoundFakeChatProvider(
+        rounds=[
+            [
+                ToolCallDelta(tool_name="echo", id="tool-1", partial_json='{"__force_error__": true}'),
+                StreamEnd(stop_reason="tool_use"),
+            ],
+            [TextDelta(text="Sorry, that failed."), StreamEnd(stop_reason="end_turn")],
+        ]
+    )
+    use_case, fakes = _make_use_case(provider=provider, tool_executors={"echo": EchoToolExecutor()})
+
+    events = [
+        event async for event in use_case.run(conversation_id=_CONVERSATION_ID, user_text="hi", model_id=_TOOL_ROUND_MODEL.id)
+    ]
+
+    server_tool_result_event = next(e for e in events if e.type == "server_tool_result")
+    assert server_tool_result_event.data["isError"] is True
+    assert server_tool_result_event.id is None
+    assert server_tool_result_event.run_id is None
+    assert server_tool_result_event.seq is None
+
+    runs: FakeChatRunRepository = fakes["runs"]
+    assert "server_tool_result" not in {e.type for e in runs.events}
+
+
+# ---------------------------------------------------------------------------
 # Regression guard: single-round text-only turns stay unaffected (LOOP-01)
 # ---------------------------------------------------------------------------
 
