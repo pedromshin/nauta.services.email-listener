@@ -146,7 +146,7 @@ Plans:
 4. Server-side FastAPI proxy routes forward the user's identity; `X-API-Key` service boundary unchanged (existing service tests green)
 5. Missing auth env vars fail startup with a clear message; Google Cloud OAuth client runbook exists
 
-**Plans:** 1/5 plans executed
+**Plans:** 2/5 plans executed
 
 Plans:
 **Wave 1**
@@ -155,7 +155,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 43-02-PLAN.md — Sign-in/out UX + route protection: middleware guard, /login + Continue-with-Google, /auth/callback, sidebar sign-out
+- [x] 43-02-PLAN.md — Sign-in/out UX + route protection: middleware guard, /login + Continue-with-Google, /auth/callback, sidebar sign-out
 - [ ] 43-03-PLAN.md — tRPC session context + protectedProcedure + identity-injection test
 - [ ] 43-04-PLAN.md — Identity forwarding: server-derived X-User-Id on BFF proxy routes + non-enforcing FastAPI reader
 
@@ -196,11 +196,11 @@ Plans:
 2. pytest event-loop cleanup + grid `colSpan` support landed with tests (999.2)
 3. Brand-identity options document is decision-ready; design-pattern dossier maps Claude/ChatGPT/Perplexity-class flows onto the v1.4 token system
 
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 
-- [ ] 46-01-PLAN.md — HYGN-01: connected-env evidence (eval harness vs baseline on v1.2 corpus via live Bedrock; code-island isolation disposition) recorded honestly in 46-EVIDENCE.md
+- [x] 46-01-PLAN.md — HYGN-01: connected-env evidence (eval harness vs baseline on v1.2 corpus via live Bedrock; code-island isolation disposition) recorded honestly in 46-EVIDENCE.md
 - [x] 46-02-PLAN.md — HYGN-02: debt folds (Python-3.13 asyncio test migration + resolve todo; colSpan-aware grid clamp + corrected generator guidance) with targeted tests
 - [ ] 46-03-PLAN.md — DSSR-01/02: v1.8 dossier (brand-identity options + design-pattern dossier mapping Claude/ChatGPT/Perplexity flows onto the v1.4 token system)
 

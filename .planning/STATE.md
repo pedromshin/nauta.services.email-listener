@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: polytoken.ai Foundation — Rename, Auth & Tenancy
 status: executing
-last_updated: "2026-07-09T23:18:00.920Z"
-last_activity: 2026-07-09 -- Phase 43 execution started
+last_updated: "2026-07-09T23:47:03.980Z"
+last_activity: 2026-07-09 -- Phase 43 Plan 02 complete (Google OAuth sign-in, middleware, sign-out)
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 10
-  completed_plans: 4
+  completed_plans: 6
   percent: 20
 ---
 
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 ## Current Position
 
 Phase: 43 (Auth — Google OAuth + Sessions (Supabase Auth)) — EXECUTING
-Plan: 2 of 5
+Plan: 43-02 EXECUTED, next up 43-03 of 5
 Status: Executing Phase 43
-Last activity: 2026-07-09 -- Phase 43 execution started
+Last activity: 2026-07-09 -- Phase 43 Plan 02 complete (Google OAuth sign-in, middleware, sign-out)
 
 ## Phase 42 — Atomic Rename nauta → polytoken — Plan 01 History
 
@@ -96,7 +96,59 @@ Last activity: 2026-07-09 -- Phase 43 execution started
   (Atomic Rename nauta → polytoken) is DONE. Next: Phase 43** (Auth — Google OAuth + server
   sessions, per v1.7 roadmap).
 
-## Phase 46 — Kickoff Hygiene / v1.8 Brand & Design Dossier — Plan 02 History
+## Phase 43 — Auth — Google OAuth + Sessions (Supabase Auth) — Plan History
+
+- **43-01 EXECUTED:** AUTH-01 (partial) + AUTH-05 (env half). `npm install @supabase/ssr`
+  (`0.12.0`, pinned per STACK.md — the milestone's one new npm dependency), Zod
+  `envSchema`/`parseEnv` fail-fast env module (`apps/web/src/lib/env.ts`), and the three
+  canonical `@supabase/ssr` client helpers (`lib/supabase/{client,server,middleware}.ts`,
+  `middleware.ts`'s `updateSession` deliberately contains zero redirect logic by design —
+  Plan 02's job). See 43-01-SUMMARY.md.
+
+- **43-02 EXECUTED:** AUTH-01 (rest) + AUTH-02. Task 1 (`7ab388b` test / `20593c4` feat):
+  pure `safeNextPath`/`resolveAuthRedirect` (`lib/auth/redirect.ts`, 8/8 unit tests) wired
+  into `middleware.ts` (session refresh + signed-out → `/login?redirectTo=` route guard,
+  matcher excludes `_next`/`api`). **Deviation fixed (`1c39ed0`):** the plan's stated
+  `apps/web/middleware.ts` (package root) is never loaded by this repo's Next 15.3.3 — the
+  app router lives at `src/app`, and Next resolves middleware relative to the app dir's
+  *parent* (`src/`), verified directly against the installed `next/dist/build/index.js` +
+  `setup-dev-bundler.js`. Relocated to `apps/web/src/middleware.ts`; would otherwise have
+  shipped an inert route-guard with all unit tests still green (tests only exercise the
+  pure functions, not the wiring). Task 2 (`363fbbc`): `/login` (minimal Google-only card,
+  `Suspense`-wrapped `useSearchParams` consumer), `google-signin-button.tsx`
+  (`signInWithOAuth`, forwards validated `redirectTo` as the callback's `next`), and
+  `/auth/callback` (`exchangeCodeForSession`, redirects through `safeNextPath`, failure
+  path never echoes the upstream error). Task 3 (`02af62a`): `/auth/signout` (server-side
+  `signOut()`, 303 → `/login`) + a form-POST sidebar `SignOutButton` beneath `ThemeToggle`.
+  `tsc --noEmit`: 53 pre-existing `src/app/dev/design/` baseline errors, zero new. Full
+  Google OAuth round-trip is `human_needed` UAT (43-05 runbook, no real credentials in this
+  autonomous run). See 43-02-SUMMARY.md. **Next: 43-03** (tRPC `createContext`/
+  `protectedProcedure` identity plumbing).
+
+## Phase 46 — Kickoff Hygiene / v1.8 Brand & Design Dossier — Plan History
+
+- **46-01 EXECUTED:** HYGN-01 (locally-feasible 999.3 connected-env evidence, autonomous). Task 1
+  (`f5efc31`): ran the Phase-16 eval harness against live Bedrock (existing IAM transport, no
+  ANTHROPIC_API_KEY) — smoke test (`--limit 1 --no-judge`) confirmed connectivity (1/1); the full
+  34-prompt baseline genuinely hit Bedrock `429`s under the harness's hardcoded `Semaphore(3)`,
+  then crashed entirely (not per-prompt) because `run_eval.py`'s own exception-logging call throws
+  `UnicodeEncodeError` on the Windows `cp1252` console — a newly-discovered defect logged in
+  `46-EVIDENCE.md`, not fixed (out of scope for an evidence-only plan; `run_eval.py` isn't in this
+  plan's `files_modified`). Bounded fallback (`--limit 5`, `PYTHONIOENCODING=utf-8`) succeeded:
+  5/5 with live judge, `mean_overall=0.9495`/`mean_valid_spec=1.0`/`mean_composed=1.0`/
+  `mean_on_intent=0.798`/`mean_a11y=1.0`, registry_version + both model ids recorded verbatim,
+  plus a paired `--no-judge` pass + `compare_reports` delta over the same 5 prompts. DEF-17-05-01
+  marked `blocked` (`--all-packs` not attempted — 6x load risk after observed 429s); DEF-18-03-01
+  and DEF-19-01 marked `blocked (partial)` (bounded sample proved the harness works but didn't
+  cover the Phase-18 catalog-expansion component types or the golden-set's sole Form/Multi-step
+  prompt). Task 2 (`5966bd6`): confirmed `@playwright/test` absent from both `node_modules`
+  locations and both `package.json` files; DEF-20-01 recorded `blocked (browser toolchain
+  uninstallable under the Phase-46 concurrency constraint)` naming both configured engines
+  (chromium, firefox) rather than left unrecorded — installing it would mutate root
+  `package.json`/`package-lock.json`, forbidden while Phase 43 owns that surface concurrently. Ran
+  the deterministic host-side AST-allowlist vitest substitute the spec's own header names as
+  primary (`validate-island-code.test.ts`): 39/39 passed. Root `package.json`/`package-lock.json`
+  verified unmodified throughout. See 46-01-SUMMARY.md.
 
 - **46-02 EXECUTED:** HYGN-02 (999.2 debt folds, autonomous). Task 1 (`e73f1dd`): all 11
   `asyncio.get_event_loop().run_until_complete(` call sites (10 tests, one with two calls) in
@@ -2126,6 +2178,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 42 P01 | 55min | 3 tasks | 250 files |
 | Phase 46 P02 | ~15min | 2 tasks | 4 files |
 | Phase 43 P01 | 15min | 2 tasks | 8 files |
+| Phase 43 P02 | 12min | 3 tasks | 9 files |
 
 ## Operator Next Steps
 

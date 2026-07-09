@@ -16,7 +16,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 ### Auth
 
 - [x] **AUTH-01**: User can sign in with Google (Supabase Auth PKCE via `@supabase/ssr`) and the session persists across browser refresh
-- [ ] **AUTH-02**: User can sign out; app surfaces require a session (signed-out visitors land on sign-in)
+- [x] **AUTH-02**: User can sign out; app surfaces require a session (signed-out visitors land on sign-in)
 - [ ] **AUTH-03**: tRPC procedures resolve the acting user server-side from the session context (the documented "no-auth" seam in `packages/api-client/src/trpc.ts`) — identity is never accepted from client input
 - [ ] **AUTH-04**: Server-side proxy routes to FastAPI forward the user's identity alongside `X-API-Key` (which remains the unchanged service-to-service boundary)
 - [x] **AUTH-05**: Google Cloud OAuth client creation + env configuration is user-runbook'd; missing auth env vars surface at startup
@@ -37,7 +37,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 
 ### Hygiene
 
-- [ ] **HYGN-01**: The locally-feasible 999.3 connected-env verifications are executed with recorded evidence (eval harness vs baseline on the v1.2 corpus; Playwright code-island isolation spec) — the substrate is validated before v1.8 re-skins it
+- [x] **HYGN-01**: The locally-feasible 999.3 connected-env verifications are executed with recorded evidence (eval harness vs baseline on the v1.2 corpus; Playwright code-island isolation spec) — the substrate is validated before v1.8 re-skins it
 - [x] **HYGN-02**: 999.2 folds land — pytest event-loop cleanup and spreadsheet-grid colSpan
 
 ### Dossier
@@ -78,7 +78,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RENM-01 | Phase 42 | Complete |
 | RENM-02 | Phase 42 | Complete |
 | AUTH-01 | Phase 43 | Complete |
-| AUTH-02 | Phase 43 | Pending |
+| AUTH-02 | Phase 43 | Complete |
 | AUTH-03 | Phase 43 | Pending |
 | AUTH-04 | Phase 43 | Pending |
 | AUTH-05 | Phase 43 | Complete |
@@ -90,7 +90,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | THRD-02 | Phase 45 | Pending |
 | THRD-03 | Phase 45 | Pending |
 | THRD-04 | Phase 45 | Pending |
-| HYGN-01 | Phase 46 | Pending |
+| HYGN-01 | Phase 46 | Complete |
 | HYGN-02 | Phase 46 | Complete |
 | DSSR-01 | Phase 46 | Pending |
 | DSSR-02 | Phase 46 | Pending |
