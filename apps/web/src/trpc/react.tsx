@@ -7,7 +7,7 @@ import { httpBatchLink, loggerLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
 import SuperJSON from "superjson";
 
-import type { AppRouter } from "@nauta/api-client";
+import type { AppRouter } from "@polytoken/api-client";
 
 import { createQueryClient } from "./query-client";
 

@@ -1,5 +1,5 @@
 /**
- * @nauta/db — schema barrel
+ * @polytoken/db — schema barrel
  *
  * Re-exports all Drizzle table definitions, enums, and inferred types so that
  * `import * as schema from "./schema"` in client.ts resolves every symbol.

@@ -1,5 +1,5 @@
 {
-  "name": "@nauta/api-client",
+  "name": "@polytoken/api-client",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -25,8 +25,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@nauta/db": "*",
-    "@nauta/genui": "*",
+    "@polytoken/db": "*",
+    "@polytoken/genui": "*",
     "@trpc/server": "11.8.0",
     "drizzle-orm": "^0.44.2",
     "superjson": "2.2.1",

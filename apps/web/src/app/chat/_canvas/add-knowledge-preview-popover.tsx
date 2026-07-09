@@ -19,15 +19,15 @@ import { useState } from "react";
 import { Share2 } from "lucide-react";
 import { z } from "zod";
 
-import { Button } from "@nauta/ui/button";
-import { Input } from "@nauta/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@nauta/ui/popover";
+import { Button } from "@polytoken/ui/button";
+import { Input } from "@polytoken/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@polytoken/ui/popover";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@nauta/ui/tooltip";
+} from "@polytoken/ui/tooltip";
 
 const NODE_ID_SCHEMA = z.string().uuid();
 

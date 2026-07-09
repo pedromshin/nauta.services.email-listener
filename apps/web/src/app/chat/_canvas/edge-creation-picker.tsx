@@ -27,16 +27,16 @@
 import { useMemo, useState } from "react";
 import { useStore } from "zustand";
 
-import { Button } from "@nauta/ui/button";
-import { Input } from "@nauta/ui/input";
-import { Popover, PopoverAnchor, PopoverContent } from "@nauta/ui/popover";
+import { Button } from "@polytoken/ui/button";
+import { Input } from "@polytoken/ui/input";
+import { Popover, PopoverAnchor, PopoverContent } from "@polytoken/ui/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@nauta/ui/select";
+} from "@polytoken/ui/select";
 
 import { useCanvasStore } from "./canvas-store-context";
 import { EdgePayloadSchema, type EdgePayload } from "./edge-payload-schema";

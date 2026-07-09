@@ -2,7 +2,7 @@
 
 import { motion, MotionStyle, Transition } from "motion/react"
 
-import { cn } from "@nauta/ui"
+import { cn } from "@polytoken/ui"
 
 interface BorderBeamProps {
   /**

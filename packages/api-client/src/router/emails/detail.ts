@@ -20,7 +20,7 @@ import {
   Emails,
   EntityTypes,
   ExtractionRecords,
-} from "@nauta/db/schema";
+} from "@polytoken/db/schema";
 
 import { publicProcedure } from "../../trpc";
 

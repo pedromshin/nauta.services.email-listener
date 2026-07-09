@@ -75,7 +75,7 @@ export interface UseWebllmEngineResult {
    * entry (22-UI-SPEC.md "Your browser doesn't support WebGPU…"). */
   readonly supported: boolean;
   readonly status: WebllmStatus;
-  /** 0-100 — feeds the @nauta/ui Progress component directly. */
+  /** 0-100 — feeds the @polytoken/ui Progress component directly. */
   readonly progress: number;
   /** UI-SPEC ordered label states ("Downloading model…" -> "Loading into
    * WebGPU…"); empty until the first progress report arrives. */

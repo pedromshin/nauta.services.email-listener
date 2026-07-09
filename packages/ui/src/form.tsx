@@ -6,7 +6,7 @@ import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
 import { Controller, FormProvider, useFormContext } from "react-hook-form";
 
-import { cn } from "@nauta/ui";
+import { cn } from "@polytoken/ui";
 
 import { Label } from "./label";
 

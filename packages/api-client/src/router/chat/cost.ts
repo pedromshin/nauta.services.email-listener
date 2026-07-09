@@ -18,7 +18,7 @@
 import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { ChatCostLedger } from "@nauta/db/schema";
+import { ChatCostLedger } from "@polytoken/db/schema";
 
 import { publicProcedure } from "../../trpc";
 

@@ -1,5 +1,5 @@
 /**
- * src/index.ts — Package root barrel for @nauta/genui.
+ * src/index.ts — Package root barrel for @polytoken/genui.
  *
  * Re-exports all sub-modules so consumers can import from the package root.
  * Sub-path exports (catalog, schema, registry, renderer) are also available

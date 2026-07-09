@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-import { Button } from "@nauta/ui/button";
+import { Button } from "@polytoken/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -10,8 +10,8 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@nauta/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@nauta/ui/popover";
+} from "@polytoken/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@polytoken/ui/popover";
 
 import { api } from "~/trpc/react";
 

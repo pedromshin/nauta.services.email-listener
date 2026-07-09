@@ -1,4 +1,4 @@
-import { Progress } from "@nauta/ui/progress";
+import { Progress } from "@polytoken/ui/progress";
 
 export interface WebLLMLoadingProps {
   /** 0-100 (useWebllmEngine's progress). */

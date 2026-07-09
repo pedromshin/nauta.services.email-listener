@@ -1,12 +1,12 @@
 "use client";
 
-import { Button } from "@nauta/ui/button";
+import { Button } from "@polytoken/ui/button";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@nauta/ui/tooltip";
+} from "@polytoken/ui/tooltip";
 
 import { EntityTypePicker } from "./entity-type-picker";
 import { NestPicker } from "./nest-picker";

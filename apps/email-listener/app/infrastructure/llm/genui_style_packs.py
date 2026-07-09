@@ -11,7 +11,7 @@ Architecture contract:
 
 Named exports:
   STYLE_PACK_IDS  — immutable tuple of all known style-pack ids (parity with TS)
-  DEFAULT_PACK_ID — the default pack id ('nauta-teal', parity with TS)
+  DEFAULT_PACK_ID — the default pack id ('polytoken-teal', parity with TS)
   is_known_pack_id — predicate for T-17-04 spoofing guard at the API boundary
 """
 
@@ -25,7 +25,7 @@ from __future__ import annotations
 # MUST be kept in sync with packages/genui/src/theme/packs.ts STYLE_PACK_IDS.
 # Count: 6 packs.
 STYLE_PACK_IDS: tuple[str, ...] = (
-    "nauta-teal",
+    "polytoken-teal",
     "linear-clean",
     "warm-editorial",
     "brutalist",
@@ -33,8 +33,8 @@ STYLE_PACK_IDS: tuple[str, ...] = (
     "playful-rounded",
 )
 
-# Mirrors TS: export const DEFAULT_PACK_ID = "nauta-teal"
-DEFAULT_PACK_ID: str = "nauta-teal"
+# Mirrors TS: export const DEFAULT_PACK_ID = "polytoken-teal"
+DEFAULT_PACK_ID: str = "polytoken-teal"
 
 # Fast O(1) membership test — frozen at module load, never mutated.
 _KNOWN_PACK_IDS: frozenset[str] = frozenset(STYLE_PACK_IDS)
@@ -55,7 +55,7 @@ def is_known_pack_id(pack_id: str) -> bool:
         Partial matches (e.g. 'nauta') return False — only exact matches.
 
     Examples:
-        is_known_pack_id("nauta-teal")  -> True
+        is_known_pack_id("polytoken-teal")  -> True
         is_known_pack_id("nauta")       -> False  (partial match rejected)
         is_known_pack_id("")            -> False  (empty string rejected)
         is_known_pack_id("unknown")     -> False  (unknown id rejected)

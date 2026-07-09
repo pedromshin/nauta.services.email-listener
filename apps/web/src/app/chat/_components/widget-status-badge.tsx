@@ -16,7 +16,7 @@
 import * as React from "react";
 import { Ban, Check, CheckCircle2, Clock } from "lucide-react";
 
-import { Badge } from "@nauta/ui/badge";
+import { Badge } from "@polytoken/ui/badge";
 
 export type WidgetStatusBadgeKind = "selected" | "superseded" | "stale" | "submitted";
 

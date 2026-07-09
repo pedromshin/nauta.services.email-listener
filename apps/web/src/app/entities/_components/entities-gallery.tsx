@@ -9,17 +9,17 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { Button } from "@nauta/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@nauta/ui/card";
-import { Input } from "@nauta/ui/input";
+import { Button } from "@polytoken/ui/button";
+import { Card, CardDescription, CardHeader, CardTitle } from "@polytoken/ui/card";
+import { Input } from "@polytoken/ui/input";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@nauta/ui/select";
-import { Skeleton } from "@nauta/ui/skeleton";
+} from "@polytoken/ui/select";
+import { Skeleton } from "@polytoken/ui/skeleton";
 
 import { api } from "~/trpc/react";
 

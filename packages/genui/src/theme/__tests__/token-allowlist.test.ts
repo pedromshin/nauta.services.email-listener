@@ -174,11 +174,11 @@ describe("SpecRootSchema — style_pack_id integration (D-08/STYLE-04)", () => {
     // This is a compile-time test — if TypeScript compiles, the type is correct
     const parsed = SpecRootSchema.safeParse({
       ...MINIMAL_SPEC,
-      style_pack_id: "nauta-teal",
+      style_pack_id: "polytoken-teal",
     });
     if (parsed.success) {
       const sp: string | undefined = parsed.data.style_pack_id;
-      expect(sp).toBe("nauta-teal");
+      expect(sp).toBe("polytoken-teal");
     }
   });
 });

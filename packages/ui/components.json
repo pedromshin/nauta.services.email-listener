@@ -11,11 +11,11 @@
   },
   "iconLibrary": "lucide",
   "aliases": {
-    "components": "@nauta/ui",
-    "ui": "@nauta/ui",
-    "lib": "@nauta/ui",
-    "utils": "@nauta/ui",
-    "hooks": "@nauta/ui"
+    "components": "@polytoken/ui",
+    "ui": "@polytoken/ui",
+    "lib": "@polytoken/ui",
+    "utils": "@polytoken/ui",
+    "hooks": "@polytoken/ui"
   },
   "registries": {
     "@kibo-ui": "https://www.kibo-ui.com/r/{name}.json",

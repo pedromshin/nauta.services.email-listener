@@ -26,16 +26,16 @@
 
 import React, { useState } from "react";
 
-import { Badge } from "@nauta/ui/badge";
+import { Badge } from "@polytoken/ui/badge";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@nauta/ui/card";
+} from "@polytoken/ui/card";
 
-import { NAUTA_CATALOG } from "@nauta/genui/catalog";
-import { buildCatalogExampleSpec, describePropsSchema } from "@nauta/genui/studio";
+import { NAUTA_CATALOG } from "@polytoken/genui/catalog";
+import { buildCatalogExampleSpec, describePropsSchema } from "@polytoken/genui/studio";
 
 import { SpecRendererIsland } from "./spec-renderer-island";
 

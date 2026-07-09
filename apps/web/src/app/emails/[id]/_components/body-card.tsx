@@ -8,14 +8,14 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from "@nauta/ui/card";
-import { ScrollArea } from "@nauta/ui/scroll-area";
+} from "@polytoken/ui/card";
+import { ScrollArea } from "@polytoken/ui/scroll-area";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@nauta/ui/tabs";
+} from "@polytoken/ui/tabs";
 
 interface BodyCardProps {
   bodyText: string | null;

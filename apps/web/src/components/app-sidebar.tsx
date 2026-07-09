@@ -16,8 +16,8 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
-import { Badge } from "@nauta/ui/badge";
-import { Button } from "@nauta/ui/button";
+import { Badge } from "@polytoken/ui/badge";
+import { Button } from "@polytoken/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -26,7 +26,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@nauta/ui/sidebar";
+} from "@polytoken/ui/sidebar";
 
 /** A navigable destination rendered as a next/link in the rail. */
 interface LiveNavItem {
@@ -119,10 +119,10 @@ export function AppSidebar(): React.ReactElement {
             aria-hidden
             className="flex size-6 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-semibold text-primary-foreground"
           >
-            N
+            P
           </span>
           <span className="truncate text-sm font-semibold group-data-[collapsible=icon]:hidden">
-            Nauta
+            Polytoken
           </span>
         </div>
       </SidebarHeader>

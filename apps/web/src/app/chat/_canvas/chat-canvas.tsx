@@ -56,7 +56,7 @@ import "@xyflow/react/dist/style.css";
 // /knowledge's knowledge-graph.tsx).
 const ReactFlowJSX = ReactFlow as React.ComponentType<ReactFlowProps<FlowNode, FlowEdge>>;
 
-import { Button } from "@nauta/ui/button";
+import { Button } from "@polytoken/ui/button";
 
 import type { MessagePart } from "../_hooks/use-chat-stream";
 import type {

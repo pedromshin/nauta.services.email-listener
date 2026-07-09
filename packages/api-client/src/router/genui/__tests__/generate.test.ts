@@ -18,8 +18,8 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { SAFE_FALLBACK_SPEC } from "@nauta/genui/schema";
-import { REGISTRY_VERSION } from "@nauta/genui/registry";
+import { SAFE_FALLBACK_SPEC } from "@polytoken/genui/schema";
+import { REGISTRY_VERSION } from "@polytoken/genui/registry";
 import { appRouter } from "../../../root";
 
 // ---------------------------------------------------------------------------
@@ -520,17 +520,17 @@ describe("genui.generate — stylePackId threading (D-08/T-17-04/Phase 17-03)", 
     expect(sentBody).toHaveProperty("style_pack_id", null);
   });
 
-  it("D-17-03: stylePackId='nauta-teal' (default pack) is forwarded as style_pack_id", async () => {
+  it("D-17-03: stylePackId='polytoken-teal' (default pack) is forwarded as style_pack_id", async () => {
     const fetchMock = vi.fn().mockResolvedValue(mockResponse(VALID_ENVELOPE_RESPONSE));
     vi.stubGlobal("fetch", fetchMock);
 
     const caller = makeCaller();
-    await caller.genui.generate({ intent: "Dashboard", stylePackId: "nauta-teal" });
+    await caller.genui.generate({ intent: "Dashboard", stylePackId: "polytoken-teal" });
 
     const [, calledInit] = fetchMock.mock.calls[0] as [string, RequestInit];
     const sentBody = JSON.parse(calledInit.body as string) as Record<string, unknown>;
 
-    expect(sentBody).toHaveProperty("style_pack_id", "nauta-teal");
+    expect(sentBody).toHaveProperty("style_pack_id", "polytoken-teal");
   });
 
   it("D-17-04: unknown stylePackId is rejected by Zod at web boundary (input validation)", async () => {
@@ -545,7 +545,7 @@ describe("genui.generate — stylePackId threading (D-08/T-17-04/Phase 17-03)", 
   });
 
   it("D-17-05: all known STYLE_PACK_IDS are accepted by the input schema", async () => {
-    const { STYLE_PACK_IDS } = await import("@nauta/genui/theme");
+    const { STYLE_PACK_IDS } = await import("@polytoken/genui/theme");
 
     for (const packId of STYLE_PACK_IDS) {
       const fetchMock = vi.fn().mockResolvedValue(mockResponse(VALID_ENVELOPE_RESPONSE));

@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "@nauta/ui/badge";
+import { Badge } from "@polytoken/ui/badge";
 
 export type TurnStatusBadgeStatus =
   | "stopped"

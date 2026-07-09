@@ -17,7 +17,7 @@
  * every other genui part goes through.
  */
 
-import type { SpecRoot } from "@nauta/genui/schema";
+import type { SpecRoot } from "@polytoken/genui/schema";
 
 /** The `setState` key every proposal-card footer button's `onClick` carries —
  * `InteractiveWidgetBoundary`'s actions registry reads this key's `value` as

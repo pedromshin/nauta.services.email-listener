@@ -1,4 +1,4 @@
-import type { RouterOutputs } from "@nauta/api-client";
+import type { RouterOutputs } from "@polytoken/api-client";
 
 export type CostBreakdownRow =
   RouterOutputs["chat"]["sessionCost"]["breakdown"][number];

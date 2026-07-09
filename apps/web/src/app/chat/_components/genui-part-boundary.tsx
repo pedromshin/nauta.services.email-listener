@@ -4,7 +4,7 @@
  * genui-part-boundary.tsx — progressive partial-tree genui rendering
  * (STREAM-02, D-17, FOUND-6).
  *
- * Wraps the UNMODIFIED @nauta/genui SpecRenderer. Never patches, forks, or
+ * Wraps the UNMODIFIED @polytoken/genui SpecRenderer. Never patches, forks, or
  * re-implements the renderer itself — only decides WHAT pre-validated
  * subtree to hand it, mirroring the existing genui.generate.ts /
  * history-island.tsx web-boundary pattern (SpecRootSchema.safeParse ->
@@ -37,16 +37,16 @@
 
 import * as React from "react";
 
-import { Skeleton } from "@nauta/ui/skeleton";
-import { SpecRenderer } from "@nauta/genui/renderer";
-import type { ActionRegistry } from "@nauta/genui/renderer";
+import { Skeleton } from "@polytoken/ui/skeleton";
+import { SpecRenderer } from "@polytoken/genui/renderer";
+import type { ActionRegistry } from "@polytoken/genui/renderer";
 import {
   MAX_SPEC_DEPTH,
   SAFE_FALLBACK_SPEC,
   SpecNodeSchema,
   SpecRootSchema,
   type SpecRoot,
-} from "@nauta/genui/schema";
+} from "@polytoken/genui/schema";
 
 export interface GenuiPartBoundaryProps {
   /** The accumulating (or, once !isStreaming, final) emit_ui_spec tool-call

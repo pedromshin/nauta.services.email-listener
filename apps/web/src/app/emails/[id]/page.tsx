@@ -8,7 +8,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id: _id } = await params;
-  return { title: "Loading… — Nauta" };
+  return { title: "Loading… — Polytoken" };
 }
 
 export default async function EmailDetailPage({

@@ -40,8 +40,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Edge as FlowEdge, Node as FlowNode, Viewport } from "@xyflow/react";
 
-import type { RouterOutputs } from "@nauta/api-client";
-import { CanvasSnapshotSchema, type CanvasSnapshot } from "@nauta/api-client/chat-canvas";
+import type { RouterOutputs } from "@polytoken/api-client";
+import { CanvasSnapshotSchema, type CanvasSnapshot } from "@polytoken/api-client/chat-canvas";
 
 import { api } from "~/trpc/react";
 

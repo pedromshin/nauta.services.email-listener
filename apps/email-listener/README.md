@@ -1,7 +1,7 @@
 # email-listener
 
 FastAPI service that receives and logs raw inbound emails. No parsing, no persistence yet —
-those arrive in later stages of the Nauta data-entry pipeline.
+those arrive in later stages of the Polytoken data-entry pipeline.
 
 ## Layout (Clean Architecture)
 

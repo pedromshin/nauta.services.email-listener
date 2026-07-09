@@ -5,7 +5,7 @@
  *
  * Mounts the REAL component — mirrors this repo's createRoot-in-jsdom + `act`
  * convention (interactive-widget-boundary.test.tsx). jsdom does not implement
- * ResizeObserver, which @nauta/ui's ScrollArea (Radix) requires on mount, so a
+ * ResizeObserver, which @polytoken/ui's ScrollArea (Radix) requires on mount, so a
  * minimal stub is installed before mounting.
  */
 

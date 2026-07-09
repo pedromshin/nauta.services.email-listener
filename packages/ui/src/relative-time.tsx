@@ -7,7 +7,7 @@ import {
   useContext,
   useEffect,
 } from "react";
-import { cn } from "@nauta/ui";
+import { cn } from "@polytoken/ui";
 
 const formatDate = (
   date: Date,

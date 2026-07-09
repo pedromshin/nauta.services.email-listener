@@ -1,6 +1,6 @@
 {
   "installCommand": "npm install",
-  "buildCommand": "npm run build -w @nauta/web",
+  "buildCommand": "npm run build -w @polytoken/web",
   "outputDirectory": "apps/web/.next",
   "framework": "nextjs"
 }

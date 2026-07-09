@@ -26,7 +26,7 @@
 
 import * as React from "react";
 
-import type { SpecRoot } from "@nauta/genui/schema";
+import type { SpecRoot } from "@polytoken/genui/schema";
 
 import { GenuiPartBoundary } from "./genui-part-boundary";
 

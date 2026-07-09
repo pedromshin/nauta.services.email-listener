@@ -14,7 +14,7 @@
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
-import { EntityTypeFields, EntityTypes } from "@nauta/db/schema";
+import { EntityTypeFields, EntityTypes } from "@polytoken/db/schema";
 
 import { createTRPCRouter, publicProcedure } from "../trpc";
 import { entityTypesWriteProcedures } from "./entity-types-write";

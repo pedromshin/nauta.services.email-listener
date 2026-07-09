@@ -5,7 +5,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { SpecRootSchema } from "@nauta/genui/schema";
+import { SpecRootSchema } from "@polytoken/genui/schema";
 
 import {
   buildClarifySubmittedSpec,

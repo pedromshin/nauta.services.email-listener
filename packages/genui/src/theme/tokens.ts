@@ -11,7 +11,7 @@
  *   - StylePack: a frozen pack record — metadata + flat token map.
  *
  * Color values throughout are HSL channel-triplet strings (e.g. "164 39% 22%"),
- * consumed as `hsl(var(--alias))` by @nauta/ui — exactly the globals.css shape.
+ * consumed as `hsl(var(--alias))` by @polytoken/ui — exactly the globals.css shape.
  * Raw hex values are FORBIDDEN by design (D-03/STYLE-03).
  *
  * No React imports — this is pure data + types for consumption by both TS (renderer)
@@ -81,7 +81,7 @@ export type TokenAlias = (typeof TOKEN_ALIASES)[number];
  *   2. Adding its StylePack entry to STYLE_PACKS in packs.ts
  */
 export type StylePackId =
-  | "nauta-teal"
+  | "polytoken-teal"
   | "linear-clean"
   | "warm-editorial"
   | "brutalist"
@@ -112,7 +112,7 @@ export type PackTokenMap = Readonly<Record<TokenAlias, string>>;
  *   id          — unique stable lowercase-kebab slug (matches StylePackId)
  *   label       — human-readable display name (for the studio dropdown)
  *   description — short brand-personality description (for Auto/Surprise mode)
- *   isDefault   — true for the nauta-teal baseline pack (D-02)
+ *   isDefault   — true for the polytoken-teal baseline pack (D-02)
  *   tokens      — flat map of alias -> resolved value (the renderer projection)
  *   resolvedVars — CSS variable name -> resolved value (for CSS injection by renderer)
  */

@@ -1,12 +1,12 @@
 "use client";
 
-import { polygonToRect } from "@nauta/api-client/geometry";
+import { polygonToRect } from "@polytoken/api-client/geometry";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@nauta/ui/tooltip";
+} from "@polytoken/ui/tooltip";
 
 import { ConfirmDenyControls } from "./confirm-deny-controls";
 import { contentSnippet } from "./region-label";

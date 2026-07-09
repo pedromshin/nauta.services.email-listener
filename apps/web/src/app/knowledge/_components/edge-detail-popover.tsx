@@ -23,10 +23,10 @@
 
 import { Check, Loader2 } from "lucide-react";
 
-import { Badge } from "@nauta/ui/badge";
-import { Button } from "@nauta/ui/button";
-import { Popover, PopoverAnchor, PopoverContent } from "@nauta/ui/popover";
-import { Separator } from "@nauta/ui/separator";
+import { Badge } from "@polytoken/ui/badge";
+import { Button } from "@polytoken/ui/button";
+import { Popover, PopoverAnchor, PopoverContent } from "@polytoken/ui/popover";
+import { Separator } from "@polytoken/ui/separator";
 
 // ---------------------------------------------------------------------------
 // Types

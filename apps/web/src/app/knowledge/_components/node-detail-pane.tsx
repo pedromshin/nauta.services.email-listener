@@ -28,10 +28,10 @@ import { format } from "date-fns";
 import { Share2, X } from "lucide-react";
 import Link from "next/link";
 
-import { Badge } from "@nauta/ui/badge";
-import { Button } from "@nauta/ui/button";
-import { ScrollArea } from "@nauta/ui/scroll-area";
-import { Separator } from "@nauta/ui/separator";
+import { Badge } from "@polytoken/ui/badge";
+import { Button } from "@polytoken/ui/button";
+import { ScrollArea } from "@polytoken/ui/scroll-area";
+import { Separator } from "@polytoken/ui/separator";
 
 import type { KnowledgeNode } from "~/app/entities/[id]/_components/entity-knowledge";
 

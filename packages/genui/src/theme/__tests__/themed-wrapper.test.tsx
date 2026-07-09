@@ -6,7 +6,7 @@
  *   T-17-02: ThemedRoot must only use pack's curated resolvedVars — never
  *            model-supplied CSS values. The style object is derived exclusively
  *            from getStylePack(packId).resolvedVars.
- *   T-17-04: Unknown packId falls back to the default pack (nauta-teal) without
+ *   T-17-04: Unknown packId falls back to the default pack (polytoken-teal) without
  *            throwing. ThemedRoot is never in an error state from a bad id.
  *
  * SpecRenderer integration:
@@ -93,7 +93,7 @@ describe("ThemedRoot", () => {
     expect(wrapper?.className).toContain("nauta-themed");
   });
 
-  it("sets CSS variables from the nauta-teal (default) pack on the wrapper element", () => {
+  it("sets CSS variables from the polytoken-teal (default) pack on the wrapper element", () => {
     const container = mountTracked(
       <ThemedRoot packId={DEFAULT_PACK_ID}>
         <span>child</span>
@@ -138,7 +138,7 @@ describe("ThemedRoot", () => {
     const wrapper = container.firstElementChild as HTMLElement;
     const style = wrapper.getAttribute("style") ?? "";
 
-    // At least one var in linear-clean must differ from nauta-teal
+    // At least one var in linear-clean must differ from polytoken-teal
     const primaryLinear = linearPack.resolvedVars["primary"];
     const primaryDefault = defaultPack.resolvedVars["primary"];
     // Sanity-check the packs ARE different
@@ -284,7 +284,7 @@ describe("SpecRenderer + ThemedRoot integration", () => {
     const style = themed?.getAttribute("style") ?? "";
     // linear-clean has at least --primary set
     expect(style).toContain("--primary");
-    // The linear-clean primary should differ from nauta-teal primary
+    // The linear-clean primary should differ from polytoken-teal primary
     const linearPrimary = getStylePack("linear-clean").resolvedVars["primary"];
     expect(style).toContain(linearPrimary);
   });

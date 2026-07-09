@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
-import { ScrollArea } from "@nauta/ui/scroll-area";
+import { ScrollArea } from "@polytoken/ui/scroll-area";
 
 import { LayersTreeRow } from "./layers-tree-row";
 

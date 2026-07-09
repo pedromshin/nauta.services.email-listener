@@ -255,7 +255,7 @@ class JudgeAdapter:
         Args:
             intent: The original user prompt/intent string.
             spec: The generated SpecRoot dict to evaluate.
-            style_pack_id: The style pack identifier (e.g. 'nauta-teal').
+            style_pack_id: The style pack identifier (e.g. 'polytoken-teal').
 
         Returns:
             JudgeResult with score in [0.0, 1.0], or score=None on failure.

@@ -1,5 +1,5 @@
 {
-  "name": "nauta-services",
+  "name": "polytoken-services",
   "private": true,
   "engines": {
     "node": ">=20.12.0"
@@ -27,17 +27,17 @@
     "sb:stop": "supabase stop",
     "sb:status": "supabase status",
     "sb:reset": "supabase db reset",
-    "db:generate": "npm run migration:generate -w @nauta/db",
-    "db:migrate": "npm run migrate:local -w @nauta/db",
-    "db:migrate:staging": "npm run migrate:staging -w @nauta/db",
-    "db:migrate:prod": "npm run migrate:prod -w @nauta/db",
-    "db:studio": "npm run studio -w @nauta/db",
-    "db:check": "npm run check -w @nauta/db",
-    "web:dev": "npm run dev -w @nauta/web",
-    "web:dev:staging": "npm run dev:staging -w @nauta/web",
-    "web:dev:prod": "npm run dev:prod -w @nauta/web",
-    "web:build": "npm run build -w @nauta/api-client && npm run build -w @nauta/web",
-    "api-client:build": "npm run build -w @nauta/api-client"
+    "db:generate": "npm run migration:generate -w @polytoken/db",
+    "db:migrate": "npm run migrate:local -w @polytoken/db",
+    "db:migrate:staging": "npm run migrate:staging -w @polytoken/db",
+    "db:migrate:prod": "npm run migrate:prod -w @polytoken/db",
+    "db:studio": "npm run studio -w @polytoken/db",
+    "db:check": "npm run check -w @polytoken/db",
+    "web:dev": "npm run dev -w @polytoken/web",
+    "web:dev:staging": "npm run dev:staging -w @polytoken/web",
+    "web:dev:prod": "npm run dev:prod -w @polytoken/web",
+    "web:build": "npm run build -w @polytoken/api-client && npm run build -w @polytoken/web",
+    "api-client:build": "npm run build -w @polytoken/api-client"
   },
   "devDependencies": {
     "jsdom": "^29.1.1",

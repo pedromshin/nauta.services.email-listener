@@ -2,10 +2,10 @@
 
 import { Check, Loader2, X } from "lucide-react";
 
-import { Badge } from "@nauta/ui/badge";
-import { Button } from "@nauta/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@nauta/ui/card";
-import { Skeleton } from "@nauta/ui/skeleton";
+import { Badge } from "@polytoken/ui/badge";
+import { Button } from "@polytoken/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@polytoken/ui/card";
+import { Skeleton } from "@polytoken/ui/skeleton";
 
 import { RejectMergeDialog } from "./reject-merge-dialog";
 

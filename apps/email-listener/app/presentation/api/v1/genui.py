@@ -80,7 +80,7 @@ class GenerateUiSpecRequest(BaseModel):
             "Optional style pack identifier. Must be one of the known pack IDs: "
             f"{', '.join(STYLE_PACK_IDS)}. "
             "Unknown values are rejected with HTTP 422 (T-17-04 spoofing guard). "
-            "Defaults to the nauta-teal pack when omitted."
+            "Defaults to the polytoken-teal pack when omitted."
         ),
     )
 

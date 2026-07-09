@@ -13,8 +13,8 @@
 
 import { Check, Loader2 } from "lucide-react";
 
-import { Button } from "@nauta/ui/button";
-import { ScrollArea } from "@nauta/ui/scroll-area";
+import { Button } from "@polytoken/ui/button";
+import { ScrollArea } from "@polytoken/ui/scroll-area";
 
 import type { LayersComponent } from "./layers-panel";
 

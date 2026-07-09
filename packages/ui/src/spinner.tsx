@@ -1,7 +1,7 @@
 import type * as React from "react"
 import { Loader2Icon } from "lucide-react"
 
-import { cn } from "@nauta/ui"
+import { cn } from "@polytoken/ui"
 
 function Spinner({ className, ...props }: React.ComponentProps<"svg">) {
   return (

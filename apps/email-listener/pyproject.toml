@@ -1,7 +1,7 @@
 [project]
 name = "email-listener"
 version = "0.1.0"
-description = "Nauta email listener — receives and logs raw inbound emails"
+description = "Polytoken email listener — receives and logs raw inbound emails"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",

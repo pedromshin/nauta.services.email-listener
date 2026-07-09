@@ -18,7 +18,7 @@
 
 import { expect, test } from "@playwright/test";
 
-import { ISLAND_SANDBOX, buildIslandSrcdoc } from "@nauta/genui/sandbox";
+import { ISLAND_SANDBOX, buildIslandSrcdoc } from "@polytoken/genui/sandbox";
 
 /** Mount a sandboxed island frame on a blank page and return a FrameLocator-friendly handle. */
 async function mountIsland(pageEvaluateCode: string, island: string): Promise<void> {

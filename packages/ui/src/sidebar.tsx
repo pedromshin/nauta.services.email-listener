@@ -5,7 +5,7 @@ import { Slot } from "@radix-ui/react-slot";
 import { type VariantProps, cva } from "class-variance-authority";
 import { PanelLeft } from "lucide-react";
 
-import { cn } from "@nauta/ui";
+import { cn } from "@polytoken/ui";
 import { Button } from "./button";
 import { Input } from "./input";
 import { Separator } from "./separator";

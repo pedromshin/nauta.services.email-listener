@@ -1,5 +1,5 @@
 /**
- * schema/index.ts — Public re-exports for @nauta/genui/schema
+ * schema/index.ts — Public re-exports for @polytoken/genui/schema
  *
  * Exports all schemas, inferred types, bound constants, and walker utilities
  * from spec-schema.ts. Downstream plans (renderer, demo) import from here.

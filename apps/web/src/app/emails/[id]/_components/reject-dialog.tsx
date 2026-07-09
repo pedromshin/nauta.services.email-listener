@@ -9,8 +9,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@nauta/ui/alert-dialog";
-import { buttonVariants } from "@nauta/ui/button";
+} from "@polytoken/ui/alert-dialog";
+import { buttonVariants } from "@polytoken/ui/button";
 
 interface RejectDialogProps {
   readonly open: boolean;

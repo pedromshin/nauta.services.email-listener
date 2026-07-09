@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { Badge } from "@nauta/ui/badge";
+import { Badge } from "@polytoken/ui/badge";
 
 /** One distinct extracted entity type for an email (from emails.entitySummary). */
 export interface EntityChipEntry {

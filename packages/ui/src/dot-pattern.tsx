@@ -3,7 +3,7 @@
 import React, { useEffect, useId, useRef, useState } from "react"
 import { motion } from "motion/react"
 
-import { cn } from "@nauta/ui"
+import { cn } from "@polytoken/ui"
 
 /**
  *  DotPattern Component Props

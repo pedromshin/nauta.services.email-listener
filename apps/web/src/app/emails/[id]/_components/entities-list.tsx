@@ -1,21 +1,21 @@
 "use client";
 
-import { Badge } from "@nauta/ui/badge";
-import { Button } from "@nauta/ui/button";
+import { Badge } from "@polytoken/ui/badge";
+import { Button } from "@polytoken/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@nauta/ui/card";
-import { Checkbox } from "@nauta/ui/checkbox";
-import { ScrollArea } from "@nauta/ui/scroll-area";
+} from "@polytoken/ui/card";
+import { Checkbox } from "@polytoken/ui/checkbox";
+import { ScrollArea } from "@polytoken/ui/scroll-area";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@nauta/ui/tooltip";
+} from "@polytoken/ui/tooltip";
 
 import { FieldsPanel } from "./fields-panel";
 import { getStatusBadge } from "./status-badge";

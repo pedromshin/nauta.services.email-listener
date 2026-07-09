@@ -24,7 +24,7 @@
 
 import { useMemo } from "react";
 
-import type { ActionRegistry } from "@nauta/genui/renderer";
+import type { ActionRegistry } from "@polytoken/genui/renderer";
 
 import { useCanvasStore, type UsePanelDataResult } from "./canvas-store-context";
 

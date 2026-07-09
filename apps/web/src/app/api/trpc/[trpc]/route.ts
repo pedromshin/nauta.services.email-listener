@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 
-import { appRouter, createTRPCContext } from "@nauta/api-client";
+import { appRouter, createTRPCContext } from "@polytoken/api-client";
 
 const handler = (req: NextRequest) =>
   fetchRequestHandler({

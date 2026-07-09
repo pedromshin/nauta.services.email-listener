@@ -43,7 +43,7 @@ import { Handle, Position } from "@xyflow/react";
 import type { Node, NodeProps } from "@xyflow/react";
 import { PanelsTopLeft } from "lucide-react";
 
-import { ScrollArea } from "@nauta/ui/scroll-area";
+import { ScrollArea } from "@polytoken/ui/scroll-area";
 
 import { GenuiPartBoundary } from "../_components/genui-part-boundary";
 import {

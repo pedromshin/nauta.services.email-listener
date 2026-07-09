@@ -1,7 +1,7 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 
-import { Emails } from "@nauta/db/schema";
+import { Emails } from "@polytoken/db/schema";
 
 import { createTRPCRouter, publicProcedure } from "../../trpc";
 import { emailDetailProcedures } from "./detail";

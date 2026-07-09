@@ -19,7 +19,7 @@
 import * as React from "react";
 import type { LucideIcon } from "lucide-react";
 
-import { Button } from "@nauta/ui/button";
+import { Button } from "@polytoken/ui/button";
 
 export interface EmptyStateAction {
   readonly label: string;

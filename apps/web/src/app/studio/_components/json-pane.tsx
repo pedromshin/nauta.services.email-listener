@@ -18,8 +18,8 @@ import * as React from "react";
 import { useCallback, useState } from "react";
 import { Check, Copy } from "lucide-react";
 
-import { Button } from "@nauta/ui/button";
-import { ScrollArea } from "@nauta/ui/scroll-area";
+import { Button } from "@polytoken/ui/button";
+import { ScrollArea } from "@polytoken/ui/scroll-area";
 
 /** Duration the Check icon stays visible after a successful copy (turn-action-row.tsx idiom). */
 const COPIED_RESET_MS = 1500;

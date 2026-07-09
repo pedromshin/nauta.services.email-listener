@@ -3,15 +3,15 @@
 import { useEffect } from "react";
 import { MousePointer2, Pencil, X } from "lucide-react";
 
-import { Button } from "@nauta/ui/button";
-import { Separator } from "@nauta/ui/separator";
-import { Switch } from "@nauta/ui/switch";
+import { Button } from "@polytoken/ui/button";
+import { Separator } from "@polytoken/ui/separator";
+import { Switch } from "@polytoken/ui/switch";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@nauta/ui/tooltip";
+} from "@polytoken/ui/tooltip";
 
 /** Tool mode (D-08): default is select; drag-on-empty draws regardless. */
 export type CanvasMode = "select" | "draw";

@@ -8,7 +8,7 @@ import React, {
 } from "react"
 import { AnimatePresence, motion, type MotionProps } from "motion/react"
 
-import { cn } from "@nauta/ui"
+import { cn } from "@polytoken/ui"
 
 export function AnimatedListItem({ children }: { children: React.ReactNode }) {
   const animations: MotionProps = {

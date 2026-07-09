@@ -19,7 +19,7 @@
 
 import * as React from "react";
 
-import { cn } from "@nauta/ui";
+import { cn } from "@polytoken/ui";
 
 export interface GeneratingRingProps {
   readonly active: boolean;

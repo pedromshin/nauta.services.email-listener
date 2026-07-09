@@ -8,7 +8,7 @@
  * statically committed JSON (76 entries); no AI-generated suggestions.
  *
  * Static import pattern (mirrors catalog-browser-island.tsx):
- *   PAGE_IDEAS is imported directly from @nauta/genui/eval — no tRPC,
+ *   PAGE_IDEAS is imported directly from @polytoken/genui/eval — no tRPC,
  *   no fetch, no network call. Filtering is pure in-memory JS.
  *
  * Props:
@@ -31,20 +31,20 @@
 import React, { useCallback, useMemo, useState } from "react";
 import { Shuffle } from "lucide-react";
 
-import { Badge } from "@nauta/ui/badge";
-import { Button } from "@nauta/ui/button";
-import { Card, CardContent, CardHeader } from "@nauta/ui/card";
+import { Badge } from "@polytoken/ui/badge";
+import { Button } from "@polytoken/ui/button";
+import { Card, CardContent, CardHeader } from "@polytoken/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@nauta/ui/select";
+} from "@polytoken/ui/select";
 
-import { PAGE_IDEAS } from "@nauta/genui/eval";
-import { pickPageIdea } from "@nauta/genui/studio";
-import type { PageIdea } from "@nauta/genui/eval";
+import { PAGE_IDEAS } from "@polytoken/genui/eval";
+import { pickPageIdea } from "@polytoken/genui/studio";
+import type { PageIdea } from "@polytoken/genui/eval";
 
 // ---------------------------------------------------------------------------
 // Constants

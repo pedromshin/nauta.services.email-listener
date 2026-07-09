@@ -3,7 +3,7 @@
 /**
  * generation-state-chrome.tsx — Four-state chrome row for the Generation Sandbox.
  *
- * Derives the current GenerationState from `deriveGenerationState` (15-01, @nauta/genui/studio)
+ * Derives the current GenerationState from `deriveGenerationState` (15-01, @polytoken/genui/studio)
  * and renders the appropriate visual treatment per 15-UI-SPEC §9:
  *
  *   (a) in_progress → Loader2 animate-spin + "Generating…"  (NOT "Streaming" — D-02 honesty)
@@ -22,8 +22,8 @@
 import React from "react";
 import { Loader2, AlertTriangle } from "lucide-react";
 
-import { Badge } from "@nauta/ui/badge";
-import { deriveGenerationState } from "@nauta/genui/studio";
+import { Badge } from "@polytoken/ui/badge";
+import { deriveGenerationState } from "@polytoken/genui/studio";
 
 // ---------------------------------------------------------------------------
 // Props

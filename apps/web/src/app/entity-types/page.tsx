@@ -4,8 +4,8 @@ import { Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
-import { Badge } from "@nauta/ui/badge";
-import { Button } from "@nauta/ui/button";
+import { Badge } from "@polytoken/ui/badge";
+import { Button } from "@polytoken/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -13,10 +13,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@nauta/ui/dialog";
-import { Input } from "@nauta/ui/input";
-import { Label } from "@nauta/ui/label";
-import { Skeleton } from "@nauta/ui/skeleton";
+} from "@polytoken/ui/dialog";
+import { Input } from "@polytoken/ui/input";
+import { Label } from "@polytoken/ui/label";
+import { Skeleton } from "@polytoken/ui/skeleton";
 
 import { api } from "~/trpc/react";
 

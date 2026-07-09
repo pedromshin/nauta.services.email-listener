@@ -1,5 +1,5 @@
 /**
- * catalog/index.ts — Public re-exports for @nauta/genui/catalog
+ * catalog/index.ts — Public re-exports for @polytoken/genui/catalog
  *
  * Re-exports:
  *   - Types from types.ts (Plan 01)

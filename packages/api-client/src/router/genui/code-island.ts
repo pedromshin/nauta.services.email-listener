@@ -5,7 +5,7 @@
  * JavaScript island code via Bedrock forced-tool-use (Phase 20 full phase). Unlike the
  * declarative `generate` procedure, there is NO spec re-validation here — island code is
  * free-form and is gated instead by the CLIENT-side AST allowlist + repair loop inside the
- * sandboxed frame (@nauta/genui/sandbox). This procedure only proxies the code string + outcome.
+ * sandboxed frame (@polytoken/genui/sandbox). This procedure only proxies the code string + outcome.
  *
  * Security contracts (mirroring generate.ts):
  *   - EMAIL_LISTENER_API_KEY is server-side only (getListenerConfig(); never NEXT_PUBLIC_).

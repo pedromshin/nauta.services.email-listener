@@ -14,7 +14,7 @@
 import { desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { ChatConversations } from "@nauta/db/schema";
+import { ChatConversations } from "@polytoken/db/schema";
 
 import { publicProcedure } from "../../trpc";
 

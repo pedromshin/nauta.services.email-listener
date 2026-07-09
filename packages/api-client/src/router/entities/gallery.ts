@@ -21,7 +21,7 @@ import {
   EmailComponents,
   EntityInstances,
   EntityTypes,
-} from "@nauta/db/schema";
+} from "@polytoken/db/schema";
 
 import { publicProcedure } from "../../trpc";
 

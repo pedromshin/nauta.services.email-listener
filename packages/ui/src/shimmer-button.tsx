@@ -1,6 +1,6 @@
 import React, { type ComponentPropsWithoutRef, type CSSProperties } from "react"
 
-import { cn } from "@nauta/ui"
+import { cn } from "@polytoken/ui"
 
 export interface ShimmerButtonProps extends ComponentPropsWithoutRef<"button"> {
   shimmerColor?: string

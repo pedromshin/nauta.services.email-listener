@@ -1,8 +1,8 @@
 "use client";
 
-import { Badge } from "@nauta/ui/badge";
-import { Button } from "@nauta/ui/button";
-import { Input } from "@nauta/ui/input";
+import { Badge } from "@polytoken/ui/badge";
+import { Button } from "@polytoken/ui/button";
+import { Input } from "@polytoken/ui/input";
 import { Loader2 } from "lucide-react";
 
 import { getStatusBadge } from "./status-badge";

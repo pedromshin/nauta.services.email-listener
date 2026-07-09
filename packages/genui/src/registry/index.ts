@@ -1,5 +1,5 @@
 /**
- * registry/index.ts — Public re-exports for @nauta/genui/registry
+ * registry/index.ts — Public re-exports for @polytoken/genui/registry
  */
 
 export {

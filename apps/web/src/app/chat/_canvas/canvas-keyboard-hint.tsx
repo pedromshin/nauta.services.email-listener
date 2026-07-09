@@ -10,7 +10,7 @@
 
 import { X } from "lucide-react";
 
-import { Button } from "@nauta/ui/button";
+import { Button } from "@polytoken/ui/button";
 
 export const KEYBOARD_HINT_DISMISSED_KEY = "nauta.chat.canvas-keyboard-hint-dismissed";
 

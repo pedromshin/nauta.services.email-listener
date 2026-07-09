@@ -1,6 +1,6 @@
 "use client";
 
-import { Popover, PopoverContent, PopoverTrigger } from "@nauta/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@polytoken/ui/popover";
 
 import { api } from "~/trpc/react";
 

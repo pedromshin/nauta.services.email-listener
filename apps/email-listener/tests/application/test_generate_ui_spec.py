@@ -798,7 +798,7 @@ async def test_two_packs_yield_two_distinct_cache_keys(
         templates=mock_templates,
     )
 
-    # Capture the first cache-key lookup arg (nauta-teal)
+    # Capture the first cache-key lookup arg (polytoken-teal)
     key_calls: list[str] = []
     original_find = mock_templates.find_by_cache_key
 
@@ -812,7 +812,7 @@ async def test_two_packs_yield_two_distinct_cache_keys(
         intent="Show invoice",
         raw_content="Invoice #1",
         registry_version="v1",
-        style_pack_id="nauta-teal",
+        style_pack_id="polytoken-teal",
     )
     await uc.execute(
         intent="Show invoice",
@@ -855,7 +855,7 @@ async def test_cache_miss_calls_retrieve_before_generate(
         intent="Show invoice",
         raw_content="content",
         registry_version="v1",
-        style_pack_id="nauta-teal",
+        style_pack_id="polytoken-teal",
     )
 
     assert call_order == ["retrieve", "generate"], (
@@ -982,7 +982,7 @@ async def test_cache_hit_still_short_circuits_with_pack(
         intent="Show invoice",
         raw_content="Invoice #123",
         registry_version="v1",
-        style_pack_id="nauta-teal",
+        style_pack_id="polytoken-teal",
     )
 
     assert result.cache_hit is True
@@ -1004,7 +1004,7 @@ async def test_no_retrieval_provider_wired_still_works(
         intent="Show details",
         raw_content="content",
         registry_version="v1",
-        style_pack_id="nauta-teal",
+        style_pack_id="polytoken-teal",
     )
     assert result.spec is not None
 
@@ -1038,11 +1038,11 @@ def test_generation_event_has_style_pack_and_retrieved_fields() -> None:
         outcome="ok",
         spec_validation_passed=True,
         registry_version="v1",
-        style_pack_id="nauta-teal",
+        style_pack_id="polytoken-teal",
         retrieved_ids=("card", "grid"),
         retrieved_overlap_count=1,
     )
-    assert event.style_pack_id == "nauta-teal"
+    assert event.style_pack_id == "polytoken-teal"
     assert event.retrieved_ids == ("card", "grid")
     assert event.retrieved_overlap_count == 1
 

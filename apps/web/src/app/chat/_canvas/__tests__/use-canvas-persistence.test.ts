@@ -22,7 +22,7 @@
 import { describe, expect, it } from "vitest";
 import type { Edge as FlowEdge, Node as FlowNode } from "@xyflow/react";
 
-import { CanvasSnapshotSchema } from "@nauta/api-client/chat-canvas";
+import { CanvasSnapshotSchema } from "@polytoken/api-client/chat-canvas";
 
 import type { ChatHistoryRow } from "../../_hooks/use-conversation-controller";
 import { NODE_REGISTRY_VERSION } from "../node-registry-version";

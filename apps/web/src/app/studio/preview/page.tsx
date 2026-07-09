@@ -1,28 +1,28 @@
 import type { Metadata } from "next";
 import React from "react";
 
-import { Badge } from "@nauta/ui/badge";
+import { Badge } from "@polytoken/ui/badge";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from "@nauta/ui/resizable";
+} from "@polytoken/ui/resizable";
 
-import { SHOWCASE_SPEC } from "@nauta/genui/demo";
-import { REGISTRY_VERSION } from "@nauta/genui/registry";
+import { SHOWCASE_SPEC } from "@polytoken/genui/demo";
+import { REGISTRY_VERSION } from "@polytoken/genui/registry";
 
 import { SpecRendererIsland } from "./_components/spec-renderer-island";
 import { JsonPane } from "../_components/json-pane";
 
 export const metadata: Metadata = {
-  title: "Studio — Nauta",
+  title: "Studio — Polytoken",
   description: "Component showcase: trusted interpreter rendering hardcoded demo specs.",
 };
 
 /**
  * /studio/preview — server-component shell.
  *
- * Renders the hardcoded SHOWCASE_SPEC as live @nauta/ui components
+ * Renders the hardcoded SHOWCASE_SPEC as live @polytoken/ui components
  * (left pane, client island ssr:false) side-by-side with the raw spec JSON
  * (right pane, read-only) — D-19/STDO-03.
  *

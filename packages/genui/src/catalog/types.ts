@@ -1,5 +1,5 @@
 /**
- * catalog/types.ts — Vocabulary contract for the @nauta/genui catalog.
+ * catalog/types.ts — Vocabulary contract for the @polytoken/genui catalog.
  *
  * These types are the foundation that Plans 02 (registry), 03 (renderer),
  * and 04 (demo/studio) all depend on. No implementation logic here —
@@ -17,7 +17,7 @@ import type { ZodType } from "zod";
  * All spec node types registered in the component catalog (D-08).
  *
  * Leaf components (8): text, badge, button, card, key-value-list, separator, alert, table.
- * Layout primitives (3): stack, grid, section (house-built containers, not @nauta/ui exports).
+ * Layout primitives (3): stack, grid, section (house-built containers, not @polytoken/ui exports).
  * Iteration + conditional (2): list, conditional (SPEC-01 requirement).
  * Phase 18 additions (5): avatar, input, nav, feed-item, tabs.
  *

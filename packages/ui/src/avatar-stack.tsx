@@ -1,5 +1,5 @@
 import { Children, type ReactNode } from "react";
-import { cn } from "@nauta/ui";
+import { cn } from "@polytoken/ui";
 
 export type AvatarStackProps = {
   children: ReactNode;

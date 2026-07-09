@@ -28,7 +28,7 @@ import React, { useCallback, useState } from "react";
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@nauta/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@polytoken/ui/tabs";
 
 import { CatalogBrowserIsland } from "./catalog-browser-island";
 import { GenerationSandboxIsland } from "./generation-sandbox-island";

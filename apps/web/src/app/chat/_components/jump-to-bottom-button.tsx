@@ -2,7 +2,7 @@
 
 import { ArrowDown } from "lucide-react";
 
-import { Button } from "@nauta/ui/button";
+import { Button } from "@polytoken/ui/button";
 
 export interface JumpToBottomButtonProps {
   readonly onClick: () => void;

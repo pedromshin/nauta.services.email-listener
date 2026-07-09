@@ -1,6 +1,6 @@
-import { Badge } from "@nauta/ui/badge";
+import { Badge } from "@polytoken/ui/badge";
 
-import type { RouterOutputs } from "@nauta/api-client";
+import type { RouterOutputs } from "@polytoken/api-client";
 
 import type { WebllmStatus } from "../_hooks/use-webllm-engine";
 import { WebLLMLoading } from "./webllm-loading";

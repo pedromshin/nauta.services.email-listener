@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 
-import { cn } from "@nauta/ui";
-import { Button } from "@nauta/ui/button";
-import { Collapsible, CollapsibleContent } from "@nauta/ui/collapsible";
-import { ScrollArea } from "@nauta/ui/scroll-area";
-import { Skeleton } from "@nauta/ui/skeleton";
+import { cn } from "@polytoken/ui";
+import { Button } from "@polytoken/ui/button";
+import { Collapsible, CollapsibleContent } from "@polytoken/ui/collapsible";
+import { ScrollArea } from "@polytoken/ui/scroll-area";
+import { Skeleton } from "@polytoken/ui/skeleton";
 
 import { api } from "~/trpc/react";
 
@@ -42,7 +42,7 @@ function RailSkeleton(): React.ReactElement {
 
 /**
  * ConversationRail (D-11) — own collapsible rail nested inside /chat, built
- * from @nauta/ui/collapsible (Radix Collapsible) rather than a second
+ * from @polytoken/ui/collapsible (Radix Collapsible) rather than a second
  * app-shell-style sidebar provider — reusing that provider would collide
  * with the app shell's shared `sidebar:state` cookie. Collapse state persists
  * to `localStorage["chat:rail:collapsed"]`, independent of that cookie; the

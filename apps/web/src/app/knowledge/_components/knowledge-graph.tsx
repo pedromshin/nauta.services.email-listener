@@ -58,7 +58,7 @@ import "@xyflow/react/dist/style.css";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ReactFlowJSX = ReactFlow as React.ComponentType<ReactFlowProps<FlowNode, FlowEdge>>;
 
-import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@nauta/ui/resizable";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@polytoken/ui/resizable";
 
 import { api } from "~/trpc/react";
 
@@ -91,8 +91,8 @@ const DEFAULT_VISIBLE_TYPES = new Set<NodeTypeKey>([
 ]);
 
 // ---------------------------------------------------------------------------
-// Local type mirrors of @nauta/api-client GraphNode/GraphEdge
-// (No subpath export from @nauta/api-client for the router internals —
+// Local type mirrors of @polytoken/api-client GraphNode/GraphEdge
+// (No subpath export from @polytoken/api-client for the router internals —
 //  inlining the minimal shapes avoids brittle dist path imports.)
 // ---------------------------------------------------------------------------
 

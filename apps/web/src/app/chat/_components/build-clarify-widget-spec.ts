@@ -18,7 +18,7 @@
  * `GenuiPartBoundary` — the same FOUND-6 gate every other genui part goes through.
  */
 
-import type { SpecRoot } from "@nauta/genui/schema";
+import type { SpecRoot } from "@polytoken/genui/schema";
 
 /** The `setState` key the clarify-widget form's `onSubmit` carries — `InteractiveWidgetBoundary`'s
  * actions registry reads this key's `values` payload (24-04 Task 2's FormComponent enrichment:

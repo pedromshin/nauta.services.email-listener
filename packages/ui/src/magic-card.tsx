@@ -9,7 +9,7 @@ import {
 } from "motion/react"
 import { useTheme } from "next-themes"
 
-import { cn } from "@nauta/ui"
+import { cn } from "@polytoken/ui"
 
 interface MagicCardBaseProps {
   children?: React.ReactNode

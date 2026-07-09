@@ -3,11 +3,11 @@
 import { ChevronDown, ChevronUp, Pencil, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { Badge } from "@nauta/ui/badge";
-import { Button } from "@nauta/ui/button";
-import { Input } from "@nauta/ui/input";
-import { Label } from "@nauta/ui/label";
-import { Switch } from "@nauta/ui/switch";
+import { Badge } from "@polytoken/ui/badge";
+import { Button } from "@polytoken/ui/button";
+import { Input } from "@polytoken/ui/input";
+import { Label } from "@polytoken/ui/label";
+import { Switch } from "@polytoken/ui/switch";
 import {
   Table,
   TableBody,
@@ -15,8 +15,8 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@nauta/ui/table";
-import { Textarea } from "@nauta/ui/textarea";
+} from "@polytoken/ui/table";
+import { Textarea } from "@polytoken/ui/textarea";
 
 import {
   FieldRowDialog,

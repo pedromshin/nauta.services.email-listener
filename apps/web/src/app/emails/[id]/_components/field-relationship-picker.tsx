@@ -2,13 +2,13 @@
 
 import { useState } from "react";
 
-import { Button } from "@nauta/ui/button";
+import { Button } from "@polytoken/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@nauta/ui/popover";
-import { Skeleton } from "@nauta/ui/skeleton";
+} from "@polytoken/ui/popover";
+import { Skeleton } from "@polytoken/ui/skeleton";
 
 import { api } from "~/trpc/react";
 

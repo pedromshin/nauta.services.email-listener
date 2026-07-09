@@ -17,7 +17,7 @@ import {
   type MotionProps,
 } from "motion/react"
 
-import { cn } from "@nauta/ui"
+import { cn } from "@polytoken/ui"
 
 const motionElements = {
   article: motion.article,

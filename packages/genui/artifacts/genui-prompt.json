@@ -118,7 +118,7 @@
     },
     {
       "type": "tabs",
-      "description": "Tabbed content panel wrapping @nauta/ui/tabs (Radix Tabs). aria-label is required for accessibility. Each tab needs a unique value (used as the key), a label shown on the trigger, and a content node (a SpecNode rendered in the panel). defaultValue sets the initially active tab — defaults to the first tab's value. Presentational-only in Phase 18; interactive state is wired in Phase 19.",
+      "description": "Tabbed content panel wrapping @polytoken/ui/tabs (Radix Tabs). aria-label is required for accessibility. Each tab needs a unique value (used as the key), a label shown on the trigger, and a content node (a SpecNode rendered in the panel). defaultValue sets the initially active tab — defaults to the first tab's value. Presentational-only in Phase 18; interactive state is wired in Phase 19.",
       "acceptsChildren": false,
       "slots": [],
       "lockedProps": []

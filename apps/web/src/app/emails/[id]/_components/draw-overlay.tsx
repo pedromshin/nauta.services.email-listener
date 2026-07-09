@@ -5,7 +5,7 @@ import { useRef } from "react";
 import {
   clientXYToNormalized,
   normalizedRectToPolygon,
-} from "@nauta/api-client/geometry";
+} from "@polytoken/api-client/geometry";
 
 /** Minimum draw size in normalized units (1% of the page in each dimension). */
 const MIN_DRAW_SIZE = 0.01;

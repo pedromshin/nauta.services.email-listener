@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { Input } from "@nauta/ui/input";
+import { Input } from "@polytoken/ui/input";
 
 interface InlineRenameFieldProps {
   readonly initialValue: string;

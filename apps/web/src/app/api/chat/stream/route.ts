@@ -9,7 +9,7 @@
  * browser-visible env var. This mirrors
  * packages/api-client/src/router/_listener-config.ts's contract exactly;
  * duplicated (not imported) because that helper is package-private to
- * @nauta/api-client's own tRPC router files, not re-exported from its
+ * @polytoken/api-client's own tRPC router files, not re-exported from its
  * public index.ts.
  *
  * The request body is Zod-validated (defense-in-depth mirroring FastAPI's

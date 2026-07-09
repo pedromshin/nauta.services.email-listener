@@ -2,14 +2,14 @@
 
 import { useState } from "react";
 
-import { Badge } from "@nauta/ui/badge";
-import { Button } from "@nauta/ui/button";
+import { Badge } from "@polytoken/ui/badge";
+import { Button } from "@polytoken/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@nauta/ui/card";
+} from "@polytoken/ui/card";
 
 /** Signed URL entry with expiry tracking (WR-01). */
 interface SignedUrlEntry {

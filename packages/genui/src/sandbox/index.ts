@@ -1,12 +1,12 @@
 /**
- * sandbox/index.ts — public surface for the @nauta/genui/sandbox subpath (Phase 20 spike).
+ * sandbox/index.ts — public surface for the @polytoken/genui/sandbox subpath (Phase 20 spike).
  *
  * The jailed-eval code-island: run arbitrary generated code inside a sandboxed opaque-origin
  * iframe, gated by a host-side AST allowlist + repaired by a v0-style validate→autofix→run→
  * heal→fallback loop. Framework-free core (no React/Next imports here).
  *
  * NOTE: `axe-source` is deliberately NOT re-exported here (it pulls the full axe-core module).
- * Import it from "@nauta/genui/sandbox/axe-source" only inside the dynamically-loaded frame.
+ * Import it from "@polytoken/genui/sandbox/axe-source" only inside the dynamically-loaded frame.
  */
 
 export {

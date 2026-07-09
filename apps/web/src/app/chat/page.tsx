@@ -3,7 +3,7 @@
 import { useCallback, useState } from "react";
 import { PanelLeft, PanelLeftClose } from "lucide-react";
 
-import { Button } from "@nauta/ui/button";
+import { Button } from "@polytoken/ui/button";
 
 import { api } from "~/trpc/react";
 

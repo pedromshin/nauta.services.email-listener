@@ -98,15 +98,15 @@ import {
   type CodeOptionsMultipleThemes,
   codeToHtml,
 } from "shiki";
-import { Button } from "@nauta/ui/button";
+import { Button } from "@polytoken/ui/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@nauta/ui/select";
-import { cn } from "@nauta/ui";
+} from "@polytoken/ui/select";
+import { cn } from "@polytoken/ui";
 
 export type { BundledLanguage } from "shiki";
 

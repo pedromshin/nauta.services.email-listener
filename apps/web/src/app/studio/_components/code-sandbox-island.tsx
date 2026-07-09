@@ -18,8 +18,8 @@ import React, { useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { Loader2, Play, Sparkles } from "lucide-react";
 
-import { Button } from "@nauta/ui/button";
-import { Textarea } from "@nauta/ui/textarea";
+import { Button } from "@polytoken/ui/button";
+import { Textarea } from "@polytoken/ui/textarea";
 
 import {
   ADVERSARIAL_FIXTURES,
@@ -29,7 +29,7 @@ import {
   failingHealer,
   stubHealer,
   type IslandHealer,
-} from "@nauta/genui/sandbox";
+} from "@polytoken/genui/sandbox";
 
 import { FileTree, type FileTreeNode } from "~/components/file-tree";
 import { api } from "~/trpc/react";

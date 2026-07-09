@@ -6,7 +6,7 @@
  * ThemedRoot is the SINGLE alias→CSS-var boundary in the genui render path.
  * It resolves a StylePackId to a curated set of CSS variables (from
  * pack.resolvedVars) and applies them as inline `style` on a wrapper div.
- * All shadcn/ui components in @nauta/ui read `hsl(var(--*))` automatically,
+ * All shadcn/ui components in @polytoken/ui read `hsl(var(--*))` automatically,
  * so swapping the pack id changes the entire visual theme without any component
  * changes.
  *
@@ -44,7 +44,7 @@ import type { StylePackId } from "./tokens";
 export interface ThemedRootProps {
   /**
    * The style pack id to resolve. Unknown ids silently fall back to the
-   * default pack (nauta-teal) via getStylePack() — T-17-04.
+   * default pack (polytoken-teal) via getStylePack() — T-17-04.
    */
   readonly packId: StylePackId | string;
   /** Content to theme. */
@@ -63,7 +63,7 @@ export interface ThemedRootProps {
  */
 export function ThemedRoot({ packId, children }: ThemedRootProps): React.ReactElement {
   // getStylePack always returns a valid pack — never throws (T-17-04 compliance).
-  // Unknown ids fall back to the default pack (nauta-teal).
+  // Unknown ids fall back to the default pack (polytoken-teal).
   const pack = getStylePack(packId as StylePackId);
 
   // Build the inline style object from curated resolvedVars only (T-17-02 compliance).

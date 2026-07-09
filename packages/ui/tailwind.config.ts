@@ -4,7 +4,7 @@
  */
 import type { Config } from "tailwindcss";
 
-import baseConfig from "@nauta/tailwind-config/web";
+import baseConfig from "@polytoken/tailwind-config/web";
 
 export default {
   darkMode: ["class"],

@@ -3,8 +3,8 @@ import { eq } from "drizzle-orm";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { db } from "@nauta/db/client";
-import { EmailAttachments } from "@nauta/db/schema";
+import { db } from "@polytoken/db/client";
+import { EmailAttachments } from "@polytoken/db/schema";
 
 // UUID v4 regex — validates the path param before hitting the DB
 const UUID_RE =

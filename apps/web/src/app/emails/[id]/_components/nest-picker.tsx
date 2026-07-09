@@ -1,11 +1,11 @@
 "use client";
 
-import { Button } from "@nauta/ui/button";
+import { Button } from "@polytoken/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@nauta/ui/popover";
+} from "@polytoken/ui/popover";
 
 interface EligibleRegion {
   readonly id: string;

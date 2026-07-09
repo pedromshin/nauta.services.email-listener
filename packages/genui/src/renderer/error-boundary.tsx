@@ -5,7 +5,7 @@
  * to catch render errors from a single spec node, preventing one malformed node
  * from crashing the entire rendered surface (SPEC-03, D-14, T-12-11).
  *
- * NodeErrorFallback is the inline fallback UI — does NOT import @nauta/ui/alert
+ * NodeErrorFallback is the inline fallback UI — does NOT import @polytoken/ui/alert
  * to avoid circular dependency on the error path (UI-SPEC §5).
  *
  * Security: no eval, no Function, no dangerouslySetInnerHTML (GR-01).
@@ -14,7 +14,7 @@
 import * as React from "react";
 
 // ---------------------------------------------------------------------------
-// NodeErrorFallback — inline fallback, no @nauta/ui/alert import (UI-SPEC §5)
+// NodeErrorFallback — inline fallback, no @polytoken/ui/alert import (UI-SPEC §5)
 // ---------------------------------------------------------------------------
 
 export interface NodeErrorFallbackProps {
@@ -29,7 +29,7 @@ export interface NodeErrorFallbackProps {
  * Styling per UI-SPEC §9: bg-destructive/10 border border-destructive/30 text-destructive.
  * Copy per UI-SPEC §9: `[!] "${nodeType}" node — ${reason}`.
  *
- * DOES NOT import from @nauta/ui/alert — circular-dep avoidance on the error path (UI-SPEC §5).
+ * DOES NOT import from @polytoken/ui/alert — circular-dep avoidance on the error path (UI-SPEC §5).
  */
 export function NodeErrorFallback({
   nodeType,

@@ -11,7 +11,7 @@ import { initTRPC } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
 
-import { db } from "@nauta/db/client";
+import { db } from "@polytoken/db/client";
 
 /**
  * 1. CONTEXT

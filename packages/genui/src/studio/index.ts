@@ -1,5 +1,5 @@
 /**
- * studio/index.ts — public surface for the @nauta/genui/studio subpath export.
+ * studio/index.ts — public surface for the @polytoken/genui/studio subpath export.
  *
  * Only pure, framework-free helpers are exported from this barrel.
  * No React, Next.js, or server-only imports are permitted here.

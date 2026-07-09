@@ -13,9 +13,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@nauta/ui/alert-dialog";
-import { Button, buttonVariants } from "@nauta/ui/button";
-import { Checkbox } from "@nauta/ui/checkbox";
+} from "@polytoken/ui/alert-dialog";
+import { Button, buttonVariants } from "@polytoken/ui/button";
+import { Checkbox } from "@polytoken/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -23,16 +23,16 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@nauta/ui/dialog";
-import { Input } from "@nauta/ui/input";
-import { Label } from "@nauta/ui/label";
+} from "@polytoken/ui/dialog";
+import { Input } from "@polytoken/ui/input";
+import { Label } from "@polytoken/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@nauta/ui/select";
+} from "@polytoken/ui/select";
 
 import type { FieldType } from "./use-entity-type-admin";
 

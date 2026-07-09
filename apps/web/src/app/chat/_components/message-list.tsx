@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 
-import { ScrollArea } from "@nauta/ui/scroll-area";
+import { ScrollArea } from "@polytoken/ui/scroll-area";
 
 import type { MessagePart, StreamState } from "../_hooks/use-chat-stream";
 import { JumpToBottomButton } from "./jump-to-bottom-button";
@@ -59,7 +59,7 @@ export interface MessageListProps {
  *
  * Reads the Radix ScrollArea's underlying scrollable viewport via its
  * `data-radix-scroll-area-viewport` attribute (set internally by
- * @radix-ui/react-scroll-area) — the wrapping @nauta/ui/scroll-area only
+ * @radix-ui/react-scroll-area) — the wrapping @polytoken/ui/scroll-area only
  * forwards a ref to the non-scrolling Root element, so the viewport itself
  * has to be queried once mounted.
  */

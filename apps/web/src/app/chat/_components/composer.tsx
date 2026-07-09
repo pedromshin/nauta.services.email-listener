@@ -3,8 +3,8 @@
 import { useCallback, useRef, useState } from "react";
 import { Send, Square } from "lucide-react";
 
-import { Button } from "@nauta/ui/button";
-import { Textarea } from "@nauta/ui/textarea";
+import { Button } from "@polytoken/ui/button";
+import { Textarea } from "@polytoken/ui/textarea";
 
 // max-h-52 (13 lines @ 16px line-height) — 22-UI-SPEC.md Spacing Scale.
 const MAX_TEXTAREA_HEIGHT_PX = 208;

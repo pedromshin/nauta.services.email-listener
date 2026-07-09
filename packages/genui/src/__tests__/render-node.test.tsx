@@ -945,7 +945,7 @@ describe("SpecRenderer page-shell (Phase 17 layout robustness)", () => {
   it("frames themed generations in the centered, max-width, padded page-shell", () => {
     const spec: SpecRoot = {
       v: 1,
-      style_pack_id: "nauta-teal",
+      style_pack_id: "polytoken-teal",
       root: { type: "text", content: "Hello", variant: "body" },
     };
     const html = renderToStaticMarkup(

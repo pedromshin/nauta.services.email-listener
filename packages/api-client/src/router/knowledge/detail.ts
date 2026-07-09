@@ -12,7 +12,7 @@
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { KnowledgeNodeEdges, KnowledgeNodes } from "@nauta/db/schema";
+import { KnowledgeNodeEdges, KnowledgeNodes } from "@polytoken/db/schema";
 
 import { publicProcedure } from "../../trpc";
 

@@ -3,14 +3,14 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import { Badge } from "@nauta/ui/badge";
-import { Button } from "@nauta/ui/button";
+import { Badge } from "@polytoken/ui/badge";
+import { Button } from "@polytoken/ui/button";
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from "@nauta/ui/resizable";
-import { Skeleton } from "@nauta/ui/skeleton";
+} from "@polytoken/ui/resizable";
+import { Skeleton } from "@polytoken/ui/skeleton";
 
 import { api } from "~/trpc/react";
 

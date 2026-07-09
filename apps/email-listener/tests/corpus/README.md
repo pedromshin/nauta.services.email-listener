@@ -1,4 +1,4 @@
-# Nauta Test Corpus
+# Polytoken Test Corpus
 
 A layered PDF test corpus for the Phase 4 email-intelligence pipeline (D-17).
 The corpus proves the `PdfParser → ProposeRegionsUseCase` stack against authentic

@@ -226,10 +226,10 @@ def test_cache_key_same_shape_different_values_hit_same_key() -> None:
 def test_cache_key_style_pack_id_change_yields_different_key() -> None:
     """Changing only style_pack_id must produce a different key (D-08 / T-17-20).
 
-    Two packs -> two distinct cache entries. A nauta-teal spec must never be served
+    Two packs -> two distinct cache entries. A polytoken-teal spec must never be served
     for a linear-clean request.
     """
-    args_nauta = {**_BASE_ARGS, "style_pack_id": "nauta-teal"}
+    args_nauta = {**_BASE_ARGS, "style_pack_id": "polytoken-teal"}
     args_linear = {**_BASE_ARGS, "style_pack_id": "linear-clean"}
     assert compute_cache_key(**args_nauta) != compute_cache_key(**args_linear)  # type: ignore[arg-type]
 
@@ -246,9 +246,9 @@ def test_cache_key_style_pack_id_none_is_deterministic() -> None:
 
 @pytest.mark.unit()
 def test_cache_key_no_style_pack_differs_from_explicit_pack() -> None:
-    """style_pack_id=None must differ from style_pack_id='nauta-teal' (T-17-20)."""
+    """style_pack_id=None must differ from style_pack_id='polytoken-teal' (T-17-20)."""
     args_none = {**_BASE_ARGS, "style_pack_id": None}
-    args_pack = {**_BASE_ARGS, "style_pack_id": "nauta-teal"}
+    args_pack = {**_BASE_ARGS, "style_pack_id": "polytoken-teal"}
     assert compute_cache_key(**args_none) != compute_cache_key(**args_pack)  # type: ignore[arg-type]
 
 
@@ -271,7 +271,7 @@ def test_style_pack_ids_contains_expected_packs() -> None:
     from app.infrastructure.llm.genui_style_packs import STYLE_PACK_IDS
 
     expected = {
-        "nauta-teal",
+        "polytoken-teal",
         "linear-clean",
         "warm-editorial",
         "brutalist",
@@ -296,10 +296,10 @@ def test_style_pack_ids_is_immutable_sequence() -> None:
 
 @pytest.mark.unit()
 def test_default_pack_id_is_nauta_teal() -> None:
-    """DEFAULT_PACK_ID must equal 'nauta-teal' (mirrors TS DEFAULT_PACK_ID)."""
+    """DEFAULT_PACK_ID must equal 'polytoken-teal' (mirrors TS DEFAULT_PACK_ID)."""
     from app.infrastructure.llm.genui_style_packs import DEFAULT_PACK_ID
 
-    assert DEFAULT_PACK_ID == "nauta-teal"
+    assert DEFAULT_PACK_ID == "polytoken-teal"
 
 
 @pytest.mark.unit()

@@ -6,16 +6,16 @@ import { toast } from "sonner";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
-import { Badge } from "@nauta/ui/badge";
-import { Button } from "@nauta/ui/button";
+import { Badge } from "@polytoken/ui/badge";
+import { Button } from "@polytoken/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@nauta/ui/card";
-import { Skeleton } from "@nauta/ui/skeleton";
-import { Switch } from "@nauta/ui/switch";
+} from "@polytoken/ui/card";
+import { Skeleton } from "@polytoken/ui/skeleton";
+import { Switch } from "@polytoken/ui/switch";
 
 import { ActionToolbar } from "./action-toolbar";
 import { DrawModeBar } from "./draw-mode-bar";

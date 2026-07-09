@@ -16,7 +16,7 @@
  * data, not arbitrary JSX composition — Claude's Discretion per 27-CONTEXT.md).
  * `ScrollArea`, RTL support, custom sort, and `CollapseButton` are all dropped
  * (no consumer here). Built directly on raw `@radix-ui/react-accordion` — NOT
- * `@nauta/ui`'s accordion wrapper, which bakes a bold trigger weight into its
+ * `@polytoken/ui`'s accordion wrapper, which bakes a bold trigger weight into its
  * base className (packages/ui/src/accordion.tsx:31) — so this component
  * carries zero inherited weight violations of its own. The selected-file-row
  * treatment (`bg-primary/10 text-primary`) is a verbatim reuse of
@@ -28,7 +28,7 @@ import { useCallback, useState } from "react";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
 import { ChevronRight, FileCode2, Folder, FolderOpen } from "lucide-react";
 
-import { cn } from "@nauta/ui";
+import { cn } from "@polytoken/ui";
 
 export interface FileTreeNode {
   readonly id: string;

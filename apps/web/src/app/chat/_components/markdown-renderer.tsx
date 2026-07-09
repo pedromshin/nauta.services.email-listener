@@ -29,7 +29,7 @@ import rehypeHighlight from "rehype-highlight";
 import rehypeSanitize from "rehype-sanitize";
 import remarkGfm from "remark-gfm";
 
-import { ScrollArea, ScrollBar } from "@nauta/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@polytoken/ui/scroll-area";
 
 // Token-neutral syntax theme. Code blocks render inside a bg-muted `<pre>`
 // wrapper (below); the highlighter's own theme colors the tokens within it.

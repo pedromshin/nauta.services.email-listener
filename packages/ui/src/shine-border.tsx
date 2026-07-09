@@ -2,7 +2,7 @@
 
 import * as React from "react"
 
-import { cn } from "@nauta/ui"
+import { cn } from "@polytoken/ui"
 
 interface ShineBorderProps extends React.HTMLAttributes<HTMLDivElement> {
   /**

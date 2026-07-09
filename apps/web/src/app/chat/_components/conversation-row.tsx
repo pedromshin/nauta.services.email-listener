@@ -3,14 +3,14 @@
 import { formatDistanceToNow } from "date-fns";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
-import { cn } from "@nauta/ui";
-import { Button } from "@nauta/ui/button";
+import { cn } from "@polytoken/ui";
+import { Button } from "@polytoken/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@nauta/ui/dropdown-menu";
+} from "@polytoken/ui/dropdown-menu";
 
 import { InlineRenameField } from "./inline-rename-field";
 

@@ -140,7 +140,7 @@ def compute_cache_key(
     Fixed field order ensures determinism (D-04 / CACHE-02).
 
     style_pack_id is a cache-key dimension (T-17-20): two packs -> two distinct entries.
-    A nauta-teal spec can never be served for a linear-clean request.
+    A polytoken-teal spec can never be served for a linear-clean request.
 
     Args:
         intent: Raw intent string (will be canonicalized internally unless

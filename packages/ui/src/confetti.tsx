@@ -17,7 +17,7 @@ import type {
 } from "canvas-confetti"
 import confetti from "canvas-confetti"
 
-import { Button } from "@nauta/ui/button"
+import { Button } from "@polytoken/ui/button"
 
 type Api = {
   fire: (options?: ConfettiOptions) => void

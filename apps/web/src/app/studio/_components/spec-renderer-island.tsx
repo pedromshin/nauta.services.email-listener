@@ -26,12 +26,12 @@
 import React from "react";
 import dynamic from "next/dynamic";
 
-import type { SpecRoot } from "@nauta/genui/schema";
-import type { ActionRegistry } from "@nauta/genui/renderer";
+import type { SpecRoot } from "@polytoken/genui/schema";
+import type { ActionRegistry } from "@polytoken/genui/renderer";
 
 const SpecRendererDynamic = dynamic(
   () =>
-    import("@nauta/genui/renderer").then((mod) => ({
+    import("@polytoken/genui/renderer").then((mod) => ({
       default: mod.SpecRenderer,
     })),
   {
@@ -45,7 +45,7 @@ export interface SpecRendererIslandProps {
   readonly data?: Record<string, unknown>;
   /**
    * Optional action handlers forwarded to SpecRenderer via ActionRegistryContext.
-   * Build with buildActionRegistry() from @nauta/genui/renderer (Phase 13 / D-08).
+   * Build with buildActionRegistry() from @polytoken/genui/renderer (Phase 13 / D-08).
    * When omitted, the default empty-context {} is used — all action IDs resolve to noop.
    */
   readonly actions?: ActionRegistry;

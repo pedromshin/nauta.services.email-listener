@@ -41,8 +41,8 @@
 
 import { z } from "zod";
 
-import { DataBindingSchema, type AllowedProcedure } from "@nauta/genui/schema";
-import type { DataBinding } from "@nauta/genui/schema";
+import { DataBindingSchema, type AllowedProcedure } from "@polytoken/genui/schema";
+import type { DataBinding } from "@polytoken/genui/schema";
 
 import { attemptRepairJson } from "../_components/genui-part-boundary";
 import { api } from "~/trpc/react";

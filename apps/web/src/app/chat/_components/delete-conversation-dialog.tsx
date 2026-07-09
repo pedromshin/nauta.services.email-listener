@@ -9,7 +9,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@nauta/ui/alert-dialog";
+} from "@polytoken/ui/alert-dialog";
 
 interface DeleteConversationDialogProps {
   readonly conversationTitle: string | null;

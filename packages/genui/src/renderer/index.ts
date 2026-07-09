@@ -1,5 +1,5 @@
 /**
- * renderer/index.ts — Public barrel for the @nauta/genui renderer export.
+ * renderer/index.ts — Public barrel for the @polytoken/genui renderer export.
  *
  * Re-exports everything that downstream consumers (app, tests, Phase 14) need
  * from the trusted interpreter and its collaborators.

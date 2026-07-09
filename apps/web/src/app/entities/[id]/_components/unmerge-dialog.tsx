@@ -10,8 +10,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@nauta/ui/alert-dialog";
-import { Button } from "@nauta/ui/button";
+} from "@polytoken/ui/alert-dialog";
+import { Button } from "@polytoken/ui/button";
 
 // ---------------------------------------------------------------------------
 // Props

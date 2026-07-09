@@ -21,7 +21,7 @@
 
 import { z } from "zod";
 
-import { SAFE_FALLBACK_SPEC } from "@nauta/genui/schema";
+import { SAFE_FALLBACK_SPEC } from "@polytoken/genui/schema";
 import { publicProcedure } from "../../trpc";
 import { getListenerConfig } from "../_listener-config";
 

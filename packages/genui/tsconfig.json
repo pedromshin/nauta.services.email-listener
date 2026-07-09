@@ -12,8 +12,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "paths": {
-      "@nauta/genui": ["./src/index.ts"],
-      "@nauta/genui/*": ["./src/*"]
+      "@polytoken/genui": ["./src/index.ts"],
+      "@polytoken/genui/*": ["./src/*"]
     }
   },
   "include": ["src"],

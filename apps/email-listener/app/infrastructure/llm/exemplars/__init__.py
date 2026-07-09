@@ -119,7 +119,7 @@ _DASHBOARD_SAAS: dict[str, object] = {
 
 _PROFILE_CONTACT: dict[str, object] = {
     "v": 1,
-    "style_pack_id": "nauta-teal",
+    "style_pack_id": "polytoken-teal",
     "data": {
         "contact_name": "Sarah Chen",
         "contact_email": "sarah.chen@example.org",
@@ -337,7 +337,7 @@ _PRICING_TIERS: dict[str, object] = {
 
 _FEED_EMAIL_INBOX: dict[str, object] = {
     "v": 1,
-    "style_pack_id": "nauta-teal",
+    "style_pack_id": "polytoken-teal",
     "data": {
         "inbox_count": "24 messages",
         "unread_count": "7 unread",
@@ -463,13 +463,13 @@ _LANDING_PRODUCT: dict[str, object] = {
     "v": 1,
     "style_pack_id": "warm-editorial",
     "data": {
-        "product_name": "Nauta",
+        "product_name": "Polytoken",
         "tagline": "Turn your email into structured intelligence",
-        "description": "Nauta reads your business emails, extracts entities, and surfaces insights — automatically.",
+        "description": "Polytoken reads your business emails, extracts entities, and surfaces insights — automatically.",
         "cta_primary": "Get Early Access",
         "cta_secondary": "See How It Works",
         "feature_1_title": "Smart Extraction",
-        "feature_1_body": "Nauta identifies companies, contacts, deals, and dates from every email you receive.",
+        "feature_1_body": "Polytoken identifies companies, contacts, deals, and dates from every email you receive.",
         "feature_2_title": "Unified Timeline",
         "feature_2_body": "See every interaction with a contact or company in a single, searchable timeline.",
         "feature_3_title": "No CRM Required",
@@ -494,7 +494,7 @@ _LANDING_PRODUCT: dict[str, object] = {
                     },
                     {
                         "type": "text",
-                        "content": "Nauta reads your business emails, extracts entities, and surfaces insights — automatically.",
+                        "content": "Polytoken reads your business emails, extracts entities, and surfaces insights — automatically.",
                         "variant": "body",
                         "muted": True,
                     },
@@ -506,14 +506,14 @@ _LANDING_PRODUCT: dict[str, object] = {
                             {
                                 "type": "button",
                                 "label": "Get Early Access",
-                                "aria-label": "Sign up for early access to Nauta",
+                                "aria-label": "Sign up for early access to Polytoken",
                                 "variant": "default",
                                 "size": "lg",
                             },
                             {
                                 "type": "button",
                                 "label": "See How It Works",
-                                "aria-label": "Watch a demo of how Nauta works",
+                                "aria-label": "Watch a demo of how Polytoken works",
                                 "variant": "outline",
                                 "size": "lg",
                             },
@@ -539,7 +539,7 @@ _LANDING_PRODUCT: dict[str, object] = {
                     {
                         "type": "card",
                         "title": "Smart Extraction",
-                        "description": "Nauta identifies companies, contacts, deals, and dates from every email you receive.",
+                        "description": "Polytoken identifies companies, contacts, deals, and dates from every email you receive.",
                         "children": [],
                     },
                     {

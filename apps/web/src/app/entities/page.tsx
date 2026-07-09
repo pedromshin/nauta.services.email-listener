@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { EntitiesGallery } from "./_components/entities-gallery";
 
 export const metadata: Metadata = {
-  title: "Entities — Nauta",
+  title: "Entities — Polytoken",
   description: "Browse and triage extracted entity identities.",
 };
 

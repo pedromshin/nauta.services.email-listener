@@ -6,7 +6,7 @@
  * Runs arbitrary island code inside an `<iframe sandbox="allow-scripts">` (NO allow-same-origin
  * → opaque/null origin, no host DOM/cookie/storage access) whose srcdoc carries a `<meta>` CSP
  * (`default-src 'none'; connect-src 'none'`). The pure repair-loop state machine
- * (@nauta/genui/sandbox) drives validate → autofix → run → heal ≤N → safe-placeholder; this
+ * (@polytoken/genui/sandbox) drives validate → autofix → run → heal ≤N → safe-placeholder; this
  * component only performs the two effectful steps (rendering the frame, awaiting the injected
  * heal()) and authenticates every inbound message (source identity + null origin + nonce).
  *
@@ -30,8 +30,8 @@ import {
   type IslandA11yViolation,
   type IslandPhase,
   type IslandState,
-} from "@nauta/genui/sandbox";
-import { getAxeSource } from "@nauta/genui/sandbox/axe-source";
+} from "@polytoken/genui/sandbox";
+import { getAxeSource } from "@polytoken/genui/sandbox/axe-source";
 
 export type IslandHealer = (code: string, error: string) => Promise<string | null>;
 

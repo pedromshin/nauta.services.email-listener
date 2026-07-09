@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@nauta/ui/button";
+import { Button } from "@polytoken/ui/button";
 
 import type { ComponentRole } from "./region-overlay-box";
 

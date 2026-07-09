@@ -5,7 +5,7 @@
  * ALL color values are HSL channel-triplet strings (no raw hex, no prose).
  *
  * Packs included (D-01: >= 5 distinct packs, not variations of one baseline):
- *   1. nauta-teal       — baseline Nauta brand; teal-primary, light neutral surface  (DEFAULT)
+ *   1. polytoken-teal       — baseline Nauta brand; teal-primary, light neutral surface  (DEFAULT)
  *   2. linear-clean     — monochrome precision-SaaS inspired by Linear; slate tones
  *   3. warm-editorial   — editorial warmth; amber/sand; serif-leaning typography
  *   4. brutalist        — bold high-contrast; full-black primary, no radius
@@ -69,7 +69,7 @@ function resolveVars(
 }
 
 // ===========================================================================
-// Pack 1: nauta-teal — DEFAULT baseline (D-02)
+// Pack 1: polytoken-teal — DEFAULT baseline (D-02)
 // Primary: hsl(164 39% 22%) — nauta brand teal (dark forest teal)
 // Verified WCAG-AA: primary-foreground (white 98%) on primary passes 8.1:1
 // ===========================================================================
@@ -267,8 +267,8 @@ const PLAYFUL_ROUNDED_TOKENS: PackTokenMap = makeTokens({
  */
 export const STYLE_PACKS: Readonly<Record<StylePackId, StylePack>> =
   Object.freeze({
-    "nauta-teal": Object.freeze({
-      id: "nauta-teal" as const,
+    "polytoken-teal": Object.freeze({
+      id: "polytoken-teal" as const,
       label: "Nauta Teal",
       description:
         "Default Nauta brand palette — dark teal primary on a clean light surface.",
@@ -334,7 +334,7 @@ export const STYLE_PACKS: Readonly<Record<StylePackId, StylePack>> =
 
 /**
  * All known style-pack ids as a readonly array.
- * Order is stable: nauta-teal is always first (it is the default).
+ * Order is stable: polytoken-teal is always first (it is the default).
  */
 export const STYLE_PACK_IDS: ReadonlyArray<StylePackId> = Object.freeze(
   Object.keys(STYLE_PACKS) as StylePackId[],
@@ -344,8 +344,8 @@ export const STYLE_PACK_IDS: ReadonlyArray<StylePackId> = Object.freeze(
 // DEFAULT_PACK_ID — constant identifying the baseline pack (D-02)
 // ===========================================================================
 
-/** The id of the default/baseline style pack. Always "nauta-teal". */
-export const DEFAULT_PACK_ID: StylePackId = "nauta-teal";
+/** The id of the default/baseline style pack. Always "polytoken-teal". */
+export const DEFAULT_PACK_ID: StylePackId = "polytoken-teal";
 
 // ===========================================================================
 // getStylePack — lookup with fallback to default
@@ -354,7 +354,7 @@ export const DEFAULT_PACK_ID: StylePackId = "nauta-teal";
 /**
  * Returns the StylePack for the given id.
  * If `id` is not a known pack id (including empty string or unknown values),
- * returns the default baseline pack (nauta-teal) without throwing.
+ * returns the default baseline pack (polytoken-teal) without throwing.
  *
  * This ensures unknown `style_pack_id` values in spec envelopes gracefully
  * degrade to the baseline rendering (D-02/STYLE-02).

@@ -1,16 +1,16 @@
-# @nauta/web
+# @polytoken/web
 
 Next.js 15 (App Router) frontend that lists inbound emails via tRPC.
 
 - **No auth.** tRPC uses a single `publicProcedure`; the context carries only the
-  Drizzle `db` handle (`@nauta/api-client`).
+  Drizzle `db` handle (`@polytoken/api-client`).
 - The page (`src/app/page.tsx`) calls `api.emails.list` and renders the rows.
-- Data flows: browser → `/api/trpc` route → `@nauta/api-client` tRPC router →
-  Drizzle (`@nauta/db`) → Supabase Postgres.
+- Data flows: browser → `/api/trpc` route → `@polytoken/api-client` tRPC router →
+  Drizzle (`@polytoken/db`) → Supabase Postgres.
 
 ## Which database it reads from
 
-The frontend talks to Postgres through `@nauta/db`, which reads
+The frontend talks to Postgres through `@polytoken/db`, which reads
 `POSTGRES_URL_NON_POOLING` (falls back to `POSTGRES_URL`) from the environment.
 Targeting is **controlled by the npm script you run** (local dev) and by **Vercel
 environment variables** (cloud), mirroring `examples/acme-os-dev`.
@@ -57,7 +57,7 @@ vercel deploy --prod              # production
 ```
 
 `vercel.json` here sets the build/install commands to run from the monorepo root
-so the `@nauta/*` workspace packages resolve.
+so the `@polytoken/*` workspace packages resolve.
 
 ## Scripts
 

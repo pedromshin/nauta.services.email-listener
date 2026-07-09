@@ -2,7 +2,7 @@
 
 import { AlertTriangle } from "lucide-react";
 
-import { Button } from "@nauta/ui/button";
+import { Button } from "@polytoken/ui/button";
 
 export interface InlineErrorCardProps {
   /** Re-runs the failed turn (regenerate under the hood, CHAT-04/CHAT-05).

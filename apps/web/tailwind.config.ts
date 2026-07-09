@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 import { fontFamily } from "tailwindcss/defaultTheme";
 
-import baseConfig from "@nauta/tailwind-config/web";
+import baseConfig from "@polytoken/tailwind-config/web";
 
 export default {
   // Append the UI + genui package paths so their classes (e.g. the genui

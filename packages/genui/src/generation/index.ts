@@ -1,5 +1,5 @@
 /**
- * generation/index.ts — Barrel for @nauta/genui generation module.
+ * generation/index.ts — Barrel for @polytoken/genui generation module.
  *
  * Exports:
  *   - ALLOWED_PROCEDURES (procedure allowlist re-export for Python artifact)

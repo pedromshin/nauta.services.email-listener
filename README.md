@@ -1,6 +1,6 @@
-# nauta.services
+# polytoken.services
 
-Monorepo for Nauta services. First service: **email-listener** — a FastAPI server that receives and logs raw inbound emails, the entry point for the Nauta "Data-Entry Brain" pipeline.
+Monorepo for Polytoken services. First service: **email-listener** — a FastAPI server that receives and logs raw inbound emails, the entry point for the Polytoken "Data-Entry Brain" pipeline.
 
 ## Structure
 

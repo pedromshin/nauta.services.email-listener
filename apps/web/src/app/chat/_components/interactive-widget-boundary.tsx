@@ -46,7 +46,7 @@
 import * as React from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 
-import type { ActionRegistry } from "@nauta/genui/renderer";
+import type { ActionRegistry } from "@polytoken/genui/renderer";
 
 import {
   buildClarifySubmittedSpec,

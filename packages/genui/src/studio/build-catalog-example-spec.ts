@@ -12,7 +12,7 @@
  *
  *   This helper is the single source of truth for that wrapping. The island AND the
  *   genui regression test both import it so they can never drift (apps/web has no
- *   test runner; the test lives here in @nauta/genui where vitest exists).
+ *   test runner; the test lives here in @polytoken/genui where vitest exists).
  *
  * SHAPE (spec-schema.ts):
  *   - Leaf node schemas are .strict() — spreading the flat example matches the node

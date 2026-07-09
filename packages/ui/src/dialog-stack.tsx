@@ -20,7 +20,7 @@ import {
   useEffect,
   useState,
 } from "react";
-import { cn } from "@nauta/ui";
+import { cn } from "@polytoken/ui";
 
 type DialogStackContextType = {
   activeIndex: number;

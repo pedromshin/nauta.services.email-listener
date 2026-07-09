@@ -19,7 +19,7 @@
 import { asc, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { ChatWidgetInteractions } from "@nauta/db/schema";
+import { ChatWidgetInteractions } from "@polytoken/db/schema";
 
 import { publicProcedure } from "../../trpc";
 

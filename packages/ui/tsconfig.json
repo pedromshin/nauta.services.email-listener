@@ -11,8 +11,8 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
-      "@nauta/ui": ["./src/index.ts"],
-      "@nauta/ui/*": ["./src/*"]
+      "@polytoken/ui": ["./src/index.ts"],
+      "@polytoken/ui/*": ["./src/*"]
     }
   },
   "include": ["src", "tailwind.config.ts"],

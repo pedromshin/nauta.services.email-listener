@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { Loader2, MousePointer2, Sparkles } from "lucide-react";
 
-import { Badge } from "@nauta/ui/badge";
-import { Button } from "@nauta/ui/button";
-import { Input } from "@nauta/ui/input";
+import { Badge } from "@polytoken/ui/badge";
+import { Button } from "@polytoken/ui/button";
+import { Input } from "@polytoken/ui/input";
 
 import { EntityTypePicker } from "./entity-type-picker";
 import { FieldRelationshipPicker } from "./field-relationship-picker";

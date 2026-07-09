@@ -14,7 +14,7 @@
 import { asc, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { ChatMessages } from "@nauta/db/schema";
+import { ChatMessages } from "@polytoken/db/schema";
 
 import { publicProcedure } from "../../trpc";
 

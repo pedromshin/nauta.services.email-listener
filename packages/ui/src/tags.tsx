@@ -11,8 +11,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { Badge } from "@nauta/ui/badge";
-import { Button } from "@nauta/ui/button";
+import { Badge } from "@polytoken/ui/badge";
+import { Button } from "@polytoken/ui/button";
 import {
   Command,
   CommandEmpty,
@@ -20,13 +20,13 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from "@nauta/ui/command";
+} from "@polytoken/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@nauta/ui/popover";
-import { cn } from "@nauta/ui";
+} from "@polytoken/ui/popover";
+import { cn } from "@polytoken/ui";
 
 type TagsContextType = {
   value?: string;

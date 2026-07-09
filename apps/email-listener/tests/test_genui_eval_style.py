@@ -22,7 +22,7 @@ import pytest
 # A spec with nodes that have explicit token-style assignments (text vs surface)
 _CONTRAST_PASS_SPEC: dict[str, Any] = {
     "v": 1,
-    "style_pack_id": "nauta-teal",
+    "style_pack_id": "polytoken-teal",
     "root": {
         "type": "stack",
         "children": [
@@ -35,7 +35,7 @@ _CONTRAST_PASS_SPEC: dict[str, Any] = {
 # A spec with a text node that has token-driven styling that passes AA
 _CONTRAST_TOKEN_PASS_SPEC: dict[str, Any] = {
     "v": 1,
-    "style_pack_id": "nauta-teal",
+    "style_pack_id": "polytoken-teal",
     "root": {
         "type": "card",
         "style": {
@@ -57,7 +57,7 @@ _CONTRAST_TOKEN_PASS_SPEC: dict[str, Any] = {
 # (e.g. muted-foreground on muted background is near-low-contrast)
 _CONTRAST_TOKEN_FAIL_SPEC: dict[str, Any] = {
     "v": 1,
-    "style_pack_id": "nauta-teal",
+    "style_pack_id": "polytoken-teal",
     "root": {
         "type": "card",
         "style": {
@@ -109,7 +109,7 @@ _GOOD_SPEC: dict[str, Any] = {
     },
 }
 
-# Nauta-teal token values (mirroring packs.ts for offline tests)
+# Polytoken-teal token values (mirroring packs.ts for offline tests)
 _NAUTA_TEAL_TOKENS: dict[str, str] = {
     "color.background": "0 0% 100%",
     "color.foreground": "0 0% 3.9%",
@@ -169,7 +169,7 @@ class TestWcagContrastRatio:
         """passes_aa() with large=False uses 4.5:1 threshold."""
         from scripts.genui_eval.style_metrics import passes_aa
 
-        # nauta-teal primary (#164 39% 22%) on white (100%) — should pass AA
+        # polytoken-teal primary (#164 39% 22%) on white (100%) — should pass AA
         assert passes_aa("164 39% 22%", "0 0% 100%") is True
 
     @pytest.mark.unit
@@ -182,7 +182,7 @@ class TestWcagContrastRatio:
         # Use a value between 3:1 and 4.5:1: dark gray ~55% luminance difference
         # Let's use "0 0% 40%" on white — contrast ~5.3:1, passes both
         # For large-only, try "0 0% 62%" on white — roughly ~2.8:1, fails both
-        # We'll use a simpler approach: test nauta-teal primary is above 3.0
+        # We'll use a simpler approach: test polytoken-teal primary is above 3.0
         assert passes_aa("164 39% 22%", "0 0% 100%", large=True) is True
 
     @pytest.mark.unit
@@ -302,7 +302,7 @@ class TestDistinctivenessScore:
 
         spec_a: dict[str, Any] = {
             "v": 1,
-            "style_pack_id": "nauta-teal",
+            "style_pack_id": "polytoken-teal",
             "root": {
                 "type": "stack",
                 "style": {"backgroundColor": "color.background"},
@@ -470,7 +470,7 @@ class TestBrandJudge:
             adapter.score_brand(
                 intent="Show me a dashboard",
                 spec=_GOOD_SPEC,
-                style_pack_id="nauta-teal",
+                style_pack_id="polytoken-teal",
             )
         )
         assert result.score is not None
@@ -491,7 +491,7 @@ class TestBrandJudge:
             adapter.score_brand(
                 intent="intent",
                 spec=_GOOD_SPEC,
-                style_pack_id="nauta-teal",
+                style_pack_id="polytoken-teal",
             )
         )
         call_kwargs = mock_client.messages.create.call_args.kwargs
@@ -508,7 +508,7 @@ class TestBrandJudge:
             adapter.score_brand(
                 intent="intent",
                 spec=_GOOD_SPEC,
-                style_pack_id="nauta-teal",
+                style_pack_id="polytoken-teal",
             )
         )
         call_kwargs = mock_client.messages.create.call_args.kwargs
@@ -529,7 +529,7 @@ class TestBrandJudge:
             adapter.score_brand(
                 intent="intent",
                 spec=_GOOD_SPEC,
-                style_pack_id="nauta-teal",
+                style_pack_id="polytoken-teal",
             )
         )
         assert result.score is None, "On error, score_brand must return score=None"
@@ -555,7 +555,7 @@ class TestBrandJudge:
             adapter.score_brand(
                 intent="intent",
                 spec=_GOOD_SPEC,
-                style_pack_id="nauta-teal",
+                style_pack_id="polytoken-teal",
             )
         )
         assert result.score is not None
@@ -591,13 +591,13 @@ class TestReportStyleFields:
             a11y_score=1.0,
             judge_rationale="Good",
             error=None,
-            style_pack_id="nauta-teal",
+            style_pack_id="polytoken-teal",
             a11y_contrast_passed=True,
             brand_score=0.75,
             distinctiveness=None,
             retrieval_overlap=0.5,
         )
-        assert pr.style_pack_id == "nauta-teal"
+        assert pr.style_pack_id == "polytoken-teal"
         assert pr.a11y_contrast_passed is True
         assert pr.brand_score == pytest.approx(0.75)
         assert pr.distinctiveness is None
@@ -646,7 +646,7 @@ class TestReportStyleFields:
             a11y_score=1.0,
             judge_rationale="",
             error=None,
-            style_pack_id="nauta-teal",
+            style_pack_id="polytoken-teal",
             a11y_contrast_passed=True,
             brand_score=0.7,
             distinctiveness=0.4,
@@ -698,7 +698,7 @@ class TestReportStyleFields:
             a11y_score=1.0,
             judge_rationale="",
             error=None,
-            style_pack_id="nauta-teal",
+            style_pack_id="polytoken-teal",
             brand_score=0.9,
             distinctiveness=0.5,
             retrieval_overlap=0.4,
@@ -741,16 +741,16 @@ class TestAllPacksAggregation:
             )
 
         reports = [
-            _make_pr("p1", "nauta-teal", 0.8),
-            _make_pr("p2", "nauta-teal", 0.6),
+            _make_pr("p1", "polytoken-teal", 0.8),
+            _make_pr("p2", "polytoken-teal", 0.6),
             _make_pr("p1", "brutalist", 0.9),
             _make_pr("p2", "brutalist", 0.7),
         ]
 
         result = aggregate_all_packs(reports)
-        assert "nauta-teal" in result
+        assert "polytoken-teal" in result
         assert "brutalist" in result
-        assert result["nauta-teal"]["mean_overall"] == pytest.approx(0.7, abs=0.01)
+        assert result["polytoken-teal"]["mean_overall"] == pytest.approx(0.7, abs=0.01)
         assert result["brutalist"]["mean_overall"] == pytest.approx(0.8, abs=0.01)
 
     @pytest.mark.unit
@@ -777,11 +777,11 @@ class TestAllPacksAggregation:
                 judge_rationale="",
                 error=None,
                 style_pack_id=pack_id,
-                distinctiveness=0.4 if pack_id == "nauta-teal" else 0.6,
+                distinctiveness=0.4 if pack_id == "polytoken-teal" else 0.6,
             )
 
         reports = [
-            _make_pr_with_spec("p1", "nauta-teal", "color.primary"),
+            _make_pr_with_spec("p1", "polytoken-teal", "color.primary"),
             _make_pr_with_spec("p1", "brutalist", "color.card"),
         ]
 
@@ -940,7 +940,7 @@ class TestRunnerStylePackWiring:
         mock_result = MagicMock()
         mock_result.spec = _GOOD_SPEC
         mock_result.outcome = "ok"
-        mock_result.style_pack_id = "nauta-teal"
+        mock_result.style_pack_id = "polytoken-teal"
         mock_result.retrieved_ids = ()
 
         mock_use_case = MagicMock()
@@ -961,16 +961,16 @@ class TestRunnerStylePackWiring:
                 judge=None,
                 semaphore=asyncio.Semaphore(1),
                 registry_version="v1",
-                style_pack_id="nauta-teal",
+                style_pack_id="polytoken-teal",
             )
         )
         # Verify style_pack_id was passed to execute
         call_kwargs = mock_use_case.execute.call_args.kwargs
-        assert call_kwargs.get("style_pack_id") == "nauta-teal"
+        assert call_kwargs.get("style_pack_id") == "polytoken-teal"
 
         # PromptReport must record the pack
         assert isinstance(result, PromptReport)
-        assert result.style_pack_id == "nauta-teal"
+        assert result.style_pack_id == "polytoken-teal"
 
     @pytest.mark.unit
     def test_eval_prompt_records_retrieval_overlap(self) -> None:
@@ -981,7 +981,7 @@ class TestRunnerStylePackWiring:
         mock_result = MagicMock()
         mock_result.spec = _GOOD_SPEC
         mock_result.outcome = "ok"
-        mock_result.style_pack_id = "nauta-teal"
+        mock_result.style_pack_id = "polytoken-teal"
         mock_result.retrieved_ids = ("table-component", "card-component")
 
         mock_use_case = MagicMock()
@@ -1002,7 +1002,7 @@ class TestRunnerStylePackWiring:
                 judge=None,
                 semaphore=asyncio.Semaphore(1),
                 registry_version="v1",
-                style_pack_id="nauta-teal",
+                style_pack_id="polytoken-teal",
             )
         )
         assert isinstance(result, PromptReport)

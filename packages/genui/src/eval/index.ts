@@ -1,5 +1,5 @@
 /**
- * eval/index.ts — Public re-exports for @nauta/genui/eval subpath.
+ * eval/index.ts — Public re-exports for @polytoken/genui/eval subpath.
  *
  * Exports the shared Zod schema + inferred type, plus typed JSON constants
  * for the two committed eval assets:

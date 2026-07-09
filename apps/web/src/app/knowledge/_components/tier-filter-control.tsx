@@ -15,7 +15,7 @@
 
 import { useCallback } from "react";
 
-import { Button } from "@nauta/ui/button";
+import { Button } from "@polytoken/ui/button";
 
 import type { TierFilterState } from "./tier-filter";
 

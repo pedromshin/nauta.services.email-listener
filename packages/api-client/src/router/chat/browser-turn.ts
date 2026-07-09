@@ -47,7 +47,7 @@ import {
   type InsertChatCostLedger,
   type InsertChatMessage,
   type InsertChatRunEvent,
-} from "@nauta/db/schema";
+} from "@polytoken/db/schema";
 
 import { publicProcedure } from "../../trpc";
 

@@ -3,7 +3,7 @@
 import { useEffect, useRef, type ComponentPropsWithoutRef } from "react"
 import { useInView, useMotionValue, useSpring } from "motion/react"
 
-import { cn } from "@nauta/ui"
+import { cn } from "@polytoken/ui"
 
 interface NumberTickerProps extends ComponentPropsWithoutRef<"span"> {
   value: number

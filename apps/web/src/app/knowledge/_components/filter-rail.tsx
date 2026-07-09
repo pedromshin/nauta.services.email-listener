@@ -14,8 +14,8 @@
  * No font-medium (500) — UI-SPEC Note #5.
  */
 
-import { Separator } from "@nauta/ui/separator";
-import { Switch } from "@nauta/ui/switch";
+import { Separator } from "@polytoken/ui/separator";
+import { Switch } from "@polytoken/ui/switch";
 
 // ---------------------------------------------------------------------------
 // Constants

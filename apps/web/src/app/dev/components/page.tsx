@@ -8,21 +8,21 @@
 
 import { useRef } from "react";
 
-import { AnimatedBeam } from "@nauta/ui/animated-beam";
-import { AnimatedList } from "@nauta/ui/animated-list";
-import { Avatar, AvatarFallback } from "@nauta/ui/avatar";
-import { AvatarStack } from "@nauta/ui/avatar-stack";
-import { BlurFade } from "@nauta/ui/blur-fade";
-import { BorderBeam } from "@nauta/ui/border-beam";
-import { ConfettiButton } from "@nauta/ui/confetti";
-import { DotPattern } from "@nauta/ui/dot-pattern";
-import { MagicCard } from "@nauta/ui/magic-card";
-import { Marquee } from "@nauta/ui/marquee";
-import { NumberTicker } from "@nauta/ui/number-ticker";
-import { ShimmerButton } from "@nauta/ui/shimmer-button";
-import { ShineBorder } from "@nauta/ui/shine-border";
-import { Spinner } from "@nauta/ui/spinner";
-import { TypingAnimation } from "@nauta/ui/typing-animation";
+import { AnimatedBeam } from "@polytoken/ui/animated-beam";
+import { AnimatedList } from "@polytoken/ui/animated-list";
+import { Avatar, AvatarFallback } from "@polytoken/ui/avatar";
+import { AvatarStack } from "@polytoken/ui/avatar-stack";
+import { BlurFade } from "@polytoken/ui/blur-fade";
+import { BorderBeam } from "@polytoken/ui/border-beam";
+import { ConfettiButton } from "@polytoken/ui/confetti";
+import { DotPattern } from "@polytoken/ui/dot-pattern";
+import { MagicCard } from "@polytoken/ui/magic-card";
+import { Marquee } from "@polytoken/ui/marquee";
+import { NumberTicker } from "@polytoken/ui/number-ticker";
+import { ShimmerButton } from "@polytoken/ui/shimmer-button";
+import { ShineBorder } from "@polytoken/ui/shine-border";
+import { Spinner } from "@polytoken/ui/spinner";
+import { TypingAnimation } from "@polytoken/ui/typing-animation";
 
 const Section = ({
   title,

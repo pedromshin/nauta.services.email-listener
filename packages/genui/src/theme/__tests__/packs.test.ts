@@ -3,10 +3,10 @@
  *
  * Verifies:
  *   - STYLE_PACKS contains >=5 distinct entries with unique ids
- *   - "nauta-teal" is present and flagged as the default/baseline pack
+ *   - "polytoken-teal" is present and flagged as the default/baseline pack
  *   - Every pack defines a value for EVERY alias in TOKEN_ALIASES (completeness)
  *   - Every pack's color values are HSL channel-triplet strings, NOT raw hex or prose
- *   - nauta-teal reproduces the current baseline (--primary "164 39% 22%", --radius "0.5rem")
+ *   - polytoken-teal reproduces the current baseline (--primary "164 39% 22%", --radius "0.5rem")
  *   - getStylePack(id) returns the correct pack; getStylePack(unknown) returns default baseline
  */
 
@@ -42,22 +42,22 @@ describe("STYLE_PACKS registry (STYLE-01/02/03)", () => {
     }
   });
 
-  it("nauta-teal is present in STYLE_PACKS", () => {
-    expect("nauta-teal" in STYLE_PACKS).toBe(true);
+  it("polytoken-teal is present in STYLE_PACKS", () => {
+    expect("polytoken-teal" in STYLE_PACKS).toBe(true);
   });
 
-  it("DEFAULT_PACK_ID is 'nauta-teal'", () => {
-    expect(DEFAULT_PACK_ID).toBe("nauta-teal");
+  it("DEFAULT_PACK_ID is 'polytoken-teal'", () => {
+    expect(DEFAULT_PACK_ID).toBe("polytoken-teal");
   });
 
-  it("nauta-teal pack is flagged as default in its metadata", () => {
-    const pack = STYLE_PACKS["nauta-teal"];
+  it("polytoken-teal pack is flagged as default in its metadata", () => {
+    const pack = STYLE_PACKS["polytoken-teal"];
     expect(pack.isDefault).toBe(true);
   });
 
   it("all other packs are NOT flagged as default", () => {
     for (const [id, pack] of Object.entries(STYLE_PACKS)) {
-      if (id !== "nauta-teal") {
+      if (id !== "polytoken-teal") {
         expect(pack.isDefault).toBeFalsy();
       }
     }
@@ -104,24 +104,24 @@ describe("Color values are HSL channel-triplets — no raw hex, no prose (D-03/S
   }
 });
 
-describe("nauta-teal baseline reproduces globals.css :root values (D-02)", () => {
+describe("polytoken-teal baseline reproduces globals.css :root values (D-02)", () => {
   it("--primary maps to '164 39% 22%'", () => {
-    const pack = STYLE_PACKS["nauta-teal"];
+    const pack = STYLE_PACKS["polytoken-teal"];
     expect(pack.tokens["color.primary"]).toBe("164 39% 22%");
   });
 
   it("--radius maps to '0.5rem'", () => {
-    const pack = STYLE_PACKS["nauta-teal"];
+    const pack = STYLE_PACKS["polytoken-teal"];
     expect(pack.tokens["radius.base"]).toBe("0.5rem");
   });
 
   it("--background maps to '0 0% 100%'", () => {
-    const pack = STYLE_PACKS["nauta-teal"];
+    const pack = STYLE_PACKS["polytoken-teal"];
     expect(pack.tokens["color.background"]).toBe("0 0% 100%");
   });
 
   it("--foreground maps to '0 0% 3.9%'", () => {
-    const pack = STYLE_PACKS["nauta-teal"];
+    const pack = STYLE_PACKS["polytoken-teal"];
     expect(pack.tokens["color.foreground"]).toBe("0 0% 3.9%");
   });
 });
@@ -134,7 +134,7 @@ describe("getStylePack — look up and fallback behavior", () => {
     }
   });
 
-  it("returns the default baseline (nauta-teal) for an unknown id", () => {
+  it("returns the default baseline (polytoken-teal) for an unknown id", () => {
     const pack = getStylePack("this-pack-does-not-exist");
     expect(pack).toBe(STYLE_PACKS[DEFAULT_PACK_ID]);
   });

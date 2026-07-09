@@ -4,7 +4,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-import { Badge } from "@nauta/ui/badge";
+import { Badge } from "@polytoken/ui/badge";
 import {
   Table,
   TableBody,
@@ -12,7 +12,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@nauta/ui/table";
+} from "@polytoken/ui/table";
 
 // ---------------------------------------------------------------------------
 // Types — re-exported so entities-gallery can import GalleryItem from here

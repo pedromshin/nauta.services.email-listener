@@ -2,7 +2,7 @@
  * catalog/manifest.ts — Hand-authored NAUTA_CATALOG manifest.
  *
  * Contains exactly 16 catalog entries (D-01, D-02):
- *   - 3 layout primitives: stack, grid, section (house-built, no @nauta/ui import)
+ *   - 3 layout primitives: stack, grid, section (house-built, no @polytoken/ui import)
  *   - 8 legacy leaf components: text, badge, button, card, key-value-list, separator, alert, table
  *   - 5 Phase-18 domain components: avatar, input, nav, feed-item, tabs (CTLG-06)
  *
@@ -23,17 +23,17 @@
 import * as React from "react";
 import { z } from "zod";
 
-import { Badge } from "@nauta/ui/badge";
-import { Button } from "@nauta/ui/button";
+import { Badge } from "@polytoken/ui/badge";
+import { Button } from "@polytoken/ui/button";
 import {
   Card,
   CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@nauta/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@nauta/ui/alert";
-import { Separator } from "@nauta/ui/separator";
+} from "@polytoken/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@polytoken/ui/alert";
+import { Separator } from "@polytoken/ui/separator";
 import {
   Table,
   TableBody,
@@ -42,11 +42,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@nauta/ui/table";
-// Phase 18 — @nauta/ui primitives for domain leaf components (CTLG-06)
-import { Avatar, AvatarImage, AvatarFallback } from "@nauta/ui/avatar";
-import { Input } from "@nauta/ui/input";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@nauta/ui/tabs";
+} from "@polytoken/ui/table";
+// Phase 18 — @polytoken/ui primitives for domain leaf components (CTLG-06)
+import { Avatar, AvatarImage, AvatarFallback } from "@polytoken/ui/avatar";
+import { Input } from "@polytoken/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@polytoken/ui/tabs";
 
 import type { AnyManifestEntry, ComponentRegistry } from "./types";
 import { ActionSchema } from "../schema/action-schema";
@@ -68,13 +68,13 @@ type TextProps = {
   readonly muted?: boolean;
 };
 
-/** badge — @nauta/ui/badge leaf */
+/** badge — @polytoken/ui/badge leaf */
 type BadgeProps = {
   readonly label: string;
   readonly variant?: "default" | "secondary" | "destructive" | "outline";
 };
 
-/** button — @nauta/ui/button leaf; onClick + type are locked (UI-SPEC §11) */
+/** button — @polytoken/ui/button leaf; onClick + type are locked (UI-SPEC §11) */
 type ButtonProps = {
   readonly label: string;
   readonly "aria-label": string; // a11y-required (D-04 / UI-SPEC §11)
@@ -85,7 +85,7 @@ type ButtonProps = {
   readonly onClick?: z.infer<typeof ActionSchema>; // Phase-13 action binding (navigate/setState/mutate) — D-14
 };
 
-/** card — @nauta/ui/card container with named slots */
+/** card — @polytoken/ui/card container with named slots */
 type CardProps = {
   readonly title?: string;
   readonly description?: string;
@@ -104,20 +104,20 @@ type KeyValueListProps = {
   }>;
 };
 
-/** separator — @nauta/ui/separator; aria-hidden is locked (D-04 / UI-SPEC §11) */
+/** separator — @polytoken/ui/separator; aria-hidden is locked (D-04 / UI-SPEC §11) */
 type SeparatorProps = {
   readonly "aria-hidden": true; // locked: always decorative
   readonly orientation?: "horizontal" | "vertical";
 };
 
-/** alert — @nauta/ui/alert; title is a11y-required (D-04 / UI-SPEC §11) */
+/** alert — @polytoken/ui/alert; title is a11y-required (D-04 / UI-SPEC §11) */
 type AlertProps = {
   readonly title: string; // a11y-required (D-04)
   readonly description?: string;
   readonly variant?: "default" | "destructive";
 };
 
-/** table — @nauta/ui/table; caption is a11y-required (D-04 / UI-SPEC §11) */
+/** table — @polytoken/ui/table; caption is a11y-required (D-04 / UI-SPEC §11) */
 type TableProps = {
   readonly caption: string; // a11y-required (D-04)
   readonly columns: ReadonlyArray<{
@@ -151,14 +151,14 @@ type SectionProps = {
   readonly children?: React.ReactNode;
 };
 
-/** avatar — @nauta/ui/avatar leaf (CTLG-06); alt is a11y-required (D-04) */
+/** avatar — @polytoken/ui/avatar leaf (CTLG-06); alt is a11y-required (D-04) */
 type AvatarProps = {
   readonly alt: string; // a11y-required (D-04 / UI-SPEC §11)
   readonly src?: string;
   readonly size?: "sm" | "md" | "lg";
 };
 
-/** input — @nauta/ui/input leaf with label wrapper (CTLG-06); label+name required */
+/** input — @polytoken/ui/input leaf with label wrapper (CTLG-06); label+name required */
 type InputProps = {
   readonly label: string; // a11y-required (D-04 / UI-SPEC §11)
   readonly name: string;
@@ -192,7 +192,7 @@ type FeedItemProps = {
   readonly unread?: boolean;
 };
 
-/** tabs — @nauta/ui/tabs wrapper (CTLG-06); aria-label is a11y-required (D-04) */
+/** tabs — @polytoken/ui/tabs wrapper (CTLG-06); aria-label is a11y-required (D-04) */
 type TabItem = {
   readonly value: string;
   readonly label: string;
@@ -711,7 +711,7 @@ function TabsComponent({
 // ---------------------------------------------------------------------------
 
 /**
- * The component catalog. 16 entries: 3 layout primitives + 8 @nauta/ui-backed legacy leaves
+ * The component catalog. 16 entries: 3 layout primitives + 8 @polytoken/ui-backed legacy leaves
  * + 5 Phase-18 domain components (avatar, input, nav, feed-item, tabs — CTLG-06).
  *
  * Frozen as const; typed as ComponentRegistry for keyed lookup.
@@ -1097,7 +1097,7 @@ export const NAUTA_CATALOG: ComponentRegistry = Object.freeze({
   tabs: {
     type: "tabs",
     description:
-      "Tabbed content panel wrapping @nauta/ui/tabs (Radix Tabs). aria-label is required for accessibility. Each tab needs a unique value (used as the key), a label shown on the trigger, and a content node (a SpecNode rendered in the panel). defaultValue sets the initially active tab — defaults to the first tab's value. Presentational-only in Phase 18; interactive state is wired in Phase 19.",
+      "Tabbed content panel wrapping @polytoken/ui/tabs (Radix Tabs). aria-label is required for accessibility. Each tab needs a unique value (used as the key), a label shown on the trigger, and a content node (a SpecNode rendered in the panel). defaultValue sets the initially active tab — defaults to the first tab's value. Presentational-only in Phase 18; interactive state is wired in Phase 19.",
     example: {
       "aria-label": "Account settings",
       tabs: [

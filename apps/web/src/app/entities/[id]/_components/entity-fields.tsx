@@ -2,9 +2,9 @@
 
 import { AlertTriangle } from "lucide-react";
 
-import { Badge } from "@nauta/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@nauta/ui/card";
-import { Skeleton } from "@nauta/ui/skeleton";
+import { Badge } from "@polytoken/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@polytoken/ui/card";
+import { Skeleton } from "@polytoken/ui/skeleton";
 
 // ---------------------------------------------------------------------------
 // Types (matched to entities.byId AggregatedField shape — D-18/D-19)

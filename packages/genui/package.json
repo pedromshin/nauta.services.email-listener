@@ -1,5 +1,5 @@
 {
-  "name": "@nauta/genui",
+  "name": "@polytoken/genui",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -30,7 +30,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@nauta/ui": "*",
+    "@polytoken/ui": "*",
     "@types/react": "^18.3.3",
     "jsdom": "^25.0.1",
     "typescript": "^5.8.0",

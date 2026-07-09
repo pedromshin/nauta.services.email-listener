@@ -31,9 +31,9 @@
  *     Spec extraction must read body.data.spec, not body.spec.
  */
 
-import { SAFE_FALLBACK_SPEC, SpecRootSchema } from "@nauta/genui/schema";
-import { REGISTRY_VERSION } from "@nauta/genui/registry";
-import { STYLE_PACK_IDS } from "@nauta/genui/theme";
+import { SAFE_FALLBACK_SPEC, SpecRootSchema } from "@polytoken/genui/schema";
+import { REGISTRY_VERSION } from "@polytoken/genui/registry";
+import { STYLE_PACK_IDS } from "@polytoken/genui/theme";
 import { z } from "zod";
 
 import { publicProcedure } from "../../trpc";
@@ -78,7 +78,7 @@ const GenerateInput = z.object({
    * Style pack id for the visual theme applied by ThemedRoot (Phase 17-03 / D-04).
    * Validated at the web boundary via z.enum(STYLE_PACK_IDS) — unknown ids are
    * rejected before reaching FastAPI (T-17-04).
-   * When omitted, FastAPI uses the default pack ("nauta-teal").
+   * When omitted, FastAPI uses the default pack ("polytoken-teal").
    * D-08: the "auto" sentinel is NEVER sent to FastAPI — callers must resolve
    * Auto/Surprise to a concrete pack id via pickSurprisePack() before calling.
    */

@@ -1,4 +1,4 @@
-# @nauta/db — Drizzle ORM Schema & Migrations
+# @polytoken/db — Drizzle ORM Schema & Migrations
 
 Application-level database package: Drizzle schema is the single source of truth;
 migrations are generated and applied through drizzle-kit/tsx. The root `/supabase`

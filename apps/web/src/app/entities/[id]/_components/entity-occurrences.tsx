@@ -2,9 +2,9 @@
 
 import { format } from "date-fns";
 
-import { Badge } from "@nauta/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@nauta/ui/card";
-import { Skeleton } from "@nauta/ui/skeleton";
+import { Badge } from "@polytoken/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@polytoken/ui/card";
+import { Skeleton } from "@polytoken/ui/skeleton";
 
 // ---------------------------------------------------------------------------
 // Types (matched to entities.byId output shape)

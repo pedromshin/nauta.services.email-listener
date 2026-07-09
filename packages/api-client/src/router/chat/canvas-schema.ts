@@ -1,7 +1,7 @@
 /**
  * chat/canvas-schema.ts — CanvasSnapshotSchema + its guards, split out of
  * canvas.ts so a CLIENT (browser) component can import the schema WITHOUT
- * transitively pulling in `../../trpc` -> `@nauta/db`'s server-only Postgres
+ * transitively pulling in `../../trpc` -> `@polytoken/db`'s server-only Postgres
  * client (which reads server-side env vars via @t3-oss/env-core and throws
  * "Attempted to access a server-side environment variable on the client" the
  * moment anything imports it outside a server context — found live 2026-07-04

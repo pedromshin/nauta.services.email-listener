@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 
-import { SidebarInset, SidebarProvider } from "@nauta/ui/sidebar";
-import { Toaster } from "@nauta/ui/sonner";
+import { SidebarInset, SidebarProvider } from "@polytoken/ui/sidebar";
+import { Toaster } from "@polytoken/ui/sonner";
 
 import { AppSidebar } from "~/components/app-sidebar";
 import { ThemeProvider } from "~/components/theme-provider";
@@ -9,7 +9,7 @@ import { TRPCReactProvider } from "~/trpc/react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Nauta — Emails",
+  title: "Polytoken — Emails",
   description: "Inbound email viewer",
 };
 

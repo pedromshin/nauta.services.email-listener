@@ -485,7 +485,7 @@ async def test_generate_accepts_style_pack_id_param(
     result = await adapter.generate(
         extraction=_make_extraction(),
         registry_version="v1",
-        style_pack_id="nauta-teal",
+        style_pack_id="polytoken-teal",
     )
 
     assert result.spec["v"] == 1
@@ -547,7 +547,7 @@ async def test_pack_token_table_injected_in_user_content(
     await adapter.generate(
         extraction=_make_extraction(),
         registry_version="v1",
-        style_pack_id="nauta-teal",
+        style_pack_id="polytoken-teal",
     )
 
     call_kwargs = mock_bedrock_client.messages.create.call_args.kwargs
@@ -555,7 +555,7 @@ async def test_pack_token_table_injected_in_user_content(
     user_content = str(messages[0]["content"])
 
     # Must contain pack identifier and token section marker
-    assert "nauta-teal" in user_content, "Pack id must appear in user content token table"
+    assert "polytoken-teal" in user_content, "Pack id must appear in user content token table"
     # Must contain at least one of the mandatory W3C-DTCG token aliases
     assert "color.primary" in user_content or "color.background" in user_content, (
         "W3C-DTCG token aliases must be injected into user content"
@@ -578,7 +578,7 @@ async def test_pack_token_table_not_in_system_prompt(
     await adapter.generate(
         extraction=_make_extraction(),
         registry_version="v1",
-        style_pack_id="nauta-teal",
+        style_pack_id="polytoken-teal",
     )
 
     call_kwargs = mock_bedrock_client.messages.create.call_args.kwargs
@@ -588,7 +588,7 @@ async def test_pack_token_table_not_in_system_prompt(
         b.get("text", "") if isinstance(b, dict) else str(b) for b in system_blocks
     )
     # The active pack identifier must NOT appear in the static system prompt
-    assert "nauta-teal" not in system_text, (
+    assert "polytoken-teal" not in system_text, (
         "Pack token table must not contaminate system prompt (COST-01/T-17-21)"
     )
 

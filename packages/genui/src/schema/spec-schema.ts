@@ -576,7 +576,7 @@ export const SpecRootSchema = z
   .object({
     _plan: z.string().optional(),
     v: z.literal(1),
-    // Style pack selection (D-08/STYLE-04): optional — defaults to "nauta-teal" at render time.
+    // Style pack selection (D-08/STYLE-04): optional — defaults to "polytoken-teal" at render time.
     // Only known StylePackId strings are accepted (enforced by StylePackIdSchema).
     style_pack_id: StylePackIdSchema.optional(),
     data: z.record(z.string(), z.unknown()).optional(),

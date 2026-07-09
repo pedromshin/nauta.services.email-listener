@@ -96,7 +96,7 @@ def _assert_bedrock_input_schema(schema: Any, schema_path: Path) -> None:
         raise RuntimeError(
             f"GenUI spec schema at {schema_path} has an invalid root for a Bedrock "
             f'tool input_schema: expected top-level "type": "object", got '
-            f"{root_type!r}. Re-run `npm run gen:artifacts -w @nauta/genui` so the "
+            f"{root_type!r}. Re-run `npm run gen:artifacts -w @polytoken/genui` so the "
             "SpecRoot definition is inlined at the schema root (BUG-B)."
         )
 

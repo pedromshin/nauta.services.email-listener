@@ -65,7 +65,7 @@ class BaseAppSettings(BaseSettings):
     )
 
     # --- Application ---
-    APP_NAME: str = "Nauta Email Listener"
+    APP_NAME: str = "Polytoken Email Listener"
     APP_VERSION: str = "0.1.0"
     ENVIRONMENT: Environment = Environment.DEVELOPMENT
     DEBUG: bool = False

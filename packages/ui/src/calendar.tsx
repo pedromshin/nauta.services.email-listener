@@ -4,7 +4,7 @@ import * as React from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "@radix-ui/react-icons";
 import { DayPicker } from "react-day-picker";
 
-import { cn } from "@nauta/ui";
+import { cn } from "@polytoken/ui";
 
 import { buttonVariants } from "./button";
 

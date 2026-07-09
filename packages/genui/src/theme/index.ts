@@ -1,5 +1,5 @@
 /**
- * theme/index.ts — public barrel for the @nauta/genui/theme sub-path export.
+ * theme/index.ts — public barrel for the @polytoken/genui/theme sub-path export.
  *
  * Re-exports:
  *   - tokens.ts: TOKEN_ALIASES, TOKEN_ALIAS_TO_CSS_VAR, types (StylePack, StylePackId, etc.)

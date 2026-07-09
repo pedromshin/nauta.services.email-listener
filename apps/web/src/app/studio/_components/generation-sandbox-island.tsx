@@ -16,7 +16,7 @@
  *   - Dropdown lists all 6 curated packs + "Auto / Surprise" sentinel.
  *   - "Auto / Surprise" sentinel resolves to a concrete pack id via
  *     pickSurprisePack() before the tRPC call — "auto" is NEVER sent to FastAPI (D-08).
- *   - Default selection: DEFAULT_PACK_ID ("nauta-teal").
+ *   - Default selection: DEFAULT_PACK_ID ("polytoken-teal").
  *   - Selected pack id threads through tRPC stylePackId → FastAPI style_pack_id.
  *   - Pack provenance badge shown near the rendered result (which pack was used).
  *
@@ -43,27 +43,27 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
-import { Button } from "@nauta/ui/button";
-import { Textarea } from "@nauta/ui/textarea";
+import { Button } from "@polytoken/ui/button";
+import { Textarea } from "@polytoken/ui/textarea";
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
-} from "@nauta/ui/resizable";
+} from "@polytoken/ui/resizable";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@nauta/ui/select";
-import { Badge } from "@nauta/ui/badge";
+} from "@polytoken/ui/select";
+import { Badge } from "@polytoken/ui/badge";
 
 import { api } from "~/trpc/react";
-import { buildActionRegistry } from "@nauta/genui/renderer";
-import { STYLE_PACKS, STYLE_PACK_IDS, DEFAULT_PACK_ID } from "@nauta/genui/theme";
-import type { SpecRoot } from "@nauta/genui/schema";
-import type { StylePackId } from "@nauta/genui/theme";
+import { buildActionRegistry } from "@polytoken/genui/renderer";
+import { STYLE_PACKS, STYLE_PACK_IDS, DEFAULT_PACK_ID } from "@polytoken/genui/theme";
+import type { SpecRoot } from "@polytoken/genui/schema";
+import type { StylePackId } from "@polytoken/genui/theme";
 
 import { SpecRendererIsland } from "./spec-renderer-island";
 import { GenerationStateChrome } from "./generation-state-chrome";
@@ -97,7 +97,7 @@ const PACK_OPTIONS: ReadonlyArray<{ readonly value: string; readonly label: stri
  * a valid StylePackId from STYLE_PACK_IDS. Callers invoke this before the
  * tRPC query to obtain a concrete id.
  *
- * Distribution: uniform random across all known packs (including nauta-teal).
+ * Distribution: uniform random across all known packs (including polytoken-teal).
  */
 export function pickSurprisePack(): StylePackId {
   // % length guards against the theoretical edge case where Math.random() returns
@@ -161,7 +161,7 @@ export function GenerationSandboxIsland({
     }
   }, [initialIntent]);
 
-  // Style pack selection — default to nauta-teal pack (D-04)
+  // Style pack selection — default to polytoken-teal pack (D-04)
   // Value may be AUTO_SENTINEL or a concrete StylePackId.
   const [selectedPack, setSelectedPack] = useState<string>(DEFAULT_PACK_ID);
 

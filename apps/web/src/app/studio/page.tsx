@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
 import React from "react";
 
-import { Badge } from "@nauta/ui/badge";
+import { Badge } from "@polytoken/ui/badge";
 
-import { REGISTRY_VERSION } from "@nauta/genui/registry";
+import { REGISTRY_VERSION } from "@polytoken/genui/registry";
 
 import { StudioTabs } from "./_components/studio-tabs";
 
 export const metadata: Metadata = {
-  title: "Studio — Nauta",
-  description: "Component catalog, generation sandbox, and showcase — Nauta design system.",
+  title: "Studio — Polytoken",
+  description: "Component catalog, generation sandbox, and showcase — Polytoken design system.",
 };
 
 /**

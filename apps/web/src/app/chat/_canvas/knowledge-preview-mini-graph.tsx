@@ -28,14 +28,14 @@ import * as React from "react";
 import Link from "next/link";
 import { AlertCircle, Share2 } from "lucide-react";
 
-import type { RouterOutputs } from "@nauta/api-client";
-import { Skeleton } from "@nauta/ui/skeleton";
+import type { RouterOutputs } from "@polytoken/api-client";
+import { Skeleton } from "@polytoken/ui/skeleton";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@nauta/ui/tooltip";
+} from "@polytoken/ui/tooltip";
 
 import { EmptyState } from "~/components/empty-state";
 import { hrefFor } from "~/components/provenance-link";

@@ -12,7 +12,7 @@
  * safe) as a side effect of `onValueChange`, then reports it up.
  */
 
-import { Tabs, TabsList, TabsTrigger } from "@nauta/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@polytoken/ui/tabs";
 
 export type ChatCanvasViewMode = "chat" | "canvas";
 

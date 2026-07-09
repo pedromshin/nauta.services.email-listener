@@ -1,5 +1,5 @@
 {
-  "name": "@nauta/web",
+  "name": "@polytoken/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -18,10 +18,10 @@
   "dependencies": {
     "@dagrejs/dagre": "^3.0.0",
     "@mlc-ai/web-llm": "^0.2.84",
-    "@nauta/api-client": "*",
-    "@nauta/db": "*",
-    "@nauta/genui": "*",
-    "@nauta/ui": "*",
+    "@polytoken/api-client": "*",
+    "@polytoken/db": "*",
+    "@polytoken/genui": "*",
+    "@polytoken/ui": "*",
     "@supabase/supabase-js": "^2",
     "@tanstack/react-query": "^5.62.0",
     "@trpc/client": "11.8.0",
@@ -43,7 +43,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
-    "@nauta/tailwind-config": "*",
+    "@polytoken/tailwind-config": "*",
     "@types/dompurify": "^3",
     "@types/node": "^20.14.9",
     "@types/react": "^18.3.3",

@@ -251,7 +251,7 @@ async def run(
         no_judge: If True, skip the LLM-as-judge step.
         label: Human label for this report.
         out_dir: Output directory for reports (default: scripts/genui_eval/reports/).
-        style_pack_id: Run with a specific style pack (e.g. 'nauta-teal').
+        style_pack_id: Run with a specific style pack (e.g. 'polytoken-teal').
         all_packs: If True, loop over all 6 STYLE_PACK_IDS and aggregate. D-19.
 
     Returns:
@@ -342,7 +342,7 @@ def _parse_args() -> argparse.Namespace:
         type=str,
         default=None,
         metavar="PACK_ID",
-        help="Run eval with a specific style pack (e.g. nauta-teal). "
+        help="Run eval with a specific style pack (e.g. polytoken-teal). "
         "Mutually exclusive with --all-packs.",
     )
     pack_group.add_argument(

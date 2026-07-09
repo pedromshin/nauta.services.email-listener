@@ -3,7 +3,7 @@
 import { useEffect, useId, useState, type RefObject } from "react"
 import { motion } from "motion/react"
 
-import { cn } from "@nauta/ui"
+import { cn } from "@polytoken/ui"
 
 export interface AnimatedBeamProps {
   className?: string

@@ -11,7 +11,7 @@
  *   - >=1 dotted-path dataRef ("state.isExpanded" in conditional condition)
  *   - A11y-required props satisfied: button aria-label, separator aria-hidden,
  *     key-value-list label, alert title, table caption (UI-SPEC §11 / D-04)
- *   - Generic showcase — NOT Nauta-flavored (D-17)
+ *   - Generic showcase — NOT Polytoken-flavored (D-17)
  *
  * Schema conformance: All nodes use .strict() schemas — no extra props allowed.
  * All a11y-required fields are present to match manifest propsSchemas (CR-01/02/03 fixed).
@@ -43,7 +43,7 @@ export const SHOWCASE_SPEC: SpecRoot = {
       ],
       metadata: {
         version: "1.0.0",
-        author: "Nauta",
+        author: "Polytoken",
         updated: "2026-06-27",
       },
     },
@@ -158,7 +158,7 @@ export const SHOWCASE_SPEC: SpecRoot = {
             label: "Showcase metadata",
             items: [
               { key: "Version", value: "1.0.0" },
-              { key: "Author", value: "Nauta" },
+              { key: "Author", value: "Polytoken" },
               { key: "Updated", value: "2026-06-27" },
             ],
           },

@@ -26,18 +26,18 @@
 
 import React, { useState } from "react";
 
-import { Badge } from "@nauta/ui/badge";
-import { Button } from "@nauta/ui/button";
-import { ScrollArea } from "@nauta/ui/scroll-area";
+import { Badge } from "@polytoken/ui/badge";
+import { Button } from "@polytoken/ui/button";
+import { ScrollArea } from "@polytoken/ui/scroll-area";
 import {
   ResizablePanelGroup,
   ResizablePanel,
   ResizableHandle,
-} from "@nauta/ui/resizable";
+} from "@polytoken/ui/resizable";
 
 import { api } from "~/trpc/react";
-import { SpecRootSchema, SAFE_FALLBACK_SPEC } from "@nauta/genui/schema";
-import type { SpecRoot } from "@nauta/genui/schema";
+import { SpecRootSchema, SAFE_FALLBACK_SPEC } from "@polytoken/genui/schema";
+import type { SpecRoot } from "@polytoken/genui/schema";
 
 import { SpecRendererIsland } from "./spec-renderer-island";
 import { JsonPane } from "./json-pane";

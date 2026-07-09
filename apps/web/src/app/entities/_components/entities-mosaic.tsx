@@ -2,13 +2,13 @@
 
 import { useRouter } from "next/navigation";
 
-import { Badge } from "@nauta/ui/badge";
+import { Badge } from "@polytoken/ui/badge";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@nauta/ui/card";
+} from "@polytoken/ui/card";
 
 import type { GalleryItem } from "./entities-table";
 

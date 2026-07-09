@@ -5,7 +5,7 @@
  * The schema/guards themselves live in `./canvas-schema` (split out 2026-07-04
  * during plan 23-04 — see that module's own doc comment) so a CLIENT
  * component can import `CanvasSnapshotSchema` for read-side re-validation
- * (T-23-09) WITHOUT transitively pulling in `../../trpc` -> `@nauta/db`'s
+ * (T-23-09) WITHOUT transitively pulling in `../../trpc` -> `@polytoken/db`'s
  * server-only Postgres client. Re-exported here verbatim so this file's own
  * procedures and the existing `__tests__/canvas.test.ts` need no changes.
  *
@@ -15,7 +15,7 @@
 
 import { eq } from "drizzle-orm";
 
-import { ChatCanvasLayouts } from "@nauta/db/schema";
+import { ChatCanvasLayouts } from "@polytoken/db/schema";
 
 import { publicProcedure } from "../../trpc";
 import {

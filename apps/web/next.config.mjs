@@ -11,7 +11,7 @@ const config = {
   outputFileTracingRoot: path.join(__dirname, "../../"),
 
   /** Hot-reload local workspace packages without a separate build step. */
-  transpilePackages: ["@nauta/api-client", "@nauta/db", "@nauta/ui"],
+  transpilePackages: ["@polytoken/api-client", "@polytoken/db", "@polytoken/ui"],
 
   /** Linting / typechecking run as separate tasks. */
   eslint: { ignoreDuringBuilds: true },
