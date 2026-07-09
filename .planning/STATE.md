@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Chat × Knowledge Convergence
 status: executing
-last_updated: "2026-07-09T06:07:55.346Z"
-last_activity: 2026-07-09 -- Phase 38 Plan 02 executed (QUAR-02 adversarial fixture suite + live Bedrock harness + SEARCH_KNOWLEDGE_TOOL_ENABLED flag flip) -- Phase 38 COMPLETE; Phases 39 + 41 remain in v1.6
+last_updated: "2026-07-09T07:11:04.132Z"
+last_activity: 2026-07-09 -- Phase 39 execution started
 progress:
   total_phases: 9
   completed_phases: 7
   total_plans: 18
-  completed_plans: 16
+  completed_plans: 17
   percent: 78
 ---
 
@@ -20,14 +20,35 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** Phase 38 COMPLETE — quarantine-adversarial-eval (both plans executed) — Phases 39 (tool-round UI + citation chips) and 41 (knowledge-preview canvas node) remain in v1.6
+**Current focus:** Phase 39 — tool-round-ui-citation-chips
 
 ## Current Position
 
-Phase: 38 (quarantine-adversarial-eval) — COMPLETE
-Plan: 38-01 + 38-02 both executed
-Status: Phase 38 (QUAR-01, QUAR-02) fully complete -- search_knowledge is now live for real chat users. Remaining v1.6 phases: 39 (Tool-Round UI + Citation Chips), 41 (Knowledge-Preview Canvas Node)
-Last activity: 2026-07-09 -- Phase 38 Plan 02 executed (QUAR-02 adversarial fixture suite + live Bedrock harness + SEARCH_KNOWLEDGE_TOOL_ENABLED flag flip) -- Phase 38 COMPLETE
+Phase: 39 (tool-round-ui-citation-chips) — EXECUTING
+Plan: 2 of 2
+Status: Executing Phase 39
+Last activity: 2026-07-09 -- 39-01 executed (Python SSE mirror frames); 39-02 (web) next
+
+## Phase 39 — Tool-Round UI + Citation Chips (executing 2026-07-09)
+
+- **39-01 EXECUTED:** TUI-01 (Python half). `ChatRunEventType` widened additively with
+  `server_tool_call`/`server_tool_result` (transport-only, never persisted, no migration —
+  grep-verified zero matches in `packages/db/`). `_run_server_tool_round` now constructs both
+  mirror `ChatRunEvent`s directly at its 2 existing `tool_call`/`tool_result` dispatch points —
+  `server_tool_call`'s `data` deliberately omits `arguments` (T-39-01), `server_tool_result`'s
+  `data` is a byte-identical mirror of the persisted `tool_result` event's own data. Neither new
+  event is ever routed through `self._emit`/`append_event` — proven by 2 new e2e tests asserting
+  `id`/`run_id`/`seq` are all `None` AND that `fakes["runs"].events` (the persisted-event log)
+  never contains either new type. `chat_stream.py` required zero changes (`_format_sse_event`
+  serializes any `ChatRunEvent` generically). 54/54 targeted regression sweep passes, mypy/
+  lint-imports clean. **Deviation (1, Rule 3, non-architectural):** kept the
+  `ChatRunEvent(type="server_tool_result", ...)` construction as a one-line call head (data dict
+  wrapped across lines) rather than `ruff format`'s preferred fully-multi-line layout, to satisfy
+  the plan's own literal single-line grep acceptance criteria — confirmed `ruff format` is not a
+  gate this repo actually enforces (pre-existing non-canonical lines predate this plan; `ruff
+  check`, the real lint gate, passes clean). See 39-01-SUMMARY.md. **Next: 39-02** (web/TypeScript
+  side — `useChatStream`/`message-turn.tsx`/`<ProvenanceLink>`, consumes these 2 frame types
+  verbatim per 39-UI-SPEC.md's SSE/Part Contract table).
 
 ## Phase 38 — Quarantine + Adversarial Eval (COMPLETE 2026-07-09)
 
@@ -979,7 +1000,7 @@ User direction after v1.1: keep LOCAL + `/studio` sandbox (no deploy/convergence
 
 - **Resume file:** 
 
-.planning/phases/40-confirm-action-widgets/40-02-SUMMARY.md
+39-02-PLAN.md
   col); resolution = **suggest-only, never auto** → **parallel BlendedRAG (dense HNSW + lexical
   pg_trgm exact/fuzzy) fused by RRF(k=60)**, on-confirm + re-runnable backfill, confirm writes back
   aliases (flywheel), reranker deferred, degrades to lexical-only without Bedrock. Gallery = table
@@ -1866,6 +1887,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 40 P02 | 50min | 3 tasks | 9 files |
 | Phase 38 P01 | ~30min | 3 tasks | 4 files |
 | Phase 38 P02 | ~55min | 3 tasks | 12 files |
+| Phase 39 P01 | 25m | 1 tasks | 3 files |
 
 ## Operator Next Steps
 

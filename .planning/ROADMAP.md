@@ -299,7 +299,7 @@ the primitive Phase 41's preview node will also consume.
      `/knowledge?focus={id}` depending on `kind`
 **Plans**: 2 plans (coarse; both Wave 1, no file overlap — Python SSE emission / web rendering)
 Plans:
-- [ ] 39-01-PLAN.md — non-persisted server_tool_call/server_tool_result SSE mirror frames + naming-collision context
+- [x] 39-01-PLAN.md — non-persisted server_tool_call/server_tool_result SSE mirror frames + naming-collision context
 - [ ] 39-02-PLAN.md — use-chat-stream.ts extension (collision fix) + ProvenanceLink + ToolRoundActivityRow/ToolInvocationResultRow wired into message-turn.tsx
 **UI hint**: yes
 
@@ -364,7 +364,7 @@ execute last.
 | 36. Thin-Wrapper Tools | 2/2 | Complete   | 2026-07-08 |
 | 37. Knowledge Search + Python Read-Side | 2/2 | Complete   | 2026-07-09 |
 | 38. Quarantine + Adversarial Eval | 2/2 | Complete   | 2026-07-09 |
-| 39. Tool-Round UI + Citation Chips | 0/? | Not started | - |
+| 39. Tool-Round UI + Citation Chips | 1/2 | In Progress|  |
 | 40. Confirm-Action Widgets | 2/2 | Complete   | 2026-07-09 |
 | 41. Knowledge-Preview Canvas Node | 0/? | Not started | - |
 
