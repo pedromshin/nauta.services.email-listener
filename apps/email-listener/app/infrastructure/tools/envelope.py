@@ -15,7 +15,7 @@ import dataclasses
 from dataclasses import dataclass
 from typing import Literal
 
-CitationKind = Literal["entity", "email"]
+CitationKind = Literal["entity", "email", "knowledge"]
 
 # Fork 5's per-result-field truncation convention (36-CONTEXT.md) -- distinct
 # from `cap_tool_output`'s whole-envelope MAX_TOOL_OUTPUT_CHARS (2000) cap.
@@ -24,6 +24,9 @@ MAX_RESULT_FIELD_CHARS = 300
 _ROUTE_TEMPLATES: dict[str, str] = {
     "entity": "/entities/{id}",
     "email": "/emails/{id}",
+    # Fork 5 (Phase 37): /knowledge has no /knowledge/[id] route -- the
+    # deep-link + focus query param is the only correct citation form.
+    "knowledge": "/knowledge?focus={id}",
 }
 
 
