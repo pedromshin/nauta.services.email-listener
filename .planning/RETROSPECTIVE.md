@@ -147,6 +147,67 @@ bounded expandNode, promote popover).
 - Notable: 11 sequential executors (worktrees disabled); Phase 31 was fully independent and could
   have run parallel to 29/30 had worktrees been enabled.
 
+## Milestone: v1.6 — Chat × Knowledge Convergence
+
+**Shipped:** 2026-07-09
+**Phases:** 9 (33–41) | **Plans:** 20 (45 tasks)
+
+### What Was Built
+The v1.3 chat agent gained read access to its own extracted data: a bounded mid-turn tool loop
+(ToolExecutor port, ≤4 rounds, capability-gated) running 3 tiered knowledge tools with structural
+injection quarantine (three independent belts; exposure code-gated on a 26-fixture adversarial
+suite + live Bedrock Haiku harness), per-round cost ceilings, visible tool rounds with citation
+chips (`<ProvenanceLink>`), live data-bound genui panels (`spec.bindings` finally alive, zero
+renderer edits), chat-confirmable knowledge promotions (CAS + edge-tier staleness 409), and a
+knowledge-preview canvas node. Migrations 0029–0030. Two latent production bugs + one live client
+bug fixed with regression guards.
+
+### What Worked
+- **Max parallelization via background agents**: wave 1 ran Phase 33 (web) ∥ Phase 34 (Python) on
+  disjoint trees with zero collisions; planning for phase N+1 pipelined during execution of N;
+  Phase 40 jumped the queue when its gate analysis showed it only needed shipped v1.5. Net: 9
+  phases in ~2 days wall-clock despite 3 session-limit cutoffs.
+- **Disk-state reconciliation on interruption**: every crash recovery started by diffing
+  commits/SUMMARYs/uncommitted files against plans before resuming — no work re-done, no work lost
+  (35-02's uncommitted tests adopted after verification; 41-02's mini-graph reconciled).
+- **Locked research → 1:1 roadmap**: the pre-baked synthesis (5 forks + critic) made planning
+  cheap and drift-visible; the roadmapper mapped its 9-phase build order verbatim.
+- **Gated exposure as a pattern**: the flag-flip-only-after-suite-passes task shape made "safe to
+  expose" a testable property, not a judgment call.
+
+### What Was Inefficient
+- Session-limit cutoffs killed 3 agents mid-flight (planner ×2, executor ×1) — recovery cost
+  ~1 resume cycle each; the resumable-agent transcript feature made this cheap but not free.
+- SUMMARY frontmatter `requirements_completed` convention drifted (only Phase 35 populated it),
+  making `milestone.complete`'s auto-accomplishment extraction garbage — hand-rewritten at close.
+- CRLF/LF line-ending churn in .planning files caused two fix commits by different agents with
+  opposite conventions (verifier later established the repo is LF at byte level).
+- The 39∥40 wave-6 parallel plan had to be abandoned when 39's plans grew a Python SSE task —
+  cross-tree phase splits should be caught at planning time, not scheduling time.
+
+### Patterns Established
+- Background-agent-per-phase orchestration with a scheduler main context (strategic-compact posture).
+- Three-belt structural unreachability for trust-tiered data (view → field omission → boundary gate).
+- SSE mirror frames (non-persisted) alongside persisted run events for live UI without migrations.
+- Server-recomputed provenance routes (never trust data-supplied route strings).
+
+### Key Lessons
+- Concurrent executors in one working tree ARE safe when file trees are disjoint AND git staging
+  is path-explicit — but shared files (run_chat_turn.py) force serialization; check plan
+  `files_modified` overlap before parallelizing, not phase labels.
+- Custom SQL migrations need manual `_journal.json` entries (drizzle silently skips otherwise) —
+  now recorded in two SUMMARYs; candidate for a repo doc.
+- An invalidation contract (BIND-02) established in one phase must be explicitly re-audited when a
+  later phase adds a second mutation path — the milestone audit caught what phase verification
+  structurally couldn't.
+
+### Cost Observations
+- Model mix: orchestrator on Fable-5 (scheduler-only, strategic-compact); planners/executors/
+  verifiers/UI agents on Sonnet (one Opus planner early, before the limit hit).
+- Sessions: ~4 main-context sessions, 3 session-limit interruptions absorbed.
+- Notable: ~20 background agents total; the heaviest phases (38, 39) ran 1.9–3.5h each in
+  background with zero main-context cost between dispatch and notification.
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Shipped | Audit | Deferred (connected-env) |
@@ -156,5 +217,6 @@ bounded expandNode, promote popover).
 | v1.3 | 22–25 | 25 | 2026-07-06 | tech_debt | 6 |
 | v1.4 | 26–28 | 15 | 2026-07-07 | tech_debt | 4 |
 | v1.5 | 29–32 | 11 | 2026-07-08 | tech_debt | 4 |
+| v1.6 | 33–41 | 20 | 2026-07-09 | tech_debt | 7 |
 
-**Recurring theme:** this project consistently ships code-complete milestones with a small set of live-browser/Bedrock verifications deferred to a connected-env pass — a stable, honest pattern, not slippage. The locked-renderer + reusable-registry discipline (FOUND-2) has held across five milestones, and the deferred-item count has stabilized at ~4 (15 → 6 → 4 → 4) as committed regression gates and live-DB migration verify scripts replace one-off checks. v1.5 adds a new discipline: architecture evolution gated on committed measurement artifacts rather than judgment.
+**Recurring theme:** this project consistently ships code-complete milestones with a small set of live-browser/Bedrock verifications deferred to a connected-env pass — a stable, honest pattern, not slippage. The locked-renderer + reusable-registry discipline (FOUND-2) has held across six milestones, and the deferred count stays small (15 → 6 → 4 → 4 → 7; v1.6's 7 includes 3 todos, not just env checks) as committed regression gates and live-DB migration verify scripts replace one-off checks. v1.5 added measurement-gated architecture evolution; v1.6 added suite-gated exposure flips and proved fully-autonomous parallel execution across session boundaries.
