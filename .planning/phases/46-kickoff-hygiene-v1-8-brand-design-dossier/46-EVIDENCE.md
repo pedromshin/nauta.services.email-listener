@@ -174,3 +174,76 @@ DEF-18-03-01 / DEF-19-01 → `PYTHONIOENCODING=utf-8 uv run python -m scripts.ge
 `packages/genui/src/eval/golden-set.json` category/id coverage.
 
 ---
+
+## HYGN-01 — Code-island isolation (999.3, DEF-20-01)
+
+### Playwright toolchain availability check
+
+`apps/web/e2e/code-island-isolation.spec.ts` (Phase 20 SPIKE) exercises the jailed-eval code-island
+sandbox — opaque-origin iframe jail, inline `<meta>` CSP, cookie/localStorage/parent-DOM/navigation
+denial — in a real browser, across both configured engines in `apps/web/playwright.config.ts`:
+**chromium** and **firefox** (`projects: [{ name: "chromium", ... }, { name: "firefox", ... }]`).
+The spec's own header states jsdom would pass vacuously (no real `sandbox`/CSP/opaque-origin
+enforcement), so this browser run is the only way to exercise the runtime guarantee directly.
+
+Check command + output:
+```
+ls node_modules/@playwright          -> No such file or directory
+ls apps/web/node_modules/@playwright -> No such file or directory
+grep -n "playwright" apps/web/package.json package.json -> (no matches)
+```
+`@playwright/test` is genuinely absent from both the root and `apps/web` `node_modules`, and is not
+declared in either `package.json`. Making the spec runnable requires
+`npm i -D @playwright/test && npx playwright install chromium firefox`, which mutates root
+`package.json`/`package-lock.json`.
+
+**Disposition: blocked.** Per this plan's concurrency constraint, no npm dependency may be
+installed and root `package.json`/`package-lock.json` must not be mutated while the Phase 43
+track owns that surface in a parallel run against the same checkout. `DEF-20-01` is therefore
+recorded `blocked (browser toolchain uninstallable under the Phase-46 concurrency constraint)` —
+not run, not faked, not worked around by installing anyway.
+
+### Deterministic substitute: host-side AST-allowlist vitest proof
+
+Per the spec's own header ("The host-side AST allowlist (`validate-island-code.test.ts`, ... vitest
+cases) is the primary, deterministic proof already green; this spec is the runtime backstop for
+that allowlist"), the locally-feasible substitute was run — no new dependency required (`vitest` is
+already hoisted to the workspace root `node_modules/.bin`):
+
+```
+cd packages/genui
+npx vitest run src/sandbox/validate-island-code.test.ts
+```
+
+Verbatim result:
+```
+ RUN  v2.1.9 C:/Users/pc/Desktop/nauta.services.email-listener/packages/genui
+
+ ✓ src/sandbox/validate-island-code.test.ts (39 tests) 38ms
+
+ Test Files  1 passed (1)
+      Tests  39 passed (39)
+   Start at  20:16:36
+   Duration  2.05s (transform 103ms, setup 0ms, collect 150ms, tests 38ms, environment 1.24s, prepare 119ms)
+```
+
+39/39 passed (the spec file's own header comment references "24 vitest cases" — the file has since
+grown to 39 test cases; the verbatim count recorded here is what was actually observed running
+today, not the stale comment).
+
+This proves the AST-allowlist gate that the sandbox's static code-safety guarantee rests on is
+green and deterministic. Combined with the isolation spec's own stated primacy ordering (AST
+allowlist = primary/deterministic proof; Playwright spec = runtime backstop only), the isolation
+guarantee is substantively evidenced even with the runtime browser spec blocked — DEF-20-01's
+underlying safety property is not left completely unverified, only its cross-browser runtime
+confirmation is deferred.
+
+### Dependency-mutation guard verification
+
+```
+git status --porcelain package.json package-lock.json
+```
+Output: empty (no changes) — confirmed both before and after this evidence-gathering session. No
+`npm install`/`npm i` command was run at any point in this plan.
+
+---
