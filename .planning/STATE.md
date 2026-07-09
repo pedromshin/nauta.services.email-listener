@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Chat × Knowledge Convergence
-status: executing
-last_updated: "2026-07-09T04:15:00.000Z"
-last_activity: 2026-07-09 -- Phase 40 Plan 01 executed (emit_confirm_action tool + live-edge-read finalization + widget_kind migration 0030) -- CONF-01 complete
+status: completed
+last_updated: "2026-07-09T04:40:31.476Z"
+last_activity: 2026-07-09 -- Phase 40 Plan 02 executed (CONF-02 edge-tier staleness re-check + confirm_action_dispatch 2-entry table + compact-summary web fix) -- Phase 40 COMPLETE (CONF-01, CONF-02)
 progress:
   total_phases: 9
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 18
-  completed_plans: 13
-  percent: 56
+  completed_plans: 14
+  percent: 67
 ---
 
 # State
@@ -20,16 +20,57 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** Phase 40 — confirm-action-widgets (Plan 01 of 2 executed)
+**Current focus:** Phase 40 — confirm-action-widgets — COMPLETE (both plans executed)
 
 ## Current Position
 
-Phase: 40 (confirm-action-widgets) — Plan 1 of 2 executed
-Plan: 1 of 2 executed (40-02 depends on 40-01, not yet executed)
-Status: 40-01 complete (CONF-01) — next: 40-02 (CONF-02 edge-tier staleness re-check + dispatch table + compact-summary web fix). Phase 38 (Quarantine + Adversarial Eval) and Phase 39 (Tool-Round UI + Citation Chips) remain not-yet-executed, independent of Phase 40's own track (per ROADMAP.md's parallel-track note: {40} needs only G2, can run parallel to 36-39).
-Last activity: 2026-07-09 -- Phase 40 Plan 01 executed (emit_confirm_action tool + live-edge-read finalization + widget_kind migration 0030) -- CONF-01 complete
+Phase: 40 (confirm-action-widgets) — COMPLETE (2 of 2 plans executed)
+Plan: 40-02 executed (depended on 40-01, which was already complete)
+Status: Phase 40 COMPLETE — CONF-01 (40-01) + CONF-02 (40-02) both done. Phase 38 (Quarantine + Adversarial Eval) and Phase 39 (Tool-Round UI + Citation Chips) remain not-yet-executed, independent of Phase 40's own track (per ROADMAP.md's parallel-track note: {40} needs only G2, can run parallel to 36-39). Phase 41 (Knowledge-Preview Canvas Node) is gated on Phase 39's ProvenanceLink, planned last.
+Last activity: 2026-07-09 -- Phase 40 Plan 02 executed (CONF-02 edge-tier staleness re-check + confirm_action_dispatch 2-entry table + compact-summary web fix) -- Phase 40 COMPLETE (CONF-01, CONF-02)
 
-## Phase 40 — Confirm-Action Widgets (executing 2026-07-09)
+## Phase 40 — Confirm-Action Widgets (COMPLETE 2026-07-09)
+
+- **40-02 EXECUTED — PHASE 40 COMPLETE:** CONF-02. `PromoteEdgeUseCase.execute` gained
+  keyword-only `mechanism`/`extra` params (byte-identical default behavior for every existing
+  caller — proven by the existing 10 `test_promote_edge.py` tests passing unmodified). New
+  `confirm_action_dispatch.py`: `ConfirmActionHandler` Protocol,
+  `KnowledgeEdgeTierPromotionHandler` (reject never touches `promote_edge` at all — audit-on-
+  the-row convention; confirm wraps `PromoteEdgeUseCase` with
+  `mechanism="chat_confirm_action"`, catches `EdgeNotPromotable`/`EdgeNotFound` and returns
+  `{"status": "promote_failed"}`, never re-raises), `UnsupportedConfirmActionHandler`
+  (`entity_merge_confirm`'s registered-but-unsupported stub per 40-CONTEXT.md's confirmed
+  pair-keyed blocker — never raises). `SubmitWidgetInteraction.prepare()` gained a
+  confirm_action-scoped edge-tier staleness re-check (runs after the existing turn-staleness
+  check and strictly BEFORE `try_submit` — proven both by source ordering and a dedicated
+  test): compares the live edge tier/`is_active` against the declaration's frozen
+  `tierSnapshot`, fail-closed to `WidgetSubmitRejected(reason="stale")` on any mismatch or DB
+  error. **THE MUST-TEST passes:** an out-of-band promote (simulated via the fake
+  `KnowledgeGraphRepository` returning a changed tier) is caught before ANY interaction-row
+  mutation (`try_submit` never called) AND before any dispatch call (`execute` never called) —
+  plus the `is_active=False` deactivation variant. A best-effort dispatch call runs AFTER
+  `try_submit` succeeds, wrapped in `try/except Exception` that only logs, never re-raises.
+  `_resolve_summary` extended so confirm_action reuses the proposal_cards `{chosenTitle}`
+  summary path verbatim. `prepare()`'s public signature is unchanged.
+  `container.py`'s `_provide_submit_widget_interaction` wires the explicit 2-entry
+  `confirm_action_dispatch` dict, reusing the already-DI-registered `PromoteEdgeUseCase` and
+  instantiating its own `SupabaseKnowledgeGraphRepository(client=client)` (mirrors the
+  established no-shared-singleton pattern every other `KnowledgeGraphRepository` consumer in
+  this codebase already uses). `compact-interaction-entry.tsx`'s widgetKind check extended to
+  `proposal_cards || confirm_action` — reuses `ProposalSummary` verbatim, zero new web
+  components; `interactive-widget-boundary.tsx` confirmed ZERO diff. 33/33 targeted tests pass
+  (10 promote_edge unmodified + 2 new mechanism/extra + 6 new dispatch-handler + 10
+  submit_widget_interaction unmodified + 7 new staleness/dispatch, 0 failures), 307/307 in the
+  full chat-turn/container/widget-submit regression sweep, 4/4 vitest (3 unmodified + 1 new),
+  mypy/ruff/lint-imports clean (same 12 pre-existing errors in 4 unrelated infrastructure
+  files Phase 36-02/37-02/40-01 already documented). **Deviations (2, both non-architectural,
+  Claude's Discretion):** extracted the staleness check + dispatch call into private methods
+  rather than inlining in `prepare()` (source ordering preserved, verified by a dedicated
+  test); imported `SUGGESTION_KIND_EDGE_TIER_PROMOTION` from Plan 40-01's
+  `run_chat_turn_confirm_action.py` rather than redefining it locally, per the plan's explicit
+  "import from here, do not redefine" instruction. See 40-02-SUMMARY.md. **All Phase 40
+  requirements (CONF-01, CONF-02) now complete — Phase 40 (Confirm-Action Widgets) is DONE.
+  Next: Phase 38** (Quarantine + Adversarial Eval — independent track, not yet executed).
 
 - **40-01 EXECUTED:** CONF-01. Adds the `emit_confirm_action` terminal widget tool — the model
   supplies ONLY `suggestionRef {kind, id}` (+ optional short rationale), never a tier/node-id/
@@ -57,10 +98,8 @@ Last activity: 2026-07-09 -- Phase 40 Plan 01 executed (emit_confirm_action tool
   changes (this plan is Python + migration only). **Deviations (2, both non-architectural):**
   reused the existing `knowledge_repo` instance in `container.py` instead of a second one
   (Phase 37-02 already added it); removed an unused `noqa: BLE001` comment (ruff's RUF100 —
-  BLE001 isn't enabled in this project's config). See 40-01-SUMMARY.md. **Next: 40-02**
-  (CONF-02 — edge-tier staleness re-check at submit time + the explicit 2-entry dispatch table
-  + the reserved `compact-interaction-entry.tsx` web fix — already planned, `40-02-PLAN.md`
-  exists, depends_on 40-01).
+  BLE001 isn't enabled in this project's config). See 40-01-SUMMARY.md. Superseded by 40-02
+  above — Phase 40 is now COMPLETE.
 
 ## Phase 37 — Knowledge Search + Python Read-Side (COMPLETE 2026-07-09)
 
@@ -869,7 +908,7 @@ User direction after v1.1: keep LOCAL + `/studio` sandbox (no deploy/convergence
 
 - **Resume file:** 
 
-None
+.planning/phases/40-confirm-action-widgets/40-02-SUMMARY.md
   col); resolution = **suggest-only, never auto** → **parallel BlendedRAG (dense HNSW + lexical
   pg_trgm exact/fuzzy) fused by RRF(k=60)**, on-confirm + re-runnable backfill, confirm writes back
   aliases (flywheel), reranker deferred, degrades to lexical-only without Bedrock. Gallery = table
@@ -1745,6 +1784,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 35 P01 | ~35min | 2 tasks | 9 files |
 | Phase 36 P01 | ~55 min | 2 tasks | 10 files |
 | Phase 36 P02 | 70m | 3 tasks | 5 files |
+| Phase 40 P02 | 50min | 3 tasks | 9 files |
 
 ## Operator Next Steps
 

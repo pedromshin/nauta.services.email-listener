@@ -130,7 +130,7 @@ G3 + Phase 39's `<ProvenanceLink>`) — plan and execute last.
 - [x] **Phase 37: Knowledge Search + Python Read-Side** - User can search or expand the knowledge graph from chat via `search_knowledge`, backed by a NEW Python `KnowledgeGraphRepository` + a DB-level `extracted_only` view — built but not yet exposed to users (completed 2026-07-09)
 - [ ] **Phase 38: Quarantine + Adversarial Eval** - Every wired `ToolExecutor` structurally enforces tier-filtered envelopes, proven against an adversarial fixture suite + live-model harness; `search_knowledge` becomes safely user-facing
 - [ ] **Phase 39: Tool-Round UI + Citation Chips** - `/chat` visibly surfaces in-progress tool rounds and renders citation chips through one shared `<ProvenanceLink>` primitive
-- [ ] **Phase 40: Confirm-Action Widgets** - Agent can end a turn with a confirm-action widget letting a human promote/reject a knowledge suggestion, over the existing Phase-24 CAS spine, with an edge-tier staleness re-check
+- [x] **Phase 40: Confirm-Action Widgets** - Agent can end a turn with a confirm-action widget letting a human promote/reject a knowledge suggestion, over the existing Phase-24 CAS spine, with an edge-tier staleness re-check (completed 2026-07-09)
 - [ ] **Phase 41: Knowledge-Preview Canvas Node** - User can place a bounded, non-interactive knowledge-graph preview on the `/chat` canvas that deep-links out to `/knowledge`
 
 ## Phase Details
@@ -326,7 +326,7 @@ migration merges first (sequence by actual merge order, not by phase number)
 **Plans**: 2 plans (coarse; Wave 1 = 40-01, Wave 2 = 40-02)
 Plans:
 - [x] 40-01-PLAN.md — emit_confirm_action tool + live edge-read finalization + widget_kind migration [CONF-01]
-- [ ] 40-02-PLAN.md — CONF-02 edge-tier staleness re-check + 2-entry dispatch table + compact-summary web fix [CONF-02]
+- [x] 40-02-PLAN.md — CONF-02 edge-tier staleness re-check + 2-entry dispatch table + compact-summary web fix [CONF-02]
 **UI hint**: yes
 
 ### Phase 41: Knowledge-Preview Canvas Node
@@ -365,7 +365,7 @@ execute last.
 | 37. Knowledge Search + Python Read-Side | 2/2 | Complete   | 2026-07-09 |
 | 38. Quarantine + Adversarial Eval | 0/2 | Not started | - |
 | 39. Tool-Round UI + Citation Chips | 0/? | Not started | - |
-| 40. Confirm-Action Widgets | 1/2 | In Progress|  |
+| 40. Confirm-Action Widgets | 2/2 | Complete   | 2026-07-09 |
 | 41. Knowledge-Preview Canvas Node | 0/? | Not started | - |
 
 ## Next
