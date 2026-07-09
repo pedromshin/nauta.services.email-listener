@@ -140,6 +140,15 @@ Plans:
 4. Server-side FastAPI proxy routes forward the user's identity; `X-API-Key` service boundary unchanged (existing service tests green)
 5. Missing auth env vars fail startup with a clear message; Google Cloud OAuth client runbook exists
 
+**Plans:** 5 plans
+
+Plans:
+- [ ] 43-01-PLAN.md — Foundation: @supabase/ssr install, Zod env fail-fast validation, browser/server/middleware Supabase client helpers
+- [ ] 43-02-PLAN.md — Sign-in/out UX + route protection: middleware guard, /login + Continue-with-Google, /auth/callback, sidebar sign-out
+- [ ] 43-03-PLAN.md — tRPC session context + protectedProcedure + identity-injection test
+- [ ] 43-04-PLAN.md — Identity forwarding: server-derived X-User-Id on BFF proxy routes + non-enforcing FastAPI reader
+- [ ] 43-05-PLAN.md — Google OAuth user runbook + config.toml/.env.example wiring + Playwright redirect smoke spec
+
 ### Phase 44: Tenancy — user_id Scoping + Enforced Isolation
 
 **Goal:** Every row of user-owned data belongs to a user and is unreachable across users — enforced at the app boundary (primary), defended in depth by RLS.
