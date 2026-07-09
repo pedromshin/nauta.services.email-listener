@@ -191,7 +191,7 @@ class TestLexicalRetrievalProviderBehavior:
         from app.domain.ports.retrieval_provider import RetrievalResult
 
         provider = LexicalRetrievalProvider()
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             provider.retrieve(intent="a sales dashboard with KPIs", top_k=5)
         )
         assert isinstance(result, RetrievalResult)
@@ -200,7 +200,7 @@ class TestLexicalRetrievalProviderBehavior:
         from app.infrastructure.llm.genui_retrieval_provider import LexicalRetrievalProvider
 
         provider = LexicalRetrievalProvider()
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             provider.retrieve(intent="a sales dashboard with KPIs", top_k=5)
         )
         scores = [item.score for item in result.items]
@@ -210,7 +210,7 @@ class TestLexicalRetrievalProviderBehavior:
         from app.infrastructure.llm.genui_retrieval_provider import LexicalRetrievalProvider
 
         provider = LexicalRetrievalProvider()
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             provider.retrieve(intent="anything", top_k=3)
         )
         assert len(result.items) <= 3
@@ -220,7 +220,7 @@ class TestLexicalRetrievalProviderBehavior:
         from app.infrastructure.llm.genui_retrieval_provider import LexicalRetrievalProvider
 
         provider = LexicalRetrievalProvider()
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             provider.retrieve(intent="a sales dashboard with KPIs and metrics", top_k=10)
         )
         assert len(result.items) > 0
@@ -242,10 +242,10 @@ class TestLexicalRetrievalProviderBehavior:
         from app.infrastructure.llm.genui_retrieval_provider import LexicalRetrievalProvider
 
         provider = LexicalRetrievalProvider()
-        result_a = asyncio.get_event_loop().run_until_complete(
+        result_a = asyncio.run(
             provider.retrieve(intent="a sales dashboard with KPIs", top_k=5)
         )
-        result_b = asyncio.get_event_loop().run_until_complete(
+        result_b = asyncio.run(
             provider.retrieve(intent="a sales dashboard with KPIs", top_k=5)
         )
         assert result_a.retrieved_ids == result_b.retrieved_ids
@@ -257,7 +257,7 @@ class TestLexicalRetrievalProviderBehavior:
         from app.domain.ports.retrieval_provider import RetrievalResult
 
         provider = LexicalRetrievalProvider()
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             provider.retrieve(intent="", top_k=5)
         )
         assert isinstance(result, RetrievalResult)
@@ -268,7 +268,7 @@ class TestLexicalRetrievalProviderBehavior:
         from app.domain.ports.retrieval_provider import RetrievalResult
 
         provider = LexicalRetrievalProvider()
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             provider.retrieve(intent="xyzzy-1234-!@#$", top_k=5)
         )
         assert isinstance(result, RetrievalResult)
@@ -282,7 +282,7 @@ class TestLexicalRetrievalProviderBehavior:
         provider = LexicalRetrievalProvider()
 
         # Can retrieve without any DB/Bedrock injection
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             provider.retrieve(intent="a profile page", top_k=5)
         )
         assert isinstance(result, RetrievalResult)
@@ -292,7 +292,7 @@ class TestLexicalRetrievalProviderBehavior:
         from app.infrastructure.llm.genui_retrieval_provider import LexicalRetrievalProvider
 
         provider = LexicalRetrievalProvider()
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             provider.retrieve(intent="pricing page with tiers and a CTA button", top_k=5)
         )
         assert len(result.items) > 0
@@ -304,7 +304,7 @@ class TestLexicalRetrievalProviderBehavior:
         from app.domain.ports.retrieval_provider import RetrievalResult
 
         provider = LexicalRetrievalProvider()
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.run(
             provider.retrieve(
                 intent="a landing page",
                 top_k=5,

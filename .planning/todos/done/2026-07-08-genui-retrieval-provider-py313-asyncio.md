@@ -20,3 +20,17 @@ Python 3.13.
 Migrate the affected tests/fixtures to `asyncio.run()` / explicit event-loop fixtures
 (`pytest-asyncio` current idioms). Small, mechanical; verify the production provider itself
 doesn't share the deprecated call.
+
+## Resolution
+
+All 11 `asyncio.get_event_loop().run_until_complete(...)` call sites (10 test methods, one with
+two calls) in `test_genui_retrieval_provider.py` were swapped to `asyncio.run(...)` — a single
+`replace_all` textual substitution since the substring `asyncio.get_event_loop().run_until_complete(`
+was byte-identical at every call site and the wrapped coroutine expression/closing paren needed
+no other change. Confirmed the production provider
+(`app/infrastructure/llm/genui_retrieval_provider.py`) contains no `get_event_loop`/
+`run_until_complete` calls — left untouched.
+
+Verified: `cd apps/email-listener && uv run pytest tests/test_genui_retrieval_provider.py -v --no-cov`
+→ 24 passed, the prior `DeprecationWarning: There is no current event loop` is gone (only an
+unrelated `httpx`/starlette warning remains).
