@@ -1,6 +1,6 @@
 // Regenerates references/component-catalog.md from the live registry indexes
-// plus the local @nauta/ui inventory. Run whenever registries drift:
-//   node .claude/skills/nauta-design-system/scripts/build-catalog.mjs
+// plus the local @polytoken/ui inventory. Run whenever registries drift:
+//   node .claude/skills/polytoken-design-system/scripts/build-catalog.mjs
 import { mkdirSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -90,10 +90,10 @@ const main = async () => {
   const sections = [];
   const counts = [];
 
-  sections.push(`## Local first: @nauta/ui (vendored, Tailwind v3, Radix)
+  sections.push(`## Local first: @polytoken/ui (vendored, Tailwind v3, Radix)
 
 Always prefer these over registry items — zero adaptation cost.
-Import: \`import { X } from "@nauta/ui/<name>"\`; \`cn\` from \`@nauta/ui\`.
+Import: \`import { X } from "@polytoken/ui/<name>"\`; \`cn\` from \`@polytoken/ui\`.
 
 ${compactColumns(local.components)}
 
@@ -125,7 +125,7 @@ Compound suites: ${local.dirs.map((d) => `\`${d}/\``).join(", ")} (see \`package
 > Every registry item is fetched with \`npx shadcn@latest add <ns>/<name> --dry-run --view\` (from \`packages/ui/\`)
 > then vendored per the workflow in ../SKILL.md — plain \`add\` is broken for this package.
 
-Counts: local @nauta/ui: ${local.components.length} + ${local.dirs.length} suites | ${counts.join(" | ")}
+Counts: local @polytoken/ui: ${local.components.length} + ${local.dirs.length} suites | ${counts.join(" | ")}
 
 ${sections.join("\n\n")}
 `;

@@ -1,9 +1,9 @@
 ---
-name: nauta-design-system
-description: Nauta web design system — token source, @nauta/ui conventions, and the shadcn CLI + registry vendor-and-adapt workflow. Use when building, styling, or reviewing any UI in apps/web or packages/ui.
+name: polytoken-design-system
+description: Polytoken web design system — token source, @polytoken/ui conventions, and the shadcn CLI + registry vendor-and-adapt workflow. Use when building, styling, or reviewing any UI in apps/web or packages/ui.
 ---
 
-# Nauta Design System
+# Polytoken Design System
 
 ## Stack pin (hard constraints)
 
@@ -21,27 +21,27 @@ description: Nauta web design system — token source, @nauta/ui conventions, an
   (border-beam, marquee, confetti, number-ticker, …) and Kibo UI (code-block,
   dropzone, dialog-stack, tags, …) — already adapted to Tailwind v3; their
   keyframes live in `packages/tailwind-config/web.ts`.
-- `cn` util: exported from the `@nauta/ui` root (`packages/ui/src/index.ts`).
+- `cn` util: exported from the `@polytoken/ui` root (`packages/ui/src/index.ts`).
 - Tokens: `apps/web/src/app/globals.css` — HSL CSS variables, shadcn v3
   convention. Brand primary `164 39% 22%`. Sidebar tokens extended in
   `packages/ui/tailwind.config.ts` (IntelliSense-only file).
-- Tailwind preset: `@nauta/tailwind-config/web`.
-- Import convention: `import { Button } from "@nauta/ui/button"`,
-  `import { cn } from "@nauta/ui"`.
+- Tailwind preset: `@polytoken/tailwind-config/web`.
+- Import convention: `import { Button } from "@polytoken/ui/button"`,
+  `import { cn } from "@polytoken/ui"`.
 - This is an **npm workspaces** monorepo (NOT pnpm).
-  Typecheck: `npm run typecheck -w @nauta/ui`.
+  Typecheck: `npm run typecheck -w @polytoken/ui`.
 
 ## Component discovery — read the catalog, don't search
 
 **When composing a page, read `references/component-catalog.md` FIRST.** It
-pre-enumerates every available component — all 55 local `@nauta/ui` components
+pre-enumerates every available component — all 55 local `@polytoken/ui` components
 (including vendored Magic UI effects and Kibo UI utilities) plus all ~900
 registry items (@shadcn, @kibo-ui, @magicui, @coss) with descriptions — so you
 never need to stop and run `shadcn search` mid-build. Prefer local components
 first; they have zero adaptation cost.
 
 Refresh the catalog when registries drift or new components are vendored:
-`node .claude/skills/nauta-design-system/scripts/build-catalog.mjs`
+`node .claude/skills/polytoken-design-system/scripts/build-catalog.mjs`
 
 ## shadcn CLI workflow (vendor + adapt)
 
@@ -50,7 +50,7 @@ Refresh the catalog when registries drift or new components are vendored:
 
 - Discover: catalog first (above); fall back to `npx shadcn@latest search @kibo-ui -q <term>`
 - Inspect: `npx shadcn@latest add <item> --dry-run --view`
-  (import rewriting to `@nauta/ui` conventions is correct in the payload)
+  (import rewriting to `@polytoken/ui` conventions is correct in the payload)
 - Diff vendored components against canonical: `npx shadcn@latest diff <name>`
 - **DO NOT run plain `add`** — it resolves the write path through the package
   `exports` map and targets `src/index.ts/<name>.tsx` (broken). Instead:
@@ -86,6 +86,13 @@ Refresh the catalog when registries drift or new components are vendored:
 - Visual smoke surface: `/dev/components` renders every vendored
   registry component (apps/web/src/app/dev/components/page.tsx) — extend it
   when vendoring more.
+- Consultation page: `/dev/design` is the generated design-system reference —
+  every component rendered live (49/55; variant matrices driven by extracted
+  CVA data) alongside all tokens with light/dark values, motion utilities, and
+  each component's props/defaults/variants/token-refs. Preview registry:
+  `apps/web/src/app/dev/design/previews-*.tsx`. Regenerate the data after
+  token or component changes:
+  `node .claude/skills/polytoken-design-system/scripts/build-design-data.mjs`
 
 ## Design quality bar
 

@@ -5,12 +5,12 @@
 > Every registry item is fetched with `npx shadcn@latest add <ns>/<name> --dry-run --view` (from `packages/ui/`)
 > then vendored per the workflow in ../SKILL.md — plain `add` is broken for this package.
 
-Counts: local @nauta/ui: 55 + 1 suites | @shadcn: 61 | @kibo-ui: 41 | @magicui: 246 | @coss: 560
+Counts: local @polytoken/ui: 55 + 1 suites | @shadcn: 61 | @kibo-ui: 41 | @magicui: 246 | @coss: 560
 
-## Local first: @nauta/ui (vendored, Tailwind v3, Radix)
+## Local first: @polytoken/ui (vendored, Tailwind v3, Radix)
 
 Always prefer these over registry items — zero adaptation cost.
-Import: `import { X } from "@nauta/ui/<name>"`; `cn` from `@nauta/ui`.
+Import: `import { X } from "@polytoken/ui/<name>"`; `cn` from `@polytoken/ui`.
 
 accordion · alert · alert-dialog · animated-beam · animated-list · avatar · avatar-stack · badge · blur-fade · border-beam
 breadcrumb · button · calendar · card · chart · checkbox · code-block · code-block-server · collapsible · command
