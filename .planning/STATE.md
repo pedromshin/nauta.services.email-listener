@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Chat × Knowledge Convergence
 status: executing
-last_updated: "2026-07-08T23:35:54.689Z"
-last_activity: 2026-07-08 -- Completed 36-02-PLAN.md (SearchEmailsExecutor + container.py wiring for both real tools); Phase 36 COMPLETE
+last_updated: "2026-07-09T00:46:10.050Z"
+last_activity: 2026-07-09 -- Phase 37 Plan 01 executed (search_nodes + expand_neighbours)
 progress:
   total_phases: 9
   completed_phases: 4
   total_plans: 16
-  completed_plans: 10
+  completed_plans: 11
   percent: 44
 ---
 
@@ -20,14 +20,46 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** Phase 36 — thin-wrapper-tools
+**Current focus:** Phase 37 — knowledge-search-python-read-side
 
 ## Current Position
 
-Phase: 36 (thin-wrapper-tools) — COMPLETE
+Phase: 37 (knowledge-search-python-read-side) — EXECUTING
 Plan: 2 of 2
-Status: Phase 36 complete; ready for verification / next phase
-Last activity: 2026-07-08 -- Completed 36-02-PLAN.md (SearchEmailsExecutor + container.py wiring for both real tools); Phase 36 COMPLETE
+Status: Executing Phase 37
+Last activity: 2026-07-09 -- Phase 37 Plan 01 executed (search_nodes + expand_neighbours)
+
+## Phase 37 — Knowledge Search + Python Read-Side (executing 2026-07-09)
+
+- **37-01 EXECUTED:** Read-side foundation for TOOL-03/TOOL-04 (interface-first, Wave 1 of 2).
+  Migration `0029_knowledge_search_extracted_only.sql` creates `knowledge_nodes_extracted_only`
+  (title/content NULLed via `CASE WHEN tier = 'EXTRACTED'` -- belt 1, structural, live-verified with
+  seeded 3-tier data) + `match_knowledge_nodes_by_embedding`/`match_knowledge_nodes_by_trgm` RPCs
+  (explicit `tier = 'EXTRACTED'` filter -- belt 3) + 3 supporting indexes (new HNSW on
+  `knowledge_nodes.embedding`, 2 GIN trgm). Applied locally (`migrate:local`, idempotent on 2 runs)
+  and live-verified (`verify-0029-live.ts` -- VERIFICATION PASSED against the real local DB). The
+  existing v1.5 `KnowledgeGraphRepository` port/impl (unchanged methods: upsert_node/find_active_node/
+  insert_edge/deactivate_edges_for_node/find_active_edges_for_node/list_injectable_edges/
+  find_edge_by_id/promote_edge) gained two new methods, EXTENDED not recreated: `search_nodes`
+  (RRF(k=60)-fused vector+trgm BlendedRAG, vector arm skipped when no embedding per D-12, either arm
+  degrades to `[]` on RPC failure, never raises) and `expand_neighbours` (depth-clamped `<=2`-hop,
+  `<=50`-node-budget BFS reading through the extracted_only view at every hop, fail-closed on an
+  unknown/inactive/cross-tenant seed, budget cap applied once after the walk). 25/25 targeted tests
+  pass (7 search_nodes + 8 expand_neighbours + 10 pre-existing regression), mypy/ruff/lint-imports
+  clean (3 kept, 0 broken). TDD RED/GREEN gate followed for both Tasks 2 and 3 (failing
+  `AttributeError` tests committed first, confirmed failing, then implemented). **Deviations (4,
+  none architectural):** custom-SQL migrations need a manual `packages/db/migrations/meta/_journal.json`
+  entry (the plan's action text didn't mention this -- drizzle's migrator silently skips a `.sql` file
+  absent from the journal); one mypy cast fix on `result.data or []` (Client-typed, not `Any`, unlike
+  the entity_resolution_repository.py pattern being mirrored); one ruff `PLR0912` branch-count fix
+  (decomposed `expand_neighbours` into 5 private methods + 1 pure helper, behavior-preserving); the
+  seed node is resolved through the extracted_only view and included in `expand_neighbours`'s output
+  (not left as the plan's literal `<unresolved>` placeholder) to exactly mirror `expand.ts`'s
+  `walkKnowledgeGraph` semantics. **Not yet exposed to a chat tool by design** -- Plan 37-02
+  (`search_knowledge` ToolExecutor, Wave 2, depends_on 37-01) consumes these two methods directly;
+  TOOL-03/TOOL-04 requirements deliberately left `Pending` in REQUIREMENTS.md until 37-02 lands (both
+  plans share the same requirement IDs in frontmatter). See 37-01-SUMMARY.md. **Next: 37-02**
+  (search_knowledge ToolExecutor + settings flag + container.py wiring, flag default-OFF).
 
 ## Phase 36 — Thin-Wrapper Tools (COMPLETE 2026-07-08)
 

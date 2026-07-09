@@ -252,7 +252,7 @@ are structurally unable to leak free text into model context by field omission, 
      exposure ships only once Phase 38's quarantine/tier-filter wiring lands (synthesis P6 rule)
 **Plans**: 2 plans (coarse; Wave 1 = 37-01, Wave 2 = 37-02)
 Plans:
-- [ ] 37-01-PLAN.md — Migration 0029 (extracted_only view + BlendedRAG search RPCs + indexes, live-verified) + KnowledgeGraphRepository.search_nodes/expand_neighbours (belt 1)
+- [x] 37-01-PLAN.md — Migration 0029 (extracted_only view + BlendedRAG search RPCs + indexes, live-verified) + KnowledgeGraphRepository.search_nodes/expand_neighbours (belt 1)
 - [ ] 37-02-PLAN.md — SearchKnowledgeExecutor (belt 2 field omission) + flag-gated container wiring (SEARCH_KNOWLEDGE_TOOL_ENABLED default False)
 
 ### Phase 38: Quarantine + Adversarial Eval
@@ -359,7 +359,7 @@ execute last.
 | 34. Tool-Loop Mechanics (stub/echo executor) | 3/3 | Complete   | 2026-07-08 |
 | 35. Cost + Eval Scaffolding | 3/3 | Complete   | 2026-07-08 |
 | 36. Thin-Wrapper Tools | 2/2 | Complete   | 2026-07-08 |
-| 37. Knowledge Search + Python Read-Side | 0/2 | Not started | - |
+| 37. Knowledge Search + Python Read-Side | 1/2 | In Progress|  |
 | 38. Quarantine + Adversarial Eval | 0/? | Not started | - |
 | 39. Tool-Round UI + Citation Chips | 0/? | Not started | - |
 | 40. Confirm-Action Widgets | 0/2 | Not started | - |
