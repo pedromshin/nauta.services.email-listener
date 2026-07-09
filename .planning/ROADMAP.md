@@ -276,7 +276,10 @@ executors — and `search_knowledge` becomes safely exposed to users.
      data, not instructions")
   5. `search_knowledge` is now offered as a user-facing tool choice — the Phase-37 exposure gate is
      lifted
-**Plans**: TBD
+**Plans**: 2 plans (coarse; Wave 1 = 38-01, Wave 2 = 38-02)
+Plans:
+- [ ] 38-01-PLAN.md — FOUND-6 envelope schema gate wired once in _run_server_tool_round + system-prompt hardening line + contract tests over all 3 real executors [QUAR-01]
+- [ ] 38-02-PLAN.md — injection-fixtures.json expanded to full adversarial suite + deterministic/live scoring + real-data golden-set entries + gated search_knowledge exposure flip [QUAR-02]
 
 ### Phase 39: Tool-Round UI + Citation Chips
 **Goal**: `/chat` visibly surfaces in-progress tool rounds and renders every tool result's citations
@@ -360,7 +363,7 @@ execute last.
 | 35. Cost + Eval Scaffolding | 3/3 | Complete   | 2026-07-08 |
 | 36. Thin-Wrapper Tools | 2/2 | Complete   | 2026-07-08 |
 | 37. Knowledge Search + Python Read-Side | 2/2 | Complete   | 2026-07-09 |
-| 38. Quarantine + Adversarial Eval | 0/? | Not started | - |
+| 38. Quarantine + Adversarial Eval | 0/2 | Not started | - |
 | 39. Tool-Round UI + Citation Chips | 0/? | Not started | - |
 | 40. Confirm-Action Widgets | 0/2 | Not started | - |
 | 41. Knowledge-Preview Canvas Node | 0/? | Not started | - |
