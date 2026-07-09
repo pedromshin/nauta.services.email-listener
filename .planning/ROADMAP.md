@@ -364,7 +364,7 @@ execute last.
 | 36. Thin-Wrapper Tools | 2/2 | Complete   | 2026-07-08 |
 | 37. Knowledge Search + Python Read-Side | 2/2 | Complete   | 2026-07-09 |
 | 38. Quarantine + Adversarial Eval | 2/2 | Complete   | 2026-07-09 |
-| 39. Tool-Round UI + Citation Chips | 2/2 | Complete   | 2026-07-09 |
+| 39. Tool-Round UI + Citation Chips | 2/2 | Complete    | 2026-07-09 |
 | 40. Confirm-Action Widgets | 2/2 | Complete   | 2026-07-09 |
 | 41. Knowledge-Preview Canvas Node | 0/? | Not started | - |
 

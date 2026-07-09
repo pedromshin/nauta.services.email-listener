@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Chat × Knowledge Convergence
-status: executing
-last_updated: "2026-07-09T08:00:40.639Z"
+status: ready_to_plan
+last_updated: 2026-07-09T10:07:55.206Z
 last_activity: 2026-07-09 -- 39-02 executed (web); Phase 39 (TUI-01, TUI-02) COMPLETE
 progress:
   total_phases: 9
@@ -11,6 +11,7 @@ progress:
   total_plans: 18
   completed_plans: 18
   percent: 89
+stopped_at: Phase 39 complete (2/2) — ready to discuss Phase 40
 ---
 
 # State
@@ -20,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** Phase 39 — tool-round-ui-citation-chips (COMPLETE) — next: Phase 41 (Knowledge-Preview Canvas Node)
+**Current focus:** Phase 40 — confirm action widgets
 
 ## Current Position
 
-Phase: 39 (tool-round-ui-citation-chips) — COMPLETE
-Plan: 2 of 2 (both executed)
-Status: Phase complete — ready for verification
-Last activity: 2026-07-09 -- 39-02 executed (web: use-chat-stream contracts + collision fix + ProvenanceLink + tool-round rows) — Phase 39 (TUI-01, TUI-02) COMPLETE
+Phase: 40
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-07-09
 
 ## Phase 39 — Tool-Round UI + Citation Chips (COMPLETE 2026-07-09)
 
