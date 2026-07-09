@@ -2,16 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.6
 milestone_name: Chat × Knowledge Convergence
-status: ready_to_plan
-last_updated: 2026-07-09T10:07:55.206Z
-last_activity: 2026-07-09 -- 39-02 executed (web); Phase 39 (TUI-01, TUI-02) COMPLETE
+status: executing
+last_updated: "2026-07-09T12:36:53.474Z"
+last_activity: 2026-07-09 -- 41-01 executed (data layer foundation); Phase 41 plan 1/2 complete
 progress:
   total_phases: 9
   completed_phases: 8
-  total_plans: 18
-  completed_plans: 18
+  total_plans: 20
+  completed_plans: 19
   percent: 89
-stopped_at: Phase 39 complete (2/2) — ready to discuss Phase 40
 ---
 
 # State
@@ -21,14 +20,45 @@ stopped_at: Phase 39 complete (2/2) — ready to discuss Phase 40
 See: .planning/PROJECT.md (updated 2026-07-07)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** Phase 40 — confirm action widgets
+**Current focus:** Phase 41 — knowledge-preview-canvas-node
 
 ## Current Position
 
-Phase: 40
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-07-09
+Phase: 41 (knowledge-preview-canvas-node) — EXECUTING
+Plan: 2 of 2 (41-01 complete, 41-02 not yet started)
+Status: Executing Phase 41
+Last activity: 2026-07-09 -- 41-01 executed (data layer foundation); Phase 41 plan 1/2 complete
+
+## Phase 41 — Knowledge-Preview Canvas Node (IN PROGRESS 2026-07-09)
+
+- **41-01 EXECUTED:** Data-layer foundation (interface-first, Wave 1 of 2). `node-data-schemas.ts`
+  gained `KnowledgePreviewNodeDataSchema` (`focusNodeId: z.string().uuid()` + optional `label`
+  capped at 80 chars, `.strict()` — no `.refine()` needed, unlike `GenuiPanelNodeDataSchema`, since
+  this node's data carries no spec/root ambiguity to guard against). `node-type-registry.ts` gained
+  the 3rd `NODE_TYPE_REGISTRY` entry, `"knowledge-preview"` — `NODE_REGISTRY_VERSION` recomputes
+  automatically (`node-registry-version.ts` untouched, confirmed by its own
+  `NODE_REGISTRY_VERSION matches computeNodeRegistryHash` test still passing). `canvas-layout.ts`
+  gained an explicit `"knowledge-preview": { width: 320, height: 240 }` `CANVAS_NODE_DIMENSIONS`
+  entry (matches 41-UI-SPEC.md's fixed shell size, added explicitly so this node type never
+  silently depends on the implicit default). New `knowledge-preview-layout.ts` — a fully pure,
+  framework-free (zero `@xyflow/react`/`@dagrejs/dagre` imports, grep-verified) module implementing
+  41-UI-SPEC.md's exact hand-rolled two-ring-ellipse ego-network layout: `MAX_PREVIEW_NODES = 25`,
+  `computeHopDistances` (undirected BFS mirroring `walkKnowledgeGraph`'s own traversal),
+  `trimPreviewGraph` (focus-always-kept / 1-hop-fills-budget-or-trims-itself /
+  2-hop-fills-remainder / dangling-edge-drop priority, `overflowCount = max(0, nodes.length - cap)`),
+  `orderTwoHopByParent` (stable sort by connecting 1-hop parent's rank, unresolvable-sorts-to-end),
+  `layoutPreview` (focus at box center, ring 1 at `rx=0.38*w,ry=0.38*h`, ring 2 at
+  `rx=0.62*w,ry=0.62*h`, deterministic, no randomness). 34/34 targeted tests pass (20
+  node-type-registry incl. 6 new + 14 new knowledge-preview-layout), `tsc --noEmit` clean, zero new
+  npm dependencies, zero React/component files touched. **Deviations (2, both non-architectural):**
+  fixed a pre-existing `node-type-registry.test.ts` test whose hardcoded 2-key reordering subset
+  broke when the registry grew a 3rd entry (Rule 1, bug directly caused by this task's own registry
+  addition); reworded `knowledge-preview-layout.ts`'s header-comment prose so it no longer literally
+  contains the `@xyflow/react`/`@dagrejs/dagre` strings it was explaining NOT to import, which had
+  tripped the plan's own literal grep acceptance check (Rule 3, non-architectural). See
+  41-01-SUMMARY.md. **Next: 41-02** (the React Flow node component, mini-graph SVG renderer,
+  add-knowledge-preview popover, and `chat-canvas.tsx`/`node-types.ts` wiring — consumes every
+  export from this plan directly, per 41-UI-SPEC.md).
 
 ## Phase 39 — Tool-Round UI + Citation Chips (COMPLETE 2026-07-09)
 
@@ -1923,6 +1953,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 38 P02 | ~55min | 3 tasks | 12 files |
 | Phase 39 P01 | 25m | 1 tasks | 3 files |
 | Phase 39 P02 | 50min | 3 tasks | 8 files |
+| Phase 41 P01 | 35min | 2 tasks | 6 files |
 
 ## Operator Next Steps
 
