@@ -146,12 +146,12 @@ Plans:
 4. Server-side FastAPI proxy routes forward the user's identity; `X-API-Key` service boundary unchanged (existing service tests green)
 5. Missing auth env vars fail startup with a clear message; Google Cloud OAuth client runbook exists
 
-**Plans:** 5 plans
+**Plans:** 1/5 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 43-01-PLAN.md — Foundation: @supabase/ssr install, Zod env fail-fast validation, browser/server/middleware Supabase client helpers
+- [x] 43-01-PLAN.md — Foundation: @supabase/ssr install, Zod env fail-fast validation, browser/server/middleware Supabase client helpers
 
 **Wave 2** *(blocked on Wave 1 completion)*
 

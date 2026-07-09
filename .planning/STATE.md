@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: polytoken.ai Foundation — Rename, Auth & Tenancy
 status: executing
-last_updated: "2026-07-09T23:02:44.107Z"
+last_updated: "2026-07-09T23:18:00.920Z"
 last_activity: 2026-07-09 -- Phase 43 execution started
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 10
-  completed_plans: 3
+  completed_plans: 4
   percent: 20
 ---
 
@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 ## Current Position
 
 Phase: 43 (Auth — Google OAuth + Sessions (Supabase Auth)) — EXECUTING
-Plan: 1 of 5
+Plan: 2 of 5
 Status: Executing Phase 43
 Last activity: 2026-07-09 -- Phase 43 execution started
 
@@ -1227,7 +1227,7 @@ User direction after v1.1: keep LOCAL + `/studio` sandbox (no deploy/convergence
 
 - **Resume file:** 
 
-.planning/phases/42-atomic-rename-nauta-polytoken/42-02-PLAN.md
+None
   col); resolution = **suggest-only, never auto** → **parallel BlendedRAG (dense HNSW + lexical
   pg_trgm exact/fuzzy) fused by RRF(k=60)**, on-confirm + re-runnable backfill, confirm writes back
   aliases (flywheel), reranker deferred, degrades to lexical-only without Bedrock. Gallery = table
@@ -2029,6 +2029,9 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 - 2026-07-09 (38-02): test_genui_retrieval_provider.py's asyncio.get_event_loop() failures are the SAME pre-existing test-isolation issue 29-02 already logged on 2026-07-07 (10 failures this run vs 24 then, likely test-order-dependent) — confirmed unrelated to this plan (zero diff, last touched Phase 17), re-logged to this phase's own deferred-items.md rather than fixed
 - 2026-07-09 (46-02): asyncio.get_event_loop().run_until_complete( was byte-identical at all 11 call sites in test_genui_retrieval_provider.py — single replace_all swap to asyncio.run( resolved the Phase-36/38-logged 999.2 debt; production LexicalRetrievalProvider confirmed clean and untouched; todo moved to done/ with a Resolution note
 - 2026-07-09 (46-02): GridComponent clamp made colSpan-aware — detects wrapper-div style.gridColumn starting "span " via React.Children.toArray + React.isValidElement; when present, honors requested cols (clamped 1-12) instead of the Phase-17 child-count clamp, unlocking true cols:12 8/4 main+sidebar layouts while preserving the exact Phase-17 clamp for plain (no-colSpan) galleries; grid manifest description corrected to document colSpan instead of falsely claiming no column spanning
+- 2026-07-09 (43-01): @supabase/ssr pinned at ^0.12.0 per STACK.md (not the plan's stale Task-0 "^0.5-^0.7" text) — verified 0.12.0 resolved, matches the researched pin exactly
+- 2026-07-09 (43-01): apps/web/vitest.config.ts gained SKIP_ENV_VALIDATION test env (deviation, not in the plan's files_modified) so importing env.ts during any test run never throws before assertions run — mirrors packages/api-client/vitest.config.ts's existing convention
+- 2026-07-09 (43-01): middleware.ts's updateSession() returns { response, user } with zero redirect/route-guard logic by design — that decision is explicitly Plan 02's responsibility, keeping "refresh the session" and "guard the route" as separate concerns
 
 ## Performance Metrics
 
@@ -2122,6 +2125,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 41 P41-02 | 50min | 3 tasks | 8 files |
 | Phase 42 P01 | 55min | 3 tasks | 250 files |
 | Phase 46 P02 | ~15min | 2 tasks | 4 files |
+| Phase 43 P01 | 15min | 2 tasks | 8 files |
 
 ## Operator Next Steps
 
