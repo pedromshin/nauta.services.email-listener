@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: polytoken.ai Foundation — Rename, Auth & Tenancy
-status: executing
-last_updated: "2026-07-09T21:51:43.000Z"
-last_activity: "2026-07-09 -- Plan 42-02 executed (external-rename runbook, RENM-02); Phase 42 (atomic-rename-nauta-polytoken) COMPLETE; next: Phase 43"
+status: verifying
+last_updated: "2026-07-09T22:44:38.667Z"
+last_activity: "2026-07-09 -- Phase 42 verified (42-VERIFICATION.md, status gaps_found 7/8). Sole gap: untracked `apps/web/src/app/dev/design/` scratch pages still import `@nauta/ui/*`, so Next's regenerated `.next/types/validator.ts` transitively breaks `npm run typecheck -w @polytoken/web` (22 TS2307 errors) — rename-exposed but the dir is user-owned, hard-excluded, and untracked (git-based CI/Vercel builds unaffected). Parked as backlog 999.14 per the workflow's non-interactive default (fix requires editing the excluded dir). Everything else verified: atomic rename complete, KEEP surfaces untouched, 987 TS tests green, terraform plan "No changes", runbook accurate. Next: Phase 43."
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 2
+  total_plans: 9
   completed_plans: 2
   percent: 20
 ---
