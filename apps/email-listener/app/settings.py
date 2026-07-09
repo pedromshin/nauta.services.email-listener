@@ -142,6 +142,15 @@ class BaseAppSettings(BaseSettings):
     # boundaries/mid-round — NOT a per-turn/session/day cap.
     COST_CAP_PER_ROUND_USD: float = 0.15
 
+    # --- search_knowledge exposure gate (Phase 37, synthesis P6 rule) ---
+    # The SearchKnowledgeExecutor and its full test suite exist regardless of this
+    # flag; only container.py's production wiring reads it, gating whether
+    # search_knowledge is ever offered to a real chat turn. Phase 38 flips the
+    # default to True after the adversarial fixture suite passes (SC5 exposure
+    # gate). Plain bool field (no @property wrapper) — mirrors
+    # ANTICIPATORY_PROMPTING_ENABLED's un-wrapped default-off convention.
+    SEARCH_KNOWLEDGE_TOOL_ENABLED: bool = False
+
     # --- Chat turn agent (Phase 22-06, SEAM-04) ---
     # Hard cap on generated tokens for a single chat turn (always set, no implicit
     # default — required by the ChatProvider.stream contract).

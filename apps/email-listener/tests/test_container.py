@@ -5,8 +5,11 @@ from __future__ import annotations
 import asyncio
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from app.application.use_cases.ingest_inbound_email import IngestInboundEmailUseCase
 from app.application.use_cases.propose_regions import ProposeRegionsUseCase
+from app.application.use_cases.run_chat_turn import RunChatTurn
 from app.container import create_container
 from app.domain.ports.attachment_repository import AttachmentRepository
 from app.domain.ports.attachment_storage import AttachmentStorage
@@ -25,6 +28,8 @@ from app.infrastructure.supabase.component_repository import SupabaseComponentRe
 from app.infrastructure.supabase.email_repository import SupabaseEmailRepository
 from app.infrastructure.supabase.entity_type_repository import SupabaseEntityTypeRepository
 from app.infrastructure.supabase.extraction_repository import SupabaseExtractionRepository
+from app.infrastructure.tools.search_knowledge_executor import SearchKnowledgeExecutor
+from app.settings import get_settings
 
 _PATCH_TARGET = "app.container.get_supabase_client"
 _PATCH_ANTHROPIC = "app.container.get_anthropic_client"
@@ -129,3 +134,52 @@ class TestContainerResolution:
             registry = asyncio.run(container.get(ParserRegistryPort))
             result = registry("docx")
             assert result is None
+
+
+class TestSearchKnowledgeExposureGate:
+    """T-37-09 permanent CI guard: search_knowledge ships DARK unless the flag is explicitly true.
+
+    Synthesis P6 rule (37-CONTEXT.md "Exposure gating"): the executor + its
+    full test suite exist regardless of the flag; only container.py's
+    production tool_executors/server_tool_defs wiring reads it. Phase 38
+    flips the default after the adversarial fixture suite passes.
+    """
+
+    def test_container_search_knowledge_disabled_by_default(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("SEARCH_KNOWLEDGE_TOOL_ENABLED", raising=False)
+        get_settings.cache_clear()
+        try:
+            with _patched_container():
+                container = create_container()
+                run_chat_turn = asyncio.run(container.get(RunChatTurn))
+
+            assert "search_knowledge" not in run_chat_turn._tool_executors
+            assert "search_knowledge" not in run_chat_turn._server_tool_defs
+            # Additive, not a regression: Phase 36's wiring must stay intact.
+            assert "lookup_entity" in run_chat_turn._tool_executors
+            assert "search_emails" in run_chat_turn._tool_executors
+            assert "lookup_entity" in run_chat_turn._server_tool_defs
+            assert "search_emails" in run_chat_turn._server_tool_defs
+        finally:
+            get_settings.cache_clear()
+
+    def test_container_search_knowledge_enabled_via_flag(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("SEARCH_KNOWLEDGE_TOOL_ENABLED", "true")
+        get_settings.cache_clear()
+        try:
+            with _patched_container():
+                container = create_container()
+                run_chat_turn = asyncio.run(container.get(RunChatTurn))
+
+            executors = run_chat_turn._tool_executors
+            assert "search_knowledge" in executors
+            assert isinstance(executors["search_knowledge"], SearchKnowledgeExecutor)
+            tool_def = run_chat_turn._server_tool_defs["search_knowledge"]
+            assert "mode" in tool_def["input_schema"]["properties"]
+            # Phase 36's wiring stays intact with the flag on, too.
+            assert "lookup_entity" in executors
+            assert "search_emails" in executors
+        finally:
+            # Mirror conftest.py's before/after cache_clear pattern so later
+            # tests are never polluted by the cached flag override.
+            get_settings.cache_clear()

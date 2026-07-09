@@ -152,6 +152,11 @@ from app.infrastructure.tools.search_emails_executor import (
     SearchEmailsExecutor,
     build_search_emails_tool,
 )
+from app.infrastructure.tools.search_knowledge_executor import (
+    SEARCH_KNOWLEDGE_TOOL_NAME,
+    SearchKnowledgeExecutor,
+    build_search_knowledge_tool,
+)
 from app.settings import get_settings
 
 
@@ -662,6 +667,16 @@ def _provide_run_chat_turn(
     tools are offered to every max_tool_rounds > 0 model (the 2 Bedrock
     Claude registry entries) — no further per-model capability gating is
     added by this plan (the existing max_tool_rounds gate already covers it).
+
+    Phase 37-02: search_knowledge (TOOL-03/TOOL-04) is built and fully tested
+    but ships DARK — the exposure gate (synthesis P6 rule, 37-CONTEXT.md's
+    "Exposure gating" decision). SEARCH_KNOWLEDGE_TOOL_ENABLED defaults False;
+    the tool_executors/server_tool_defs mappings below structurally OMIT the
+    search_knowledge key unless the flag is explicitly set true (immutable
+    dict-literal construction with conditional ** unpacking — never mutation).
+    Phase 38 flips the default after the adversarial fixture suite passes.
+    SupabaseKnowledgeGraphRepository is instantiated directly (concrete
+    infrastructure class, mirrors _provide_promote_edge_use_case's pattern).
     """
     settings = get_settings()
     resolution_repo = SupabaseEntityResolutionRepository(client=client)
@@ -678,6 +693,8 @@ def _provide_run_chat_turn(
         emails=email_repo,
         embedder=embedder,
     )
+    knowledge_repo = SupabaseKnowledgeGraphRepository(client=client)
+    search_knowledge_executor = SearchKnowledgeExecutor(knowledge=knowledge_repo, embedder=embedder)
     return RunChatTurn(
         messages=messages,
         runs=runs,
@@ -693,10 +710,20 @@ def _provide_run_chat_turn(
         tool_executors={
             LOOKUP_ENTITY_TOOL_NAME: lookup_entity_executor,
             SEARCH_EMAILS_TOOL_NAME: search_emails_executor,
+            **(
+                {SEARCH_KNOWLEDGE_TOOL_NAME: search_knowledge_executor}
+                if settings.SEARCH_KNOWLEDGE_TOOL_ENABLED
+                else {}
+            ),
         },
         server_tool_defs={
             LOOKUP_ENTITY_TOOL_NAME: build_lookup_entity_tool(),
             SEARCH_EMAILS_TOOL_NAME: build_search_emails_tool(),
+            **(
+                {SEARCH_KNOWLEDGE_TOOL_NAME: build_search_knowledge_tool()}
+                if settings.SEARCH_KNOWLEDGE_TOOL_ENABLED
+                else {}
+            ),
         },
     )
 
