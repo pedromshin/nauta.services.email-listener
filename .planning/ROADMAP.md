@@ -214,13 +214,13 @@ Plans:
 3. Inbox lists emails grouped by thread
 4. Unique secret-token forwarding-address seam works (SES wildcard pattern) with an onboarding runbook covering Gmail's destination-verification handshake
 
-**Plans:** 6 plans in 3 waves
+**Plans:** 1/6 plans executed
 
 Plans:
 
 **Wave 1**
 
-- [ ] 45-01-PLAN.md — THRD-01/04 schema: threads (importer-anchored) + emails.thread_id + forwarding_addresses tables, migration 0035 + RLS
+- [x] 45-01-PLAN.md — THRD-01/04 schema: threads (importer-anchored) + emails.thread_id + forwarding_addresses tables, migration 0035 + RLS
 - [ ] 45-02-PLAN.md — THRD-01/02 pure thread-grouping domain service (Union-Find + Tier1 embedded-id + Tier2 subject/window) with real Gmail-forward .eml fixtures
 
 **Wave 2** *(blocked on Wave 1 completion)*

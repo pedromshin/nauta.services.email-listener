@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: polytoken.ai Foundation — Rename, Auth & Tenancy
-status: planning
-last_updated: "2026-07-10T06:40:35.922Z"
-last_activity: 2026-07-10 -- Phase 45 planning complete
+status: executing
+last_updated: "2026-07-10T06:51:05.000Z"
+last_activity: 2026-07-10 -- Phase 45 Plan 01 complete (threads + forwarding_addresses schema, migration 0035)
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 25
-  completed_plans: 18
-  percent: 60
+  completed_plans: 19
+  percent: 76
 ---
 
 # State
@@ -20,14 +20,33 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** Phase 45 — email threads forwarding seam
+**Current focus:** Phase 45 — Email Threads + Forwarding Seam
 
 ## Current Position
 
-Phase: 45
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-07-10 -- Phase 45 planning complete
+Phase: 45 (Email Threads + Forwarding Seam) — EXECUTING
+Plan: 2 of 6
+Status: Executing Phase 45
+Last activity: 2026-07-10 -- Phase 45 Plan 01 complete (threads + forwarding_addresses schema, migration 0035)
+
+## Phase 45 — Email Threads + Forwarding Seam — Plan 01 History
+
+- **45-01 EXECUTED** (`08dcb91` feat, `8e955c1` feat, `efd96ba` feat): schema
+  foundation for Phase 45. `threads` table (importer-anchored: importerId FK
+  cascade + index, subject, timestamps) + nullable `emails.thread_id` FK
+  (ON DELETE SET NULL — append-only-safe per D-03) + `forwarding_addresses`
+  table (direct user_id FK cascade, UNIQUE token, UNIQUE user_id — one
+  address per user). `assertThreadOwnership` +
+  `assertForwardingAddressOwnership` added to `@polytoken/db/ownership`
+  (21/21 ownership tests passing). Migration 0035 applied locally with
+  Phase-44-style RLS defense-in-depth (4 policies: 2 anon-deny, 2
+  owner-authenticated); `npm run check` clean, zero drift. One caught-before-commit
+  deviation: `drizzle-kit generate --custom` emits an empty placeholder (no
+  schema diff) — switched to plain `generate` (auto-diff), then hand-appended
+  RLS. THRD-01/THRD-04 deliberately left `Pending` in REQUIREMENTS.md (span
+  Plans 01-03 and 01/06 respectively; this plan is schema-only) — see
+  `44-02-SUMMARY.md` for the precedent this avoids repeating. Full detail:
+  `45-01-SUMMARY.md`.
 
 ## Phase 44 — Tenancy — user_id Scoping + Enforced Isolation — Plan 09 History
 
