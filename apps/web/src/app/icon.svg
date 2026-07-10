@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- apps/web/src/app/icon.svg — polytoken.ai favicon glyph (D-47-02, BRND-02).
+       Next.js App Router auto-serves a file named icon.svg under app/ as the
+       favicon; no <link> tag or layout edit needed. Mirrors brand-mark.tsx's
+       glyph geometry exactly. A static favicon cannot inherit currentColor,
+       so fills are explicit hsl(164 39% 22%) — mirroring the --primary token
+       in apps/web/src/app/globals.css rather than an opaque hex literal, so
+       the asset still traces to the token value (T-47-03 token discipline).
+       Inert asset (T-47-01): carries no script element, no foreignObject
+       element, and no event-handler attributes. -->
+  <rect x="4" y="3" width="18" height="15" rx="7.5" ry="7.5" transform="rotate(-12 13 10.5)" fill="hsl(164 39% 22%)" />
+  <rect x="12" y="12" width="17" height="14" rx="7" ry="7" transform="rotate(16 20.5 19)" fill="hsl(164 39% 22%)" fill-opacity="0.55" />
+  <circle cx="9.5" cy="22.5" r="4" fill="hsl(164 39% 22%)" />
+</svg>
