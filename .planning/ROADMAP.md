@@ -133,7 +133,7 @@ chips, MOBL's breakpoint decision). Research base:
 [research/v1.8-design/BRAND-IDENTITY-OPTIONS.md](research/v1.8-design/BRAND-IDENTITY-OPTIONS.md),
 [research/v1.8-design/DESIGN-PATTERN-DOSSIER.md](research/v1.8-design/DESIGN-PATTERN-DOSSIER.md).
 
-- [ ] **Phase 47: Brand Foundation + Verification Tooling** — polytoken brand identity (voice, logo, guide) documented and applied to login/chrome; Playwright + screenshot harness installed and working
+- [x] **Phase 47: Brand Foundation + Verification Tooling** — polytoken brand identity (voice, logo, guide) documented and applied to login/chrome; Playwright + screenshot harness installed and working (completed 2026-07-10)
 - [ ] **Phase 48: Token-System Extensions** — v1.4 DTCG token system extended with pill radius, success color, code typography, tier-ladder tokens, graph node/edge palette, hover/active convention, breakpoint decision
 - [ ] **Phase 49: Total UI Re-skin** — chat, inbox, knowledge canvas, studio, settings, login re-skinned in the polytoken register on extended tokens, zero raw hex
 - [ ] **Phase 50: Mobile-Responsive Answer** — canvas surfaces collapse to list/feed on small screens; core flows usable on a mobile viewport
@@ -152,14 +152,14 @@ chips, MOBL's breakpoint decision). Research base:
 4. `@playwright/test` (+ firefox) is installed; the parked code-island isolation spec runs green on chromium AND firefox, and the auth-redirect spec runs green (closes todo 2026-07-10-playwright-code-island-isolation-run)
 5. A screenshot-driven visual review harness exists (Playwright screenshots of surfaces across packs/viewports) and produces a reviewable artifact
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 - [x] 47-01-PLAN.md — polytoken brand mark + login/sidebar chrome (BRND-02 + BRND-01 slice)
 - [x] 47-02-PLAN.md — polytoken copy sweep: titles, empty states, toasts (BRND-01)
 - [x] 47-03-PLAN.md — Brand guide + PROJECT.md Key Decisions entry (BRND-03)
 - [x] 47-04-PLAN.md — Playwright toolchain installed + specs run (VRFY-01 PENDING: 10/12 assertions pass, 1 code-island spec-probe finding documented not fixed — see 47-04-SUMMARY.md)
-- [ ] 47-05-PLAN.md — Screenshot review harness across surfaces/viewports (VRFY-02)
+- [x] 47-05-PLAN.md — Screenshot review harness across surfaces/viewports (VRFY-02)
 **UI hint**: yes
 
 ### Phase 48: Token-System Extensions
