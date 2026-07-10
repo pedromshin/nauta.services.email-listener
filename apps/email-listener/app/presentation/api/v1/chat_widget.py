@@ -20,6 +20,13 @@ Security (T-24-02..T-24-05):
     re-validates it against the STORED declared_response_schema (D-10) before
     ever touching the DB lock or model context (FOUND-6 boundary).
 
+Tenancy (Phase 44-09, TENA-03 gap closure): also requires X-User-Id
+(require_user_id) and asserts the caller owns conversation_id
+(assert_conversation_owned, imported from chat_stream.py — 404 fail-closed)
+BEFORE the prepare() try-block, consistent with /stream and /regenerate. The
+resolved user_id is also threaded into prepare() so the confirm_action
+dispatch chain can finally enforce PromoteEdgeUseCase's 44-03 ownership guard.
+
 Note: Intentionally omits 'from __future__ import annotations' — matches
 chat_stream.py/genui.py/chat_models.py (FastAPI/Pydantic v2 needs concrete
 types at route registration time to build response serializers).
@@ -38,8 +45,10 @@ from app.application.use_cases.submit_widget_interaction import (
     WidgetSubmitRejected,
     WidgetSubmitRejectionReason,
 )
-from app.presentation.api.v1.chat_stream import stream_run_events
+from app.domain.ports.chat_repositories import ChatConversationRepository
+from app.presentation.api.v1.chat_stream import assert_conversation_owned, stream_run_events
 from app.presentation.middleware.auth import require_api_key
+from app.presentation.middleware.user_context import require_user_id
 
 router = APIRouter(
     prefix="/v1/chat",
@@ -89,19 +98,26 @@ async def submit_widget(
     body: ChatWidgetSubmitRequest,
     request: Request,
     use_case: FromDishka[SubmitWidgetInteraction],
+    conversations: FromDishka[ChatConversationRepository],
+    user_id: str = Depends(require_user_id),
 ) -> StreamingResponse:
     """Validate/lock/persist a widget submit, then stream the continuation turn (DCUI-03).
 
-    prepare() performs every rejection check (ownership/staleness/schema/CAS
-    lock) BEFORE this handler ever constructs a StreamingResponse — a
-    rejection always maps to a plain JSON HTTPException with no stream body.
+    Phase 44-09: rejects 401 (no X-User-Id) and 404 (non-owned
+    conversation_id) BEFORE prepare() is ever called — see module docstring.
+    prepare() then performs every remaining rejection check (interaction
+    ownership/staleness/schema/CAS lock) BEFORE this handler ever constructs
+    a StreamingResponse — a rejection always maps to a plain JSON
+    HTTPException with no stream body.
     """
+    await assert_conversation_owned(conversations, user_id, body.conversation_id)
     try:
         continuation = await use_case.prepare(
             conversation_id=body.conversation_id,
             interaction_id=body.interaction_id,
             result=body.result,
             model_id=body.model_id,
+            user_id=user_id,
         )
     except WidgetSubmitRejected as exc:
         raise HTTPException(status_code=_REJECTION_STATUS[exc.reason], detail=exc.message or exc.reason) from exc

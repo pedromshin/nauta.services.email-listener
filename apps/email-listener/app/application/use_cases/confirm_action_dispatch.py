@@ -28,6 +28,15 @@ own CAS is the second, independent guard against a concurrent promotion).
 
 Domain-pure: the only collaborator is `PromoteEdgeUseCase` (an application
 use case, not infrastructure) — zero `app.infrastructure` import.
+
+Phase 44-09 (TENA-03 gap closure): both `ConfirmActionHandler.execute()` and
+its two concrete implementations gained an additive keyword-only
+`user_id: str | None = None` param. `KnowledgeEdgeTierPromotionHandler`
+forwards it into `PromoteEdgeUseCase.execute(user_id=...)` — this is the
+exact call site the 44-08 sweep flagged as a permanent no-op for the 44-03
+ownership guard; threading `user_id` through finally activates it for the
+chat confirm_action path. `UnsupportedConfirmActionHandler` accepts and
+ignores it (never promotes anything).
 """
 
 from __future__ import annotations
@@ -59,6 +68,7 @@ class ConfirmActionHandler(Protocol):
         suggestion_id: str,
         importer_id: str,
         widget_interaction_id: str,
+        user_id: str | None = None,
     ) -> ConfirmActionResult: ...
 
 
@@ -83,6 +93,7 @@ class KnowledgeEdgeTierPromotionHandler:
         suggestion_id: str,
         importer_id: str,
         widget_interaction_id: str,
+        user_id: str | None = None,
     ) -> ConfirmActionResult:
         if action == "reject":
             return {"status": "rejected"}
@@ -91,6 +102,7 @@ class KnowledgeEdgeTierPromotionHandler:
             result = await self._promote_edge.execute(
                 edge_id=suggestion_id,
                 importer_id=importer_id,
+                user_id=user_id,
                 mechanism=_MECHANISM_CHAT_CONFIRM_ACTION,
                 extra={"widget_interaction_id": widget_interaction_id},
             )
@@ -125,6 +137,7 @@ class UnsupportedConfirmActionHandler:
         suggestion_id: str,
         importer_id: str,
         widget_interaction_id: str,
+        user_id: str | None = None,
     ) -> ConfirmActionResult:
         logger.warning(
             "confirm_action_unsupported_kind",

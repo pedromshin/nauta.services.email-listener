@@ -129,9 +129,9 @@ deliberately unscoped`).
 |---|---|---|---|
 | `GET /api/attachments/[id]` | `getUser()` (401) + `assertImporterOwnership` (404) | Y | `route.test.ts`, `cross-tenant.test.ts` |
 | `POST /api/knowledge/edges/[edgeId]/promote` | `getUser()` (401) + forwards `X-User-Id` to the enforcing FastAPI promote endpoint | Y | Enforcement lives server-side — locked by `test_promote_edge_user_scoping.py`, `test_promote_edge_endpoint.py`, `test_cross_tenant.py` |
-| `POST /api/chat/stream` | `getUser()` (401) + forwards `X-User-Id`, but the FastAPI endpoint it proxies to never reads it | Y (session) / **GAP** (no server-side ownership enforcement) | `test_chat_widget_submit_known_gap.py` (xfail, tracks the gap) |
-| `POST /api/chat/regenerate` | Same as `/api/chat/stream` | Y (session) / **GAP** | `test_chat_widget_submit_known_gap.py` (xfail) |
-| `POST /api/chat/widget/submit` | Same pattern — `getUser()` (401) + forwards `X-User-Id`, FastAPI never reads it | Y (session) / **GAP** | `test_chat_widget_submit_known_gap.py` (xfail) |
+| `POST /api/chat/stream` | `getUser()` (401) + forwards `X-User-Id`; `require_user_id` + `ChatConversationRepository.owner_user_id` ownership assert (404 fail-closed) now enforced server-side | Y | `test_chat_sse_user_scoping.py` |
+| `POST /api/chat/regenerate` | Same as `/api/chat/stream` | Y | `test_chat_sse_user_scoping.py` |
+| `POST /api/chat/widget/submit` | Same pattern — `getUser()` (401) + forwards `X-User-Id`; FastAPI now enforces ownership + threads `user_id` into `PromoteEdgeUseCase.execute` | Y | `test_chat_sse_user_scoping.py` |
 | `ALL /api/trpc/[trpc]` | tRPC catch-all — delegates to the per-procedure `protectedProcedure` gates enumerated above | Y (per-procedure) | Covered by every tRPC router test above |
 
 ---
@@ -148,82 +148,71 @@ installation-wide service boundary) — the tenancy layer is additive on top.
 | `GET /v1/emails/{id}/attachments/{id}` (download) | `require_user_id` + `_assert_importer_owned` (404) | Y | `test_emails_user_scoping.py`, `test_cross_tenant.py` |
 | `POST /v1/emails/{id}/reprocess` | `require_user_id` + `_assert_importer_owned` (404) | Y | `test_emails_user_scoping.py`, `test_cross_tenant.py` |
 | `POST /v1/knowledge/edges/{id}/promote` | `require_user_id` + `PromoteEdgeUseCase`'s user-ownership guard (409 `tenant_mismatch` when the caller doesn't own the edge's importer, checked BEFORE the pre-existing body-`importer_id` equality guard) | Y | `test_promote_edge_user_scoping.py`, `test_promote_edge_endpoint.py`, `test_cross_tenant.py` |
-| `POST /v1/chat/stream` | **NONE.** `X-API-Key` only. `X-User-Id` IS forwarded by the Next.js BFF but never read by this endpoint | **GAP** | `test_chat_widget_submit_known_gap.py` (xfail — tracks the gap) |
-| `POST /v1/chat/regenerate` | **NONE.** Same as above | **GAP** | `test_chat_widget_submit_known_gap.py` (xfail) |
-| `POST /v1/chat/widget/submit` | **NONE.** Same as above. The `confirm_action` dispatch path additionally calls `PromoteEdgeUseCase.execute()` WITHOUT `user_id`, so even that use case's own optional ownership guard never runs on this path | **GAP** | `test_chat_widget_submit_known_gap.py` (xfail) |
+| `POST /v1/chat/stream` | `require_user_id` + `assert_conversation_owned` (via `ChatConversationRepository.owner_user_id`) — 404 fail-closed BEFORE the stream opens | Y | `test_chat_sse_user_scoping.py`, `test_chat_stream.py` |
+| `POST /v1/chat/regenerate` | Same as above | Y | `test_chat_sse_user_scoping.py`, `test_chat_stream.py` |
+| `POST /v1/chat/widget/submit` | `require_user_id` + `assert_conversation_owned` BEFORE `prepare()`. The `confirm_action` dispatch path now threads `user_id` into `PromoteEdgeUseCase.execute(user_id=...)`, activating the 44-03 `tenant_mismatch` guard on this path | Y | `test_chat_sse_user_scoping.py` |
 
 ---
 
-## Known Gap (not enforced) — the FastAPI chat SSE surface
+## Known Gap — CLOSED by Plan 44-09 (the FastAPI chat SSE surface)
 
-**Status: OPEN, not closed by this plan. Explicitly flagged, not silently
-skipped, per this plan's own execution instructions.**
+**Status: CLOSED.** Discovered at Plan 44-08's sweep, closed at Plan 44-09.
 
 `POST /v1/chat/stream`, `POST /v1/chat/regenerate`, and
 `POST /v1/chat/widget/submit` are the three FastAPI endpoints backing the
 chat turn engine (`RunChatTurn.run()`/`.regenerate()`) and the widget
-confirm/reject round-trip (`SubmitWidgetInteraction.prepare()`). All three:
+confirm/reject round-trip (`SubmitWidgetInteraction.prepare()`). Before Plan
+44-09 all three were reachable via `X-API-Key` (`require_api_key`) alone —
+no `require_user_id` dependency — and keyed exclusively off a client-supplied
+`conversation_id` (Pydantic-validated as a UUID, but never checked against
+any caller identity), even though the Next.js BFF proxying routes
+(`apps/web/src/app/api/chat/{stream,regenerate}/route.ts`,
+`apps/web/src/app/api/chat/widget/submit/route.ts`) already resolved the
+caller via server-verified `supabase.auth.getUser()` and forwarded
+`X-User-Id` on every request.
 
-- Are reachable only via `X-API-Key` (`require_api_key`) — no `require_user_id`
-  dependency at all.
-- Key exclusively off a client-supplied `conversation_id` (Pydantic-validated
-  as a UUID, but never checked against any caller identity).
-- Are proxied by Next.js BFF routes
-  (`apps/web/src/app/api/chat/{stream,regenerate}/route.ts`,
-  `apps/web/src/app/api/chat/widget/submit/route.ts`) that DO resolve the
-  caller via server-verified `supabase.auth.getUser()` and DO forward
-  `X-User-Id` on every request — but FastAPI never reads that header on
-  these three routes.
+**Original exploit path (retained for provenance):** an attacker holding
+another user's `conversation_id` (leaked via logs, a shared link, browser
+history, or any out-of-band channel — this project's own established bar
+already rejects "hard to guess" as a defense, see the attachments-route IDOR
+fixed in Plan 07) could, under their own session:
 
-**Exploit path:** an attacker holding another user's `conversation_id`
-(leaked via logs, a shared link, browser history, or any out-of-band
-channel — this project's own established bar already rejects "hard to
-guess" as a defense, see the attachments-route IDOR fixed in Plan 07) can,
-under their own session:
-
-1. `POST /v1/chat/stream` with that `conversation_id` — appends a message
-   into the victim's conversation and streams back a model response
+1. `POST /v1/chat/stream` with that `conversation_id` — append a message
+   into the victim's conversation and stream back a model response
    generated from the VICTIM's full conversation history (cross-tenant READ
    of conversation context + WRITE of a message into it).
 2. `POST /v1/chat/regenerate` similarly, keyed by `conversation_id` +
    `assistant_message_id`.
 3. `POST /v1/chat/widget/submit` for a pending `confirm_action` widget in
    that conversation — the narrower item originally carried forward across
-   Plans 03/07: `_dispatch_confirm_action` resolves `importer_id` from the
+   Plans 03/07: `_dispatch_confirm_action` resolved `importer_id` from the
    edge itself (never from a caller-verified value), so
-   `PromoteEdgeUseCase`'s pre-existing tenant-mismatch check is a tautology
+   `PromoteEdgeUseCase`'s pre-existing tenant-mismatch check was a tautology
    on this path and its optional `user_id` guard (built in Plan 03
-   specifically for this future use) never runs — the promotion succeeds
-   regardless of who is calling.
+   specifically for this future use) never ran — the promotion succeeded
+   regardless of who was calling.
 
-**Why this was not closed in Plan 44-08:** this plan's file list is
-test-authorship + inventory only. Properly closing this requires: (1) adding
-`Depends(require_user_id)` to all three endpoints; (2) extending
-`ChatConversationRepository` (currently a `touch()`-only port) with an
-ownership-lookup method; (3) threading `user_id` through
-`RunChatTurn.run()`/`.regenerate()` and `SubmitWidgetInteraction.prepare()`
-(the latter also through `_dispatch_confirm_action` →
-`ConfirmActionHandler.execute()` → `KnowledgeEdgeTierPromotionHandler.execute()`
-→ `PromoteEdgeUseCase.execute(user_id=...)`), verifying ownership before any
-read/write. This touches the core, heavily-tested chat turn engine across 5+
-files spanning the presentation/application/domain/infrastructure layers —
-a properly-scoped follow-up plan, not a same-plan patch, per this phase's own
-deviation-rule discipline (Rule 4: architectural-scale auth changes get a
-dedicated plan, not a rushed fix bolted onto the acceptance-gate plan).
+**How it was closed (Plan 44-09):** (1) `ChatConversationRepository` gained
+an `owner_user_id` ownership-lookup method (Protocol + Supabase impl); (2)
+`Depends(require_user_id)` + a pre-stream `assert_conversation_owned` (404
+fail-closed, mirrors `emails.py`'s `_assert_importer_owned`) were added to
+all three endpoints, running BEFORE any `StreamingResponse` is constructed —
+required because `run()`/`.regenerate()`/`prepare()` are lazy async
+generators that don't execute their bodies until iterated; (3) the caller's
+`user_id` is threaded through `SubmitWidgetInteraction.prepare()` →
+`_dispatch_confirm_action` → `ConfirmActionHandler.execute()` →
+`KnowledgeEdgeTierPromotionHandler.execute()` →
+`PromoteEdgeUseCase.execute(user_id=...)`, finally activating the 44-03
+`tenant_mismatch` guard on the chat confirm_action path.
 
-**Locked, not silent:** `apps/email-listener/tests/adversarial/
-test_chat_widget_submit_known_gap.py` encodes the DESIRED contract (every
-request without `X-User-Id` must 401, matching every other endpoint in this
-table) as four `xfail(strict=True)` tests. They fail today (proving the gap
-is real, not hypothetical) and are suppressed as expected failures so the
-suite stays green — but `strict=True` means the moment a fix lands and these
-assertions start passing, pytest reports it as a hard failure until the
-`xfail` markers (and this section) are removed, forcing the fix to be
-deliberate and reviewed.
-
-**Recommendation:** open a dedicated fast-follow plan to close this before
-any production traffic relies on multi-user chat isolation. Until then, this
-is the single highest-priority tenancy item in the codebase.
+**Locked by tests:** `apps/email-listener/tests/adversarial/
+test_chat_sse_user_scoping.py` (renamed from
+`test_chat_widget_submit_known_gap.py`) now asserts the ENFORCED contract
+directly — zero `xfail` markers remain. Ten tests cover: 401-without-header,
+404-for-non-owner, and a 200 positive-control for each of the three
+endpoints, plus a focused unit test proving
+`KnowledgeEdgeTierPromotionHandler.execute` forwards `user_id` into
+`PromoteEdgeUseCase.execute`.
 
 ---
 

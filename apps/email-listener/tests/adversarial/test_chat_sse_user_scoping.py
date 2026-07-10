@@ -4,19 +4,25 @@ regenerate / widget submit) requires per-user conversation ownership (Phase
 
 Renamed from test_chat_widget_submit_known_gap.py — that file locked in the
 CURRENT (insecure) behavior as `xfail(strict=True)`; Plan 44-09 closes the
-gap discovered at Plan 44-08's sweep. The stream/regenerate half below now
-asserts the DESIRED secure contract directly and passes unconditionally
-(Task 1). The widget-submit half still carries `xfail(strict=True)` pending
-Task 2, which threads `require_user_id` + `assert_conversation_owned` into
-`chat_widget.py` and the caller's `user_id` through the confirm_action
-dispatch chain into `PromoteEdgeUseCase.execute`.
+gap discovered at Plan 44-08's sweep. All four regressions below now assert
+the DESIRED secure contract directly and pass unconditionally — zero
+`xfail` markers remain in this module.
 
 The Next.js BFF forwards a server-verified `X-User-Id` on every one of these
 three routes (apps/web/src/app/api/chat/{stream,regenerate}/route.ts +
-chat/widget/submit/route.ts, all via `supabase.auth.getUser()`). The two
-stream endpoints now read that header (`Depends(require_user_id)`) and
+chat/widget/submit/route.ts, all via `supabase.auth.getUser()`). All three
+FastAPI endpoints now read that header (`Depends(require_user_id)`) and
 verify the caller owns `conversation_id` (`assert_conversation_owned`,
-chat_stream.py) BEFORE any StreamingResponse is constructed.
+chat_stream.py) BEFORE any StreamingResponse is constructed:
+
+  - POST /v1/chat/stream / POST /v1/chat/regenerate: gated directly in
+    chat_stream.py.
+  - POST /v1/chat/widget/submit: gated in chat_widget.py, PLUS the
+    `confirm_action` dispatch path now threads the caller's `user_id` all
+    the way into `PromoteEdgeUseCase.execute(user_id=...)` so a promotion
+    under an edge the caller does not own is rejected by the 44-03
+    `tenant_mismatch` guard (proven directly by
+    `test_confirm_action_promotion_forwards_caller_user_id` below).
 
 Every enforced test below proves either: (a) no X-User-Id -> 401 before the
 use case is ever reached, (b) X-User-Id for a non-owning caller -> 404
@@ -30,6 +36,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from typing import Any
+from unittest.mock import AsyncMock
 
 import pytest
 from dishka import Provider, Scope, make_async_container
@@ -37,6 +44,7 @@ from dishka.integrations.fastapi import setup_dishka
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from app.application.use_cases.confirm_action_dispatch import KnowledgeEdgeTierPromotionHandler
 from app.application.use_cases.run_chat_turn import RunChatTurn
 from app.application.use_cases.submit_widget_interaction import SubmitWidgetInteraction
 from app.domain.ports.chat_repositories import ChatConversationRepository, ChatRunEvent
@@ -65,16 +73,27 @@ class _FakeChatConversationRepository:
 
 
 class _FakeSubmitWidgetInteraction:
-    """Always succeeds -- proves the endpoint reaches prepare() regardless of caller identity."""
+    """Always succeeds -- proves the endpoint reaches prepare() for the owner."""
 
     def __init__(self) -> None:
         self.prepare_calls: list[dict[str, Any]] = []
 
     async def prepare(
-        self, *, conversation_id: str, interaction_id: str, result: dict[str, Any], model_id: str
+        self,
+        *,
+        conversation_id: str,
+        interaction_id: str,
+        result: dict[str, Any],
+        model_id: str,
+        user_id: str | None = None,
     ) -> AsyncIterator[ChatRunEvent]:
         self.prepare_calls.append(
-            {"conversation_id": conversation_id, "interaction_id": interaction_id, "model_id": model_id}
+            {
+                "conversation_id": conversation_id,
+                "interaction_id": interaction_id,
+                "model_id": model_id,
+                "user_id": user_id,
+            }
         )
         return self._stream()
 
@@ -82,12 +101,17 @@ class _FakeSubmitWidgetInteraction:
         yield ChatRunEvent(type="completed", data={}, id="e1", run_id="r1", seq=0)
 
 
-def _make_widget_submit_client() -> TestClient:
-    use_case = _FakeSubmitWidgetInteraction()
+def _make_widget_submit_client(
+    use_case: _FakeSubmitWidgetInteraction | None = None,
+    conversations: _FakeChatConversationRepository | None = None,
+) -> TestClient:
+    resolved_use_case = use_case if use_case is not None else _FakeSubmitWidgetInteraction()
+    resolved_conversations = conversations if conversations is not None else _FakeChatConversationRepository()
     app = FastAPI()
     app.include_router(chat_widget_router)
     provider = Provider(scope=Scope.APP)
-    provider.provide(lambda: use_case, provides=SubmitWidgetInteraction, scope=Scope.APP)
+    provider.provide(lambda: resolved_use_case, provides=SubmitWidgetInteraction, scope=Scope.APP)
+    provider.provide(lambda: resolved_conversations, provides=ChatConversationRepository, scope=Scope.APP)
     container = make_async_container(provider)
     setup_dishka(container=container, app=app)
     return TestClient(app, raise_server_exceptions=True)
@@ -108,39 +132,83 @@ def _body() -> dict[str, Any]:
 
 
 @pytest.mark.unit
-@pytest.mark.xfail(
-    strict=True,
-    reason="TENA-03 gap (44-SWEEP-INVENTORY.md): POST /v1/chat/widget/submit has no require_user_id gate (Task 2)",
-)
 def test_submit_widget_requires_x_user_id_like_every_other_user_scoped_endpoint(client: TestClient) -> None:
-    """DESIRED contract (matches emails.py / knowledge_edges.py promote / the
-    attachments route): a request with no X-User-Id must 401 before touching
-    SubmitWidgetInteraction.prepare(). Not yet closed -- see module docstring."""
+    """ENFORCED: a request with no X-User-Id 401s before touching prepare()."""
     resp = client.post("/v1/chat/widget/submit", json=_body())
 
     assert resp.status_code == 401
 
 
 @pytest.mark.unit
-@pytest.mark.xfail(
-    strict=True,
-    reason="TENA-03 gap (44-SWEEP-INVENTORY.md): submit_widget never verifies the caller owns conversation_id (Task 2)",
-)
 def test_submit_widget_rejects_a_conversation_the_caller_does_not_own(client: TestClient) -> None:
-    """DESIRED contract: an authenticated caller supplying X-User-Id for a
-    conversation they do not own must be rejected before dispatch. Not yet
-    closed -- see module docstring for the full exploit path."""
+    """ENFORCED: a non-owning caller is rejected 404 pre-stream, fail-closed."""
     resp = client.post(
         "/v1/chat/widget/submit",
         headers={USER_ID_HEADER: _ATTACKER_USER_ID},
         json=_body(),
     )
 
-    assert resp.status_code in (401, 403, 404)
+    assert resp.status_code == 404
+
+
+@pytest.mark.unit
+def test_submit_widget_reaches_prepare_for_the_owner() -> None:
+    """Positive control: the actual owner reaches prepare() and streams
+    successfully; user_id is threaded through to prepare()."""
+    use_case = _FakeSubmitWidgetInteraction()
+    client = _make_widget_submit_client(use_case=use_case)
+
+    resp = client.post(
+        "/v1/chat/widget/submit",
+        headers={USER_ID_HEADER: _OWNER_USER_ID},
+        json=_body(),
+    )
+
+    assert resp.status_code == 200
+    assert use_case.prepare_calls == [
+        {
+            "conversation_id": _CONVERSATION_ID,
+            "interaction_id": _INTERACTION_ID,
+            "model_id": "m1",
+            "user_id": _OWNER_USER_ID,
+        }
+    ]
 
 
 # ---------------------------------------------------------------------------
-# POST /v1/chat/stream + POST /v1/chat/regenerate -- ENFORCED (Task 1).
+# confirm_action dispatch -- proves user_id reaches PromoteEdgeUseCase.execute
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_confirm_action_promotion_forwards_caller_user_id() -> None:
+    """KnowledgeEdgeTierPromotionHandler.execute forwards user_id into
+    PromoteEdgeUseCase.execute -- this is the exact call site the 44-08 sweep
+    flagged as a permanent no-op; Plan 44-09 activates it end-to-end."""
+    promote_edge = AsyncMock()
+    promote_edge.execute.return_value = {"edge_id": "edge-1", "tier": "EXTRACTED"}
+    handler = KnowledgeEdgeTierPromotionHandler(promote_edge=promote_edge)
+
+    await handler.execute(
+        action="confirm",
+        suggestion_id="edge-1",
+        importer_id="importer-1",
+        widget_interaction_id="interaction-1",
+        user_id=_OWNER_USER_ID,
+    )
+
+    promote_edge.execute.assert_awaited_once_with(
+        edge_id="edge-1",
+        importer_id="importer-1",
+        user_id=_OWNER_USER_ID,
+        mechanism="chat_confirm_action",
+        extra={"widget_interaction_id": "interaction-1"},
+    )
+
+
+# ---------------------------------------------------------------------------
+# POST /v1/chat/stream + POST /v1/chat/regenerate -- ENFORCED.
 # ---------------------------------------------------------------------------
 
 

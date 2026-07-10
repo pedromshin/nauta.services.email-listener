@@ -47,6 +47,20 @@ from the STORED declaration's `suggestionRef.kind` via an explicit 2-entry
 table (confirm_action_dispatch.py, T-40-06) -- a dispatch failure is logged
 and swallowed, never re-raised, since the interaction row is already durably
 submitted by that point.
+
+Phase 44-09 (TENA-03 gap closure): `prepare()`/`submit()` gained an additive
+keyword-only `user_id: str | None = None` param, threaded into
+`_dispatch_confirm_action` -> `ConfirmActionHandler.execute()` ->
+`KnowledgeEdgeTierPromotionHandler.execute()` ->
+`PromoteEdgeUseCase.execute(user_id=...)` -- this finally feeds the optional
+user-ownership guard `PromoteEdgeUseCase` gained in 44-03 but which the chat
+confirm_action dispatch path never fed. The endpoint
+(chat_widget.py's `submit_widget`) already asserts conversation ownership
+BEFORE calling `prepare()`, so `prepare()` itself does NOT re-check
+conversation ownership -- `user_id` here exists purely to feed the promotion
+guard. `user_id` stays optional (default None) so existing
+`SubmitWidgetInteraction` unit tests / non-endpoint callers are unaffected;
+the endpoint always supplies the real value in production.
 """
 
 from __future__ import annotations
@@ -128,6 +142,7 @@ class SubmitWidgetInteraction:
         interaction_id: str,
         result: dict[str, Any],
         model_id: str,
+        user_id: str | None = None,
     ) -> AsyncIterator[ChatRunEvent]:
         """Run steps 1-6 and return the (unstarted) continuation event stream.
 
@@ -135,6 +150,11 @@ class SubmitWidgetInteraction:
         await this before attempting to iterate the returned stream, and must
         catch WidgetSubmitRejected here — none of it is raised while iterating
         the returned continuation.
+
+        `user_id` (Phase 44-09) is optional and threaded through to
+        `_dispatch_confirm_action` purely to feed `PromoteEdgeUseCase`'s
+        user-ownership guard — this method does NOT re-check conversation
+        ownership itself (the endpoint already asserted it).
         """
         interaction = await self._widget_interactions.get(interaction_id)
         if interaction is None or interaction.conversation_id != conversation_id:
@@ -153,7 +173,7 @@ class SubmitWidgetInteraction:
         if not submitted:
             raise WidgetSubmitRejected("conflict", "this widget has already been answered")
 
-        await self._dispatch_confirm_action(interaction, result, edge)
+        await self._dispatch_confirm_action(interaction, result, edge, user_id)
 
         summary = _resolve_summary(interaction, result)
         turn_index = await self._next_turn_index(conversation_id)
@@ -182,6 +202,7 @@ class SubmitWidgetInteraction:
         interaction_id: str,
         result: dict[str, Any],
         model_id: str,
+        user_id: str | None = None,
     ) -> AsyncIterator[ChatRunEvent]:
         """Convenience async-generator wrapper over prepare() — validate/lock/persist, then stream.
 
@@ -195,6 +216,7 @@ class SubmitWidgetInteraction:
             interaction_id=interaction_id,
             result=result,
             model_id=model_id,
+            user_id=user_id,
         )
         async for event in continuation:
             yield event
@@ -248,6 +270,7 @@ class SubmitWidgetInteraction:
         interaction: WidgetInteraction,
         result: dict[str, Any],
         edge: dict[str, object] | None,
+        user_id: str | None,
     ) -> None:
         """CONF-02 best-effort post-CAS dispatch (T-40-06).
 
@@ -260,7 +283,9 @@ class SubmitWidgetInteraction:
 
         `importer_id` is derived from the ALREADY-FETCHED `edge` dict (the
         staleness check above), never a new caller-supplied parameter on
-        `prepare()` itself (D-21-style).
+        `prepare()` itself (D-21-style). `user_id` (Phase 44-09) is forwarded
+        to the handler so `KnowledgeEdgeTierPromotionHandler` can finally
+        feed `PromoteEdgeUseCase`'s 44-03 user-ownership guard.
         """
         if interaction.widget_kind != _WIDGET_KIND_CONFIRM_ACTION:
             return
@@ -283,6 +308,7 @@ class SubmitWidgetInteraction:
                 suggestion_id=suggestion_id,
                 importer_id=importer_id,
                 widget_interaction_id=interaction.id,
+                user_id=user_id,
             )
         except Exception:  # best-effort -- the interaction row is already durably submitted
             logger.warning("confirm_action_dispatch_failed", suggestion_id=suggestion_id, kind=kind)
