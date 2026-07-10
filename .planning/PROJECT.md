@@ -121,6 +121,12 @@ message-oriented pipeline, and the v1.8 brand/design dossier prepared in paralle
   Claude/ChatGPT/Perplexity-class design-pattern research for the v1.8 re-skin — run during
   v1.7 the way v1.6's research ran during v1.5
 
+**Milestone progress:** Phase 42 (atomic rename) complete 2026-07-09; Phase 43 (Auth — Google
+OAuth + sessions via Supabase Auth, AUTH-01..05) complete 2026-07-10 — code-verified 5/5
+must-haves, 4 live-OAuth UAT items deferred to `43-HUMAN-UAT.md` pending user's
+`GOOGLE-OAUTH-RUNBOOK.md` setup. Phases 44 (tenancy), 45 (threads), 46 (hygiene/dossier — 1/3
+plans done) remain.
+
 **Key context:** Opened autonomously (`/gsd:new-milestone /gsd:autonomous /strategic-compact
 /gsd:graphify`): E2 selected because VISION.md (freshest user-captured intent, 2026-07-07) names
 it the next epoch and its gate — E1/v1.6 shipped — opened at the v1.6 close. E2 split per its own
