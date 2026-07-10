@@ -128,7 +128,12 @@ must-haves, 4 live-OAuth UAT items deferred to `43-HUMAN-UAT.md` pending user's
 verification PASSED 5/5 after a same-run gap-closure cycle (44-09 closed the chat-SSE
 cross-tenant hole the adversarial gate discovered); migrations 0031-0034 applied locally
 (user_id anchoring + backfill + RLS on 13 tables); backlog 999.1 absorbed; attachments IDOR
-closed. Phases 45 (threads), 46 (hygiene/dossier — 1/3 plans done) remain.
+closed. Phase 45 (Email Threads + Forwarding Seam, THRD-01..04) complete 2026-07-10 —
+verification human_needed with zero code blockers (10/13 code-verified; 7 UAT items in
+`45-HUMAN-UAT.md`, mostly OAuth-gated visual checks + the live forwarding round-trip);
+migration 0035, Union-Find grouping at ingest, idempotent backfill live-run (16 emails → 9
+threads), thread-grouped inbox, u-{token}@ forwarding seam + FORWARDING-RUNBOOK.md. Phase 46
+(hygiene/dossier — 1/3 plans done) remains.
 
 **Key context:** Opened autonomously (`/gsd:new-milestone /gsd:autonomous /strategic-compact
 /gsd:graphify`): E2 selected because VISION.md (freshest user-captured intent, 2026-07-07) names
