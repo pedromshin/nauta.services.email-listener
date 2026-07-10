@@ -208,6 +208,66 @@ bug fixed with regression guards.
 - Notable: ~20 background agents total; the heaviest phases (38, 39) ran 1.9–3.5h each in
   background with zero main-context cost between dispatch and notification.
 
+## Milestone: v1.7 — polytoken.ai Foundation: Rename, Auth & Tenancy
+
+**Shipped:** 2026-07-10
+**Phases:** 5 | **Plans:** 25 (incl. one gap-closure plan 44-09)
+
+### What Was Built
+Atomic internal rename nauta → polytoken (242 files, one committed script, external renames
+runbook'd); Google OAuth + sessions via @supabase/ssr (middleware guard, ctx.user +
+protectedProcedure, X-User-Id BFF forwarding); enforced per-user tenancy (migrations 0031–0034,
+central ownership chokepoint, full tRPC/FastAPI sweep, RLS on 13 tables, two-user adversarial
+acceptance gates); email threads at ingest (Union-Find + forwarded-mail fallbacks, idempotent
+backfill) + thread-grouped inbox + personal-forwarding seam (CSPRNG u-{token}@ addresses,
+ingest resolution, runbooks); hygiene folds (asyncio, grid colSpan, connected-env evidence) +
+decision-ready v1.8 brand/design dossier.
+
+### What Worked
+- The adversarial acceptance-gate plan (44-08) as a distinct final plan caught a REAL cross-tenant
+  hole (chat SSE) that seven sweep plans and the plans' own tests all missed — the "gate as its own
+  plan" pattern paid for itself.
+- Same-run gap-closure escalation (plan-phase --gaps → 44-09 → re-verify) closed a security gap in
+  ~40 min without breaking the autonomous cadence; the park-vs-escalate judgment call (security gap
+  in a tenancy milestone → escalate) was the right default override.
+- Resume-from-disk after the account-switch cutoff worked exactly as designed: all pre-cutoff work
+  (42 complete, 43-01, 46-01/02) was recovered from SUMMARYs/commits with zero rework.
+- Requirement premature-completion discipline (executors refusing to mark TENA-03/THRD-04 until the
+  spanning plan landed) kept the traceability table honest across 9 plans.
+- Mid-plan failure recovery via SendMessage transcript-resume (44-06 connection drop) preserved
+  uncommitted work with no duplicate commits.
+
+### What Was Inefficient
+- Two executor sessions were cut by API errors (43-05, 44-06) — both recovered, but each cost an
+  orchestrator round-trip of disk forensics.
+- The 43-01 env.ts design bug (full-schema Zod parse imported by a client component) shipped through
+  code-level verification and was only caught by the user's live dev server — a browser smoke check
+  in verification would have caught it.
+- Drizzle journal/snapshot drift (stale 0025–0030 snapshots, future-dated timestamps) resurfaced in
+  BOTH 44-01 and 44-04 despite being documented — tooling-level debt keeps taxing every migration
+  until fixed at the source.
+
+### Patterns Established
+- Acceptance-gate-as-final-plan for security-bearing phases (adversarial two-user suites).
+- Ownership chokepoint: ONE helper module (@polytoken/db/ownership + _ownership.ts wrapper) consumed
+  by every router — never ad-hoc checks.
+- env.ts (server, full schema) / env.public.ts (browser, literal access) split.
+- Runbook-not-executed for anything touching external dashboards (OAuth client, SES, renames).
+
+### Key Lessons
+- "Unreachable via ANY route" success criteria need a sweep INVENTORY artifact — enumerating
+  surfaces is what surfaced the SSE gap.
+- Verifiers should re-run suites independently, not trust SUMMARYs — the habit caught zero lies this
+  milestone but priced-in confidence for the tech_debt-0-blockers audit verdict.
+- Client/server env access is a boundary that Zod cannot straddle; validate per-bundle.
+
+### Cost Observations
+- Model mix: opus for planning (2 phase plans + 1 gap plan), sonnet for all executors/verifiers/
+  checkers, Fable orchestrating.
+- Sessions: 1 orchestrator session post-cutoff (plus the pre-cutoff session that shipped 42/43-01/46-01/02).
+- Notable: sequential executors (worktrees disabled) were the whole-run bottleneck; wave parallelism
+  was declared but unused. ~15 subagents, ~3.5M subagent tokens.
+
 ## Cross-Milestone Trends
 
 | Milestone | Phases | Plans | Shipped | Audit | Deferred (connected-env) |
