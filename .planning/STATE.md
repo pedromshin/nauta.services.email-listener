@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: polytoken.ai Foundation — Rename, Auth & Tenancy
 status: executing
-last_updated: "2026-07-10T02:50:25.091Z"
-last_activity: 2026-07-10 -- Phase 44 Plan 03 (FastAPI user-id scoping) executed
+last_updated: "2026-07-10T03:03:10.000Z"
+last_activity: 2026-07-10 -- Phase 44 Plan 04 (RLS defense-in-depth policies) executed
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 18
-  completed_plans: 12
-  percent: 40
+  completed_plans: 13
+  percent: 42
 ---
 
 # State
@@ -25,9 +25,31 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 ## Current Position
 
 Phase: 44 (Tenancy — user_id Scoping + Enforced Isolation) — EXECUTING
-Plan: 4 of 8
+Plan: 5 of 8
 Status: Executing Phase 44
-Last activity: 2026-07-10 -- Phase 44 Plan 03 (FastAPI user-id scoping) executed
+Last activity: 2026-07-10 -- Phase 44 Plan 04 (RLS defense-in-depth policies) executed
+
+## Phase 44 — Tenancy — user_id Scoping + Enforced Isolation — Plan 04 History
+
+- **44-04 EXECUTED** (`e3185eb` feat, `544f897` fix, `d42fb64` docs): RLS defense-in-depth
+  layer. Migration `0034_rls_user_scoping.sql` drops the authenticated RESTRICTIVE deny-all
+  and adds a PERMISSIVE `<table>_owner_authenticated` policy on 13 user-owned tables: direct
+  `user_id` (`importers`, `chat_conversations`, `chat_cost_ledger`), hard-FK importer
+  descendants via one join (`emails`, `email_attachments`, `email_components`,
+  `extraction_records`, `entity_instances`, `sender_profiles`, `knowledge_nodes`),
+  nullable-importer_id system-default tables (`entity_types`, `entity_type_fields` — `USING`
+  allows `importer_id IS NULL`, `WITH CHECK` forbids authenticated writes of NULL rows), and
+  `knowledge_node_edges` (schema deviation: no `importer_id` column exists on this table, so
+  scoped via `source_node_id -> knowledge_nodes.importer_id -> importers.user_id` instead).
+  Applied locally (`migrate:local`, 23 tables); `pg_policies` confirms all 13 policies live
+  and all 22 pre-existing anon deny-all policies untouched. Non-regression proven:
+  `packages/api-client` vitest 216/216, `apps/email-listener` `api/v1` pytest 14/14, both
+  green post-apply (confirms the Drizzle-superuser/service_role RLS bypass). 3 deviations:
+  1 Rule 1 (knowledge_node_edges join adapted to actual schema), 2 Rule 3 (the known journal
+  timestamp-gated-migrator gotcha from 44-01 reproduced and was fixed the same way; an
+  uncommitted `drizzle-kit generate --custom` snapshot byproduct was caught and committed).
+  TENA-04 was already marked complete by Plan 01 (premature at the time, accurate now). Full
+  detail: `44-04-SUMMARY.md`.
 
 ## Phase 44 — Tenancy — user_id Scoping + Enforced Isolation — Plan 03 History
 
