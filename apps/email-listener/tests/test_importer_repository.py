@@ -10,6 +10,7 @@ from unittest.mock import MagicMock
 
 DEFAULT_IMPORTER_ID = "00000000-0000-0000-0000-000000000001"
 NEW_IMPORTER_ID = "aaaaaaaa-0000-0000-0000-000000000002"
+FORWARDING_USER_ID = "10000000-0000-0000-0000-000000000099"
 
 
 # ---------------------------------------------------------------------------
@@ -95,15 +96,17 @@ def test_resolve_returns_existing_id_without_inserting() -> None:
 
 
 # ---------------------------------------------------------------------------
-# SupabaseImporterRepository.resolve — unknown sender (must upsert then re-select)
+# SupabaseImporterRepository.resolve — unknown sender + resolved owner (must
+# upsert anchored to user_id, then re-select) — Phase 45, THRD-04
 # ---------------------------------------------------------------------------
 
 
-def test_resolve_creates_new_importer_for_unknown_sender() -> None:
-    """For an unknown sender, resolve upserts a new row and returns its id."""
+def test_resolve_creates_new_importer_anchored_to_user_id_for_unknown_sender() -> None:
+    """For an unknown sender WITH a resolved forwarding user, resolve upserts a
+    new row anchored to user_id and returns its id."""
     from app.infrastructure.supabase.importer_repository import SupabaseImporterRepository
 
-    new_row = {"id": NEW_IMPORTER_ID, "slug": "exporter-com", "name": "exporter.com"}
+    new_row = {"id": NEW_IMPORTER_ID, "slug": "exporter-com", "name": "exporter.com", "user_id": FORWARDING_USER_ID}
 
     # First select returns empty (unknown slug)
     first_select_result = MagicMock()
@@ -126,18 +129,49 @@ def test_resolve_creates_new_importer_for_unknown_sender() -> None:
     client.table.return_value = chain
 
     repo = SupabaseImporterRepository(client=client, default_importer_id=DEFAULT_IMPORTER_ID)
-    result = asyncio.run(repo.resolve("maria@exporter.com"))
+    result = asyncio.run(repo.resolve("maria@exporter.com", user_id=FORWARDING_USER_ID))
 
     assert result == NEW_IMPORTER_ID
-    # upsert must be called with on_conflict="slug"
+    # upsert must be called with on_conflict="slug" and a user_id-anchored payload
     upsert_calls = chain.upsert.call_args_list
     assert len(upsert_calls) == 1
     call_args = upsert_calls[0]
     payload = call_args.args[0] if call_args.args else {}
     assert payload.get("slug") == "exporter-com"
+    assert payload.get("user_id") == FORWARDING_USER_ID
     # on_conflict must be "slug"
     all_vals = list(call_args.args) + list(call_args.kwargs.values())
     assert any("slug" in str(v) for v in all_vals), f"on_conflict='slug' expected in: {call_args}"
+
+
+# ---------------------------------------------------------------------------
+# SupabaseImporterRepository.resolve — unknown sender + NO resolved owner
+# (T-45-05-02: falls back to default rather than a NOT-NULL-violating row)
+# ---------------------------------------------------------------------------
+
+
+def test_resolve_unknown_sender_no_user_id_falls_back_to_default_no_row_created() -> None:
+    """For an unknown sender with NO resolved forwarding user (legacy agent@
+    path), resolve falls back to default_importer_id WITHOUT any upsert —
+    importers.user_id is NOT NULL since Phase 44 (T-45-05-02)."""
+    from app.infrastructure.supabase.importer_repository import SupabaseImporterRepository
+
+    first_select_result = MagicMock()
+    first_select_result.data = []
+
+    chain = MagicMock()
+    chain.eq.return_value = chain
+    chain.select.return_value = chain
+    chain.execute.return_value = first_select_result
+
+    client = MagicMock()
+    client.table.return_value = chain
+
+    repo = SupabaseImporterRepository(client=client, default_importer_id=DEFAULT_IMPORTER_ID)
+    result = asyncio.run(repo.resolve("maria@exporter.com"))
+
+    assert result == DEFAULT_IMPORTER_ID
+    chain.upsert.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

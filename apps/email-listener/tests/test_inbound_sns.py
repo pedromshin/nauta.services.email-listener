@@ -115,7 +115,7 @@ def test_notification_triggers_ingestion(client: TestClient) -> None:
     )
 
     assert resp.status_code == 200
-    use_case.execute.assert_awaited_once_with("msg-001")
+    use_case.execute.assert_awaited_once_with("msg-001", recipients=["agent@magnitudetech.com.br"])
 
 
 def test_notification_ingest_failure_still_returns_200(client: TestClient) -> None:

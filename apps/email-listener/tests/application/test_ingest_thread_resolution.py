@@ -63,6 +63,9 @@ def _make_use_case(
     importer_resolver = MagicMock()
     importer_resolver.resolve = AsyncMock(return_value=IMPORTER_ID)
 
+    forwarding_resolver = MagicMock()
+    forwarding_resolver.resolve_recipients = AsyncMock(return_value=None)
+
     use_case = IngestInboundEmailUseCase(
         raw_store=raw_store,
         email_repo=email_repo,
@@ -74,6 +77,7 @@ def _make_use_case(
         propose_regions=propose_regions,
         importer_resolver=importer_resolver,
         thread_resolver=thread_resolver,
+        forwarding_resolver=forwarding_resolver,
     )
     mocks: dict[str, MagicMock] = {
         "raw_store": raw_store,
@@ -81,6 +85,7 @@ def _make_use_case(
         "attachment_repo": attachment_repo,
         "importer_resolver": importer_resolver,
         "thread_resolver": thread_resolver,
+        "forwarding_resolver": forwarding_resolver,
     }
     return use_case, mocks
 

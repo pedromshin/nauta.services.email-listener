@@ -17,6 +17,7 @@ Fakes provided:
     InMemoryComponentRepository  — dict-backed; satisfies ComponentRepository
     FixedImporterResolver     — always resolves to the supplied importer_id
     NullThreadResolver        — always resolves to no thread (Phase 45, THRD-01)
+    NullForwardingAddressResolver — always resolves to no user (Phase 45, THRD-04)
 
 Usage example::
 
@@ -170,8 +171,8 @@ class FixedImporterResolver:
     def __init__(self, importer_id: str) -> None:
         self._importer_id = importer_id
 
-    async def resolve(self, sender_address: str) -> str:
-        _ = sender_address
+    async def resolve(self, sender_address: str, *, user_id: str | None = None) -> str:
+        _ = (sender_address, user_id)
         return self._importer_id
 
 
@@ -184,6 +185,17 @@ class NullThreadResolver:
 
     async def resolve(self, **kwargs: object) -> None:  # type: ignore[override]
         _ = kwargs
+
+
+class NullForwardingAddressResolver:
+    """ForwardingAddressResolver fake (Phase 45, THRD-04) — always resolves to no user.
+
+    Keeps the harness deterministic and DB-free: corpus runs use a fixed
+    importer directly and never exercise the forwarding-token seam.
+    """
+
+    async def resolve_recipients(self, recipients: object) -> None:  # type: ignore[override]
+        _ = recipients
 
 
 # ---------------------------------------------------------------------------
@@ -278,6 +290,7 @@ async def forward_corpus_file(
     component_repo = InMemoryComponentRepository()
     importer_resolver = FixedImporterResolver(importer_id)
     thread_resolver = NullThreadResolver()
+    forwarding_resolver = NullForwardingAddressResolver()
 
     # Null OCR adapter (no Textract calls in unit harness)
     class _NullOcr:
@@ -309,6 +322,7 @@ async def forward_corpus_file(
         propose_regions=propose_regions_uc,
         importer_resolver=importer_resolver,  # type: ignore[arg-type]
         thread_resolver=thread_resolver,  # type: ignore[arg-type]
+        forwarding_resolver=forwarding_resolver,  # type: ignore[arg-type]
     )
 
     persisted_email = await use_case.execute(ses_message_id)

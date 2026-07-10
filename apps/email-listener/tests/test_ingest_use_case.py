@@ -59,6 +59,7 @@ def _make_use_case(
     propose_regions: MagicMock | None = None,
     importer_resolver: MagicMock | None = None,
     thread_resolver: MagicMock | None = None,
+    forwarding_resolver: MagicMock | None = None,
 ) -> tuple[IngestInboundEmailUseCase, dict[str, MagicMock]]:
     """Factory that constructs IngestInboundEmailUseCase with all collaborators.
 
@@ -101,6 +102,10 @@ def _make_use_case(
         thread_resolver = MagicMock()
         thread_resolver.resolve = AsyncMock(return_value=None)
 
+    if forwarding_resolver is None:
+        forwarding_resolver = MagicMock()
+        forwarding_resolver.resolve_recipients = AsyncMock(return_value=None)
+
     use_case = IngestInboundEmailUseCase(
         raw_store=raw_store,
         email_repo=email_repo,
@@ -112,6 +117,7 @@ def _make_use_case(
         propose_regions=propose_regions,
         importer_resolver=importer_resolver,
         thread_resolver=thread_resolver,
+        forwarding_resolver=forwarding_resolver,
     )
     mocks: dict[str, MagicMock] = {
         "raw_store": raw_store,
@@ -123,6 +129,7 @@ def _make_use_case(
         "propose_regions": propose_regions,
         "importer_resolver": importer_resolver,
         "thread_resolver": thread_resolver,
+        "forwarding_resolver": forwarding_resolver,
     }
     return use_case, mocks
 
@@ -383,7 +390,7 @@ def test_ingest_resolves_importer_id_from_sender() -> None:
     use_case, _mocks = _make_use_case(raw, importer_resolver=importer_resolver)
     email = asyncio.run(use_case.execute(SES_MESSAGE_ID))
 
-    importer_resolver.resolve.assert_awaited_once_with("maria@exporter.com")
+    importer_resolver.resolve.assert_awaited_once_with("maria@exporter.com", user_id=None)
     assert email.importer_id == resolved_id
 
 
