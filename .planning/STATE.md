@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: polytoken.ai Foundation — Rename, Auth & Tenancy
 status: executing
-last_updated: "2026-07-10T02:19:16.818Z"
-last_activity: 2026-07-10 -- Phase 44 Plan 02 (central ownership helper) executed
+last_updated: "2026-07-10T02:50:25.091Z"
+last_activity: 2026-07-10 -- Phase 44 Plan 03 (FastAPI user-id scoping) executed
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 18
-  completed_plans: 11
+  completed_plans: 12
   percent: 40
 ---
 
@@ -25,9 +25,35 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 ## Current Position
 
 Phase: 44 (Tenancy — user_id Scoping + Enforced Isolation) — EXECUTING
-Plan: 3 of 8
+Plan: 4 of 8
 Status: Executing Phase 44
-Last activity: 2026-07-10 -- Phase 44 Plan 02 (central ownership helper) executed
+Last activity: 2026-07-10 -- Phase 44 Plan 03 (FastAPI user-id scoping) executed
+
+## Phase 44 — Tenancy — user_id Scoping + Enforced Isolation — Plan 03 History
+
+- **44-03 EXECUTED** (`4a3278a`, `1d73d09`, `0092a6c`): FastAPI half of the cross-tenant
+  boundary. `user_context.py` gained enforcing `require_user_id` (401 on missing/empty
+  X-User-Id) alongside the unchanged non-enforcing `extract_user_id`. `ImporterResolver`
+  gained `list_importer_ids_for_user` (port + Supabase impl), the owned-importer-id
+  resolver every check below is built on. `emails.py`: all 4 endpoints
+  (list/get/download_attachment/reprocess) now require X-User-Id and scope to the
+  caller's owned importers — `list_emails` ignores a non-owned `importer_id` query param
+  (403) and scopes an omitted filter to the owned set via new `EmailRepository.
+  list_by_importer_ids` (empty result if the caller owns none); the other three 404 for
+  a non-owned importer (fail-closed, no existence oracle — replaces D-18 entirely).
+  `PromoteEdgeUseCase.execute` gained an optional keyword-only `user_id`: when supplied
+  (the promote endpoint's new `Depends(require_user_id)` always supplies it), the edge's
+  importer must be in the user's owned set, checked before the pre-existing
+  body-importer_id equality guard; omitting `user_id` preserves the exact pre-44-03
+  behavior for the untouched chat confirm_action dispatch path. `container.py` wires the
+  new `importers` collaborator. 26 new tests across 3 dedicated files; 2 pre-existing
+  test files (`test_emails_api.py`, `test_promote_edge_endpoint.py`) updated to the new
+  contract (3 deviations, all Rule 1/3, all directly required by the plan's own
+  signature/behavior changes — see `44-03-SUMMARY.md`). Full suite green, zero new
+  failures; mypy/ruff/lint-imports clean on every touched file. TENA-03 intentionally
+  left Pending (spans through Plan 08's adversarial gate). Known scoped gap flagged for
+  a later plan: the chat confirm_action promotion path is not yet user-scoped. Full
+  detail: `44-03-SUMMARY.md`.
 
 ## Phase 44 — Tenancy — user_id Scoping + Enforced Isolation — Plan 02 History
 
@@ -2282,6 +2308,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 43 P04 | 25 min | 2 tasks | 6 files |
 | Phase 44 P01 | 45min | 3 tasks | 14 files |
 | Phase 44 P44-02 | 30min | 2 tasks | 5 files |
+| Phase 44 P03 | 50min | 3 tasks | 16 files |
 
 ## Operator Next Steps
 
