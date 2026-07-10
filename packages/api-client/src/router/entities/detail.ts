@@ -27,8 +27,10 @@ import {
   ExtractionRecords,
   KnowledgeNodes,
 } from "@polytoken/db/schema";
+import { assertImporterOwnership } from "@polytoken/db/ownership";
 
-import { publicProcedure } from "../../trpc";
+import { protectedProcedure } from "../../trpc";
+import { assertOwnedOrNotFound } from "../_ownership";
 
 // ---------------------------------------------------------------------------
 // Types — raw row shapes for the pure helper
@@ -139,11 +141,15 @@ export const entityDetailProcedures = {
    * byId — fetch a single entity instance with its four D-18 related regions.
    *
    * Returns null when the entity does not exist or is not email_extracted.
-   * Never throws on a missing id.
    *
    * T-10-31: source='email_extracted' scoped (byId only exposes email data).
+   *
+   * Tenancy (Phase 44, TENA-03): protectedProcedure requires a session; once
+   * the entity is loaded, its importer is asserted owned via
+   * `assertImporterOwnership` — a row owned by another user surfaces as
+   * NOT_FOUND (fail-closed, no existence oracle), same as a missing row.
    */
-  byId: publicProcedure
+  byId: protectedProcedure
     .input(z.object({ id: z.string().uuid() }))
     .query(async ({ ctx, input }) => {
       // ------------------------------------------------------------------
@@ -179,6 +185,13 @@ export const entityDetailProcedures = {
       if (!entityRows[0]) return null;
 
       const entity = entityRows[0];
+
+      // TENA-03: assert the entity's importer is owned before returning any
+      // related region. A row owned by another user surfaces as NOT_FOUND —
+      // identical to the missing-row branch above (fail-closed).
+      await assertOwnedOrNotFound(() =>
+        assertImporterOwnership(ctx.db, entity.importerId, ctx.user.id),
+      );
 
       // ------------------------------------------------------------------
       // 2. Region (a) — Occurrences

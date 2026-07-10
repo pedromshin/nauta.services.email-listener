@@ -13,7 +13,7 @@
  *   T-10-34: status + sort are z.enum allow-lists; out-of-set values rejected.
  */
 
-import { and, asc, count, desc, eq, gt, isNull, not, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, inArray, isNull, not, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import {
@@ -22,8 +22,10 @@ import {
   EntityInstances,
   EntityTypes,
 } from "@polytoken/db/schema";
+import { userOwnedImporterIds } from "@polytoken/db/ownership";
 
-import { publicProcedure } from "../../trpc";
+import { protectedProcedure } from "../../trpc";
+import { resolveListScope } from "../_scope";
 
 // ---------------------------------------------------------------------------
 // Input schema — exported for DB-free testing (T-10-34)
@@ -114,13 +116,29 @@ export const entityGalleryProcedures = {
   /**
    * list — paginated gallery of email-extracted entity instances.
    *
-   * Filters: source='email_extracted' always (D-04/D-17), importerId,
-   * entityTypeId, status, search (pg_trgm ILIKE), sort.
+   * Filters: source='email_extracted' always (D-04/D-17), owned-importer
+   * scope (TENA-03), entityTypeId, status, search (pg_trgm ILIKE), sort.
    * Returns { items, hasMore, nextOffset } with limit+1 detection (D-17).
+   *
+   * Tenancy (Phase 44, TENA-03): protectedProcedure requires a session; the
+   * importer scope is derived from `userOwnedImporterIds(ctx.db,
+   * ctx.user.id)` — a client-supplied `importerId` is only honored when it
+   * is in the owned set (`resolveListScope`), never trusted on its own.
    */
-  list: publicProcedure
+  list: protectedProcedure
     .input(listInputSchema)
     .query(async ({ ctx, input }) => {
+      const owned = await userOwnedImporterIds(ctx.db, ctx.user.id);
+      const scope = resolveListScope(owned, input.importerId);
+
+      if (!scope.ok) {
+        return {
+          items: [],
+          hasMore: false,
+          nextOffset: input.offset,
+        };
+      }
+
       // ------------------------------------------------------------------
       // Build WHERE clauses
       // ------------------------------------------------------------------
@@ -128,11 +146,10 @@ export const entityGalleryProcedures = {
       const whereClauses = [
         // T-10-31: always scope to email_extracted rows
         eq(EntityInstances.source, "email_extracted"),
+        // TENA-03: scope to the caller's owned importers (never the raw
+        // client-supplied importerId).
+        inArray(EntityInstances.importerId, scope.importerIds),
       ];
-
-      if (input.importerId !== undefined) {
-        whereClauses.push(eq(EntityInstances.importerId, input.importerId));
-      }
 
       if (input.entityTypeId !== undefined) {
         whereClauses.push(

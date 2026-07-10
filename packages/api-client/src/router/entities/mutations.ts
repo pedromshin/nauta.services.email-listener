@@ -11,16 +11,62 @@
  * T-06-10: env vars are read at call time (not module init) so the Next.js
  *          build succeeds without the env vars present.
  *
+ * Tenancy (Phase 44, TENA-03 / T-44-06-02): every mutation is
+ * protectedProcedure and asserts ownership of EVERY referenced entity's
+ * importer (via `assertEntityInstanceOwned` below) BEFORE the FastAPI proxy
+ * fetch — a merge must never join an entity the caller does not own.
+ * Fail-closed: a missing entity and one anchored to another user's importer
+ * both surface as TRPCError NOT_FOUND (no existence oracle).
+ *
  * Endpoint paths from 10-UI-SPEC / 10-03:
  *   POST /v1/entity-instances/{id}/merge/{targetId}/confirm
  *   POST /v1/entity-instances/{id}/merge/{targetId}/reject
  *   POST /v1/entity-instances/{id}/unmerge
  */
 
+import { eq } from "drizzle-orm";
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
 
-import { publicProcedure } from "../../trpc";
+import { EntityInstances } from "@polytoken/db/schema";
+import {
+  assertImporterOwnership,
+  type OwnershipDb,
+} from "@polytoken/db/ownership";
+
+import { protectedProcedure } from "../../trpc";
+import { assertOwnedOrNotFound } from "../_ownership";
 import { getListenerConfig, parseErrorDetail } from "../_listener-config";
+
+/**
+ * assertEntityInstanceOwned — loads the referenced entity_instances row's
+ * importer_id and asserts the caller owns that importer (the plan's
+ * load-then-assertImporterOwnership recipe for id-addressed rows).
+ *
+ * Fail-closed: a missing entity throws the same TRPCError NOT_FOUND that a
+ * foreign-importer entity does (via assertOwnedOrNotFound) — callers get no
+ * signal distinguishing "doesn't exist" from "not yours".
+ */
+async function assertEntityInstanceOwned(
+  db: OwnershipDb,
+  entityInstanceId: string,
+  userId: string,
+): Promise<void> {
+  const rows = await db
+    .select({ importerId: EntityInstances.importerId })
+    .from(EntityInstances)
+    .where(eq(EntityInstances.id, entityInstanceId))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row) {
+    throw new TRPCError({ code: "NOT_FOUND" });
+  }
+
+  await assertOwnedOrNotFound(() =>
+    assertImporterOwnership(db, row.importerId, userId),
+  );
+}
 
 export const entityMutationProcedures = {
   /**
@@ -30,14 +76,19 @@ export const entityMutationProcedures = {
    *
    * POST /v1/entity-instances/{entityInstanceId}/merge/{targetId}/confirm
    */
-  confirmMerge: publicProcedure
+  confirmMerge: protectedProcedure
     .input(
       z.object({
         entityInstanceId: z.string().uuid(),
         targetId: z.string().uuid(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // TENA-03: BOTH sides of the merge must belong to the caller — a merge
+      // must never join an entity the caller does not own (T-44-06-02).
+      await assertEntityInstanceOwned(ctx.db, input.entityInstanceId, ctx.user.id);
+      await assertEntityInstanceOwned(ctx.db, input.targetId, ctx.user.id);
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(
         `${url}/v1/entity-instances/${input.entityInstanceId}/merge/${input.targetId}/confirm`,
@@ -62,14 +113,18 @@ export const entityMutationProcedures = {
    *
    * POST /v1/entity-instances/{entityInstanceId}/merge/{targetId}/reject
    */
-  rejectMerge: publicProcedure
+  rejectMerge: protectedProcedure
     .input(
       z.object({
         entityInstanceId: z.string().uuid(),
         targetId: z.string().uuid(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // TENA-03: both referenced entities must belong to the caller.
+      await assertEntityInstanceOwned(ctx.db, input.entityInstanceId, ctx.user.id);
+      await assertEntityInstanceOwned(ctx.db, input.targetId, ctx.user.id);
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(
         `${url}/v1/entity-instances/${input.entityInstanceId}/merge/${input.targetId}/reject`,
@@ -94,13 +149,16 @@ export const entityMutationProcedures = {
    *
    * POST /v1/entity-instances/{entityInstanceId}/unmerge
    */
-  unmerge: publicProcedure
+  unmerge: protectedProcedure
     .input(
       z.object({
         entityInstanceId: z.string().uuid(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // TENA-03: the entity being unmerged must belong to the caller.
+      await assertEntityInstanceOwned(ctx.db, input.entityInstanceId, ctx.user.id);
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(
         `${url}/v1/entity-instances/${input.entityInstanceId}/unmerge`,
