@@ -30,6 +30,15 @@ class EmailRepository(Protocol):
         """Return emails newest received_at first; importer_id=None lists across all importers (D-18)."""
         ...
 
+    async def list_by_importer_ids(self, importer_ids: list[str], limit: int, offset: int) -> list[Email]:
+        """Return emails newest received_at first, scoped to the given importer ids (Phase 44, TENA-03).
+
+        Used to list across a caller's OWNED importer set (never all importers)
+        when no single importer_id filter is supplied. An empty importer_ids
+        list must return an empty result — never all rows.
+        """
+        ...
+
     async def update_parse_status(self, email_id: str, status: str, error: str | None) -> None:
         """Update the parse_status and parse_error fields for an email."""
         ...

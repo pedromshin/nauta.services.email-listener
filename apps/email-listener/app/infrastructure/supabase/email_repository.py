@@ -105,6 +105,20 @@ class SupabaseEmailRepository:
         result = query.order("received_at", desc=True).range(offset, offset + limit - 1).execute()
         return [_from_row(cast("dict[str, Any]", row)) for row in result.data]
 
+    async def list_by_importer_ids(self, importer_ids: list[str], limit: int, offset: int) -> list[Email]:
+        """Scope to the given importer ids (Phase 44, TENA-03) — never all rows."""
+        if not importer_ids:
+            return []
+        result = (
+            self._client.table("emails")
+            .select("*")
+            .in_("importer_id", importer_ids)
+            .order("received_at", desc=True)
+            .range(offset, offset + limit - 1)
+            .execute()
+        )
+        return [_from_row(cast("dict[str, Any]", row)) for row in result.data]
+
     async def update_parse_status(self, email_id: str, status: str, error: str | None) -> None:
         (
             self._client.table("emails")

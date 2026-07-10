@@ -2,6 +2,13 @@
 
 Routes resolve dependencies through dishka, so tests swap app.state.dishka_container
 for a real container whose providers return mocks.
+
+Phase 44-03 (TENA-03): every endpoint now requires X-User-Id and scopes to the
+caller's OWNED importer ids (replaces the old D-18 "installation-wide, no
+importer check" posture) -- the test client below sends X-User-Id by default,
+and an ImporterResolver mock reports USER_ID as the owner of IMPORTER_ID.
+Cross-tenant behavior (foreign importer -> 404) is asserted here AND in the
+dedicated tests/presentation/api/v1/test_emails_user_scoping.py suite.
 """
 
 from __future__ import annotations
@@ -19,10 +26,13 @@ from app.domain.entities.email import Email
 from app.domain.ports.attachment_repository import AttachmentRepository
 from app.domain.ports.attachment_storage import AttachmentStorage
 from app.domain.ports.email_repository import EmailRepository
+from app.domain.ports.importer_resolver import ImporterResolver
 from app.main import create_app
+from app.presentation.middleware.user_context import USER_ID_HEADER
 from app.settings import get_settings
 
 IMPORTER_ID = "00000000-0000-0000-0000-000000000001"
+USER_ID = "user-00000000-0000-0000-0000-000000000001"
 NOW = datetime(2026, 6, 10, 12, 0, 0, tzinfo=UTC)
 
 EMAIL = Email(
@@ -64,6 +74,7 @@ ATTACHMENT = Attachment(
 def mocks() -> dict[str, MagicMock]:
     email_repo = MagicMock()
     email_repo.list_by_importer = AsyncMock(return_value=[EMAIL])
+    email_repo.list_by_importer_ids = AsyncMock(return_value=[EMAIL])
     email_repo.find_by_id = AsyncMock(return_value=EMAIL)
 
     attachment_repo = MagicMock()
@@ -76,11 +87,15 @@ def mocks() -> dict[str, MagicMock]:
     reprocess_use_case = MagicMock()
     reprocess_use_case.execute = AsyncMock(return_value={"email_id": "email-001", "superseded_components": 2})
 
+    importer_repo = MagicMock()
+    importer_repo.list_importer_ids_for_user = AsyncMock(return_value=[IMPORTER_ID])
+
     return {
         "email_repo": email_repo,
         "attachment_repo": attachment_repo,
         "attachment_storage": attachment_storage,
         "reprocess_use_case": reprocess_use_case,
+        "importer_repo": importer_repo,
     }
 
 
@@ -101,14 +116,18 @@ def client(mocks: dict[str, MagicMock]) -> TestClient:
     def provide_reprocess() -> ReprocessEmailUseCase:
         return mocks["reprocess_use_case"]
 
+    def provide_importer_repo() -> ImporterResolver:
+        return mocks["importer_repo"]
+
     provider.provide(provide_email_repo, provides=EmailRepository)
     provider.provide(provide_attachment_repo, provides=AttachmentRepository)
     provider.provide(provide_attachment_storage, provides=AttachmentStorage)
     provider.provide(provide_reprocess, provides=ReprocessEmailUseCase)
+    provider.provide(provide_importer_repo, provides=ImporterResolver)
 
     app = create_app()
     app.state.dishka_container = make_async_container(provider)
-    return TestClient(app)
+    return TestClient(app, headers={USER_ID_HEADER: USER_ID})
 
 
 def test_list_emails_returns_summaries_with_counts(client: TestClient, mocks: dict[str, MagicMock]) -> None:
@@ -124,29 +143,49 @@ def test_list_emails_returns_summaries_with_counts(client: TestClient, mocks: di
     assert summary["sender_address"] == "maria@exporter.com"
     assert summary["subject"] == "Docs"
     assert summary["attachment_count"] == 1
-    # D-18: no importer filter by default — list across all importers
-    mocks["email_repo"].list_by_importer.assert_awaited_once_with(None, limit=50, offset=0)
+    # Phase 44 (TENA-03): no importer filter -> scoped to the caller's owned importers
+    mocks["email_repo"].list_by_importer_ids.assert_awaited_once_with([IMPORTER_ID], limit=50, offset=0)
 
 
 def test_list_emails_passes_pagination(client: TestClient, mocks: dict[str, MagicMock]) -> None:
     resp = client.get("/v1/emails?limit=10&offset=30")
 
     assert resp.status_code == 200
-    mocks["email_repo"].list_by_importer.assert_awaited_once_with(None, limit=10, offset=30)
+    mocks["email_repo"].list_by_importer_ids.assert_awaited_once_with([IMPORTER_ID], limit=10, offset=30)
 
 
 def test_list_emails_optional_importer_filter(client: TestClient, mocks: dict[str, MagicMock]) -> None:
-    """D-18: an explicit ?importer_id= narrows the listing to that importer."""
+    """An explicit ?importer_id= narrows the listing to that importer, when owned by the caller."""
     resp = client.get(f"/v1/emails?importer_id={IMPORTER_ID}")
 
     assert resp.status_code == 200
     mocks["email_repo"].list_by_importer.assert_awaited_once_with(IMPORTER_ID, limit=50, offset=0)
 
 
+def test_list_emails_rejects_non_owned_importer_filter(client: TestClient, mocks: dict[str, MagicMock]) -> None:
+    """Phase 44 (TENA-03): a non-owned importer_id is rejected, never trusted for scoping."""
+    resp = client.get("/v1/emails?importer_id=imp-other")
+
+    assert resp.status_code == 403
+    mocks["email_repo"].list_by_importer.assert_not_awaited()
+
+
 def test_list_emails_rejects_bad_pagination(client: TestClient) -> None:
     assert client.get("/v1/emails?limit=0").status_code == 422
     assert client.get("/v1/emails?limit=101").status_code == 422
     assert client.get("/v1/emails?offset=-1").status_code == 422
+
+
+def test_list_emails_requires_x_user_id(mocks: dict[str, MagicMock]) -> None:
+    """Phase 44 (TENA-03): X-User-Id is required (401 without it)."""
+    provider = Provider(scope=Scope.APP)
+    provider.provide(lambda: mocks["email_repo"], provides=EmailRepository)
+    provider.provide(lambda: mocks["attachment_repo"], provides=AttachmentRepository)
+    provider.provide(lambda: mocks["importer_repo"], provides=ImporterResolver)
+    app = create_app()
+    app.state.dishka_container = make_async_container(provider)
+
+    assert TestClient(app).get("/v1/emails").status_code == 401
 
 
 def test_get_email_returns_detail_with_attachments(client: TestClient) -> None:
@@ -167,15 +206,15 @@ def test_get_email_404_when_missing(client: TestClient, mocks: dict[str, MagicMo
     assert client.get("/v1/emails/nope").status_code == 404
 
 
-def test_get_email_visible_for_any_importer(client: TestClient, mocks: dict[str, MagicMock]) -> None:
-    """D-18: the API key is installation-wide — emails from sender-resolved importers are readable."""
+def test_get_email_404_for_non_owned_importer(client: TestClient, mocks: dict[str, MagicMock]) -> None:
+    """Phase 44 (TENA-03, replaces D-18): an email under an importer the caller
+    does not own 404s -- fail-closed, no existence oracle."""
     foreign = Email(**{**EMAIL.__dict__, "importer_id": "imp-other"})
     mocks["email_repo"].find_by_id = AsyncMock(return_value=foreign)
 
     resp = client.get("/v1/emails/email-001")
 
-    assert resp.status_code == 200
-    assert resp.json()["data"]["importer_id"] == "imp-other"
+    assert resp.status_code == 404
 
 
 def test_download_attachment_streams_bytes(client: TestClient, mocks: dict[str, MagicMock]) -> None:
@@ -190,6 +229,15 @@ def test_download_attachment_streams_bytes(client: TestClient, mocks: dict[str, 
 
 def test_download_attachment_404_for_unknown_id(client: TestClient) -> None:
     assert client.get("/v1/emails/email-001/attachments/att-999").status_code == 404
+
+
+def test_download_attachment_404_for_non_owned_importer(client: TestClient, mocks: dict[str, MagicMock]) -> None:
+    foreign = Email(**{**EMAIL.__dict__, "importer_id": "imp-other"})
+    mocks["email_repo"].find_by_id = AsyncMock(return_value=foreign)
+
+    resp = client.get("/v1/emails/email-001/attachments/att-001")
+
+    assert resp.status_code == 404
 
 
 # ---------------------------------------------------------------------------
@@ -218,17 +266,17 @@ def test_reprocess_404_for_unknown_email(client: TestClient, mocks: dict[str, Ma
     assert resp.status_code == 404
 
 
-def test_reprocess_allowed_for_any_importer(client: TestClient, mocks: dict[str, MagicMock]) -> None:
-    """D-18: reprocess works for emails of any sender-resolved importer."""
+def test_reprocess_404_for_non_owned_importer(client: TestClient, mocks: dict[str, MagicMock]) -> None:
+    """Phase 44 (TENA-03, replaces D-18): reprocess 404s for an importer the caller does not own."""
     foreign = Email(**{**EMAIL.__dict__, "importer_id": "imp-other"})
     mocks["email_repo"].find_by_id = AsyncMock(return_value=foreign)
 
     resp = client.post("/v1/emails/email-001/reprocess")
 
-    assert resp.status_code == 200
+    assert resp.status_code == 404
 
 
-def test_reprocess_requires_api_key(client: TestClient) -> None:
+def test_reprocess_requires_api_key(mocks: dict[str, MagicMock]) -> None:
     """POST reprocess returns 401 when API_KEY is configured and X-API-Key is missing."""
     import os
 
@@ -251,21 +299,25 @@ def test_reprocess_requires_api_key(client: TestClient) -> None:
         def provide_reprocess() -> ReprocessEmailUseCase:
             return reprocess_mock
 
+        def provide_importer_repo() -> ImporterResolver:
+            return mocks["importer_repo"]
+
         provider.provide(provide_email_repo, provides=EmailRepository)
         provider.provide(provide_reprocess, provides=ReprocessEmailUseCase)
+        provider.provide(provide_importer_repo, provides=ImporterResolver)
 
         auth_app = create_app()
         auth_app.state.dishka_container = make_async_container(provider)
         auth_client = TestClient(auth_app, raise_server_exceptions=False)
 
         # No X-API-Key header → 401
-        resp = auth_client.post("/v1/emails/email-001/reprocess")
+        resp = auth_client.post("/v1/emails/email-001/reprocess", headers={USER_ID_HEADER: USER_ID})
         assert resp.status_code == 401
 
-        # With correct X-API-Key → 200
+        # With correct X-API-Key + X-User-Id → 200
         resp_authed = auth_client.post(
             "/v1/emails/email-001/reprocess",
-            headers={"X-API-Key": "secret-key"},
+            headers={"X-API-Key": "secret-key", USER_ID_HEADER: USER_ID},
         )
         assert resp_authed.status_code == 200
     finally:
@@ -274,6 +326,12 @@ def test_reprocess_requires_api_key(client: TestClient) -> None:
         else:
             os.environ["API_KEY"] = old_key
         get_settings.cache_clear()
+
+
+def test_reprocess_requires_x_user_id(client: TestClient) -> None:
+    """Phase 44 (TENA-03): POST reprocess returns 401 without X-User-Id."""
+    resp = client.post("/v1/emails/email-001/reprocess", headers={USER_ID_HEADER: ""})
+    assert resp.status_code == 401
 
 
 def test_reprocess_supersede_active_invoked(client: TestClient, mocks: dict[str, MagicMock]) -> None:
