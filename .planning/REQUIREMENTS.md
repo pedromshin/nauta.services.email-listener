@@ -79,13 +79,35 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (filled by roadmap) | | |
+| BRND-01 | Phase 47 | Pending |
+| BRND-02 | Phase 47 | Pending |
+| BRND-03 | Phase 47 | Pending |
+| VRFY-01 | Phase 47 | Pending |
+| VRFY-02 | Phase 47 | Pending |
+| TOKN-01 | Phase 48 | Pending |
+| TOKN-02 | Phase 48 | Pending |
+| TOKN-03 | Phase 48 | Pending |
+| TOKN-04 | Phase 48 | Pending |
+| TOKN-05 | Phase 48 | Pending |
+| TOKN-06 | Phase 48 | Pending |
+| TOKN-07 | Phase 48 | Pending |
+| RSKN-01 | Phase 49 | Pending |
+| RSKN-02 | Phase 49 | Pending |
+| RSKN-03 | Phase 49 | Pending |
+| RSKN-04 | Phase 49 | Pending |
+| RSKN-05 | Phase 49 | Pending |
+| MOBL-01 | Phase 50 | Pending |
+| MOBL-02 | Phase 50 | Pending |
+| PANL-01 | Phase 51 | Pending |
+| PANL-02 | Phase 51 | Pending |
+| PANL-03 | Phase 51 | Pending |
+| PANL-04 | Phase 51 | Pending |
 
 **Coverage:**
 - v1 requirements: 23 total
-- Mapped to phases: 0
-- Unmapped: 23 ⚠️ (roadmap pending)
+- Mapped to phases: 23
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-07-10*
-*Last updated: 2026-07-10 after v1.8 milestone open*
+*Last updated: 2026-07-10 after v1.8 roadmap created (5 phases, 47–51, 23/23 requirements mapped)*

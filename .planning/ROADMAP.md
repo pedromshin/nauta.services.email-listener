@@ -10,6 +10,7 @@
 - ✅ **v1.5 — Knowledge-Graph Uplift** (Phases 29–32) — SHIPPED 2026-07-08. Activated the dormant knowledge-graph substrate: confirms materialize confidence-tiered edges (OCR token provenance) through a suggest-only promotion gate; cheap alias/identifier recall + a measurable retrieval-miss-rate gate for stage 3; `/knowledge` tiered exploration canvas (encoding, bounded expand, filter, promote). Archived: [milestones/v1.5-ROADMAP.md](milestones/v1.5-ROADMAP.md) · Audit: [milestones/v1.5-MILESTONE-AUDIT.md](milestones/v1.5-MILESTONE-AUDIT.md).
 - ✅ **v1.6 — Chat × Knowledge Convergence** (Phases 33–41) — SHIPPED 2026-07-09. The chat agent reads its own extracted data: bounded mid-turn tool loop + 3 tiered knowledge tools with structural injection quarantine, per-round cost ceilings, visible tool rounds with citation chips, live data-bound panels, chat-confirmable promotions, and a knowledge-preview canvas node. Archived: [milestones/v1.6-ROADMAP.md](milestones/v1.6-ROADMAP.md) · Audit: [milestones/v1.6-MILESTONE-AUDIT.md](milestones/v1.6-MILESTONE-AUDIT.md).
 - ✅ **v1.7 — polytoken.ai Foundation: Rename, Auth & Tenancy** (Phases 42–46) — SHIPPED 2026-07-10. Atomic internal rename nauta → polytoken, Google OAuth + sessions (Supabase Auth), enforced per-user tenancy (app-boundary primary + RLS defense-in-depth, adversarially gated), email threads at ingest + personal-forwarding seam, hygiene folds + decision-ready v1.8 dossier. Archived: [milestones/v1.7-ROADMAP.md](milestones/v1.7-ROADMAP.md) · Audit: [milestones/v1.7-MILESTONE-AUDIT.md](milestones/v1.7-MILESTONE-AUDIT.md).
+- ◆ **v1.8 — Cortex Re-skin — Brand, Design System & Responsive Canvas** (Phases 47–51) — IN PROGRESS (opened 2026-07-10). Total UI re-skin on an EXTENDED (never discarded) v1.4 token system in the Cortex voice (warm second-brain companion): brand identity application, token-system extensions (pill radius, success color, code typography, tier-ladder + graph node/edge-type tokens, hover/active convention, breakpoint decision), a market-validated mobile-responsive canvas answer, and genui panels upgraded from read-only renders to live editing surfaces (absorbs backlog 999.7 + the cheap slice of 999.4 Design Engine). Research: [research/v1.8-design/BRAND-IDENTITY-OPTIONS.md](research/v1.8-design/BRAND-IDENTITY-OPTIONS.md), [research/v1.8-design/DESIGN-PATTERN-DOSSIER.md](research/v1.8-design/DESIGN-PATTERN-DOSSIER.md).
 
 ## Phases
 
@@ -18,10 +19,10 @@
 - Phase numbering continues across milestones (never restarts). v1.2 formally ended at Phase 20 (an
   informal Phase 21 quality-verification effort is recorded in STATE.md history but was never a
   numbered roadmap phase). v1.3 ran Phases 22–25. v1.4 ran Phases 26–28. v1.5 ran Phases 29–32.
-  v1.6 ran Phases 33–41. **v1.7 starts at Phase 42 (Phases 42–46).**
+  v1.6 ran Phases 33–41. v1.7 ran Phases 42–46. **v1.8 starts at Phase 47 (Phases 47–51).**
 
-- Integer phases (42–46): planned v1.7 milestone work.
-- Decimal phases (e.g. 33.1): urgent insertions via `/gsd:phase insert`, executed between the
+- Integer phases (47–51): planned v1.8 milestone work.
+- Decimal phases (e.g. 47.1): urgent insertions via `/gsd:phase insert`, executed between the
   surrounding integers.
 
 <details>
@@ -120,6 +121,97 @@ Full detail: [milestones/v1.7-ROADMAP.md](milestones/v1.7-ROADMAP.md). Audit `te
 + staging/prod migrations 0031–0035 (STATE.md → Deferred Items).
 
 </details>
+
+## v1.8 — Cortex Re-skin — Brand, Design System & Responsive Canvas (Phases 47–51) — CURRENT
+
+23 requirements mapped (see REQUIREMENTS.md traceability). Dependency chain: 47 → 48 → 49 → 50;
+Phase 51 depends only on Phase 48 and is independent/parallelizable with 49/50 (per the dossier's
+own analysis: panel editing needs the token/pack machinery but not the surface re-skins). VRFY
+(Phase 47) lands first so every later phase can use screenshot-driven review; TOKN (Phase 48)
+lands before the phases that consume its tokens (RSKN-03's tier badges, RSKN's `radius.pill`
+chips, MOBL's breakpoint decision). Research base:
+[research/v1.8-design/BRAND-IDENTITY-OPTIONS.md](research/v1.8-design/BRAND-IDENTITY-OPTIONS.md),
+[research/v1.8-design/DESIGN-PATTERN-DOSSIER.md](research/v1.8-design/DESIGN-PATTERN-DOSSIER.md).
+
+- [ ] **Phase 47: Brand Foundation + Verification Tooling** — Cortex brand identity (voice, logo, guide) documented and applied to login/chrome; Playwright + screenshot harness installed and working
+- [ ] **Phase 48: Token-System Extensions** — v1.4 DTCG token system extended with pill radius, success color, code typography, tier-ladder tokens, graph node/edge palette, hover/active convention, breakpoint decision
+- [ ] **Phase 49: Total UI Re-skin** — chat, inbox, knowledge canvas, studio, settings, login re-skinned in the Cortex register on extended tokens, zero raw hex
+- [ ] **Phase 50: Mobile-Responsive Answer** — canvas surfaces collapse to list/feed on small screens; core flows usable on a mobile viewport
+- [ ] **Phase 51: Editable Genui Panels / Studio-on-Canvas** — canvas genui panels become live editing surfaces (style-pack switch, spec tweak, regenerate, promptable re-theme)
+
+### Phase 47: Brand Foundation + Verification Tooling
+
+**Goal:** The product has a documented Cortex brand identity ready to apply — voice, logo mark, brand guide — and a working visual-verification toolchain (Playwright + screenshot harness) exists for every subsequent re-skin phase to use.
+**Depends on:** Nothing (first phase)
+**Requirements:** BRND-01, BRND-02, BRND-03, VRFY-01, VRFY-02
+**Success criteria:**
+
+1. Login page, empty states, sidebar chrome, page titles, and toasts speak the Cortex register (warm, first-person copy — "Your workspace", not systems vocabulary)
+2. A committed logo mark (rounded node/brain hybrid SVG, anchored on the existing teal `color.primary`) renders in the sidebar brand slot, login card, and favicon
+3. PROJECT.md records the brand decision + naming-collision mitigation posture (explicitly noting no domain purchase, no trademark filing — user-gated); an in-repo brand guide documents voice, do/don't, and mark usage
+4. `@playwright/test` (+ firefox) is installed; the parked code-island isolation spec runs green on chromium AND firefox, and the auth-redirect spec runs green (closes todo 2026-07-10-playwright-code-island-isolation-run)
+5. A screenshot-driven visual review harness exists (Playwright screenshots of surfaces across packs/viewports) and produces a reviewable artifact
+
+**Plans:** TBD
+**UI hint**: yes
+
+### Phase 48: Token-System Extensions
+
+**Goal:** The v1.4 DTCG token system is extended (never discarded) with the primitives every re-skin, mobile, and panel-editing phase needs — pill radius, success color, code typography, tier-ladder tokens, a graph node/edge-type palette, a hover/active convention, and a breakpoint-awareness decision.
+**Depends on:** Phase 47 (uses the screenshot harness to verify pack-wide token rendering)
+**Requirements:** TOKN-01, TOKN-02, TOKN-03, TOKN-04, TOKN-05, TOKN-06, TOKN-07
+**Success criteria:**
+
+1. New utility token aliases exist and are consumed at their designated call sites in all 6 style packs: `radius.pill` (citation chips, follow-up chips, and tab pills render true pill shapes), `color.success`/`color.successForeground` (WCAG-AA verified, pairing the existing destructive side), and `typography.code.family` (`brutalist`'s JetBrains Mono display-family workaround migrated onto it)
+2. Two novel, purpose-built token systems exist with no competitor precedent to borrow: tier-ladder tokens consumed by the knowledge tier badges (never overloading `color.accent`/`color.muted`), and a closed graph node/edge-type palette consumed by the xyflow canvas for node differentiation (email/chat/knowledge/artifact) — zero raw hex (D-03/STYLE-03 holds)
+3. Two design conventions are recorded and applied: a documented hover/active-state derivation rule used consistently, and a breakpoint-awareness decision with a minimal working mechanism that the mobile phase builds on
+
+**Plans:** TBD
+
+### Phase 49: Total UI Re-skin
+
+**Goal:** Every major product surface — chat, inbox, knowledge canvas, studio, settings, login — speaks the Cortex register on the extended token system, with token discipline holding throughout.
+**Depends on:** Phase 48 (consumes tier-ladder + graph-palette tokens on the knowledge canvas, pill/success/code tokens elsewhere)
+**Requirements:** RSKN-01, RSKN-02, RSKN-03, RSKN-04, RSKN-05
+**Success criteria:**
+
+1. `/chat` (composer, message stream, tool-round activity rows, citation chips) is re-skinned in the Cortex register on extended tokens
+2. The thread inbox (three-pane, thread groups) and email detail view are re-skinned on extended tokens
+3. `/knowledge` canvas is re-skinned — tier badges on TOKN-04 tokens, node types on the TOKN-05 palette
+4. `/studio`, `/settings/*`, and `/login` are re-skinned in the Cortex register
+5. Zero raw hex outside token sources holds across the re-skin; the existing WCAG-AA contrast + token-family registration regression gates stay green and extend to the new TOKN-* aliases
+
+**Plans:** TBD
+**UI hint**: yes
+
+### Phase 50: Mobile-Responsive Answer
+
+**Goal:** The product is usable on a mobile viewport — canvas surfaces gracefully degrade to an inline-first list/feed rather than an unusable shrunk canvas, per the market-validated pattern (ChatGPT removed Canvas 2026-05-28 over cross-surface inconsistency; Claude Artifacts render inline on mobile).
+**Depends on:** Phase 48 (TOKN-07 breakpoint decision) and Phase 49 (re-skinned surfaces to make responsive)
+**Requirements:** MOBL-01, MOBL-02
+**Success criteria:**
+
+1. On small screens, canvas surfaces (chat canvas, `/knowledge`) collapse to a list/feed presentation; desktop keeps the 2D canvas
+2. Core flows (login → inbox → thread → email detail → chat) show no horizontal overflow on a mobile viewport
+3. Touch targets stay ≥44px on a mobile viewport even under denser style packs
+
+**Plans:** TBD
+**UI hint**: yes
+
+### Phase 51: Editable Genui Panels / Studio-on-Canvas
+
+**Goal:** Canvas genui panels become live editing surfaces instead of read-only renders — a user can re-theme, tweak, and regenerate a panel in place, absorbing backlog 999.7 and the cheap generation-side slice of 999.4 Design Engine (DSGN-03).
+**Depends on:** Phase 48 (style-pack/token machinery); functionally independent of Phases 49/50 — parallelizable
+**Requirements:** PANL-01, PANL-02, PANL-03, PANL-04
+**Success criteria:**
+
+1. User can switch a genui panel's `style_pack_id` in place from per-panel controls; the choice persists across reloads
+2. User can tweak a panel's spec parameters in place through a bounded editing surface, schema-validated via the same untrusted-input gate as FOUND-6
+3. User can regenerate a panel variant in place, with provenance retained and the prior version reachable
+4. User can issue a natural-language re-theme instruction on a panel that resolves to pack/token choices (DSGN-03's cheap generation-side slice; no visual-compare repair loop)
+
+**Plans:** TBD
+**UI hint**: yes
 
 ## Backlog
 
