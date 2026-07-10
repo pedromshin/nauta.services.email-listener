@@ -112,7 +112,7 @@ Phase 46 is independent/parallelizable. Research base:
 [research/v1.7-polytoken-foundation/SUMMARY.md](research/v1.7-polytoken-foundation/SUMMARY.md).
 
 - [x] **Phase 42: Atomic Rename nauta → polytoken** (completed 2026-07-09)
-- [ ] **Phase 43: Auth — Google OAuth + Sessions (Supabase Auth)**
+- [x] **Phase 43: Auth — Google OAuth + Sessions (Supabase Auth)** (completed 2026-07-10)
 - [ ] **Phase 44: Tenancy — user_id Scoping + Enforced Isolation**
 - [ ] **Phase 45: Email Threads + Forwarding Seam**
 - [ ] **Phase 46: Kickoff Hygiene + v1.8 Brand & Design Dossier**
@@ -146,7 +146,7 @@ Plans:
 4. Server-side FastAPI proxy routes forward the user's identity; `X-API-Key` service boundary unchanged (existing service tests green)
 5. Missing auth env vars fail startup with a clear message; Google Cloud OAuth client runbook exists
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 Plans:
 **Wave 1**
@@ -161,7 +161,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 43-05-PLAN.md — Google OAuth user runbook + config.toml/.env.example wiring + Playwright redirect smoke spec
+- [x] 43-05-PLAN.md — Google OAuth user runbook + config.toml/.env.example wiring + Playwright redirect smoke spec
 
 ### Phase 44: Tenancy — user_id Scoping + Enforced Isolation
 
