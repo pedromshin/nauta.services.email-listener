@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: polytoken.ai Foundation — Rename, Auth & Tenancy
 status: executing
-last_updated: "2026-07-10T00:04:47.237Z"
-last_activity: 2026-07-09 -- Phase 43 Plan 03 complete (tRPC ctx.user + protectedProcedure identity boundary)
+last_updated: "2026-07-10T00:30:00.000Z"
+last_activity: 2026-07-10 -- Phase 43 Plan 04 complete (FastAPI identity forwarding — X-User-Id BFF proxy header)
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 10
-  completed_plans: 7
+  completed_plans: 9
   percent: 20
 ---
 
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 ## Current Position
 
 Phase: 43 (Auth — Google OAuth + Sessions (Supabase Auth)) — EXECUTING
-Plan: 43-03 EXECUTED, next up 43-04 of 5
+Plan: 43-04 EXECUTED, next up 43-05 of 5
 Status: Executing Phase 43
-Last activity: 2026-07-09 -- Phase 43 Plan 03 complete (tRPC ctx.user + protectedProcedure identity boundary)
+Last activity: 2026-07-10 -- Phase 43 Plan 04 complete (FastAPI identity forwarding — X-User-Id BFF proxy header)
 
 ## Phase 42 — Atomic Rename nauta → polytoken — Plan 01 History
 
@@ -150,6 +150,32 @@ Last activity: 2026-07-09 -- Phase 43 Plan 03 complete (tRPC ctx.user + protecte
   framework-agnostic (no `next/headers`/`@supabase/ssr` imports/deps). No existing router
   yet consumes `protectedProcedure` — migrating individual procedures is left to the
   tenancy/RLS work. See 43-03-SUMMARY.md. **Next: 43-04** (FastAPI identity forwarding).
+
+- **43-04 EXECUTED:** AUTH-04. Task 1 (`ea2a90c`): all 4 BFF routes that proxy to FastAPI
+  (`chat/stream`, `chat/regenerate`, `chat/widget/submit`, `knowledge/edges/[edgeId]/promote`)
+  now resolve the acting user via `await createClient()` + `await supabase.auth.getUser()`
+  (server-verified; grep-confirmed zero `getSession(` calls and no read of an inbound
+  `x-user-id`/`userId` header) and add `"X-User-Id": user.id` to the upstream `fetch` headers
+  alongside the unchanged `"X-API-Key"`; a null user 401s before any upstream call (no
+  anonymous forward). The `promote` route's `importerId` body field is left as-is by design
+  (Phase 44 sweep scope). Task 2 (`2677dc8`): new
+  `apps/email-listener/app/presentation/middleware/user_context.py` — `USER_ID_HEADER =
+  "X-User-Id"` + non-enforcing `async def extract_user_id(request) -> str | None`
+  (`request.headers.get(...) or None`, never raises); docstring documents the trust model and
+  that enforcement is explicitly Phase 44 scope. 4 new tests
+  (`tests/presentation/test_user_context.py`): present/absent extraction +
+  `require_api_key`-unchanged regression (valid key passes, missing/invalid key still 401s).
+  `git diff apps/email-listener/app/presentation/middleware/auth.py` empty — zero
+  modification to the API-key gate. `npx tsc --noEmit`: zero new errors outside the
+  `src/app/dev/design` baseline. Full `uv run pytest --no-cov`: zero failures — the plan's
+  documented Phase-46 baseline of 10 pre-existing `test_genui_retrieval_provider.py` failures
+  no longer applies (already fixed by the since-merged 46-02 plan). **Verification-command
+  clarification (not a code deviation):** the plan's literal Task 2 verify command
+  (`uv run pytest tests/presentation/test_user_context.py -x`, no `--no-cov`) exits 1 even
+  when all 4 tests pass, because this repo's `pyproject.toml` sets a global
+  `--cov-fail-under=80` that any single-file targeted run trips regardless of pass/fail
+  (same pre-existing issue Phase 46-02 hit and worked around identically). See
+  43-04-SUMMARY.md. **Next: 43-05** (human_needed Google OAuth UAT runbook / phase closure).
 
 ## Phase 46 — Kickoff Hygiene / v1.8 Brand & Design Dossier — Plan History
 
@@ -2112,6 +2138,9 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 - 2026-07-09 (43-01): middleware.ts's updateSession() returns { response, user } with zero redirect/route-guard logic by design — that decision is explicitly Plan 02's responsibility, keeping "refresh the session" and "guard the route" as separate concerns
 - 2026-07-09 (43-03): SessionUser is a local minimal type ({ id, email? }) in trpc.ts, not imported from @supabase/supabase-js — keeps @polytoken/api-client dependency-free of Supabase (T-43-P3-04)
 - 2026-07-09 (43-03): protectedProcedure implemented as t.procedure.use() middleware (not a wrapper function) so TypeScript's own narrowing enforces non-null ctx.user for every consumer at compile time
+- 2026-07-10 (43-04): getUser() resolved after Zod body-validation but before the upstream fetch in all 4 BFF proxy routes — a null user 401s before any FastAPI round-trip is attempted, never forwarding an anonymous call
+- 2026-07-10 (43-04): USER_ID_HEADER defined as a module-level constant in user_context.py itself (not settings.py) — keeps the additive, non-enforcing extractor self-contained; require_api_key/auth.py left byte-for-byte unchanged (git diff empty)
+- 2026-07-10 (43-04): verified Task 2 with --no-cov appended to the plan's literal pytest command — this repo's global --cov-fail-under=80 addopts trips on any single-file targeted run regardless of pass/fail, same pre-existing issue Phase 46-02 hit and worked around identically
 
 ## Performance Metrics
 
@@ -2208,6 +2237,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 43 P01 | 15min | 2 tasks | 8 files |
 | Phase 43 P02 | 12min | 3 tasks | 9 files |
 | Phase 43 P03 | ~10min | 2 tasks | 8 files |
+| Phase 43 P04 | 25 min | 2 tasks | 6 files |
 
 ## Operator Next Steps
 
