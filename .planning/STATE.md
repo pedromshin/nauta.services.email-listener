@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: Polytoken Re-skin — Brand, Design System & Responsive Canvas
 status: executing
-last_updated: "2026-07-10T17:49:54.000Z"
-last_activity: 2026-07-10 -- Phase 47 Plan 02 (copy register sweep: titles, empty states, toasts) executed
+last_updated: "2026-07-10T18:10:00.000Z"
+last_activity: 2026-07-10 -- Phase 47 Plan 04 (Playwright toolchain + parked spec runs) executed
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 5
-  completed_plans: 2
-  percent: 40
+  completed_plans: 3
+  percent: 60
 ---
 
 # State
@@ -29,9 +29,9 @@ decision, /gsd:cleanup (phase-dir archival deferred — needs interactive approv
 ## Current Position
 
 Phase: 47 (Brand Foundation + Verification Tooling) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5 (47-03 still pending; 47-01/02/04 complete)
 Status: Executing Phase 47
-Last activity: 2026-07-10 -- Phase 47 Plan 02 (copy register sweep: titles, empty states, toasts) executed
+Last activity: 2026-07-10 -- Phase 47 Plan 04 (Playwright toolchain + parked spec runs) executed
 
 ## Phase 45 — Email Threads + Forwarding Seam — Plan 04 History
 
@@ -2364,6 +2364,9 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 
 ## Decisions Log
 
+- 2026-07-10 (47-04): T-47-SC supply-chain checkpoint for @playwright/test pre-approved by orchestrator under standing autonomous mandate; independently re-verified (microsoft/playwright npm org, 1.61.1 current stable, no typosquat) before install; pinned exact (no caret) in apps/web devDependencies.
+- 2026-07-10 (47-04): Extended the pre-existing Phase-20 apps/web/playwright.config.ts (baseURL + webServer + forbidOnly/retries) rather than replacing it, preserving the SPIKE-era chromium/firefox project definitions and their CSP/opaque-origin documentation.
+- 2026-07-10 (47-04): VRFY-01 left Pending, NOT marked Complete — first real run of the parked specs found 10/12 assertions pass on chromium+firefox, but code-island-isolation.spec.ts's "cannot read cookies / localStorage" assertion times out on BOTH engines identically. Confirmed via throwaway diagnostic spec (uncommitted, deleted): the opaque-origin sandbox throws SecurityError synchronously on document.cookie read (HTML spec-compliant, stronger isolation than the spec's probe assumed), and the probe has no try/catch around that specific statement, so the harness's own outer catch swallows it before data-cookie/data-ls get set. Not a config or import-resolution issue; not fixable without editing the protected spec file (git diff on it must stay empty per T-47-08). Recommended a 2-line fast-follow fix (wrap the cookie read in its own try/catch, expect "SecurityError") in a future micro-plan — full root cause in 47-04-SUMMARY.md.
 - 2026-07-10 (47-01): Brand mark geometry: two rotated high-radius rounded-rect "lobes" (brain reading) plus one small bridging circle "node" (node-cluster reading) — satisfies D-47-02's node/brain hybrid without sharp graph lines, an infra-diagram look, or a hand-drawn doodle (ban #11); zero raw color literals — all shapes fill with currentColor, the one D-47-02-allowed secondary accent expressed as a Tailwind opacity-55 utility
 - 2026-07-10 (47-01): tone="mono" on BrandMark drops the secondary lobe's opacity split (flat single currentColor) so the mark stays legible at small/favicon sizes instead of a muddy semi-transparent overlap
 - 2026-07-10 (47-02): confirm-deny-controls.tsx's toast.info("Field value cleared.", {Undo, 3000ms}) left unrewritten — flagged by the plan as governed by an existing Copywriting Contract (D-10/D-18-era decision); rewriting it risked contradicting a locked prior decision for no brand-register benefit since the copy was already plain
@@ -2679,6 +2682,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 44 P08 | ~95min | 3 tasks | 8 files — adversarial acceptance gate (26+2+16 tests, all green) + sweep inventory + 4 xfail regressions locking a discovered chat-SSE gap; TENA-03 complete |
 | Phase 47 P01 | 25 min | 3 tasks | 4 files |
 | Phase 47 P02 | ~20 min | 3 tasks | 13 files |
+| Phase 47 P04 | ~25 min | 3 tasks | 4 files — @playwright/test+firefox installed, 10/12 e2e assertions pass (1 pre-existing spec-probe finding documented, not fixed); VRFY-01 left Pending |
 
 ## Operator Next Steps
 

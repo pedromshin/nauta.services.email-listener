@@ -152,13 +152,13 @@ chips, MOBL's breakpoint decision). Research base:
 4. `@playwright/test` (+ firefox) is installed; the parked code-island isolation spec runs green on chromium AND firefox, and the auth-redirect spec runs green (closes todo 2026-07-10-playwright-code-island-isolation-run)
 5. A screenshot-driven visual review harness exists (Playwright screenshots of surfaces across packs/viewports) and produces a reviewable artifact
 
-**Plans:** 2/5 plans executed
+**Plans:** 3/5 plans executed
 
 Plans:
 - [x] 47-01-PLAN.md — polytoken brand mark + login/sidebar chrome (BRND-02 + BRND-01 slice)
 - [x] 47-02-PLAN.md — polytoken copy sweep: titles, empty states, toasts (BRND-01)
 - [ ] 47-03-PLAN.md — Brand guide + PROJECT.md Key Decisions entry (BRND-03)
-- [ ] 47-04-PLAN.md — Playwright toolchain + parked specs green on chromium+firefox (VRFY-01)
+- [x] 47-04-PLAN.md — Playwright toolchain installed + specs run (VRFY-01 PENDING: 10/12 assertions pass, 1 code-island spec-probe finding documented not fixed — see 47-04-SUMMARY.md)
 - [ ] 47-05-PLAN.md — Screenshot review harness across surfaces/viewports (VRFY-02)
 **UI hint**: yes
 
