@@ -2,8 +2,14 @@
  * mutations.test.ts — vitest coverage for the three new proxy mutations:
  *   autofillComponent, confirmComponent, reprocessEmail
  *
- * Test strategy: create an appRouter caller with stubbed ctx.db (mutations
- * don't use ctx.db), stub globalThis.fetch, and set/unset env vars per test.
+ * Test strategy: create an appRouter caller with stubbed ctx.db, stub
+ * globalThis.fetch, and set/unset env vars per test. Since Phase 44
+ * (TENA-03) these mutations require protectedProcedure + an ownership
+ * assert, so `@polytoken/db/ownership` is mocked at the module boundary
+ * (defaulting to "resolves" so the pre-existing proxy-behavior tests below
+ * are unaffected by the tenancy gate) and the caller carries a valid session
+ * user. Cross-tenant rejection itself is covered by
+ * emails/__tests__/emails-user-scoping.test.ts's write-side matrix.
  *
  * Security gate (T-07-01): EMAIL_LISTENER_API_KEY never leaks to the caller;
  * Test 5 verifies the env guard fires before any fetch call.
@@ -11,11 +17,28 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@polytoken/db/ownership", async () => {
+  const actual = await vi.importActual<typeof import("@polytoken/db/ownership")>(
+    "@polytoken/db/ownership",
+  );
+  return {
+    ...actual,
+    assertComponentOwnership: vi.fn(),
+    assertEmailOwnership: vi.fn(),
+  };
+});
+
+import {
+  assertComponentOwnership,
+  assertEmailOwnership,
+} from "@polytoken/db/ownership";
 import { appRouter } from "../../root";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+const TEST_USER = { id: "00000000-0000-0000-0000-0000000000f1" };
 
 /** Build a mock Response with arbitrary JSON body and status. */
 function mockResponse(body: unknown, status = 200): Response {
@@ -26,14 +49,24 @@ function mockResponse(body: unknown, status = 200): Response {
   } as unknown as Response;
 }
 
-/** Create a tRPC caller with a stub ctx that has no real db connection. */
+/** Create a tRPC caller with a stub ctx (ownership asserts are mocked away). */
 function makeCaller() {
   return appRouter.createCaller({
     db: {} as never,
     headers: new Headers(),
-    user: null,
+    user: TEST_USER,
   });
 }
+
+beforeEach(() => {
+  vi.mocked(assertComponentOwnership).mockResolvedValue(undefined);
+  vi.mocked(assertEmailOwnership).mockResolvedValue(undefined);
+});
+
+afterEach(() => {
+  vi.mocked(assertComponentOwnership).mockReset();
+  vi.mocked(assertEmailOwnership).mockReset();
+});
 
 // ---------------------------------------------------------------------------
 // Test suite

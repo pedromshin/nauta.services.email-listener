@@ -15,11 +15,26 @@
  *   setRole / setEntityType / setFieldRelationship (PATCH /role|/entity-type|
  *   /field-relationship), autofillFields (POST /autofill-fields), denyField
  *   (POST /deny). confirmField reuses the existing confirmComponent proxy.
+ *
+ * Tenancy (Phase 44, TENA-03): every mutation requires a session
+ * (protectedProcedure) and asserts ownership of every id it touches via
+ * `assertComponentOwnership` / `assertEmailOwnership`
+ * (@polytoken/db/ownership) BEFORE issuing the proxy fetch — mapped to
+ * TRPCError NOT_FOUND through the shared `assertOwnedOrNotFound` wrapper
+ * (fail-closed, no existence oracle). Multi-id operations (merge, nest,
+ * setFieldRelationship) assert EVERY referenced id so a caller cannot splice
+ * a component they do not own into one they do (T-44-05-03).
  */
 
 import { z } from "zod";
 
-import { publicProcedure } from "../../trpc";
+import {
+  assertComponentOwnership,
+  assertEmailOwnership,
+} from "@polytoken/db/ownership";
+
+import { protectedProcedure } from "../../trpc";
+import { assertOwnedOrNotFound } from "../_ownership";
 import { getListenerConfig, parseErrorDetail } from "../_listener-config";
 
 // ---------------------------------------------------------------------------
@@ -39,9 +54,13 @@ export const componentMutationProcedures = {
    * accept — flip a pending region to candidate status.
    * POST {url}/v1/components/{id}/accept  body: {}
    */
-  accept: publicProcedure
+  accept: protectedProcedure
     .input(z.object({ componentId: z.string().uuid() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertComponentOwnership(ctx.db, input.componentId, ctx.user.id),
+      );
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(
         `${url}/v1/components/${input.componentId}/accept`,
@@ -64,9 +83,13 @@ export const componentMutationProcedures = {
    * reject — flip a region to rejected status.
    * POST {url}/v1/components/{id}/reject  body: {}
    */
-  reject: publicProcedure
+  reject: protectedProcedure
     .input(z.object({ componentId: z.string().uuid() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertComponentOwnership(ctx.db, input.componentId, ctx.user.id),
+      );
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(
         `${url}/v1/components/${input.componentId}/reject`,
@@ -89,7 +112,7 @@ export const componentMutationProcedures = {
    * redraw — supersede an existing region with a newly drawn polygon.
    * POST {url}/v1/components/{id}/redraw  body: {polygon, page_index}
    */
-  redraw: publicProcedure
+  redraw: protectedProcedure
     .input(
       z.object({
         componentId: z.string().uuid(),
@@ -97,7 +120,11 @@ export const componentMutationProcedures = {
         pageIndex: z.number().int().min(0),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertComponentOwnership(ctx.db, input.componentId, ctx.user.id),
+      );
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(
         `${url}/v1/components/${input.componentId}/redraw`,
@@ -123,7 +150,7 @@ export const componentMutationProcedures = {
    * split — supersede a region with ≥2 sub-regions drawn over it.
    * POST {url}/v1/components/{id}/split  body: {regions: [{polygon, page_index}]}
    */
-  split: publicProcedure
+  split: protectedProcedure
     .input(
       z.object({
         componentId: z.string().uuid(),
@@ -137,7 +164,11 @@ export const componentMutationProcedures = {
           .min(2),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertComponentOwnership(ctx.db, input.componentId, ctx.user.id),
+      );
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(
         `${url}/v1/components/${input.componentId}/split`,
@@ -164,8 +195,12 @@ export const componentMutationProcedures = {
   /**
    * merge — combine ≥2 regions into one new candidate.
    * POST {url}/v1/components/merge  body: {component_ids, polygon?, page_index?}
+   *
+   * Multi-id op (T-44-05-03): ownership is asserted for EVERY componentId in
+   * the request — a caller cannot splice a component they do not own into a
+   * merge with one they do.
    */
-  merge: publicProcedure
+  merge: protectedProcedure
     .input(
       z.object({
         componentIds: z.array(z.string().uuid()).min(2),
@@ -173,7 +208,15 @@ export const componentMutationProcedures = {
         pageIndex: z.number().int().min(0).optional(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await Promise.all(
+        input.componentIds.map((componentId) =>
+          assertOwnedOrNotFound(() =>
+            assertComponentOwnership(ctx.db, componentId, ctx.user.id),
+          ),
+        ),
+      );
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(`${url}/v1/components/merge`, {
         method: "POST",
@@ -198,15 +241,32 @@ export const componentMutationProcedures = {
   /**
    * nest — set or clear the parent_component_id of a region.
    * POST {url}/v1/components/{id}/nest  body: {parent_component_id}
+   *
+   * Multi-id op (T-44-05-03): when parentComponentId is provided (non-null),
+   * its ownership is asserted too — a caller cannot nest their own component
+   * under one owned by someone else.
    */
-  nest: publicProcedure
+  nest: protectedProcedure
     .input(
       z.object({
         componentId: z.string().uuid(),
         parentComponentId: z.string().uuid().nullable(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertComponentOwnership(ctx.db, input.componentId, ctx.user.id),
+      );
+      if (input.parentComponentId !== null) {
+        await assertOwnedOrNotFound(() =>
+          assertComponentOwnership(
+            ctx.db,
+            input.parentComponentId as string,
+            ctx.user.id,
+          ),
+        );
+      }
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(
         `${url}/v1/components/${input.componentId}/nest`,
@@ -231,7 +291,7 @@ export const componentMutationProcedures = {
    * createRegion — draw a new region on a page with zero prior proposals.
    * POST {url}/v1/components/{pageComponentId}/regions  body: {polygon, page_index}
    */
-  createRegion: publicProcedure
+  createRegion: protectedProcedure
     .input(
       z.object({
         pageComponentId: z.string().uuid(),
@@ -239,7 +299,11 @@ export const componentMutationProcedures = {
         pageIndex: z.number().int().min(0),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertComponentOwnership(ctx.db, input.pageComponentId, ctx.user.id),
+      );
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(
         `${url}/v1/components/${input.pageComponentId}/regions`,
@@ -269,9 +333,13 @@ export const componentMutationProcedures = {
    * backend gathers every page and creates one candidate region whose text
    * spans the whole document. Key read server-side only; UUID validated.
    */
-  classifyDocument: publicProcedure
+  classifyDocument: protectedProcedure
     .input(z.object({ pageComponentId: z.string().uuid() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertComponentOwnership(ctx.db, input.pageComponentId, ctx.user.id),
+      );
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(
         `${url}/v1/components/${input.pageComponentId}/classify-document`,
@@ -301,14 +369,18 @@ export const componentMutationProcedures = {
    * T-07-02: componentId validated as UUID before URL interpolation.
    * T-07-01: key read server-side only via getListenerConfig().
    */
-  autofillComponent: publicProcedure
+  autofillComponent: protectedProcedure
     .input(
       z.object({
         componentId: z.string().uuid(),
         entityTypeSlug: z.string().min(1),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertComponentOwnership(ctx.db, input.componentId, ctx.user.id),
+      );
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(
         `${url}/v1/components/${input.componentId}/autofill`,
@@ -334,14 +406,18 @@ export const componentMutationProcedures = {
    * T-07-02: componentId validated as UUID before URL interpolation.
    * T-07-03: correctedFields is opaque Record<string,unknown> — not eval'd or rendered here.
    */
-  confirmComponent: publicProcedure
+  confirmComponent: protectedProcedure
     .input(
       z.object({
         componentId: z.string().uuid(),
         correctedFields: z.record(z.unknown()).nullable(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertComponentOwnership(ctx.db, input.componentId, ctx.user.id),
+      );
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(
         `${url}/v1/components/${input.componentId}/confirm`,
@@ -367,9 +443,13 @@ export const componentMutationProcedures = {
    * T-07-02: emailId validated as UUID before URL interpolation.
    * T-07-05: no per-user rate limiting (accepted risk D-18).
    */
-  reprocessEmail: publicProcedure
+  reprocessEmail: protectedProcedure
     .input(z.object({ emailId: z.string().uuid() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertEmailOwnership(ctx.db, input.emailId, ctx.user.id),
+      );
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(
         `${url}/v1/emails/${input.emailId}/reprocess`,
@@ -403,14 +483,18 @@ export const componentMutationProcedures = {
    *
    * role=null clears the component back to unclassified/standalone (D-01).
    */
-  setRole: publicProcedure
+  setRole: protectedProcedure
     .input(
       z.object({
         componentId: z.string().uuid(),
         role: z.enum(["entity", "field", "unrelated"]).nullable(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertComponentOwnership(ctx.db, input.componentId, ctx.user.id),
+      );
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(`${url}/v1/components/${input.componentId}/role`, {
         method: "PATCH",
@@ -432,14 +516,18 @@ export const componentMutationProcedures = {
    *
    * entityTypeId=null clears the entity-type link.
    */
-  setEntityType: publicProcedure
+  setEntityType: protectedProcedure
     .input(
       z.object({
         componentId: z.string().uuid(),
         entityTypeId: z.string().uuid().nullable(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertComponentOwnership(ctx.db, input.componentId, ctx.user.id),
+      );
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(
         `${url}/v1/components/${input.componentId}/entity-type`,
@@ -465,8 +553,12 @@ export const componentMutationProcedures = {
    *   body: {parent_component_id, entity_type_field_id}
    *
    * Both null clears the field's parent + property link.
+   *
+   * Multi-id op (T-44-05-03): when parentComponentId is provided (non-null),
+   * its ownership is asserted too — a caller cannot link their own field to
+   * an entity component owned by someone else.
    */
-  setFieldRelationship: publicProcedure
+  setFieldRelationship: protectedProcedure
     .input(
       z.object({
         componentId: z.string().uuid(),
@@ -474,7 +566,20 @@ export const componentMutationProcedures = {
         entityTypeFieldId: z.string().uuid().nullable(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertComponentOwnership(ctx.db, input.componentId, ctx.user.id),
+      );
+      if (input.parentComponentId !== null) {
+        await assertOwnedOrNotFound(() =>
+          assertComponentOwnership(
+            ctx.db,
+            input.parentComponentId as string,
+            ctx.user.id,
+          ),
+        );
+      }
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(
         `${url}/v1/components/${input.componentId}/field-relationship`,
@@ -506,9 +611,13 @@ export const componentMutationProcedures = {
    * Results land as new candidate field rows server-side; the caller refetches
    * emails.detail to pick them up (no optimistic update).
    */
-  autofillFields: publicProcedure
+  autofillFields: protectedProcedure
     .input(z.object({ entityComponentId: z.string().uuid() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertComponentOwnership(ctx.db, input.entityComponentId, ctx.user.id),
+      );
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(
         `${url}/v1/components/${input.entityComponentId}/autofill-fields`,
@@ -534,9 +643,13 @@ export const componentMutationProcedures = {
    * Auto-detected box → soft-reject; user-drawn box → keep geometry, clear the
    * wrong candidate value/property. The backend decides based on box origin.
    */
-  denyField: publicProcedure
+  denyField: protectedProcedure
     .input(z.object({ componentId: z.string().uuid() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertComponentOwnership(ctx.db, input.componentId, ctx.user.id),
+      );
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(`${url}/v1/components/${input.componentId}/deny`, {
         method: "POST",
@@ -560,14 +673,18 @@ export const componentMutationProcedures = {
    * (confirm-deny-controls) reads symmetrically with denyField. correctedFields
    * is an opaque Record passed straight through (not rendered/eval'd here).
    */
-  confirmField: publicProcedure
+  confirmField: protectedProcedure
     .input(
       z.object({
         componentId: z.string().uuid(),
         correctedFields: z.record(z.unknown()).nullable().optional(),
       }),
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertComponentOwnership(ctx.db, input.componentId, ctx.user.id),
+      );
+
       const { url, apiKey } = getListenerConfig();
       const res = await fetch(
         `${url}/v1/components/${input.componentId}/confirm`,

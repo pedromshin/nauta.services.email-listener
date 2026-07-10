@@ -50,6 +50,7 @@ vi.mock("@polytoken/db/ownership", async () => {
 });
 
 import {
+  assertComponentOwnership,
   assertEmailOwnership,
   OwnershipError,
   userOwnedImporterIds,
@@ -321,5 +322,99 @@ describe("resolveListScope", () => {
     if (result.ok) {
       expect(result.importerIds).not.toContain(IMPORTER_B);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Write-side matrix — component mutations cross-tenant rejection (T-44-05-03)
+//
+// Task 2: at least one representative componentId-keyed mutation (accept) and
+// one representative emailId-keyed mutation (reprocessEmail) must reject a
+// cross-tenant write; merge (multi-id) must assert ownership for EVERY id.
+// ---------------------------------------------------------------------------
+
+const COMPONENT_ID = "50000000-0000-0000-0000-000000000c01";
+const COMPONENT_ID_2 = "50000000-0000-0000-0000-000000000c02";
+const OTHER_EMAIL_ID = "40000000-0000-0000-0000-000000000b02";
+
+describe("componentMutationProcedures — cross-tenant write rejection (T-44-05-03)", () => {
+  afterEach(() => {
+    vi.mocked(assertComponentOwnership).mockReset();
+    vi.mocked(assertEmailOwnership).mockReset();
+    vi.unstubAllGlobals();
+  });
+
+  it("Test 18: accept (componentId-keyed) rejects a component owned by another user, never reaching fetch", async () => {
+    vi.mocked(assertComponentOwnership).mockRejectedValueOnce(
+      new OwnershipError("component", COMPONENT_ID),
+    );
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const caller = makeCaller(USER_A);
+
+    await expect(
+      caller.emails.accept({ componentId: COMPONENT_ID }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(assertComponentOwnership).toHaveBeenCalledWith(
+      expect.anything(),
+      COMPONENT_ID,
+      USER_A.id,
+    );
+  });
+
+  it("Test 19: reprocessEmail (emailId-keyed) rejects an email owned by another user, never reaching fetch", async () => {
+    vi.mocked(assertEmailOwnership).mockRejectedValueOnce(
+      new OwnershipError("email", OTHER_EMAIL_ID),
+    );
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const caller = makeCaller(USER_A);
+
+    await expect(
+      caller.emails.reprocessEmail({ emailId: OTHER_EMAIL_ID }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("Test 20: merge (multi-id) rejects when ANY referenced componentId is owned by another user", async () => {
+    vi.mocked(assertComponentOwnership)
+      .mockResolvedValueOnce(undefined) // COMPONENT_ID: owned
+      .mockRejectedValueOnce(new OwnershipError("component", COMPONENT_ID_2)); // COMPONENT_ID_2: foreign
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const caller = makeCaller(USER_A);
+
+    await expect(
+      caller.emails.merge({ componentIds: [COMPONENT_ID, COMPONENT_ID_2] }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(assertComponentOwnership).toHaveBeenCalledWith(
+      expect.anything(),
+      COMPONENT_ID,
+      USER_A.id,
+    );
+    expect(assertComponentOwnership).toHaveBeenCalledWith(
+      expect.anything(),
+      COMPONENT_ID_2,
+      USER_A.id,
+    );
+  });
+
+  it("Test 21: nest asserts ownership of parentComponentId too when provided (splice-prevention)", async () => {
+    vi.mocked(assertComponentOwnership)
+      .mockResolvedValueOnce(undefined) // target componentId: owned
+      .mockRejectedValueOnce(new OwnershipError("component", COMPONENT_ID_2)); // parentComponentId: foreign
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const caller = makeCaller(USER_A);
+
+    await expect(
+      caller.emails.nest({
+        componentId: COMPONENT_ID,
+        parentComponentId: COMPONENT_ID_2,
+      }),
+    ).rejects.toMatchObject({ code: "NOT_FOUND" });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

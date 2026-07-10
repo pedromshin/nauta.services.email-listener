@@ -5,8 +5,13 @@
  *   confirmField
  *
  * Test strategy mirrors mutations.test.ts: build an appRouter caller with a
- * stubbed ctx.db (these mutations don't use ctx.db), stub globalThis.fetch, and
- * set/unset env vars per test.
+ * stubbed ctx.db, stub globalThis.fetch, and set/unset env vars per test.
+ * Since Phase 44 (TENA-03) these mutations require protectedProcedure + an
+ * ownership assert, so `@polytoken/db/ownership` is mocked at the module
+ * boundary (defaulting to "resolves" so these pre-existing proxy-behavior
+ * tests are unaffected by the tenancy gate) and the caller carries a valid
+ * session user. Cross-tenant rejection itself is covered by
+ * emails/__tests__/emails-user-scoping.test.ts's write-side matrix.
  *
  * Security gates verified:
  *   T-09-30: env guard fires before any fetch when EMAIL_LISTENER_API_KEY unset.
@@ -15,11 +20,28 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("@polytoken/db/ownership", async () => {
+  const actual = await vi.importActual<typeof import("@polytoken/db/ownership")>(
+    "@polytoken/db/ownership",
+  );
+  return {
+    ...actual,
+    assertComponentOwnership: vi.fn(),
+    assertEmailOwnership: vi.fn(),
+  };
+});
+
+import {
+  assertComponentOwnership,
+  assertEmailOwnership,
+} from "@polytoken/db/ownership";
 import { appRouter } from "../../root";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+const TEST_USER = { id: "00000000-0000-0000-0000-0000000000f2" };
 
 function mockResponse(body: unknown, status = 200): Response {
   return {
@@ -33,9 +55,19 @@ function makeCaller() {
   return appRouter.createCaller({
     db: {} as never,
     headers: new Headers(),
-    user: null,
+    user: TEST_USER,
   });
 }
+
+beforeEach(() => {
+  vi.mocked(assertComponentOwnership).mockResolvedValue(undefined);
+  vi.mocked(assertEmailOwnership).mockResolvedValue(undefined);
+});
+
+afterEach(() => {
+  vi.mocked(assertComponentOwnership).mockReset();
+  vi.mocked(assertEmailOwnership).mockReset();
+});
 
 const URL = "http://listener.test";
 const API_KEY = "test-api-key";
