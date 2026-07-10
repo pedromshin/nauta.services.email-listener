@@ -14,14 +14,14 @@ Task 3 adds a real/representative-fixture integration test at the bottom.
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
-_BASE = datetime(2026, 1, 1, tzinfo=timezone.utc)
+_BASE = datetime(2026, 1, 1, tzinfo=UTC)
 _WINDOW = timedelta(days=14)
 
 
 def _email(
-    id: str,
+    email_id: str,
     *,
     message_id: str | None = None,
     in_reply_to: str | None = None,
@@ -34,7 +34,7 @@ def _email(
     from app.domain.services.thread_grouping import ThreadableEmail
 
     return ThreadableEmail(
-        id=id,
+        id=email_id,
         message_id=message_id,
         in_reply_to=in_reply_to,
         references_ids=references_ids,
