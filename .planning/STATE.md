@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: polytoken.ai Foundation — Rename, Auth & Tenancy
 status: executing
-last_updated: "2026-07-10T03:03:10.000Z"
-last_activity: 2026-07-10 -- Phase 44 Plan 04 (RLS defense-in-depth policies) executed
+last_updated: "2026-07-10T03:25:05.328Z"
+last_activity: 2026-07-10 -- Phase 44 Plan 05 (emails router ownership sweep) executed
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 18
-  completed_plans: 13
-  percent: 42
+  completed_plans: 14
+  percent: 40
 ---
 
 # State
@@ -25,9 +25,31 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 ## Current Position
 
 Phase: 44 (Tenancy — user_id Scoping + Enforced Isolation) — EXECUTING
-Plan: 5 of 8
+Plan: 6 of 8
 Status: Executing Phase 44
-Last activity: 2026-07-10 -- Phase 44 Plan 04 (RLS defense-in-depth policies) executed
+Last activity: 2026-07-10 -- Phase 44 Plan 05 (emails router ownership sweep) executed
+
+## Phase 44 — Tenancy — user_id Scoping + Enforced Isolation — Plan 05 History
+
+- **44-05 EXECUTED** (`2cf6a35` feat, `8ae41cd` feat): emails tRPC router ownership
+  sweep — the largest cluster (reads + 17 component mutations). `list`/`byId`/`detail`/
+  `entitySummary` and all 17 `componentMutationProcedures` moved from `publicProcedure`
+  to `protectedProcedure`. `emails.list` derives scope from `userOwnedImporterIds` via a
+  new pure `resolveListScope` helper (client `importerId` only honored when owned, else
+  empty page); `byId`/`detail` assert via `assertEmailOwnership` -> `TRPCError NOT_FOUND`;
+  `entitySummary` scopes via `EmailComponents.importerId` directly (batch-friendly —
+  foreign ids yield an empty rollup entry, not a failed batch). Every mutation asserts
+  ownership before its FastAPI proxy fetch; multi-id ops (`merge`, `nest`,
+  `setFieldRelationship`) assert EVERY referenced id (T-44-05-03 splice guard). New shared
+  `packages/api-client/src/router/_ownership.ts` (`assertOwnedOrNotFound`) mirrors the
+  `_listener-config.ts` idiom and is reusable by Plans 06/07. 21 new tests in
+  `emails-user-scoping.test.ts` (session gate, cross-tenant NOT_FOUND reads+writes,
+  scoping short-circuits, `resolveListScope` matrix); 2 pre-existing test files fixed
+  (Rule 1 — `mutations.test.ts` named in the plan, `component-relationship-mutations.test.ts`
+  found broken by the same change and fixed identically). Full suite green (23 files/237
+  tests); `npx tsc --noEmit` unchanged at exactly the 2 known chat `user_id` errors scoped
+  to Plan 44-07. TENA-03 intentionally left Pending (completes at Plan 08's adversarial
+  gate). Full detail: `44-05-SUMMARY.md`.
 
 ## Phase 44 — Tenancy — user_id Scoping + Enforced Isolation — Plan 04 History
 
@@ -2034,6 +2056,8 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 
 ## Decisions Log
 
+- 2026-07-10 (44-05): entitySummary scopes via a component-level `inArray(EmailComponents.importerId, owned)` filter, not per-id `assertEmailOwnership` — it's a batch endpoint (up to 100 emailIds) and email_components already carries importer_id directly; a foreign id yields an empty rollup entry rather than failing the whole batch
+- 2026-07-10 (44-05): Router-boundary tenancy tests mock `@polytoken/db/ownership` (vi.mock + vi.importActual to preserve the real OwnershipError class) instead of a second SQL-interpreting fake Drizzle chain — ownership.ts's own correctness is already proven by packages/db/src/ownership.test.ts (44-02); these tests isolate to the WIRING Plan 05 actually changed
 - 2026-07-10 (44-02): Central ownership helper (`@polytoken/db/ownership` — userOwnedImporterIds + 4 assert* functions + OwnershipError) built TDD via a from-scratch fake-Drizzle-chain test fixture, since no ctx.db-mocking precedent existed in this repo (every prior router test exercises DB-free pure helpers only) — ownership.ts IS the query itself, so that convention couldn't cover it
 - 2026-06-10: ECS Fargate (user-confirmed) over App Runner; generic webhook over SES-shaped; full 4-layer skeleton; shared ALB with staging on :8080
 - 2026-06-12 (04-07): D-14 structural: region in user turn only, system prompt never contains document content
@@ -2331,6 +2355,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 44 P01 | 45min | 3 tasks | 14 files |
 | Phase 44 P44-02 | 30min | 2 tasks | 5 files |
 | Phase 44 P03 | 50min | 3 tasks | 16 files |
+| Phase 44 P05 | 35 min | 2 tasks | 8 files |
 
 ## Operator Next Steps
 
