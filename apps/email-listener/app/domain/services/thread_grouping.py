@@ -23,6 +23,7 @@ exhaustively unit-testable via fixtures, independently of persistence.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -32,6 +33,13 @@ from typing import Final
 # normalized subject match must be to join an existing thread. Conservative
 # per 45-CONTEXT.md's "false-split beats false-merge" — Claude's discretion.
 _DEFAULT_TIER2_WINDOW: Final[timedelta] = timedelta(days=14)
+
+# Repeated leading Re:/Fwd:/Fw:/Enc:/Res: tokens (any order, case-insensitive,
+# whitespace-tolerant). "fwd?" matches both "Fw" and "Fwd".
+_RE_SUBJECT_PREFIX: re.Pattern[str] = re.compile(r"^(?:\s*(?:re|fwd?|enc|res)\s*:\s*)+", re.IGNORECASE)
+
+# "Message-ID: <...>" header line as embedded by Gmail inside a forwarded body block.
+_RE_EMBEDDED_MESSAGE_ID: re.Pattern[str] = re.compile(r"message-id:\s*(<[^>\s]+>)", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -46,6 +54,35 @@ class ThreadableEmail:
     received_at: datetime
     body_text: str | None
     body_html: str | None
+
+
+def normalize_subject(subject: str | None) -> str:
+    """Strip repeated leading Re:/Fwd:/Fw:/Enc:/Res: tokens, collapse whitespace, lowercase.
+
+    Empty/whitespace-only/None subject normalizes to "" — an empty normalized
+    subject never participates in Tier 2 matching (false-split beats false-merge).
+    """
+    if not subject:
+        return ""
+    stripped = _RE_SUBJECT_PREFIX.sub("", subject)
+    return " ".join(stripped.split()).lower()
+
+
+def extract_embedded_message_ids(body_text: str | None, body_html: str | None) -> tuple[str, ...]:
+    """Return de-duplicated Message-IDs embedded in a forwarded body (Gmail forward block).
+
+    Scans both the plain-text and HTML bodies for "Message-ID: <...>" header
+    lines that Gmail embeds when forwarding a message. Returns () when none found.
+    """
+    seen: list[str] = []
+    for body in (body_text, body_html):
+        if not body:
+            continue
+        for match in _RE_EMBEDDED_MESSAGE_ID.finditer(body):
+            message_id = match.group(1)
+            if message_id not in seen:
+                seen.append(message_id)
+    return tuple(seen)
 
 
 class _UnionFind:
@@ -69,12 +106,13 @@ class _UnionFind:
 
 
 def _link_headers(emails: Sequence[ThreadableEmail], uf: _UnionFind) -> None:
-    """Tier 0: union emails bidirectionally linked via Message-ID <-> In-Reply-To/References."""
+    """Tier 0 + Tier 1: union emails linked via header Message-IDs or an embedded original id."""
     by_message_id: dict[str, str] = {email.message_id: email.id for email in emails if email.message_id}
     for email in emails:
         linked_ids = set(email.references_ids)
         if email.in_reply_to:
             linked_ids.add(email.in_reply_to)
+        linked_ids.update(extract_embedded_message_ids(email.body_text, email.body_html))
         for linked_message_id in linked_ids:
             target_id = by_message_id.get(linked_message_id)
             if target_id is not None:
@@ -88,6 +126,40 @@ def _components(emails: Sequence[ThreadableEmail], uf: _UnionFind) -> dict[str, 
     return components
 
 
+def _group_matches_subject(members: list[ThreadableEmail], normalized_subject: str) -> bool:
+    return any(normalize_subject(member.subject) == normalized_subject for member in members)
+
+
+def _apply_subject_window_fallback(emails: Sequence[ThreadableEmail], uf: _UnionFind, window: timedelta) -> None:
+    """Tier 2: conservative subject+window fallback for emails still alone in their component.
+
+    Skips (stays singleton) when the normalized subject is empty, when no other
+    component's normalized subject matches within `window`, or when >= 2 distinct
+    components match (ambiguous) — false-split beats false-merge.
+    """
+    for email in emails:
+        components = _components(emails, uf)
+        root = uf.find(email.id)
+        if len(components[root]) != 1:
+            continue  # already linked via Tier 0/1 — Tier 2 only applies to singletons
+
+        normalized = normalize_subject(email.subject)
+        if not normalized:
+            continue  # empty/generic subject never matches
+
+        matching_roots = {
+            other_root
+            for other_root, members in components.items()
+            if other_root != root
+            and _group_matches_subject(members, normalized)
+            and abs(email.received_at - max(m.received_at for m in members)) <= window
+        }
+
+        if len(matching_roots) == 1:
+            (target_root,) = matching_roots
+            uf.union(email.id, components[target_root][0].id)
+
+
 def group_emails(
     emails: Sequence[ThreadableEmail], *, window: timedelta = _DEFAULT_TIER2_WINDOW
 ) -> list[tuple[str, ...]]:
@@ -97,6 +169,7 @@ def group_emails(
 
     uf = _UnionFind([email.id for email in emails])
     _link_headers(emails, uf)
+    _apply_subject_window_fallback(emails, uf, window)
 
     by_id = {email.id: email for email in emails}
     groups = [
