@@ -2,6 +2,7 @@ import { chatRouter } from "./router/chat";
 import { emailsRouter } from "./router/emails";
 import { entitiesRouter } from "./router/entities";
 import { entityTypesRouter } from "./router/entity-types";
+import { forwardingRouter } from "./router/forwarding";
 import { genuiRouter } from "./router/genui";
 import { knowledgeRouter } from "./router/knowledge";
 import { createTRPCRouter } from "./trpc";
@@ -13,6 +14,7 @@ export const appRouter = createTRPCRouter({
   knowledge: knowledgeRouter,
   genui: genuiRouter,
   chat: chatRouter,
+  forwarding: forwardingRouter,
 });
 
 // export type definition of API
