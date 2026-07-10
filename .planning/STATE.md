@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: polytoken.ai Foundation — Rename, Auth & Tenancy
 status: executing
-last_updated: "2026-07-10T06:51:05.000Z"
-last_activity: 2026-07-10 -- Phase 45 Plan 01 complete (threads + forwarding_addresses schema, migration 0035)
+last_updated: "2026-07-10T07:16:57.000Z"
+last_activity: 2026-07-10 -- Phase 45 Plan 02 complete (pure thread-grouping domain service, Union-Find + Tier1/2 fallback, real .eml fixtures)
 progress:
   total_phases: 5
   completed_phases: 3
   total_plans: 25
-  completed_plans: 19
-  percent: 76
+  completed_plans: 20
+  percent: 80
 ---
 
 # State
@@ -25,9 +25,36 @@ See: .planning/PROJECT.md (updated 2026-07-07)
 ## Current Position
 
 Phase: 45 (Email Threads + Forwarding Seam) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 Status: Executing Phase 45
-Last activity: 2026-07-10 -- Phase 45 Plan 01 complete (threads + forwarding_addresses schema, migration 0035)
+Last activity: 2026-07-10 -- Phase 45 Plan 02 complete (pure thread-grouping domain service, Union-Find + Tier1/2 fallback, real .eml fixtures)
+
+## Phase 45 — Email Threads + Forwarding Seam — Plan 02 History
+
+- **45-02 EXECUTED** (`b8c4cac` test, `9787d51` feat, `a8cb779` test, `1d8047f`
+  feat, `e70ab31` test): pure, dependency-free `thread_grouping.py` domain
+  service, built test-first (TDD gate: RED-before-GREEN confirmed both tasks).
+  `ThreadableEmail` frozen dataclass + hand-rolled `_UnionFind` (path
+  compression; `jwzthreading` rejected per 45-CONTEXT.md). Tier 0: unions
+  emails via `Message-ID <-> In-Reply-To`/`References` (THRD-01). Tier 1:
+  `extract_embedded_message_ids` scans forwarded bodies for an embedded
+  original `Message-ID`, folded into Tier 0's linking set — a Gmail-UI-forward
+  with headers stripped still joins its thread (THRD-02). Tier 2: conservative
+  `normalize_subject` + bounded 14-day window fallback for still-singleton
+  emails; empty subject, out-of-window, and ambiguous (>=2 matching
+  components) all correctly refuse to merge (false-split beats false-merge —
+  3 dedicated negative tests). Real/representative `.eml` fixtures
+  (`tests/fixtures/threads/`) drive an integration test through the actual
+  `parse_mime` service proving `reply_chain_headers.eml` threads correctly and
+  `gmail_forward_stripped.eml` does NOT fragment its thread. 20/20 tests
+  green; mypy/ruff/lint-imports clean; full suite unchanged (0 failed, 9
+  skipped). One issue (not a deviation): live-DB search for a real
+  Gmail-forwarded `.eml` was blocked by the execution sandbox's action
+  classifier — fell back to the plan's own documented Plan B (construct +
+  flag manual UAT), per `tests/fixtures/threads/README.md`. THRD-01/THRD-02
+  deliberately left `Pending` in REQUIREMENTS.md (span into Plan 45-03's
+  ingest wiring — same precedent as 45-01/44-02). Full detail:
+  `45-02-SUMMARY.md`.
 
 ## Phase 45 — Email Threads + Forwarding Seam — Plan 01 History
 
