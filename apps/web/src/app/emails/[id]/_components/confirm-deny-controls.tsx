@@ -58,7 +58,7 @@ export function ConfirmDenyControls({
       <button
         type="button"
         aria-label="Confirm field value"
-        className="h-5 w-5 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center text-xs font-bold"
+        className="h-5 w-5 rounded-full bg-success hover:bg-success/90 text-success-foreground flex items-center justify-center text-xs font-bold"
         onClick={(e) => {
           e.stopPropagation();
           onConfirm(componentId);

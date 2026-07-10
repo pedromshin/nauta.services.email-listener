@@ -52,7 +52,7 @@ function statusTone(status: string): StatusTone {
 }
 
 const TONE_DOT: Record<StatusTone, string> = {
-  confirmed: "bg-emerald-500",
+  confirmed: "bg-success",
   candidate: "bg-amber-500",
   other: "bg-muted-foreground/50",
 };
@@ -160,7 +160,7 @@ export function ExtractionSummaryPanel({
                   <StatusDot status={entity.extractionStatus} />
                 </header>
                 {entity.extractionStatus === "confirmed" ? (
-                  <p className="flex items-center gap-1.5 px-3 pt-2 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                  <p className="flex items-center gap-1.5 px-3 pt-2 text-xs font-medium text-success">
                     <Check className="h-3.5 w-3.5" aria-hidden />
                     In the entities gallery
                   </p>

@@ -59,7 +59,7 @@ interface LayersTreeRowProps {
  *
  * ENTITY: chevron + violet chip + label + page badge → click selects + arms
  * active-parent. FIELD (pl-8): amber chip + property + ":" + candidate value +
- * inline ✓/✗ (confirmed rows show bg-green-50, no controls). UNCLASSIFIED:
+ * inline ✓/✗ (confirmed rows show bg-success/10, no controls). UNCLASSIFIED:
  * dashed-square icon + muted label. Inline ✓/✗ here are TEXT-row buttons (the
  * canvas overlay gets the floating controls).
  */
@@ -128,7 +128,7 @@ export function LayersTreeRow({
         role="treeitem"
         aria-selected={isSelected}
         className={`flex items-center gap-2 py-2 pl-8 pr-3 hover:bg-muted cursor-pointer ${
-          isConfirmed ? "bg-green-50" : ""
+          isConfirmed ? "bg-success/10" : ""
         } ${selectedClass}`}
         style={{ height: 36 }}
         onClick={onSelect}
@@ -154,7 +154,7 @@ export function LayersTreeRow({
             <button
               type="button"
               aria-label="Confirm field value"
-              className="h-4 w-4 rounded-full bg-green-500 hover:bg-green-600 text-white flex items-center justify-center text-[10px] font-bold"
+              className="h-4 w-4 rounded-full bg-success hover:bg-success/90 text-success-foreground flex items-center justify-center text-[10px] font-bold"
               onClick={(e) => {
                 e.stopPropagation();
                 onConfirm?.();
