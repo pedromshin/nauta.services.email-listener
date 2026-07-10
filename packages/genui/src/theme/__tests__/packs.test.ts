@@ -18,7 +18,9 @@ import {
   DEFAULT_PACK_ID,
   getStylePack,
 } from "../packs";
-import { TOKEN_ALIASES } from "../tokens";
+import { TOKEN_ALIASES, TOKEN_ALIAS_TO_CSS_VAR } from "../tokens";
+import type { TokenAlias } from "../tokens";
+import { contrastRatio } from "./contrast";
 
 /** HSL channel-triplet pattern: "H S% L%" — no leading # or prose */
 const HSL_TRIPLET_RE = /^\d+(\.\d+)?\s+\d+(\.\d+)?%\s+\d+(\.\d+)?%$/;
@@ -153,6 +155,71 @@ describe("Non-color token aliases have non-empty string values", () => {
         const value = pack.tokens[alias] as string;
         expect(typeof value).toBe("string");
         expect(value.length).toBeGreaterThan(0);
+      }
+    });
+  }
+});
+
+// ===========================================================================
+// WCAG-AA contrast — semantic status pairs (48-01/D-48-02)
+//
+// Named array (not a one-off loop) so future plans (e.g. 48-02's tier-ladder
+// and graph node/edge pairs) can append to this SAME loop instead of standing
+// up a parallel contrast-gate mechanism.
+// ===========================================================================
+
+const SEMANTIC_STATUS_PAIRS: ReadonlyArray<{
+  readonly label: string;
+  readonly background: TokenAlias;
+  readonly foreground: TokenAlias;
+}> = [
+  {
+    label: "success",
+    background: "color.success",
+    foreground: "color.successForeground",
+  },
+];
+
+describe("WCAG-AA contrast — semantic status pairs (D-48-02)", () => {
+  for (const [packId, pack] of Object.entries(STYLE_PACKS)) {
+    for (const pair of SEMANTIC_STATUS_PAIRS) {
+      it(`pack "${packId}" ${pair.label} pair passes >= 4.5:1`, () => {
+        const backgroundValue = pack.tokens[pair.background] as string;
+        const foregroundValue = pack.tokens[pair.foreground] as string;
+        const ratio = contrastRatio(backgroundValue, foregroundValue);
+        expect(
+          ratio,
+          `pack "${packId}" ${pair.label} pair (background "${backgroundValue}" / foreground "${foregroundValue}") computed ratio ${ratio.toFixed(2)}:1 is below the 4.5:1 WCAG-AA floor`,
+        ).toBeGreaterThanOrEqual(4.5);
+      });
+    }
+  }
+});
+
+// ===========================================================================
+// Token-family registration — every alias resolves to a non-empty CSS var
+// (D-48-08 regression: catches "var exists but utility never registered")
+// ===========================================================================
+
+describe("Token-family registration — every alias resolves to a non-empty CSS var", () => {
+  for (const [packId, pack] of Object.entries(STYLE_PACKS)) {
+    it(`pack "${packId}" resolves every TOKEN_ALIAS via TOKEN_ALIAS_TO_CSS_VAR + resolvedVars`, () => {
+      for (const alias of TOKEN_ALIASES) {
+        const cssVar = TOKEN_ALIAS_TO_CSS_VAR[alias];
+        expect(
+          cssVar,
+          `TOKEN_ALIAS_TO_CSS_VAR is missing an entry for alias "${alias}"`,
+        ).toBeDefined();
+
+        const resolved = pack.resolvedVars[cssVar];
+        expect(
+          typeof resolved,
+          `pack "${packId}" resolvedVars["${cssVar}"] (alias "${alias}") must be a string — resolveVars() may be missing this alias`,
+        ).toBe("string");
+        expect(
+          (resolved as string).length,
+          `pack "${packId}" resolvedVars["${cssVar}"] (alias "${alias}") must not be empty`,
+        ).toBeGreaterThan(0);
       }
     });
   }
