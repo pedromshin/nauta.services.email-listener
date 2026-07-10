@@ -175,13 +175,13 @@ Plans:
 4. RLS policies active on user-owned tables; the enforcement-architecture decision (app-boundary primary, given the Drizzle superuser-connection precedent) recorded in PROJECT.md Key Decisions
 5. genui exact-match cache tables deliberately unscoped, documented
 
-**Plans:** 8 plans (4 waves)
+**Plans:** 1/8 plans executed
 
 Plans:
 
 **Wave 1**
 
-- [ ] 44-01-PLAN.md — Schema anchoring + expand→backfill→contract migrations + enforcement-architecture decision + genui-unscoped docs
+- [x] 44-01-PLAN.md — Schema anchoring + expand→backfill→contract migrations + enforcement-architecture decision + genui-unscoped docs
 
 **Wave 2** *(blocked on Wave 1 completion)*
 

@@ -157,6 +157,12 @@ None - no external service configuration required. (Local-dev auth.users seed is
 - Plans 02/03 (tRPC/FastAPI ownership sweep) can now reference `user_id` on all three tables; no consumer code in `apps/web` or `apps/api` currently constructs `Importers`/`ChatConversations`/`ChatCostLedger` inserts directly (grep-verified), so the new `NOT NULL` constraint does not break any existing call site — those plans will be the first to write `user_id` from `ctx.user`/`X-User-Id`.
 - Flag for whoever next runs `drizzle-kit generate --custom` on this repo: verify the new journal entry's `when` exceeds the current max (currently `1783968000000` after this plan) before running `migrate:local` — see Deviation 2.
 
+## Self-Check: PASSED
+
+- Created files verified on disk: `packages/db/src/schema/_auth.ts`, `packages/db/migrations/0031_add_user_id_columns.sql`, `packages/db/migrations/0032_backfill_user_id.sql`, `packages/db/migrations/0033_user_id_not_null.sql` — all FOUND
+- Commits verified in `git log`: `bf2ffb1`, `b060ab2`, `a950ae3`, `7bb52d3` — all FOUND
+- Re-ran plan-level `<verification>`: `npm run migrate:local` (23 tables, no error), zero `user_id IS NULL` rows across all three tables, `is_nullable='NO'` confirmed, `npm run typecheck` clean, `npm run check` (drizzle-kit) reports "Everything's fine", PROJECT.md + both genui schema files carry the documented-unscoped exclusion (grep-verified)
+
 ---
 *Phase: 44-tenancy-user-id-scoping-enforced-isolation*
 *Completed: 2026-07-09*

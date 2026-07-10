@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: polytoken.ai Foundation — Rename, Auth & Tenancy
-status: planning
-last_updated: "2026-07-10T01:25:55.074Z"
-last_activity: 2026-07-10 -- Phase 44 planning complete
+status: executing
+last_updated: "2026-07-10T02:00:29.370Z"
+last_activity: 2026-07-10 -- Phase 44 execution started
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 18
-  completed_plans: 9
+  completed_plans: 10
   percent: 40
 ---
 
@@ -20,14 +20,40 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** Phase 44 — tenancy user id scoping enforced isolation
+**Current focus:** Phase 44 — Tenancy — user_id Scoping + Enforced Isolation
 
 ## Current Position
 
-Phase: 44
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-07-10 -- Phase 44 planning complete
+Phase: 44 (Tenancy — user_id Scoping + Enforced Isolation) — EXECUTING
+Plan: 2 of 8
+Status: Executing Phase 44
+Last activity: 2026-07-10 -- Phase 44 execution started
+
+## Phase 44 — Tenancy — user_id Scoping + Enforced Isolation — Plan 01 History
+
+- **44-01 EXECUTED** (`bf2ffb1`, `b060ab2`, `a950ae3`, `7bb52d3`): schema anchor for tenancy.
+  `user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE` added to `importers`
+  (tenant anchor), `chat_conversations`, `chat_cost_ledger` via expand→backfill→contract
+  migrations 0031-0033, live-verified locally (zero null rows, contract confirmed). New
+  `packages/db/src/schema/_auth.ts` models the cross-schema FK without redeclaring Supabase's
+  managed `auth.users`. `migrate.ts` now runs on one dedicated connection so `BACKFILL_USER_ID`
+  (new optional env var) is visible to the 0032 backfill's session GUC. PROJECT.md Key Decisions
+  records app-boundary-primary / RLS-defense-in-depth (TENA-04 ordering gate); genui cache tables
+  documented as deliberately unscoped. **3 deviations (all Rule 3, blocking, pre-existing tooling
+  defects, not this plan's logic):** (1) migrations 0025-0030 were `--custom` and never got
+  matching Drizzle snapshots, so the first `generate` computed 6 migrations of already-applied
+  drift — reconciled by regenerating a correct `0030_snapshot.json` from reverted schema state,
+  discarding its (already-applied) SQL, before generating the real 0031; (2) journal entry 30
+  carries a synthetic future-dated `when` (1783708800000, ~17h ahead of real time), which
+  silently no-ops the timestamp-gated migrator for any new real-timestamped migration — fixed by
+  hand-setting entries 31-33's `when` to exceed it (flagged for the next migration author: verify
+  new entries exceed the current max, currently 1783968000000); (3) generated `CREATE TABLE
+  auth.users` failed with `permission denied for schema auth` (migrating `postgres` role is not
+  a true superuser) — removed, since the real Supabase-managed table already exists. Local
+  `auth.users` had 0 rows (no Google OAuth client configured yet); seeded one deterministic
+  local-dev-only row (`10000000-0000-0000-0000-000000000001`) via ad hoc script, not a tracked
+  migration. `drizzle-kit check` + `npm run typecheck` both clean. Full detail:
+  `44-01-SUMMARY.md`.
 
 ## Phase 42 — Atomic Rename nauta → polytoken — Plan 01 History
 
@@ -2238,6 +2264,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 43 P02 | 12min | 3 tasks | 9 files |
 | Phase 43 P03 | ~10min | 2 tasks | 8 files |
 | Phase 43 P04 | 25 min | 2 tasks | 6 files |
+| Phase 44 P01 | 45min | 3 tasks | 14 files |
 
 ## Operator Next Steps
 
