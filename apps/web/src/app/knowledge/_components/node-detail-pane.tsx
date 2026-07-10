@@ -11,8 +11,8 @@
  * Per-type sections:
  *   entity_type     — Badge "Entity Type", Fields chips, "View N instances →"
  *   entity_type_field — Badge "Field", Type row, Belongs-to (clickable)
- *   entity_instance — Badge "Instance" violet, "Open entity →" → /entities/{id}
- *   email_component — Badge "Component" amber, Email row, Matched/Unmatched
+ *   entity_instance — Badge "Instance" graph-entity, "Open entity →" → /entities/{id}
+ *   email_component — Badge "Component" graph-email-component, Email row, Matched/Unmatched
  *   email           — Badge "Email", subject, From, Received
  *   knowledge_node  — Reuses EntityKnowledge card structure (Badge "Knowledge Rule" teal,
  *                     content, Source, confidence %, format(createdAt,"PP"))
@@ -206,7 +206,7 @@ function EntityInstanceContent({ node }: { readonly node: SelectedNode }): React
     <div className="space-y-4">
       <Badge
         variant="secondary"
-        className="bg-violet-500/10 text-violet-700 border-violet-500/30"
+        className="bg-graph-entity/10 text-graph-entity border-graph-entity/30"
       >
         Instance
       </Badge>
@@ -235,7 +235,7 @@ function EmailComponentContent({ node }: { readonly node: SelectedNode }): React
     <div className="space-y-4">
       <Badge
         variant="secondary"
-        className="bg-amber-500/10 text-amber-700 border-amber-500/30"
+        className="bg-graph-email-component/10 text-graph-email-component border-graph-email-component/30"
       >
         Component
       </Badge>

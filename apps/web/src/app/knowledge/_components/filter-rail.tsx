@@ -36,17 +36,17 @@ const NODE_TYPE_ROWS = [
   {
     type: "entity_instance" as const,
     label: "Instances",
-    dotClass: "bg-violet-500/80 border-violet-500/40",
+    dotClass: "bg-graph-entity/80 border-graph-entity/40",
   },
   {
     type: "email" as const,
     label: "Emails",
-    dotClass: "bg-slate-400/80 border-slate-400/40",
+    dotClass: "bg-graph-email/80 border-graph-email/40",
   },
   {
     type: "email_component" as const,
     label: "Components",
-    dotClass: "bg-amber-500/80 border-amber-500/40",
+    dotClass: "bg-graph-email-component/80 border-graph-email-component/40",
   },
   {
     type: "knowledge_node" as const,

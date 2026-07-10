@@ -6,10 +6,13 @@
  * Node types (UI-SPEC Node Visual Language):
  *   entity_type        160×48  bg-primary/10 border-primary/40   Shapes icon
  *   entity_type_field  128×32  bg-muted/60 border-border/60      Hash icon
- *   entity_instance    160×44  bg-violet-500/10 border-violet-500/40  Box icon
- *   email_component    128×36  bg-amber-500/10 border-amber-500/40   Layers icon
- *   email              144×40  bg-slate-100/60 border-slate-400/40   Mail icon
+ *   entity_instance    160×44  bg-graph-entity/10 border-graph-entity/40  Box icon
+ *   email_component    128×36  bg-graph-email-component/10 border-graph-email-component/40   Layers icon
+ *   email              144×40  bg-graph-email/10 border-graph-email/40   Mail icon
  *   knowledge_node     160×48  bg-primary/15 border-primary/60 + glow  Share2 icon
+ *
+ * Node-type differentiation uses the closed color.graph.* palette (D-48-05) —
+ * a new xyflow node category requires a NEW graph.* alias, never a repurposed one.
  *
  * All nodes: rounded-lg border shadow-sm cursor-pointer
  * Selected: ring-2 ring-primary ring-offset-1
@@ -104,7 +107,7 @@ export const EntityTypeFieldNode = memo(function EntityTypeFieldNode({
 });
 
 // ---------------------------------------------------------------------------
-// entity_instance — 160×44, violet
+// entity_instance — 160×44, graph-entity
 // ---------------------------------------------------------------------------
 
 export type EntityInstanceNodeData = {
@@ -123,14 +126,14 @@ export const EntityInstanceNode = memo(function EntityInstanceNode({
   return (
     <div
       style={{ width: 160, height: 44 }}
-      className={nodeClasses("bg-violet-500/10 border-violet-500/40", selected)}
+      className={nodeClasses("bg-graph-entity/10 border-graph-entity/40", selected)}
       role="button"
       tabIndex={0}
       aria-pressed={selected}
       aria-label={`Instance: ${data.label}`}
     >
       <Handle type="target" position={Position.Top} className="!opacity-0" />
-      <Box className="size-4 shrink-0 text-violet-500" aria-hidden />
+      <Box className="size-4 shrink-0 text-graph-entity" aria-hidden />
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-semibold text-foreground">
           {data.label}
@@ -147,7 +150,7 @@ export const EntityInstanceNode = memo(function EntityInstanceNode({
 });
 
 // ---------------------------------------------------------------------------
-// email_component — 128×36, amber
+// email_component — 128×36, graph-email-component
 // ---------------------------------------------------------------------------
 
 export type EmailComponentNodeData = { readonly label: string } & Record<
@@ -166,14 +169,14 @@ export const EmailComponentNode = memo(function EmailComponentNode({
   return (
     <div
       style={{ width: 128, height: 36 }}
-      className={nodeClasses("bg-amber-500/10 border-amber-500/40", selected)}
+      className={nodeClasses("bg-graph-email-component/10 border-graph-email-component/40", selected)}
       role="button"
       tabIndex={0}
       aria-pressed={selected}
       aria-label={`Component: ${data.label}`}
     >
       <Handle type="target" position={Position.Top} className="!opacity-0" />
-      <Layers className="size-3 shrink-0 text-amber-500" aria-hidden />
+      <Layers className="size-3 shrink-0 text-graph-email-component" aria-hidden />
       <span className="truncate text-xs text-foreground">{data.label}</span>
       <Handle type="source" position={Position.Bottom} className="!opacity-0" />
     </div>
@@ -181,7 +184,7 @@ export const EmailComponentNode = memo(function EmailComponentNode({
 });
 
 // ---------------------------------------------------------------------------
-// email — 144×40, slate
+// email — 144×40, graph-email
 // ---------------------------------------------------------------------------
 
 export type EmailNodeData = {
@@ -201,7 +204,7 @@ export const EmailNode = memo(function EmailNode({
     <div
       style={{ width: 144, height: 40 }}
       className={nodeClasses(
-        "bg-slate-100/60 border-slate-400/40 dark:bg-slate-800/40 dark:border-slate-600/40",
+        "bg-graph-email/10 border-graph-email/40",
         selected,
       )}
       role="button"
@@ -210,7 +213,7 @@ export const EmailNode = memo(function EmailNode({
       aria-label={`Email: ${data.label}`}
     >
       <Handle type="target" position={Position.Top} className="!opacity-0" />
-      <Mail className="size-4 shrink-0 text-slate-500" aria-hidden />
+      <Mail className="size-4 shrink-0 text-graph-email" aria-hidden />
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm text-foreground">{truncated}</div>
         {data.senderDomain != null && (
@@ -249,7 +252,7 @@ export const KnowledgeNodeNode = memo(function KnowledgeNodeNode({
   return (
     <div
       style={{ width: 160, height: 48 }}
-      className={`${nodeClasses("bg-primary/15 border-primary/60", selected)} shadow-[0_0_8px_hsl(164_39%_22%/0.25)]`}
+      className={`${nodeClasses("bg-primary/15 border-primary/60", selected)} shadow-[0_0_8px_hsl(var(--primary)/0.25)]`}
       role="button"
       tabIndex={0}
       aria-pressed={selected}
