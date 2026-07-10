@@ -435,7 +435,7 @@ export function PdfPreviewPane({
   }
 
   function handleTooSmall() {
-    toast.warning("Rectangle too small. Draw a larger area.");
+    toast.warning("That rectangle's too small — try drawing a larger area.");
   }
 
   // HIGH-2: a legacy redraw/split/add flow (drawMode) always wins; otherwise the

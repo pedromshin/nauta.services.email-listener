@@ -60,7 +60,7 @@ export function useAutofillFields({
     },
     onError: (_err, { entityComponentId }) => {
       setPhases((prev) => ({ ...prev, [entityComponentId]: "failed" }));
-      toast.error("AI autofill is unavailable — model access is pending.", {
+      toast.error("Autofill isn't available yet — model access is pending.", {
         duration: 6000,
       });
     },

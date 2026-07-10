@@ -186,9 +186,9 @@ export function EmailDetail({ emailId }: EmailDetailProps) {
   const reprocessMutation = api.emails.reprocessEmail.useMutation({
     onSuccess: async () => {
       await utils.emails.detail.invalidate({ id: emailId });
-      toast.success("Email sent for reprocessing");
+      toast.success("On it — reprocessing this email");
     },
-    onError: () => toast.error("Could not reprocess email. Try again."),
+    onError: () => toast.error("Couldn't reprocess this email. Try again."),
   });
 
   // ---- Entity types (label resolution + slug → id mapping) ----
@@ -267,7 +267,7 @@ export function EmailDetail({ emailId }: EmailDetailProps) {
       }
       await utils.emails.detail.invalidate({ id: emailId });
     },
-    onError: () => toast.error("Could not add field region. Try again."),
+    onError: () => toast.error("Couldn't add that field region. Try again."),
   });
 
   const h1Ref = useRef<HTMLHeadingElement>(null);
@@ -573,7 +573,7 @@ export function EmailDetail({ emailId }: EmailDetailProps) {
       // of silently dropping the drawn rect (which looks like a dead toggle).
       canvas.edit.cancelDraw();
       toast.warning(
-        "Can't draw a region on this page — it has no recognized document page to attach to.",
+        "Can't draw here — this page doesn't have a recognized document page to attach to.",
       );
     }
   }
