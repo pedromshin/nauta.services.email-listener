@@ -1,5 +1,11 @@
+"use client";
+
 /**
  * catalog/manifest.ts — Hand-authored NAUTA_CATALOG manifest.
+ *
+ * TabsComponent below calls React.useContext(RenderChildContext) to render nested tab.content
+ * SpecNodes — "use client" declared here (house convention, mirrors form-component.tsx /
+ * spec-renderer.tsx) since this file now uses a hook directly.
  *
  * Contains exactly 16 catalog entries (D-01, D-02):
  *   - 3 layout primitives: stack, grid, section (house-built, no @polytoken/ui import)
@@ -56,6 +62,9 @@ import { FormComponent } from "./form-component";
 // would pull in COMPONENT_REGISTRY and create a manifest <-> renderer import cycle. This is
 // the exact precedent form-component.tsx already uses (line 25).
 import { ActionRegistryContext } from "../renderer/action-registry-context";
+// Same standalone-module precedent as ActionRegistryContext above, for TabsComponent's nested
+// tab.content rendering — see render-child-context.ts for why this can't be renderNode directly.
+import { RenderChildContext } from "../renderer/render-child-context";
 
 // ---------------------------------------------------------------------------
 // Prop type declarations (one per catalog entry)
@@ -685,10 +694,12 @@ function TabsComponent({
   "aria-label": ariaLabel,
   tabs,
   defaultValue,
-  children: _children, // reserved for renderer slot injection (Phase 19)
+  children: _children, // unused — tabs render content via RenderChildContext, not React children
 }: TabsProps): React.ReactElement {
+  const renderChild = React.useContext(RenderChildContext);
   const resolvedDefault = defaultValue ?? tabs[0]?.value;
-  // Presentational-only: no onValueChange. Phase-19 will wire interactive state.
+  // Presentational trigger switching only (Radix Tabs handles active-panel state itself);
+  // no onValueChange wiring needed here.
   return React.createElement(
     Tabs,
     { defaultValue: resolvedDefault, "aria-label": ariaLabel },
@@ -703,18 +714,14 @@ function TabsComponent({
         ),
       ),
     ),
-    // Content panels — rendered as text fallback until Phase-19 wires full renderNode
+    // Content panels — each tab.content is a full SpecNode, rendered through the interpreter
+    // via the RenderChildContext seam so rich nodes (section/grid/card/table/form/...) render
+    // exactly like any other container's children (not just text nodes).
     ...tabs.map((tab) =>
       React.createElement(
         TabsContent,
         { key: tab.value, value: tab.value },
-        React.createElement(
-          "div",
-          { className: "text-sm text-foreground" },
-          typeof tab.content === "object" && tab.content !== null
-            ? (tab.content as { type?: string; content?: string }).content ?? tab.value
-            : String(tab.content ?? tab.value),
-        ),
+        renderChild(tab.content, tab.value),
       ),
     ),
   );

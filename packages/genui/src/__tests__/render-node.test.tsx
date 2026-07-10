@@ -1273,3 +1273,107 @@ describe("SpecRenderer button onClick action binding (schema-drift fix)", () => 
     expect(html).toContain("prop validation failed");
   });
 });
+
+// ===========================================================================
+// Block 10: tabs — rich tab-content renders through renderNode (bug fix)
+//
+// TabsComponent used to fall back to `.content?.content ?? tab.value` text-only rendering,
+// so any tab whose `content` was a container node (section/grid/card/table/form/...) rendered
+// its bare `value` string instead of the real content. These tests exercise the fix: each
+// tab.content is now a full SpecNode rendered through renderNode via the RenderChildContext
+// seam (mirrors ActionRegistryContext), same as any other container's children.
+// ===========================================================================
+
+describe("tabs: rich tab-content renders through renderNode (RenderChildContext seam)", () => {
+  it("renders a section's heading and nested text child in the default active panel — not the tab's value word", () => {
+    const spec: SpecRoot = {
+      v: 1,
+      root: {
+        type: "tabs",
+        "aria-label": "Feature examples",
+        tabs: [
+          {
+            value: "complex-feature",
+            label: "Complex Feature",
+            content: {
+              type: "section",
+              heading: "Live Dashboard",
+              children: [
+                {
+                  type: "text",
+                  content: "Deeply nested rich content renders here",
+                },
+              ],
+            },
+          },
+        ],
+      },
+    };
+    const html = renderToStaticMarkup(
+      <SpecRenderer spec={spec} registry={COMPONENT_REGISTRY} />,
+    );
+    expect(html).not.toContain("[!]");
+    // The rich content actually rendered: section heading + its nested text child.
+    expect(html).toContain("Live Dashboard");
+    expect(html).toContain("Deeply nested rich content renders here");
+    // Regression guard: the old bug rendered ONLY the tab's `value` word as a bare text node
+    // (`<div class="text-sm text-foreground">complex-feature</div>`). Radix legitimately embeds
+    // `value` inside generated id/aria-controls attributes, so assert against the bare-text-node
+    // shape specifically rather than the substring alone.
+    expect(html).not.toContain(">complex-feature<");
+  });
+
+  it("still renders a plain-text tab's content string (existing behavior preserved)", () => {
+    const spec: SpecRoot = {
+      v: 1,
+      root: {
+        type: "tabs",
+        "aria-label": "Simple tabs",
+        tabs: [
+          {
+            value: "inbox",
+            label: "Inbox",
+            content: { type: "text", content: "No messages" },
+          },
+        ],
+      },
+    };
+    const html = renderToStaticMarkup(
+      <SpecRenderer spec={spec} registry={COMPONENT_REGISTRY} />,
+    );
+    expect(html).not.toContain("[!]");
+    expect(html).toContain("No messages");
+  });
+
+  it("renders only the defaultValue tab's content (each tab.content renders independently)", () => {
+    const spec: SpecRoot = {
+      v: 1,
+      root: {
+        type: "tabs",
+        "aria-label": "Multi-panel",
+        tabs: [
+          { value: "a", label: "A", content: { type: "text", content: "Panel A body" } },
+          {
+            value: "b",
+            label: "B",
+            content: {
+              type: "grid",
+              cols: 2,
+              children: [{ type: "text", content: "Panel B body" }],
+            },
+          },
+        ],
+        defaultValue: "b",
+      },
+    };
+    const html = renderToStaticMarkup(
+      <SpecRenderer spec={spec} registry={COMPONENT_REGISTRY} />,
+    );
+    expect(html).not.toContain("[!]");
+    // defaultValue "b" is active — its grid content renders.
+    expect(html).toContain("Panel B body");
+    // Radix Tabs (Presence) does not mount inactive panels on first render — tab "a"'s
+    // content should not appear in the static markup.
+    expect(html).not.toContain("Panel A body");
+  });
+});

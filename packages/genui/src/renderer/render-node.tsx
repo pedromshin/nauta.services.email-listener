@@ -12,6 +12,8 @@
  * Slots:
  *   - Named slots (card.header/footer) passed via `slotChildren` prop (D-16)
  *   - Positional children[] iterated with structural-position keys (D-15)
+ *   - Nested SpecNode props (tabs' `tab.content`) rendered via the RenderChildContext seam
+ *     (mirrors ActionRegistryContext / SEAM-02) so the catalog stays decoupled from renderNode
  *
  * Error handling:
  *   - Unknown type → <UnknownComponentPlaceholder> (never throws)
@@ -29,6 +31,7 @@ import {
   NodeErrorFallback,
 } from "./error-boundary";
 import { UnknownComponentPlaceholder } from "../registry/component-registry";
+import { RenderChildContext, type RenderChild } from "./render-child-context";
 import type { ComponentRegistry } from "../catalog/types";
 import type { SpecNode } from "../schema/spec-schema";
 
@@ -376,9 +379,28 @@ export function renderNode(
     positionalChildren,
   );
 
+  // -------------------------------------------------------------------------
+  // RenderChildContext seam (mirrors ActionRegistryContext / SEAM-02): components whose props
+  // carry a nested SpecNode (e.g. tabs' `tab.content`) cannot import renderNode directly — that
+  // would create a manifest <-> renderer import cycle. Bind the child-render function to the
+  // CURRENT ctx + keyPrefix here so nested renders respect list-injected item context (D-16).
+  // Gated to "tabs" only — no need to pay the extra Provider for every node type.
+  // -------------------------------------------------------------------------
+  const renderChild: RenderChild = (child, keySuffix) =>
+    renderNode(child as SpecNode, ctx, `${keyPrefix}-${keySuffix}`);
+
+  const wrappedElement =
+    node.type === "tabs"
+      ? React.createElement(
+          RenderChildContext.Provider,
+          { value: renderChild },
+          componentElement,
+        )
+      : componentElement;
+
   return React.createElement(
     NodeErrorBoundary,
     { key: `${keyPrefix}-boundary`, nodeType: node.type },
-    componentElement,
+    wrappedElement,
   );
 }
