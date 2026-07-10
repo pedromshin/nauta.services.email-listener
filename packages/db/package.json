@@ -26,7 +26,9 @@
     "migrate:staging": "npm run with-env:staging -- tsx src/migrate.ts",
     "migrate:prod": "npm run with-env:prod -- tsx src/migrate.ts",
     "push:staging": "npm run with-env:staging -- drizzle-kit push",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@t3-oss/env-core": "^0.13.8",
@@ -41,6 +43,7 @@
     "dotenv-cli": "^8.0.0",
     "drizzle-kit": "^0.31.1",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.0"
+    "typescript": "^5.8.0",
+    "vitest": "^2.1.9"
   }
 }
