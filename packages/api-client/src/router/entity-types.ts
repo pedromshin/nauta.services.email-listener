@@ -5,18 +5,25 @@
  * fields from Drizzle, then groups the flat join rows into a nested structure.
  *
  * Design notes:
- * - No importerId filter: Phase 7 UI uses system defaults only (UI-SPEC §9.3).
  * - groupEntityTypeRows is exported as a pure helper to enable unit testing
  *   without a DB connection.
  * - All output objects are new (immutable) — input rows are never mutated.
+ *
+ * Tenancy (Phase 44, TENA-03 / T-44-06-01): `list` is protectedProcedure and
+ * returns system-default types (importer_id IS NULL — the migration-seeded
+ * taxonomy, visible to every authenticated user) OR-ed with the caller's
+ * owned-importer overrides — never another user's overrides. The same
+ * NULL-or-owned scope is applied to the joined entity_type_fields rows so a
+ * foreign user's field override can never ride along on a system type.
  */
 
-import { eq, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 
 import { EntityTypeFields, EntityTypes } from "@polytoken/db/schema";
+import { userOwnedImporterIds } from "@polytoken/db/ownership";
 
-import { createTRPCRouter, publicProcedure } from "../trpc";
+import { createTRPCRouter, protectedProcedure } from "../trpc";
 import { entityTypesWriteProcedures } from "./entity-types-write";
 
 // ---------------------------------------------------------------------------
@@ -163,13 +170,41 @@ export const entityTypesRouter = createTRPCRouter({
    *   id, key, label, dataType, isRequired, sortOrder, isIdentifier }> }>
    * The per-row `id`s are required by the Phase-9 write mutations (update /
    * createField / updateField / deleteField / reorderFields).
+   *
+   * Tenancy (TENA-03): system defaults (importer_id IS NULL) OR the caller's
+   * owned-importer overrides — never another user's overrides. The joined
+   * field rows get the same NULL-or-owned scope (a missing left-join field
+   * row has a NULL importerId and passes via the isNull branch).
    */
-  list: publicProcedure
+  list: protectedProcedure
     .input(z.object({ includeInactive: z.boolean().optional() }).optional())
     .query(async ({ ctx, input }) => {
       const includeInactive = input?.includeInactive ?? false;
 
-      const base = ctx.db
+      const owned = await userOwnedImporterIds(ctx.db, ctx.user.id);
+
+      // System defaults are importer_id IS NULL; overrides must be owned.
+      // Empty owned set -> system defaults only (inArray([]) is never built).
+      const typeScope =
+        owned.length > 0
+          ? or(
+              isNull(EntityTypes.importerId),
+              inArray(EntityTypes.importerId, owned),
+            )
+          : isNull(EntityTypes.importerId);
+      const fieldScope =
+        owned.length > 0
+          ? or(
+              isNull(EntityTypeFields.importerId),
+              inArray(EntityTypeFields.importerId, owned),
+            )
+          : isNull(EntityTypeFields.importerId);
+
+      const whereClause = includeInactive
+        ? typeScope
+        : and(eq(EntityTypes.isActive, true), typeScope);
+
+      const rows = await ctx.db
         .select({
           id: EntityTypes.id,
           slug: EntityTypes.slug,
@@ -186,16 +221,14 @@ export const entityTypesRouter = createTRPCRouter({
           fieldIsIdentifier: sql<boolean>`COALESCE((${EntityTypeFields.config} ->> 'is_identifier')::boolean, false)`,
         })
         .from(EntityTypes)
+        // fieldScope lives in the join ON clause (not WHERE) so a type whose
+        // field rows are all filtered out still surfaces with fields: [].
         .leftJoin(
           EntityTypeFields,
-          eq(EntityTypeFields.entityTypeId, EntityTypes.id),
-        );
-
-      const rows = includeInactive
-        ? await base.orderBy(EntityTypes.label, EntityTypeFields.sortOrder)
-        : await base
-            .where(eq(EntityTypes.isActive, true))
-            .orderBy(EntityTypes.label, EntityTypeFields.sortOrder);
+          and(eq(EntityTypeFields.entityTypeId, EntityTypes.id), fieldScope),
+        )
+        .where(whereClause)
+        .orderBy(EntityTypes.label, EntityTypeFields.sortOrder);
 
       return groupEntityTypeRows(rows);
     }),
