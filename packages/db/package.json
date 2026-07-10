@@ -12,6 +12,9 @@
     },
     "./schema": {
       "default": "./src/schema/index.ts"
+    },
+    "./ownership": {
+      "default": "./src/ownership.ts"
     }
   },
   "scripts": {
