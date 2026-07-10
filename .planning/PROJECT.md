@@ -13,7 +13,32 @@ Reliably receive every inbound email destined for agent@magnitudetech.com.br and
 observable — nothing lost, everything logged — as the foundation for later parsing,
 persistence, and the agentic pipeline.
 
-## Current State (v1.6 shipped 2026-07-09)
+## Current State (v1.7 shipped 2026-07-10)
+
+**Shipped:** **v1.7 — polytoken.ai Foundation: Rename, Auth & Tenancy** (Phases 42–46, 25 plans,
+61 tasks, 19/19 requirements, 9/9 integration seams WIRED, 3/3 E2E flows, audit `tech_debt` with
+0 blockers). The product is now polytoken everywhere internally (one atomic 242-file rename pass;
+external renames runbook'd), has real identity (Google OAuth via `@supabase/ssr` — the milestone's
+ONE new dependency — with sessions refreshed by middleware, `ctx.user` + `protectedProcedure` in
+tRPC, server-derived `X-User-Id` to FastAPI), and enforces per-user tenancy for real: migrations
+0031–0034 anchor `user_id` (expand→backfill→contract, live-verified), a central
+`@polytoken/db/ownership` chokepoint + full router/endpoint sweep, RLS defense-in-depth on 13
+tables, all proven by two-user adversarial suites — including a chat-SSE hole the acceptance gate
+itself discovered and a same-run gap-closure plan (44-09) closed. Emails now group into threads at
+ingest (Union-Find over RFC headers + forwarded-mail fallbacks, idempotent backfill: 16 emails → 9
+threads locally) behind a thread-grouped inbox, and the personal-forwarding seam exists end-to-end
+(CSPRNG `u-{token}@` addresses, ingest-side resolution, user-anchored importers, runbook'd SES/Gmail
+setup). v1.8's kickoff is decision-ready: brand-identity options (recommendation: Cortex, with a
+sourced polytoken naming-collision flag) + a design-pattern dossier mapped onto the real v1.4 DTCG
+tokens. Deferred: 8 items at close (3 todos, 11 UAT scenarios across 2 files, user runbooks,
+staging/prod migrations) — STATE.md → Deferred Items. Executed autonomously across an
+account-switch cutoff, one mid-plan connection-drop recovery, and two API-error recoveries.
+
+*(Post-close user actions that unblock the deferred surface: run `GOOGLE-OAUTH-RUNBOOK.md` (login
+works end-to-end after it), then the 43/45 HUMAN-UAT files; decide the local Supabase nauta→polytoken
+project-id migration; apply migrations 0031–0035 to staging/prod per the deploy playbook.)*
+
+## Prior State (v1.6 shipped 2026-07-09)
 
 **Shipped:** **v1.6 — Chat × Knowledge Convergence** (Phases 33–41, 20 plans, 45 tasks, 19/19
 requirements, 9/9 integration seams WIRED, audit `tech_debt` with 0 blockers). The chat agent now
@@ -94,7 +119,7 @@ loop; `spec-renderer.tsx`/`render-node.tsx`/`genui-part-boundary.tsx` stay byte-
 
 </details>
 
-## Current Milestone: v1.7 polytoken.ai Foundation — Rename, Auth & Tenancy
+## v1.7 Milestone Detail (SHIPPED 2026-07-10 — archived: milestones/v1.7-ROADMAP.md)
 
 **Goal:** Turn the validated substrate into a product foundation — VISION.md E2's
 autonomously-verifiable half: atomic internal rename nauta → polytoken, real auth (Google OAuth +
@@ -421,8 +446,12 @@ already proven locally. Research: `.planning/research/` (SUMMARY.md + 6 deep doc
 | **v1.6**: `emit_confirm_action` carries only a `suggestion_ref`; server re-reads the live edge and freezes the schema at emission; submit re-checks tier vs declaration snapshot | The LLM never touches mutation params (optionId-not-title precedent); out-of-band promotions surface as 409 stale before any mutation | ✓ Good — 409-stale no-double-mutation proven by test |
 | **v1.6**: New SSE frame names (`server_tool_call`/`server_tool_result`) instead of reusing the persisted event names | The client's `applyRunEvent` already owned `tool_call` for genui streaming — reuse would mis-fold real tool rounds (live bug found + fixed) | ✓ Good — collision guard + regression test shipped |
 | **v1.6**: ONE `<ProvenanceLink>`/`hrefFor` primitive for all provenance links; routes recomputed from kind+id, never trusted from data | Decided once, used twice (chips + preview node); server-supplied route strings are an injection surface | ✓ Good — grep-verified single source of route logic |
-| **v1.7 Phase 44 (TENA-04)**: app-boundary enforcement is PRIMARY (session-derived `user_id`, never client-supplied); Supabase RLS policies are DEFENSE-IN-DEPTH only | Drizzle connects as the Postgres **superuser** via `POSTGRES_URL_NON_POOLING` (`packages/db/src/client.ts:28-36`) because the transaction-mode pooler strips superuser privileges and breaks `auth.uid()` — every app query issued through Drizzle already bypasses RLS. The app-boundary is therefore the real wall; RLS defends only PostgREST/future non-superuser paths. Recorded BEFORE any RLS policy work begins (Plan 04 ordering gate) | — Pending |
+| **v1.7 Phase 44 (TENA-04)**: app-boundary enforcement is PRIMARY (session-derived `user_id`, never client-supplied); Supabase RLS policies are DEFENSE-IN-DEPTH only | Drizzle connects as the Postgres **superuser** via `POSTGRES_URL_NON_POOLING` (`packages/db/src/client.ts:28-36`) because the transaction-mode pooler strips superuser privileges and breaks `auth.uid()` — every app query issued through Drizzle already bypasses RLS. The app-boundary is therefore the real wall; RLS defends only PostgREST/future non-superuser paths. Recorded BEFORE any RLS policy work begins (Plan 04 ordering gate) | ✓ Good — adversarial gate (44-08/44-09) proved the app boundary holds on every surface; RLS live on 13 tables |
 | **v1.7 Phase 44**: `genui_generation_events` and `ui_spec_templates` stay deliberately unscoped (no `user_id`) | These are exact-match cache tables — cross-tenant cache hits are the intended behavior, not a tenancy gap; documented in schema comments to stop a future reader from "fixing" it | ✓ Good — matches the pre-existing `importer_id`-nullable/no-FK idiom already used on these tables |
+| **v1.7 Phase 43**: browser-safe public env split (`env.public.ts`, literal `NEXT_PUBLIC_*` access) after full-schema `env.ts` crashed every client component importing it | Client bundles have no real `process.env`; only literal property access is inlined — one Zod schema for both worlds is structurally impossible | ✓ Good — fix a2251e7; login page renders; integration checker verified 0/133 client files import full env |
+| **v1.7 Phase 44**: gap-closure escalated (not parked) for the chat-SSE cross-tenant hole discovered by the acceptance gate | The milestone's literal bar was "unreachable across users via ANY route"; a live security hole in the tenancy milestone is the definition of a blocking gap | ✓ Good — 44-09 closed it same-run; pre-stream 404 fail-closed gating |
+| **v1.7 Phase 45**: threads importer-anchored, chat direct-user_id; false-split beats false-merge in grouping | Threads inherit tenancy through importers (no second scoping system); conservative Tier-2 fallback avoids merging strangers' mail | — Pending (live forwarding round-trip UAT outstanding) |
+| **v1.7 Phase 46**: accepted override for the real-browser Playwright run (AST-allowlist vitest substitute green) | Closing it required new npm deps, violating the milestone's one-new-dependency guardrail — a stronger locked constraint | — Pending (todo parked; unblocks in v1.8) |
 
 ## Evolution
 
@@ -442,4 +471,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-09 after opening milestone v1.7 — polytoken.ai Foundation (Rename, Auth & Tenancy): VISION.md E2 selected autonomously, split v1.7 foundation / v1.8 re-skin; Active populated with 6 target features*
+*Last updated: 2026-07-10 after v1.7 milestone*
