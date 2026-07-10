@@ -47,7 +47,7 @@ VISION.md E2 remainder, backlog 999.7 (editable panels) + 999.4 cheap slice (pro
 
 ### Visual Verification (VRFY)
 
-- [ ] **VRFY-01**: `@playwright/test` (+ firefox) is installed; the parked code-island isolation spec runs green on chromium AND firefox, and the auth-redirect spec runs green (closes todo 2026-07-10-playwright-code-island-isolation-run)
+- [x] **VRFY-01**: `@playwright/test` (+ firefox) is installed; the parked code-island isolation spec runs green on chromium AND firefox, and the auth-redirect spec runs green (closes todo 2026-07-10-playwright-code-island-isolation-run)
 - [ ] **VRFY-02**: A screenshot-driven visual review harness exists (Playwright screenshots of the re-skinned surfaces across packs/viewports) and is used to review the re-skin
 
 ## v2 Requirements
@@ -82,7 +82,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BRND-01 | Phase 47 | In Progress |
 | BRND-02 | Phase 47 | Complete |
 | BRND-03 | Phase 47 | Pending |
-| VRFY-01 | Phase 47 | Pending |
+| VRFY-01 | Phase 47 | Complete |
 | VRFY-02 | Phase 47 | Pending |
 | TOKN-01 | Phase 48 | Pending |
 | TOKN-02 | Phase 48 | Pending |
