@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.7
 milestone_name: polytoken.ai Foundation — Rename, Auth & Tenancy
-status: executing
-last_updated: "2026-07-10T09:26:56.442Z"
+status: ready_to_plan
+last_updated: 2026-07-10T09:53:20.950Z
 last_activity: 2026-07-10 -- Phase 45 Plan 04 complete (emails.listThreads tRPC projection + expandable InboxThreadGroup inbox UI; THRD-03 Complete; Phase 45 fully executed 6/6 plans)
 progress:
   total_phases: 5
@@ -11,6 +11,7 @@ progress:
   total_plans: 25
   completed_plans: 24
   percent: 80
+stopped_at: Phase 45 complete (6/6) — ready to discuss Phase 46
 ---
 
 # State
@@ -20,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-07)
 
 **Core value:** Reliably receive every inbound email and make it observable.
-**Current focus:** Phase 45 — Email Threads + Forwarding Seam
+**Current focus:** Phase 46 — kickoff hygiene v1 8 brand design dossier
 
 ## Current Position
 
-Phase: 45 (Email Threads + Forwarding Seam) — COMPLETE (6/6 plans)
-Plan: 04 executed (wave 3, depends on 45-01/45-03) — final plan of Phase 45
-Status: Phase 45 fully executed (01, 02, 03, 04, 05, 06 all complete). Next: Phase 46 (2/3 plans remaining) or milestone verification.
-Last activity: 2026-07-10 -- Phase 45 Plan 04 complete (emails.listThreads tenant-scoped thread-grouped tRPC projection + expandable InboxThreadGroup web inbox UI, governed by 45-UI-SPEC.md; emails/[id] detail view untouched; THRD-03 Complete; 4 visual-verification items recorded pending in 45-HUMAN-UAT.md, blocked on Phase 43's live Google OAuth setup)
+Phase: 46
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-07-10
 
 ## Phase 45 — Email Threads + Forwarding Seam — Plan 04 History
 

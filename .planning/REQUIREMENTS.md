@@ -31,7 +31,7 @@ Requirements for this milestone. Each maps to roadmap phases.
 ### Threads
 
 - [x] **THRD-01**: Ingested emails are grouped into threads via RFC `Message-ID`/`In-Reply-To`/`References` headers (Union-Find grouping behind a `ThreadResolver` domain port mirroring `ImporterResolver`, resolved at ingest time), with existing emails backfilled
-- [ ] **THRD-02**: Forwarded mail (headers stripped by Gmail UI-forward) does not fragment threads — a conservative fallback tier ships with real Gmail-forward `.eml` fixtures
+- [x] **THRD-02**: Forwarded mail (headers stripped by Gmail UI-forward) does not fragment threads — a conservative fallback tier ships with real Gmail-forward `.eml` fixtures
 - [x] **THRD-03**: User can see emails grouped by thread in the inbox list
 - [x] **THRD-04**: A unique secret-token forwarding address seam exists (SES wildcard routing pattern) with a user onboarding runbook covering Gmail's own destination-verification handshake
 
@@ -87,7 +87,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TENA-03 | Phase 44 | Complete (spanned Plans 02/03/05/06/07/08/09; adversarial acceptance gate green — the chat-SSE gap found at Plan 08's sweep is CLOSED by Plan 09, see 44-SWEEP-INVENTORY.md "Known Gap — CLOSED by Plan 44-09") |
 | TENA-04 | Phase 44 | Complete |
 | THRD-01 | Phase 45 | Complete |
-| THRD-02 | Phase 45 | Pending |
+| THRD-02 | Phase 45 | Complete |
 | THRD-03 | Phase 45 | Complete |
 | THRD-04 | Phase 45 | Complete |
 | HYGN-01 | Phase 46 | Complete |
