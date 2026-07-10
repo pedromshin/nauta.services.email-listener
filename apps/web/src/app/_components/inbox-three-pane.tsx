@@ -15,7 +15,8 @@ import { Skeleton } from "@polytoken/ui/skeleton";
 import { api } from "~/trpc/react";
 
 import type { EntityChipEntry } from "./entity-chips";
-import { InboxRow, type InboxEmail } from "./inbox-row";
+import { InboxThreadGroup } from "./inbox-thread-group";
+import type { InboxEmail } from "./inbox-row";
 
 /** The inbox-list projection of an email (a subset of the emails.list row). */
 export interface InboxEmailItem extends InboxEmail {
@@ -23,8 +24,21 @@ export interface InboxEmailItem extends InboxEmail {
   readonly toAddresses: ReadonlyArray<string>;
 }
 
+/** One thread entry (a subset of the emails.listThreads row — THRD-03). */
+export interface InboxThreadItem {
+  readonly key: string;
+  readonly threadId: string | null;
+  readonly importerId: string;
+  readonly subject: string | null;
+  readonly messageCount: number;
+  readonly latestReceivedAt: Date | string | null;
+  readonly latestSnippet: string | null;
+  /** Most-recent-first, capped server-side at 50 (T-45-04-02). */
+  readonly memberEmailIds: ReadonlyArray<string>;
+}
+
 export interface InboxData {
-  readonly items: ReadonlyArray<InboxEmailItem>;
+  readonly items: ReadonlyArray<InboxThreadItem>;
   readonly hasMore: boolean;
   readonly nextOffset: number;
 }
@@ -41,6 +55,17 @@ const PAGE_SIZE = 50;
 
 /** Server-side cap on `emails.entitySummary` input (`emailIds.max(100)`). */
 const SUMMARY_BATCH_CAP = 100;
+
+/**
+ * Client-side full-row lookup size (THRD-03): `emails.listThreads` returns
+ * grouping metadata (subject/count/snippet/date + member ids) but not the
+ * per-member sender/recipient fields `InboxRow` renders. A single bounded
+ * `emails.list` fetch resolves those — same cap as the entity-summary batch,
+ * since both are "visible page" concerns. A mailbox with more than this many
+ * emails may show partially-unresolved member rows for older threads (a
+ * documented v1 limitation — 45-UI-SPEC "Non-goals").
+ */
+const EMAIL_LOOKUP_LIMIT = SUMMARY_BATCH_CAP;
 
 // ---------------------------------------------------------------------------
 // Sub-views
@@ -147,12 +172,16 @@ function ReadingPreview({
 // ---------------------------------------------------------------------------
 
 /**
- * InboxThreePane (D-22) — a resizable, glassy three-pane Gmail-style inbox:
- * filters rail · message list · reading preview. The seed page comes from the
- * page-level emails.list query (passed in); "Load more" appends further pages
- * via the same query (hasMore / nextOffset preserved verbatim). Per-email entity
- * chips come from a SINGLE batched emails.entitySummary call keyed by the visible
- * page of email ids — never a per-row fetch (D-23).
+ * InboxThreePane (D-22, THRD-03) — a resizable, glassy three-pane Gmail-style
+ * inbox: filters rail · thread-grouped message list · reading preview. The
+ * seed page comes from the page-level emails.listThreads query (passed in);
+ * "Load more" appends further THREAD pages via the same query (hasMore /
+ * nextOffset preserved verbatim). A single supplemental emails.list fetch
+ * (bounded, EMAIL_LOOKUP_LIMIT) resolves the full per-email rows
+ * (sender/subject/date) that listThreads's grouping metadata doesn't carry,
+ * feeding both the expanded/singleton `InboxRow`s and the reading preview.
+ * Per-email entity chips come from a SINGLE batched emails.entitySummary call
+ * keyed by the resolved email ids — never a per-row fetch (D-23).
  */
 export function InboxThreePane({
   data,
@@ -163,7 +192,7 @@ export function InboxThreePane({
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
 
   // Accumulated extra pages fetched via Load-more, appended after the seed page.
-  const [extraItems, setExtraItems] = useState<ReadonlyArray<InboxEmailItem>>(
+  const [extraItems, setExtraItems] = useState<ReadonlyArray<InboxThreadItem>>(
     [],
   );
   const [nextOffset, setNextOffset] = useState<number | null>(null);
@@ -174,7 +203,7 @@ export function InboxThreePane({
   // keyed on [seedItems] — fire on every render and call setState in a loop
   // ("Maximum update depth exceeded"). With memoization the dependency only
   // changes when a genuinely new seed page arrives.
-  const seedItems = useMemo<ReadonlyArray<InboxEmailItem>>(
+  const seedItems = useMemo<ReadonlyArray<InboxThreadItem>>(
     () => data?.items ?? [],
     [data?.items],
   );
@@ -185,22 +214,34 @@ export function InboxThreePane({
     setNextOffset(null);
   }, [seedItems]);
 
-  const allItems = useMemo<ReadonlyArray<InboxEmailItem>>(
+  const allItems = useMemo<ReadonlyArray<InboxThreadItem>>(
     () => [...seedItems, ...extraItems],
     [seedItems, extraItems],
   );
 
-  // Batched entity rollup for the visible page (single query, never per-row).
-  // Capped at the server-side batch limit: emails.entitySummary validates
-  // `emailIds` with .max(100), so an unbounded list (3+ pages loaded = 150 ids)
-  // would throw a Zod error and wipe entity chips for the ENTIRE inbox. Chips
-  // beyond the first 100 loaded emails are omitted rather than crashing.
+  // Bounded full-email-row lookup (THRD-03 — see EMAIL_LOOKUP_LIMIT).
+  const emailsListQuery = api.emails.list.useQuery({
+    limit: EMAIL_LOOKUP_LIMIT,
+    offset: 0,
+  });
+
+  const emailsById = useMemo(() => {
+    const map = new Map<string, InboxEmailItem>();
+    for (const email of emailsListQuery.data?.items ?? []) {
+      map.set(email.id, email as InboxEmailItem);
+    }
+    return map;
+  }, [emailsListQuery.data]);
+
+  // Batched entity rollup for the resolved email ids (single query, never
+  // per-row). Capped at the server-side batch limit: emails.entitySummary
+  // validates `emailIds` with .max(100) — emailsById is already <= that cap.
   const emailIds = useMemo(
-    () => allItems.slice(0, SUMMARY_BATCH_CAP).map((item) => item.id),
-    [allItems],
+    () => Array.from(emailsById.keys()).slice(0, SUMMARY_BATCH_CAP),
+    [emailsById],
   );
   const entitySummaryQuery = api.emails.entitySummary.useQuery(
-    { emailIds: emailIds as string[] },
+    { emailIds },
     { enabled: emailIds.length > 0 },
   );
 
@@ -212,24 +253,33 @@ export function InboxThreePane({
     return map;
   }, [entitySummaryQuery.data]);
 
+  // A thread entry is visible under "With entities" if ANY of its member
+  // emails carry extracted entities (45-UI-SPEC "Filters / load-more").
   const withEntities = useMemo(
-    () => allItems.filter((item) => (entitiesByEmailId.get(item.id)?.length ?? 0) > 0),
+    () =>
+      allItems.filter((item) =>
+        item.memberEmailIds.some(
+          (id) => (entitiesByEmailId.get(id)?.length ?? 0) > 0,
+        ),
+      ),
     [allItems, entitiesByEmailId],
   );
 
-  const visibleItems =
-    filter === "with-entities" ? withEntities : allItems;
+  const visibleItems = filter === "with-entities" ? withEntities : allItems;
 
-  // Default-select the first visible item once data is available.
+  // Default-select the latest member of the first visible thread once data
+  // is available (memberEmailIds is most-recent-first).
   useEffect(() => {
     if (selectedEmailId === null && visibleItems.length > 0) {
-      setSelectedEmailId(visibleItems[0]!.id);
+      const firstMemberId = visibleItems[0]!.memberEmailIds[0];
+      if (firstMemberId) setSelectedEmailId(firstMemberId);
     }
   }, [selectedEmailId, visibleItems]);
 
-  // Load-more — append the next page via emails.list, preserving hasMore paging.
+  // Load-more — append the next THREAD page via emails.listThreads,
+  // preserving hasMore paging.
   const loadMoreOffset = nextOffset ?? data?.nextOffset ?? seedItems.length;
-  const loadMoreQuery = api.emails.list.useQuery(
+  const loadMoreQuery = api.emails.listThreads.useQuery(
     { limit: PAGE_SIZE, offset: loadMoreOffset },
     { enabled: false },
   );
@@ -241,12 +291,16 @@ export function InboxThreePane({
     const result = await loadMoreQuery.refetch();
     const page = result.data;
     if (!page) return;
-    setExtraItems((prev) => [...prev, ...(page.items as InboxEmailItem[])]);
+    setExtraItems((prev) => [...prev, ...(page.items as InboxThreadItem[])]);
     setNextOffset(page.nextOffset);
   };
 
-  const selectedEmail =
-    visibleItems.find((item) => item.id === selectedEmailId) ?? null;
+  const selectedEmail = selectedEmailId
+    ? (emailsById.get(selectedEmailId) ?? null)
+    : null;
+
+  const showLoading = isLoading || emailsListQuery.isLoading;
+  const showError = isError || emailsListQuery.isError;
 
   return (
     <ResizablePanelGroup direction="horizontal" className="h-full">
@@ -266,7 +320,7 @@ export function InboxThreePane({
           </div>
 
           <div className="flex-1 overflow-auto">
-            {isLoading && (
+            {showLoading && (
               <div className="space-y-2 p-4">
                 <Skeleton className="h-16 w-full rounded-md" />
                 <Skeleton className="h-16 w-full rounded-md" />
@@ -274,13 +328,13 @@ export function InboxThreePane({
               </div>
             )}
 
-            {isError && (
+            {showError && (
               <div className="p-6 text-center text-sm text-destructive">
                 Unable to load emails. Please try refreshing the page.
               </div>
             )}
 
-            {data && visibleItems.length === 0 && !isLoading && (
+            {data && visibleItems.length === 0 && !showLoading && (
               <div className="p-12 text-center text-sm text-muted-foreground">
                 {filter === "with-entities"
                   ? "No emails with extracted entities yet."
@@ -288,15 +342,22 @@ export function InboxThreePane({
               </div>
             )}
 
-            {visibleItems.map((item) => (
-              <InboxRow
-                key={item.id}
-                email={item}
-                entities={entitiesByEmailId.get(item.id) ?? []}
-                isSelected={item.id === selectedEmailId}
-                onSelect={setSelectedEmailId}
-              />
-            ))}
+            {!showLoading &&
+              visibleItems.map((item) => (
+                <InboxThreadGroup
+                  key={item.key}
+                  subject={item.subject}
+                  messageCount={item.messageCount}
+                  latestReceivedAt={item.latestReceivedAt}
+                  latestSnippet={item.latestSnippet}
+                  members={item.memberEmailIds
+                    .map((id) => emailsById.get(id))
+                    .filter((email): email is InboxEmailItem => email !== undefined)}
+                  entitiesByEmailId={entitiesByEmailId}
+                  selectedEmailId={selectedEmailId}
+                  onSelectMember={setSelectedEmailId}
+                />
+              ))}
 
             {hasMore && filter !== "with-entities" && (
               <div className="p-3">

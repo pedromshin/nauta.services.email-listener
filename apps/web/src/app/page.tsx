@@ -7,7 +7,7 @@ import { api } from "~/trpc/react";
 import { InboxThreePane } from "./_components/inbox-three-pane";
 
 export default function EmailsPage() {
-  const { data, isLoading, isError, error } = api.emails.list.useQuery({
+  const { data, isLoading, isError, error } = api.emails.listThreads.useQuery({
     limit: 50,
     offset: 0,
   });
