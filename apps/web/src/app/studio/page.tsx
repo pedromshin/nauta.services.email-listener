@@ -8,7 +8,7 @@ import { REGISTRY_VERSION } from "@polytoken/genui/registry";
 import { StudioTabs } from "./_components/studio-tabs";
 
 export const metadata: Metadata = {
-  title: "Studio — Polytoken",
+  title: "Your studio — Polytoken",
   description: "Component catalog, generation sandbox, and showcase — Polytoken design system.",
 };
 

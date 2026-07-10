@@ -9,7 +9,7 @@ import { TRPCReactProvider } from "~/trpc/react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Polytoken — Emails",
+  title: "Your inbox — Polytoken",
   description: "Inbound email viewer",
 };
 

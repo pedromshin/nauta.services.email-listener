@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { KnowledgeGraphIsland } from "./_components/knowledge-graph-island";
 
 export const metadata: Metadata = {
-  title: "Knowledge — Polytoken",
+  title: "Your knowledge — Polytoken",
   description: "Explore the entity and knowledge graph for your imported emails.",
 };
 

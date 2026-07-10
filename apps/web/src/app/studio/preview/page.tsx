@@ -15,7 +15,7 @@ import { SpecRendererIsland } from "./_components/spec-renderer-island";
 import { JsonPane } from "../_components/json-pane";
 
 export const metadata: Metadata = {
-  title: "Studio — Polytoken",
+  title: "Component showcase — Polytoken",
   description: "Component showcase: trusted interpreter rendering hardcoded demo specs.",
 };
 

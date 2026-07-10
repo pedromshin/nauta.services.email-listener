@@ -8,7 +8,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id: _id } = await params;
-  return { title: "Entity — Polytoken" };
+  return { title: "Your entity — Polytoken" };
 }
 
 export default async function EntityDetailPage({

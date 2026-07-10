@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { ForwardingAddressCard } from "~/app/_components/forwarding-address-card";
 
 export const metadata: Metadata = {
-  title: "Forwarding address — Polytoken",
+  title: "Your forwarding address — Polytoken",
 };
 
 /**
