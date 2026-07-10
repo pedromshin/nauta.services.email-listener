@@ -178,6 +178,17 @@ const SEMANTIC_STATUS_PAIRS: ReadonlyArray<{
     background: "color.success",
     foreground: "color.successForeground",
   },
+  // 48-02: tier-ladder pairs (D-48-04)
+  {
+    label: "tier-extracted",
+    background: "color.tier.extracted",
+    foreground: "color.tier.extractedForeground",
+  },
+  {
+    label: "tier-inferred",
+    background: "color.tier.inferred",
+    foreground: "color.tier.inferredForeground",
+  },
 ];
 
 describe("WCAG-AA contrast — semantic status pairs (D-48-02)", () => {

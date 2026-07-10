@@ -69,6 +69,10 @@ function resolveVars(
   vars["font-display"] = tokens["typography.display.family"];
   vars["font-body"] = tokens["typography.body.family"];
   vars["font-code"] = tokens["typography.code.family"];
+  vars["tier-inferred"] = tokens["color.tier.inferred"];
+  vars["tier-inferred-foreground"] = tokens["color.tier.inferredForeground"];
+  vars["tier-extracted"] = tokens["color.tier.extracted"];
+  vars["tier-extracted-foreground"] = tokens["color.tier.extractedForeground"];
   return Object.freeze(vars);
 }
 
@@ -109,6 +113,15 @@ const NAUTA_TEAL_TOKENS: PackTokenMap = makeTokens({
   // D-48-03: monospace code family for code blocks / inline code
   "typography.code.family":
     "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace",
+  // D-48-04: tier-ladder — cyan-teal EXTRACTED (confirmed, solid) vs
+  // indigo-violet INFERRED (provisional, pale) — distinct hues from both
+  // each other and from color.muted/accent (neutral gray in this pack).
+  // Verified WCAG-AA: extractedForeground on extracted passes 5.10:1
+  "color.tier.extracted": "178 55% 30%",
+  "color.tier.extractedForeground": "0 0% 98%",
+  // Verified WCAG-AA: inferredForeground on inferred passes 9.07:1
+  "color.tier.inferred": "230 40% 90%",
+  "color.tier.inferredForeground": "230 45% 28%",
 });
 
 // ===========================================================================
@@ -149,6 +162,15 @@ const LINEAR_CLEAN_TOKENS: PackTokenMap = makeTokens({
   // D-48-03: monospace code family for code blocks / inline code
   "typography.code.family":
     "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace",
+  // D-48-04: tier-ladder — cool cyan-blue EXTRACTED (confirmed) vs
+  // indigo INFERRED (provisional, pale) — both distinct from this pack's
+  // monochrome hue-220 primary/muted/accent register.
+  // Verified WCAG-AA: extractedForeground on extracted passes 5.30:1
+  "color.tier.extracted": "195 60% 34%",
+  "color.tier.extractedForeground": "210 20% 98%",
+  // Verified WCAG-AA: inferredForeground on inferred passes 8.49:1
+  "color.tier.inferred": "260 45% 92%",
+  "color.tier.inferredForeground": "260 40% 32%",
 });
 
 // ===========================================================================
@@ -188,6 +210,15 @@ const WARM_EDITORIAL_TOKENS: PackTokenMap = makeTokens({
   // D-48-03: monospace code family for code blocks / inline code
   "typography.code.family":
     "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace",
+  // D-48-04: tier-ladder — teal-green EXTRACTED (confirmed, cooler
+  // counterpoint to the warm palette) vs dusty-lavender INFERRED
+  // (provisional, pale) — distinct from this pack's warm sand muted/accent.
+  // Verified WCAG-AA: extractedForeground on extracted passes 5.20:1
+  "color.tier.extracted": "165 55% 30%",
+  "color.tier.extractedForeground": "0 0% 98%",
+  // Verified WCAG-AA: inferredForeground on inferred passes 8.86:1
+  "color.tier.inferred": "250 30% 90%",
+  "color.tier.inferredForeground": "250 30% 28%",
 });
 
 // ===========================================================================
@@ -232,6 +263,15 @@ const BRUTALIST_TOKENS: PackTokenMap = makeTokens({
   // brutalist's identity, so code.family now carries the explicit mono answer).
   "typography.code.family":
     "'JetBrains Mono', 'Courier New', Courier, monospace",
+  // D-48-04: tier-ladder — stark saturated blue EXTRACTED (confirmed,
+  // stamp-like) vs pale blue-gray INFERRED (provisional) — distinct from
+  // this pack's neutral-gray muted and yellow accent.
+  // Verified WCAG-AA: extractedForeground on extracted passes 5.15:1
+  "color.tier.extracted": "210 100% 42%",
+  "color.tier.extractedForeground": "0 0% 100%",
+  // Verified WCAG-AA: inferredForeground on inferred passes 14.63:1
+  "color.tier.inferred": "210 30% 85%",
+  "color.tier.inferredForeground": "0 0% 0%",
 });
 
 // ===========================================================================
@@ -271,6 +311,15 @@ const CORPORATE_SAAS_TOKENS: PackTokenMap = makeTokens({
   // D-48-03: monospace code family for code blocks / inline code
   "typography.code.family":
     "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace",
+  // D-48-04: tier-ladder — enterprise teal EXTRACTED (confirmed) vs pale
+  // violet INFERRED (provisional, common "pending" enterprise-tag hue) —
+  // distinct from this pack's blue primary and slate muted/accent.
+  // Verified WCAG-AA: extractedForeground on extracted passes 5.17:1
+  "color.tier.extracted": "175 60% 29%",
+  "color.tier.extractedForeground": "0 0% 98%",
+  // Verified WCAG-AA: inferredForeground on inferred passes 9.34:1
+  "color.tier.inferred": "260 40% 93%",
+  "color.tier.inferredForeground": "260 40% 30%",
 });
 
 // ===========================================================================
@@ -314,6 +363,15 @@ const PLAYFUL_ROUNDED_TOKENS: PackTokenMap = makeTokens({
   // D-48-03: monospace code family for code blocks / inline code
   "typography.code.family":
     "ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace",
+  // D-48-04: tier-ladder — vibrant cyan EXTRACTED (confirmed) vs pastel
+  // peach/yellow INFERRED (provisional, playful) — distinct from this
+  // pack's purple primary and pink accent.
+  // Verified WCAG-AA: extractedForeground on extracted passes 5.07:1
+  "color.tier.extracted": "190 65% 33%",
+  "color.tier.extractedForeground": "0 0% 100%",
+  // Verified WCAG-AA: inferredForeground on inferred passes 9.41:1
+  "color.tier.inferred": "45 85% 88%",
+  "color.tier.inferredForeground": "30 40% 22%",
 });
 
 // ===========================================================================

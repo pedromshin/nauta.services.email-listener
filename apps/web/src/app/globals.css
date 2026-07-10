@@ -46,6 +46,13 @@
     --radius-pill: 9999px;
     /* D-48-03: monospace code family for code blocks / inline code */
     --font-code: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+    /* D-48-04: tier-ladder — EXTRACTED (confirmed, solid cyan-teal) vs
+       INFERRED (provisional, pale indigo) — matches polytoken-teal pack's
+       tier pair (Task 1). Never overloads --accent/--muted. */
+    --tier-extracted: 178 55% 30%;
+    --tier-extracted-foreground: 0 0% 98%;
+    --tier-inferred: 230 40% 90%;
+    --tier-inferred-foreground: 230 45% 28%;
     --sidebar-background: var(--background);
     --sidebar-foreground: var(--foreground);
     --sidebar-primary: var(--primary);
@@ -92,6 +99,12 @@
     /* D-48-01/D-48-03: breakpoint-static — identical to :root, mirrored per D-48-07 */
     --radius-pill: 9999px;
     --font-code: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+    /* D-48-04: tier-ladder, darkened/inverted for the dark surface (mirrors
+       --success's light->dark deepening pattern above) */
+    --tier-extracted: 178 60% 26%;
+    --tier-extracted-foreground: 0 0% 98%;
+    --tier-inferred: 230 25% 18%;
+    --tier-inferred-foreground: 230 40% 88%;
     --sidebar-background: var(--background);
     --sidebar-foreground: var(--foreground);
     --sidebar-primary: var(--primary);

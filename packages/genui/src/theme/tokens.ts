@@ -72,6 +72,14 @@ export const TOKEN_ALIASES = [
   "typography.body.family",
   // Monospace code family (D-48-03) — code blocks / inline code
   "typography.code.family",
+  // Tier-ladder tokens (D-48-04) — knowledge confidence ladder: EXTRACTED
+  // (confirmed/trustworthy) vs INFERRED (provisional). These NEVER overload
+  // color.accent/color.muted — they are purpose-built, novel aliases with no
+  // competitor precedent to borrow.
+  "color.tier.inferred",
+  "color.tier.inferredForeground",
+  "color.tier.extracted",
+  "color.tier.extractedForeground",
 ] as const;
 
 /** Union of all token alias literal strings. */
@@ -168,4 +176,8 @@ export const TOKEN_ALIAS_TO_CSS_VAR: Readonly<Record<TokenAlias, string>> =
     "typography.display.family": "font-display",
     "typography.body.family": "font-body",
     "typography.code.family": "font-code",
+    "color.tier.inferred": "tier-inferred",
+    "color.tier.inferredForeground": "tier-inferred-foreground",
+    "color.tier.extracted": "tier-extracted",
+    "color.tier.extractedForeground": "tier-extracted-foreground",
   } satisfies Record<TokenAlias, string>);

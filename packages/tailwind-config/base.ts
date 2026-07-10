@@ -27,6 +27,15 @@ export default {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
         },
+        // D-48-04: tier-ladder — knowledge confidence (EXTRACTED/INFERRED),
+        // never overloads primary/muted/accent. Flat keys (not DEFAULT/
+        // foreground sub-objects) so both tiers coexist under one group.
+        tier: {
+          inferred: "hsl(var(--tier-inferred))",
+          "inferred-foreground": "hsl(var(--tier-inferred-foreground))",
+          extracted: "hsl(var(--tier-extracted))",
+          "extracted-foreground": "hsl(var(--tier-extracted-foreground))",
+        },
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
