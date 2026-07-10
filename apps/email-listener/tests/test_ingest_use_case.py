@@ -58,6 +58,7 @@ def _make_use_case(
     components: MagicMock | None = None,
     propose_regions: MagicMock | None = None,
     importer_resolver: MagicMock | None = None,
+    thread_resolver: MagicMock | None = None,
 ) -> tuple[IngestInboundEmailUseCase, dict[str, MagicMock]]:
     """Factory that constructs IngestInboundEmailUseCase with all collaborators.
 
@@ -96,6 +97,10 @@ def _make_use_case(
         importer_resolver = MagicMock()
         importer_resolver.resolve = AsyncMock(return_value=IMPORTER_ID)
 
+    if thread_resolver is None:
+        thread_resolver = MagicMock()
+        thread_resolver.resolve = AsyncMock(return_value=None)
+
     use_case = IngestInboundEmailUseCase(
         raw_store=raw_store,
         email_repo=email_repo,
@@ -106,6 +111,7 @@ def _make_use_case(
         parser_registry=parser_registry,
         propose_regions=propose_regions,
         importer_resolver=importer_resolver,
+        thread_resolver=thread_resolver,
     )
     mocks: dict[str, MagicMock] = {
         "raw_store": raw_store,
@@ -116,6 +122,7 @@ def _make_use_case(
         "parser_registry": parser_registry,
         "propose_regions": propose_regions,
         "importer_resolver": importer_resolver,
+        "thread_resolver": thread_resolver,
     }
     return use_case, mocks
 

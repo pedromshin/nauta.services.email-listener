@@ -16,6 +16,7 @@ Fakes provided:
     InMemoryAttachmentRepository — dict-backed; satisfies AttachmentRepository
     InMemoryComponentRepository  — dict-backed; satisfies ComponentRepository
     FixedImporterResolver     — always resolves to the supplied importer_id
+    NullThreadResolver        — always resolves to no thread (Phase 45, THRD-01)
 
 Usage example::
 
@@ -174,6 +175,17 @@ class FixedImporterResolver:
         return self._importer_id
 
 
+class NullThreadResolver:
+    """ThreadResolver fake (Phase 45, THRD-01) — always resolves to no thread.
+
+    Keeps the harness deterministic and DB-free: corpus runs care about
+    parsing/segmentation output, not thread grouping.
+    """
+
+    async def resolve(self, **kwargs: object) -> None:  # type: ignore[override]
+        _ = kwargs
+
+
 # ---------------------------------------------------------------------------
 # MIME construction helper
 # ---------------------------------------------------------------------------
@@ -265,6 +277,7 @@ async def forward_corpus_file(
     attachment_repo = InMemoryAttachmentRepository()
     component_repo = InMemoryComponentRepository()
     importer_resolver = FixedImporterResolver(importer_id)
+    thread_resolver = NullThreadResolver()
 
     # Null OCR adapter (no Textract calls in unit harness)
     class _NullOcr:
@@ -295,6 +308,7 @@ async def forward_corpus_file(
         parser_registry=_parser_registry,  # type: ignore[arg-type]
         propose_regions=propose_regions_uc,
         importer_resolver=importer_resolver,  # type: ignore[arg-type]
+        thread_resolver=thread_resolver,  # type: ignore[arg-type]
     )
 
     persisted_email = await use_case.execute(ses_message_id)

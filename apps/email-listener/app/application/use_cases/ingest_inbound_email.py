@@ -34,7 +34,8 @@ from app.domain.ports.email_repository import EmailRepository
 from app.domain.ports.importer_resolver import ImporterResolver
 from app.domain.ports.parser_registry_port import ParserRegistryPort
 from app.domain.ports.raw_email_store import RawEmailStore
-from app.domain.services.mime_parser import ParsedAttachment, parse_mime
+from app.domain.ports.thread_resolver import ThreadResolver
+from app.domain.services.mime_parser import ParsedAttachment, ParsedEmail, parse_mime
 
 logger = structlog.get_logger(__name__)
 
@@ -77,6 +78,7 @@ class IngestInboundEmailUseCase:
         parser_registry: ParserRegistryPort,
         propose_regions: ProposeRegionsUseCase,
         importer_resolver: ImporterResolver,
+        thread_resolver: ThreadResolver,
         suggest_entity_types: SuggestEntityTypesUseCase | None = None,
     ) -> None:
         self._raw_store = raw_store
@@ -88,6 +90,7 @@ class IngestInboundEmailUseCase:
         self._parser_registry = parser_registry
         self._propose_regions = propose_regions
         self._importer_resolver = importer_resolver
+        self._thread_resolver = thread_resolver
         self._suggest_entity_types = suggest_entity_types
 
     async def execute(self, ses_message_id: str) -> Email:
@@ -102,14 +105,28 @@ class IngestInboundEmailUseCase:
         message_id = parsed.message_id or ses_message_id
         existing = await self._email_repo.find_by_message_id(importer_id, message_id)
         now = datetime.now(UTC)
+        received_at = parsed.received_at or now
+
+        # Resolve thread_id behind the ThreadResolver port (THRD-01), after
+        # importer_id is known and before the Email is constructed/saved.
+        # Best-effort/non-fatal (T-45-03-02): a resolver failure degrades to
+        # thread_id=None with a logged warning — ingestion must never hard-fail
+        # on thread resolution, mirroring the propose_regions isolation below.
+        thread_id = await self._resolve_thread(
+            importer_id=importer_id,
+            message_id=message_id,
+            parsed=parsed,
+            received_at=received_at,
+        )
 
         email = Email(
             id=existing.id if existing else str(uuid.uuid4()),
             importer_id=importer_id,
+            thread_id=thread_id,
             message_id=message_id,
             in_reply_to=parsed.in_reply_to,
             references_ids=parsed.references_ids,
-            received_at=parsed.received_at or now,
+            received_at=received_at,
             sender_address=parsed.sender_address,
             sender_name=parsed.sender_name,
             to_addresses=parsed.to_addresses,
@@ -159,6 +176,40 @@ class IngestInboundEmailUseCase:
             redelivery=existing is not None,
         )
         return saved
+
+    async def _resolve_thread(
+        self,
+        *,
+        importer_id: str,
+        message_id: str,
+        parsed: ParsedEmail,
+        received_at: datetime,
+    ) -> str | None:
+        """Best-effort thread resolution (T-45-03-02): never fails ingestion.
+
+        A ThreadResolver exception degrades to thread_id=None with a logged
+        warning — mirrors the propose_regions/suggest_entity_types isolation
+        already in execute().
+        """
+        try:
+            return await self._thread_resolver.resolve(
+                importer_id=importer_id,
+                message_id=message_id,
+                in_reply_to=parsed.in_reply_to,
+                references_ids=parsed.references_ids,
+                subject=parsed.subject,
+                received_at=received_at,
+                body_text=parsed.body_text,
+                body_html=parsed.body_html,
+            )
+        except Exception:
+            logger.warning(
+                "thread_resolution_failed",
+                importer_id=importer_id,
+                message_id=message_id,
+                exc_info=True,
+            )
+            return None
 
     async def _ingest_attachment(self, email: Email, index: int, parsed: ParsedAttachment) -> None:
         attachment_id = _attachment_id(email.id, index, parsed.filename)

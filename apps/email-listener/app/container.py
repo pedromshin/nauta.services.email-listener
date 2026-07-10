@@ -101,6 +101,7 @@ from app.domain.ports.raw_email_store import RawEmailStore
 from app.domain.ports.retrieval_port import RetrievalPort
 from app.domain.ports.retrieval_provider import RetrievalProvider
 from app.domain.ports.segmenter_protocol import SegmenterProtocol
+from app.domain.ports.thread_resolver import ThreadResolver
 from app.domain.ports.ui_spec_template_repository import UiSpecTemplateRepository
 from app.domain.services.chat_provider_router import ChatProviderRouter
 from app.domain.services.cost_circuit_breaker import CostCircuitBreaker
@@ -154,6 +155,7 @@ from app.infrastructure.supabase.supabase_chat_widget_interaction_repository imp
 from app.infrastructure.supabase.supabase_cost_ledger_repository import SupabaseCostLedgerRepository
 from app.infrastructure.supabase.supabase_generation_audit_repository import SupabaseGenerationAuditRepository
 from app.infrastructure.supabase.supabase_ui_spec_template_repository import SupabaseUiSpecTemplateRepository
+from app.infrastructure.supabase.thread_repository import SupabaseThreadRepository
 from app.infrastructure.tools.lookup_entity_executor import (
     LOOKUP_ENTITY_TOOL_NAME,
     LookupEntityExecutor,
@@ -220,6 +222,15 @@ def _provide_importer_resolver(client: Client) -> ImporterResolver:
         client=client,
         default_importer_id=get_settings().DEFAULT_IMPORTER_ID,
     )
+
+
+def _provide_thread_resolver(client: Client) -> ThreadResolver:
+    """SupabaseThreadRepository bound to the ThreadResolver port (Phase 45, THRD-01).
+
+    Resolved once per ingest, right after importer_id — mirrors
+    _provide_importer_resolver's shape and the ImporterResolver DI pattern.
+    """
+    return SupabaseThreadRepository(client=client)
 
 
 def _provide_autofiller(client: AsyncAnthropicBedrock) -> AutofillProtocol:
@@ -466,6 +477,7 @@ def _provide_ingest_use_case(
     segmenter: SegmenterProtocol,
     propose_regions: ProposeRegionsUseCase,
     importer_resolver: ImporterResolver,
+    thread_resolver: ThreadResolver,
     suggest_entity_types: SuggestEntityTypesUseCase,
 ) -> IngestInboundEmailUseCase:
     """Factory for IngestInboundEmailUseCase.
@@ -481,6 +493,10 @@ def _provide_ingest_use_case(
 
     SuggestEntityTypesUseCase is injected and passed through so the ingest
     pipeline auto-classifies candidate regions after propose_regions (best-effort).
+
+    thread_resolver (Phase 45, THRD-01) is resolved right after importer_id
+    inside execute() and is best-effort (T-45-03-02): a resolution failure
+    never fails ingestion.
     """
     raw_registry = _provide_parser_registry()
     # _provide_parser_registry returns ``object`` to satisfy dishka; cast back
@@ -496,6 +512,7 @@ def _provide_ingest_use_case(
         parser_registry=parser_registry,
         propose_regions=propose_regions,
         importer_resolver=importer_resolver,
+        thread_resolver=thread_resolver,
         suggest_entity_types=suggest_entity_types,
     )
 
@@ -917,6 +934,9 @@ def _build_provider() -> Provider:  # noqa: PLR0915
     provider.provide(_provide_attachment_storage, provides=AttachmentStorage)
     provider.provide(_provide_ingestion_config, provides=IngestionConfig)
     provider.provide(_provide_importer_resolver, provides=ImporterResolver)
+    # Thread resolution at ingest time (Phase 45, THRD-01) — mirrors the
+    # importer resolver binding above.
+    provider.provide(_provide_thread_resolver, provides=ThreadResolver)
 
     # ── LLM adapters (Bedrock) ────────────────────────────────────────────────
     provider.provide(_provide_segmenter, provides=SegmenterProtocol)
