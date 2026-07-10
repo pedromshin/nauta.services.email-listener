@@ -1,6 +1,7 @@
 ---
 created: 2026-07-10
 source: 46-VERIFICATION.md accepted override (HYGN-01 / DEF-20-01)
+resolves_phase: 47
 ---
 
 # Run Playwright code-island isolation spec on real browsers
