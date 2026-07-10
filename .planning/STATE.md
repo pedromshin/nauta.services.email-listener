@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: Polytoken Re-skin — Brand, Design System & Responsive Canvas
 status: executing
-last_updated: "2026-07-10T20:53:37.466Z"
-last_activity: 2026-07-10 -- 48-05 complete (docs/design/hover-active-convention.md records D-48-06, the ONE hover/active-state derivation rule with worked examples from ProvenanceLink/ConfirmDenyControls/TierFilterControl; docs/design/breakpoint-decision.md records D-48-07, answering all three required questions and scoping Phase 50's MAY/MAY NOT; brand-guide.md section 8 cites both); 48-04 still pending (parallel wave-2 plan, executed separately)
+last_updated: "2026-07-10T21:14:40.876Z"
+last_activity: 2026-07-10 -- 48-04 complete (parallel wave-2 plan: graph-nodes.tsx/filter-rail.tsx/node-detail-pane.tsx consume the closed color.graph.* palette identically across node chrome, filter dots, and detail badges; tier-edge-style.ts/tier-filter-control.tsx consume the color.tier.* ladder instead of overloading --muted-foreground, EXTRACTED gaining an explicit tier-extracted stroke; textual before/after artifact recorded per the 48-03 precedent). All 5 plans of Phase 48 now have SUMMARY.md — phase ready for verification.
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 10
-  completed_plans: 9
-  percent: 20
+  completed_plans: 10
+  percent: 40
 ---
 
 # State
@@ -28,10 +28,36 @@ decision, /gsd:cleanup (phase-dir archival deferred — needs interactive approv
 
 ## Current Position
 
-Phase: 48 (token-system-extensions) — EXECUTING
+Phase: 48 (token-system-extensions) — ALL PLANS EXECUTED (5/5) — ready for verification
 Plan: 5 of 5
 Status: Executing Phase 48
-Last activity: 2026-07-10 -- 48-05 complete (docs/design/hover-active-convention.md records D-48-06, the ONE hover/active-state derivation rule with worked examples from ProvenanceLink/ConfirmDenyControls/TierFilterControl; docs/design/breakpoint-decision.md records D-48-07, answering all three required questions and scoping Phase 50's MAY/MAY NOT; brand-guide.md section 8 cites both); 48-04 still pending (parallel wave-2 plan, executed separately)
+Last activity: 2026-07-10 -- 48-04 complete (parallel wave-2 plan: graph-nodes.tsx/filter-rail.tsx/node-detail-pane.tsx consume the closed color.graph.* palette identically across node chrome, filter dots, and detail badges; tier-edge-style.ts/tier-filter-control.tsx consume the color.tier.* ladder instead of overloading --muted-foreground, EXTRACTED gaining an explicit tier-extracted stroke; textual before/after artifact recorded per the 48-03 precedent). All 5 plans of Phase 48 now have SUMMARY.md — phase ready for verification.
+
+## Phase 48 — Token System Extensions — Plan 04 History
+
+- **48-04 EXECUTED** (`200c1bd` feat, `d38577e` feat, `7229c60` docs):
+  Consumed the two 48-02 novel token systems on the knowledge canvas (D-48-04,
+  D-48-05). `graph-nodes.tsx`'s entity_instance/email_component/email node
+  chrome, `filter-rail.tsx`'s dotClass map, and `node-detail-pane.tsx`'s
+  Instance/Component badges all migrated off hardcoded
+  violet-500/amber-500/slate onto the identical closed `color.graph.*`
+  palette (one alias, three surfaces, zero drift); the `knowledge_node`
+  glow's raw HSL literal became a `hsl(var(--primary))` var ref.
+  `tier-edge-style.ts` migrated INFERRED/AMBIGUOUS strokes off the
+  overloaded `hsl(var(--muted-foreground))` onto `hsl(var(--tier-inferred))`,
+  and (a plan-anticipated, must-haves-driven deviation) EXTRACTED gained an
+  explicit `hsl(var(--tier-extracted))` stroke instead of staying an empty
+  React-Flow-default object — `graph-legend.tsx` inherits all three via
+  `tierEdgeStyle` with no logic change. `tier-filter-control.tsx`'s active
+  "Confirmed" segment now ties to `tier-extracted` instead of generic
+  `primary`. Live-browser screenshot deferred (same OAuth-gated blocker as
+  48-03) — a textual before/after artifact at
+  `.planning/ui-reviews/2026-07-10T21-05-50.831Z/index.md` documents all
+  diffs with rendered-color analysis. Both automated verify blocks
+  (typecheck+grep gate; typecheck+test) passed first try. TOKN-04/TOKN-05
+  already marked Complete in REQUIREMENTS.md (from 48-02's token-existence
+  claim); this plan is what actually wires the consumption the requirement
+  text also demands.
 
 ## Phase 48 — Token System Extensions — Plan 05 History
 
@@ -2767,6 +2793,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 48 P01 | 20min | 3 tasks | 9 files |
 | Phase 48 P02 | 40min | 2 tasks | 5 files |
 | Phase 48 P05 | 10min | 2 tasks | 3 files |
+| Phase 48 P04 | 20min | 3 tasks | 7 files |
 
 ## Operator Next Steps
 

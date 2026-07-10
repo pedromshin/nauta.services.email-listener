@@ -135,7 +135,7 @@ chips, MOBL's breakpoint decision). Research base:
 
 - [x] **Phase 47: Brand Foundation + Verification Tooling** — polytoken brand identity (voice, logo, guide) documented and applied to login/chrome; Playwright + screenshot harness installed and working
  (completed 2026-07-10)
-- [ ] **Phase 48: Token-System Extensions** — v1.4 DTCG token system extended with pill radius, success color, code typography, tier-ladder tokens, graph node/edge palette, hover/active convention, breakpoint decision
+- [x] **Phase 48: Token-System Extensions** — v1.4 DTCG token system extended with pill radius, success color, code typography, tier-ladder tokens, graph node/edge palette, hover/active convention, breakpoint decision (completed 2026-07-10)
 - [ ] **Phase 49: Total UI Re-skin** — chat, inbox, knowledge canvas, studio, settings, login re-skinned in the polytoken register on extended tokens, zero raw hex
 - [ ] **Phase 50: Mobile-Responsive Answer** — canvas surfaces collapse to list/feed on small screens; core flows usable on a mobile viewport
 - [ ] **Phase 51: Editable Genui Panels / Studio-on-Canvas** — canvas genui panels become live editing surfaces (style-pack switch, spec tweak, regenerate, promptable re-theme)
@@ -174,7 +174,7 @@ Plans:
 2. Two novel, purpose-built token systems exist with no competitor precedent to borrow: tier-ladder tokens consumed by the knowledge tier badges (never overloading `color.accent`/`color.muted`), and a closed graph node/edge-type palette consumed by the xyflow canvas for node differentiation (email/chat/knowledge/artifact) — zero raw hex (D-03/STYLE-03 holds)
 3. Two design conventions are recorded and applied: a documented hover/active-state derivation rule used consistently, and a breakpoint-awareness decision with a minimal working mechanism that the mobile phase builds on
 
-**Plans:** 4/5 plans executed
+**Plans:** 5/5 plans complete
 
 ### Phase 49: Total UI Re-skin
 
