@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: Polytoken Re-skin — Brand, Design System & Responsive Canvas
 status: executing
-last_updated: "2026-07-10T20:20:24.323Z"
-last_activity: 2026-07-10 -- 48-02 complete (tier-ladder color.tier.inferred/extracted + closed graph node-type palette color.graph.entity/emailComponent/email, all 6 packs, WCAG-AA verified); 48-03 next
+last_updated: "2026-07-10T20:31:42.000Z"
+last_activity: 2026-07-10 -- 48-03 complete (citation chip + chat canvas edge label -> rounded-pill; chat markdown + studio JSON pane code -> font-code; layers-tree-row/extraction-summary-panel/confirm-deny-controls confirmed-good visuals -> color.success, deny/stop untouched; textual before/after artifact recorded, live-browser capture OAuth-gated); 48-04 next
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 10
-  completed_plans: 7
-  percent: 70
+  completed_plans: 8
+  percent: 80
 ---
 
 # State
@@ -29,9 +29,35 @@ decision, /gsd:cleanup (phase-dir archival deferred — needs interactive approv
 ## Current Position
 
 Phase: 48 (token-system-extensions) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Executing Phase 48
-Last activity: 2026-07-10 -- 48-02 complete (tier-ladder color.tier.inferred/extracted + closed graph node-type palette color.graph.entity/emailComponent/email, all 6 packs, WCAG-AA verified); 48-03 next
+Last activity: 2026-07-10 -- 48-03 complete (citation chip + chat canvas edge label -> rounded-pill; chat markdown + studio JSON pane code -> font-code; layers-tree-row/extraction-summary-panel/confirm-deny-controls confirmed-good visuals -> color.success, deny/stop untouched; textual before/after artifact recorded, live-browser capture OAuth-gated); 48-04 next
+
+## Phase 48 — Token System Extensions — Plan 03 History
+
+- **48-03 EXECUTED** (`0a03b54` feat, `d36dd46` feat, `d709176` docs):
+  Consumed the three 48-01 utility tokens at their designated call sites
+  (D-48-01/02/03). `provenance-link.tsx`'s shared `CHIP_CLASS_NAME` -
+  `rounded-md` -> `rounded-pill` (converts every citation chip at once);
+  the chat canvas `data-edge.tsx` label (the only other genuine
+  label-carrying pill chip found on `/chat`) also converted from
+  `rounded-full` to `rounded-pill`. Chat markdown inline code + fenced
+  blocks and the studio `JsonPane` now render on `font-code` instead of
+  `font-mono`. `layers-tree-row.tsx` / `extraction-summary-panel.tsx` /
+  `confirm-deny-controls.tsx` confirmed-good visuals migrated off
+  hardcoded green/emerald onto `bg-success`/`text-success`/
+  `text-success-foreground` (grep-verified zero `green-`/`emerald-`/
+  `lime-` remain); DENY/deny buttons in both files left untouched
+  (dossier rule: success never relabels stop/deny). `npm run typecheck`
+  clean (only the pre-existing dev/design gap); `provenance-link.test.tsx`
+  6/6 green. D-48-08 visual evidence: both changed surfaces sit behind
+  the auth middleware with no live Supabase session (OAuth still
+  user-gated) and `/emails/[id]` isn't in the screenshot harness's
+  surface list at all, so a textual before/after artifact was written
+  to `.planning/ui-reviews/2026-07-10T20-30-05.134Z/index.md` instead of
+  forcing a browser session — gap + concrete follow-up recorded there
+  and in the plan summary. One doc-only deviation (stale comment fix).
+  TOKN-01/TOKN-02/TOKN-03 marked Complete in REQUIREMENTS.md.
 
 ## Phase 48 — Token System Extensions — Plan 02 History
 
