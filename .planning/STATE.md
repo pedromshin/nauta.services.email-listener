@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: Polytoken Re-skin — Brand, Design System & Responsive Canvas
 status: executing
-last_updated: "2026-07-10T19:30:21.434Z"
-last_activity: 2026-07-10 -- Phase 48 execution started
+last_updated: "2026-07-10T19:55:09.703Z"
+last_activity: 2026-07-10 -- 48-01 complete; 48-02 next
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 10
-  completed_plans: 5
-  percent: 20
+  completed_plans: 6
+  percent: 60
 ---
 
 # State
@@ -29,9 +29,9 @@ decision, /gsd:cleanup (phase-dir archival deferred — needs interactive approv
 ## Current Position
 
 Phase: 48 (token-system-extensions) — EXECUTING
-Plan: 1 of 5
+Plan: 2 of 5
 Status: Executing Phase 48
-Last activity: 2026-07-10 -- Phase 48 execution started
+Last activity: 2026-07-10 -- 48-01 complete (radius.pill/color.success/typography.code.family token extensions + touch-target guard + WCAG-AA/registration regression gates); 48-02 next
 
 ## Phase 45 — Email Threads + Forwarding Seam — Plan 04 History
 
@@ -2364,6 +2364,10 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 
 ## Decisions Log
 
+- 2026-07-10 (48-01): brutalist pack keeps radius.pill="0rem" (zero-radius identity beats pill-ness, documented D-48-01 exception) and migrates its existing JetBrains Mono display font explicitly onto typography.code.family (display.family left unchanged)
+- 2026-07-10 (48-01): playful-rounded's success color darkened from the plan's suggested "142 70% 40%" to "142 70% 30%" (fg unchanged, white) after the plan's suggestion failed the new computational WCAG-AA contrast gate (2.92:1, below the 4.5:1 floor); the darker value computes to 4.88:1
+- 2026-07-10 (48-01): md (768px) fixed as the canvas->feed responsive-switch breakpoint (D-48-07); pack tokens (packs.ts) stay breakpoint-static by design — no per-breakpoint token dimension
+- 2026-07-10 (48-01): TOKEN_ALIASES post-task count is 25, not the plan's assumed 24 — the plan's "was 20" baseline premise undercounted the pre-existing tuple (actually 21); no test hardcodes a literal count, so nothing broke
 - 2026-07-10 (47-03): docs/design/brand-guide.md created — USER-LOCKED naming record (verbatim D-47-01 quote), warm voice do/don't table (6 pairs), mark-usage referencing the real brand-mark.tsx/icon.svg assets, the accepted polytoken CLI-tool collision recorded as risk (not mitigation), and an explicit NOT-done/user-gated list (domain purchase, trademark filing); references product-register-and-bans.md, never contradicts it. BRND-03 marked Complete.
 - 2026-07-10 (47-03): PROJECT.md Key Decisions gained a Phase 47 (BRND) row recording the USER-LOCKED polytoken/polytoken.ai decision overriding the dossier's Direction-B rename recommendation, the accepted CLI-tool-name collision, and the user-gated domain/trademark remainder.
 - 2026-07-10 (47-04): T-47-SC supply-chain checkpoint for @playwright/test pre-approved by orchestrator under standing autonomous mandate; independently re-verified (microsoft/playwright npm org, 1.61.1 current stable, no typosquat) before install; pinned exact (no caret) in apps/web devDependencies.
@@ -2686,6 +2690,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 47 P02 | ~20 min | 3 tasks | 13 files |
 | Phase 47 P04 | ~25 min | 3 tasks | 4 files — @playwright/test+firefox installed, 10/12 e2e assertions pass (1 pre-existing spec-probe finding documented, not fixed); VRFY-01 left Pending |
 | Phase 47 P05 | 35 min | 2 tasks | 4 files |
+| Phase 48 P01 | 20min | 3 tasks | 9 files |
 
 ## Operator Next Steps
 

@@ -17,13 +17,13 @@ VISION.md E2 remainder, backlog 999.7 (editable panels) + 999.4 cheap slice (pro
 
 ### Token-System Extensions (TOKN)
 
-- [ ] **TOKN-01**: `radius.pill` alias exists in `TOKEN_ALIASES` and all 6 style packs, and chips/tabs/pills (citation chips, follow-up chips, tab pills) consume it
-- [ ] **TOKN-02**: `color.success` / `color.successForeground` exist in all packs (WCAG-AA verified via the existing per-pack contrast gate) pairing the existing destructive side
-- [ ] **TOKN-03**: `typography.code.family` alias exists in all packs; `brutalist`'s display-family JetBrains Mono workaround is migrated onto it
+- [x] **TOKN-01**: `radius.pill` alias exists in `TOKEN_ALIASES` and all 6 style packs, and chips/tabs/pills (citation chips, follow-up chips, tab pills) consume it
+- [x] **TOKN-02**: `color.success` / `color.successForeground` exist in all packs (WCAG-AA verified via the existing per-pack contrast gate) pairing the existing destructive side
+- [x] **TOKN-03**: `typography.code.family` alias exists in all packs; `brutalist`'s display-family JetBrains Mono workaround is migrated onto it
 - [ ] **TOKN-04**: Purpose-built tier-ladder tokens (e.g. `color.tier.inferred` / `color.tier.extracted`) exist and the knowledge tier badges consume them (no overloading of `color.accent`/`color.muted`)
 - [ ] **TOKN-05**: A closed palette of graph node/edge-type tokens exists and the xyflow canvas consumes it for node-type differentiation (email/chat/knowledge/artifact) — zero raw hex (D-03/STYLE-03 holds)
 - [ ] **TOKN-06**: A hover/active interactive-state convention is defined once (documented derivation rule) and applied consistently across re-skinned surfaces
-- [ ] **TOKN-07**: The breakpoint-awareness question (density/layout behavior across breakpoints) is resolved as a recorded design decision with a minimal working mechanism that MOBL builds on — scoped as a design conversation, not a single alias
+- [x] **TOKN-07**: The breakpoint-awareness question (density/layout behavior across breakpoints) is resolved as a recorded design decision with a minimal working mechanism that MOBL builds on — scoped as a design conversation, not a single alias
 
 ### Total UI Re-skin (RSKN)
 
@@ -84,13 +84,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BRND-03 | Phase 47 | Complete |
 | VRFY-01 | Phase 47 | Complete |
 | VRFY-02 | Phase 47 | Complete |
-| TOKN-01 | Phase 48 | Pending |
-| TOKN-02 | Phase 48 | Pending |
-| TOKN-03 | Phase 48 | Pending |
+| TOKN-01 | Phase 48 | Complete |
+| TOKN-02 | Phase 48 | Complete |
+| TOKN-03 | Phase 48 | Complete |
 | TOKN-04 | Phase 48 | Pending |
 | TOKN-05 | Phase 48 | Pending |
 | TOKN-06 | Phase 48 | Pending |
-| TOKN-07 | Phase 48 | Pending |
+| TOKN-07 | Phase 48 | Complete |
 | RSKN-01 | Phase 49 | Pending |
 | RSKN-02 | Phase 49 | Pending |
 | RSKN-03 | Phase 49 | Pending |
