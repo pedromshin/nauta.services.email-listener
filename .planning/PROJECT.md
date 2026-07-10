@@ -133,7 +133,11 @@ verification human_needed with zero code blockers (10/13 code-verified; 7 UAT it
 `45-HUMAN-UAT.md`, mostly OAuth-gated visual checks + the live forwarding round-trip);
 migration 0035, Union-Find grouping at ingest, idempotent backfill live-run (16 emails → 9
 threads), thread-grouped inbox, u-{token}@ forwarding seam + FORWARDING-RUNBOOK.md. Phase 46
-(hygiene/dossier — 1/3 plans done) remains.
+(Kickoff Hygiene + v1.8 Dossier, HYGN-01/02 + DSSR-01/02) complete 2026-07-10 — verification
+passed with 1 accepted override (real-browser Playwright run parked as todo; AST-allowlist
+substitute green); v1.8 dossier decision-ready at `.planning/research/v1.8-design/`
+(brand recommendation: Cortex — NOTE the sourced polytoken naming collision finding). ALL 5
+v1.7 PHASES COMPLETE — lifecycle (audit → complete → cleanup) in progress.
 
 **Key context:** Opened autonomously (`/gsd:new-milestone /gsd:autonomous /strategic-compact
 /gsd:graphify`): E2 selected because VISION.md (freshest user-captured intent, 2026-07-07) names
