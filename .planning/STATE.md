@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.8
 milestone_name: Polytoken Re-skin — Brand, Design System & Responsive Canvas
 status: executing
-last_updated: "2026-07-10T18:10:00.000Z"
-last_activity: 2026-07-10 -- Phase 47 Plan 04 (Playwright toolchain + parked spec runs) executed
+last_updated: "2026-07-10T18:20:02.284Z"
+last_activity: 2026-07-10 -- Phase 47 Plan 03 (brand guide + PROJECT.md Key Decisions) executed
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 5
-  completed_plans: 3
-  percent: 60
+  completed_plans: 4
+  percent: 80
 ---
 
 # State
@@ -29,9 +29,9 @@ decision, /gsd:cleanup (phase-dir archival deferred — needs interactive approv
 ## Current Position
 
 Phase: 47 (Brand Foundation + Verification Tooling) — EXECUTING
-Plan: 4 of 5 (47-03 still pending; 47-01/02/04 complete)
+Plan: 5 of 5 (47-05 still pending; 47-01/02/03/04 complete)
 Status: Executing Phase 47
-Last activity: 2026-07-10 -- Phase 47 Plan 04 (Playwright toolchain + parked spec runs) executed
+Last activity: 2026-07-10 -- Phase 47 Plan 03 (brand guide + PROJECT.md Key Decisions) executed
 
 ## Phase 45 — Email Threads + Forwarding Seam — Plan 04 History
 
@@ -2364,6 +2364,8 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 
 ## Decisions Log
 
+- 2026-07-10 (47-03): docs/design/brand-guide.md created — USER-LOCKED naming record (verbatim D-47-01 quote), warm voice do/don't table (6 pairs), mark-usage referencing the real brand-mark.tsx/icon.svg assets, the accepted polytoken CLI-tool collision recorded as risk (not mitigation), and an explicit NOT-done/user-gated list (domain purchase, trademark filing); references product-register-and-bans.md, never contradicts it. BRND-03 marked Complete.
+- 2026-07-10 (47-03): PROJECT.md Key Decisions gained a Phase 47 (BRND) row recording the USER-LOCKED polytoken/polytoken.ai decision overriding the dossier's Direction-B rename recommendation, the accepted CLI-tool-name collision, and the user-gated domain/trademark remainder.
 - 2026-07-10 (47-04): T-47-SC supply-chain checkpoint for @playwright/test pre-approved by orchestrator under standing autonomous mandate; independently re-verified (microsoft/playwright npm org, 1.61.1 current stable, no typosquat) before install; pinned exact (no caret) in apps/web devDependencies.
 - 2026-07-10 (47-04): Extended the pre-existing Phase-20 apps/web/playwright.config.ts (baseURL + webServer + forbidOnly/retries) rather than replacing it, preserving the SPIKE-era chromium/firefox project definitions and their CSP/opaque-origin documentation.
 - 2026-07-10 (47-04): VRFY-01 left Pending, NOT marked Complete — first real run of the parked specs found 10/12 assertions pass on chromium+firefox, but code-island-isolation.spec.ts's "cannot read cookies / localStorage" assertion times out on BOTH engines identically. Confirmed via throwaway diagnostic spec (uncommitted, deleted): the opaque-origin sandbox throws SecurityError synchronously on document.cookie read (HTML spec-compliant, stronger isolation than the spec's probe assumed), and the probe has no try/catch around that specific statement, so the harness's own outer catch swallows it before data-cookie/data-ls get set. Not a config or import-resolution issue; not fixable without editing the protected spec file (git diff on it must stay empty per T-47-08). Recommended a 2-line fast-follow fix (wrap the cookie read in its own try/catch, expect "SecurityError") in a future micro-plan — full root cause in 47-04-SUMMARY.md.

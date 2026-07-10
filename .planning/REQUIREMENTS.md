@@ -13,7 +13,7 @@ VISION.md E2 remainder, backlog 999.7 (editable panels) + 999.4 cheap slice (pro
 
 - [x] **BRND-01**: All user-facing copy speaks the polytoken brand register (warm, companion, first-person — "Your workspace", not systems vocabulary; the product always names itself polytoken) across login, empty states, sidebar chrome, page titles, and toasts (login/sidebar slice done in 47-01; empty states/page titles/toasts remain — 47-02)
 - [x] **BRND-02**: A committed logo mark exists (rounded node/brain hybrid SVG, anchored on the existing teal `color.primary`) and is used in the sidebar brand slot, login card, and favicon
-- [ ] **BRND-03**: The brand decision is recorded — PROJECT.md Key Decisions entry + an in-repo brand guide (voice, do/don't, mark usage) — capturing the USER-LOCKED naming (polytoken / polytoken.ai, alternates purged, CLI-tool collision explicitly accepted by the user) and what remains user-gated (domain purchase, trademark filing)
+- [x] **BRND-03**: The brand decision is recorded — PROJECT.md Key Decisions entry + an in-repo brand guide (voice, do/don't, mark usage) — capturing the USER-LOCKED naming (polytoken / polytoken.ai, alternates purged, CLI-tool collision explicitly accepted by the user) and what remains user-gated (domain purchase, trademark filing)
 
 ### Token-System Extensions (TOKN)
 
@@ -81,7 +81,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | BRND-01 | Phase 47 | In Progress |
 | BRND-02 | Phase 47 | Complete |
-| BRND-03 | Phase 47 | Pending |
+| BRND-03 | Phase 47 | Complete |
 | VRFY-01 | Phase 47 | Complete |
 | VRFY-02 | Phase 47 | Pending |
 | TOKN-01 | Phase 48 | Pending |
