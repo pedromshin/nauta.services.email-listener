@@ -24,6 +24,7 @@ def _to_row(email: Email) -> dict[str, Any]:
     return {
         "id": email.id,
         "importer_id": email.importer_id,
+        "thread_id": email.thread_id,
         "message_id": email.message_id,
         "in_reply_to": email.in_reply_to,
         "references_ids": list(email.references_ids),
@@ -47,6 +48,7 @@ def _from_row(row: dict[str, Any]) -> Email:
     return Email(
         id=row["id"],
         importer_id=row["importer_id"],
+        thread_id=row.get("thread_id"),
         message_id=row["message_id"],
         in_reply_to=row.get("in_reply_to"),
         references_ids=tuple(row.get("references_ids") or []),

@@ -28,3 +28,7 @@ class Email:
     parse_error: str | None
     parsed_at: datetime | None
     created_at: datetime
+    # Phase 45 (Email Threads): nullable FK to threads, resolved at ingest time
+    # by the ThreadResolver port (or by the backfill for pre-existing rows).
+    # Defaults to None so every pre-Phase-45 construction site keeps working.
+    thread_id: str | None = None

@@ -32,7 +32,9 @@ from typing import Final
 # Tier 2 fallback window: how close in time an unlinked forwarded email's
 # normalized subject match must be to join an existing thread. Conservative
 # per 45-CONTEXT.md's "false-split beats false-merge" — Claude's discretion.
-_DEFAULT_TIER2_WINDOW: Final[timedelta] = timedelta(days=14)
+# Public (not module-private): reused by the Plan 45-03 SupabaseThreadResolver
+# adapter so the ingest-time Tier 2 fallback window matches the backfill's.
+DEFAULT_TIER2_WINDOW: Final[timedelta] = timedelta(days=14)
 
 # Repeated leading Re:/Fwd:/Fw:/Enc:/Res: tokens (any order, case-insensitive,
 # whitespace-tolerant). "fwd?" matches both "Fw" and "Fwd".
@@ -161,7 +163,7 @@ def _apply_subject_window_fallback(emails: Sequence[ThreadableEmail], uf: _Union
 
 
 def group_emails(
-    emails: Sequence[ThreadableEmail], *, window: timedelta = _DEFAULT_TIER2_WINDOW
+    emails: Sequence[ThreadableEmail], *, window: timedelta = DEFAULT_TIER2_WINDOW
 ) -> list[tuple[str, ...]]:
     """Group emails into threads. Deterministic: groups and members sort by (received_at, id)."""
     if not emails:
