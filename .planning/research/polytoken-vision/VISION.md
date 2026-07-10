@@ -1,5 +1,13 @@
 # polytoken.ai — Product Vision & Everything-Ahead Bundle
 
+> **SEQUENCING SUPERSEDED 2026-07-10 — two-epoch compression.** The epoch CONTENT below stands,
+> but the E3→E7 grouping is replaced by `.planning/research/two-epoch-endgame/ENDGAME-PLAN.md`:
+> v1.9 "Cloud Workspace" = live-loop gate + v1.8's re-skin/mobile/panels remainder + E3;
+> v2.0 "Local Agent Platform" = E4+E5+E6 merged (one daemon/permission-model/ToolExecutor
+> foundation; CDP-first browser, allowlist-panel registry; editor + self-repo stretch);
+> E7 stays parked at its gate as a venture decision. Locked with it: deploy/OAuth/live-UAT
+> gates are first-class phase work, never deferrable-by-default.
+
 **Status:** VISION / NORTH-STAR — captured 2026-07-07 during v1.5 execution. Not a milestone.
 This document bundles (a) all work still pending in the current roadmap, (b) the carried backlog,
 and (c) the full polytoken.ai product vision, into one dependency-ordered ladder that future

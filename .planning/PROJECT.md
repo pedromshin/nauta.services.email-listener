@@ -135,9 +135,17 @@ loop; `spec-renderer.tsx`/`render-node.tsx`/`genui-part-boundary.tsx` stay byte-
 
 </details>
 
-## Current Milestone: v1.8 Polytoken Re-skin — Brand, Design System & Responsive Canvas
+## Current Milestone: v1.8 Polytoken Re-skin — Brand & Design-System Foundation (SCOPE CUT 2026-07-10 — ends at Phase 48, ready to close)
 
-**Goal:** The product looks and feels like polytoken — a warm second-brain companion — everywhere:
+**Scope cut (user-directed, 2026-07-10):** v1.8 ends at Phase 48 with brand foundation +
+verification tooling + token-system extensions shipped (12/12 in-scope requirements). The
+re-skin, mobile, and editable-panels remainder (RSKN/MOBL/PANL, 11 requirements) moves to
+v1.9 "Cloud Workspace" under the two-epoch endgame restructure — everything left in the product
+vision now lands in v1.9 (live-loop gate + re-skin/mobile/panels + E3 email-cluster workflow)
+and v2.0 (E4+E5+E6 local agent platform); E7 parked. Plan of record:
+`.planning/research/two-epoch-endgame/ENDGAME-PLAN.md`.
+
+**Original goal (pre-cut):** The product looks and feels like polytoken — a warm second-brain companion — everywhere:
 brand identity applied, total UI re-skin executed on an EXTENDED (never discarded) v1.4 token
 system, a market-validated mobile answer for the canvas, and genui panels upgraded from read-only
 renders to live editing surfaces.
@@ -511,6 +519,7 @@ already proven locally. Research: `.planning/research/` (SUMMARY.md + 6 deep doc
 | **v1.7 Phase 45**: threads importer-anchored, chat direct-user_id; false-split beats false-merge in grouping | Threads inherit tenancy through importers (no second scoping system); conservative Tier-2 fallback avoids merging strangers' mail | — Pending (live forwarding round-trip UAT outstanding) |
 | **v1.7 Phase 46**: accepted override for the real-browser Playwright run (AST-allowlist vitest substitute green) | Closing it required new npm deps, violating the milestone's one-new-dependency guardrail — a stronger locked constraint | — Pending (todo parked; unblocks in v1.8) |
 | **v1.8 Phase 47 (BRND)**: Product name USER-LOCKED to 'polytoken', domain polytoken.ai; warm/companion voice register (tone) + node/brain logo mark adopted | User decided this on 2026-07-10 ("everything will be called polytoken and domain polytoken.ai. everything else is purged"), OVERRIDING the dossier's Direction-B rename recommendation; the exact-name collision with the `polytoken` CLI dev tool (docs.polytoken.dev) is EXPLICITLY ACCEPTED (not mitigated); domain purchase + trademark filing remain user-gated (not done) | ✓ Good — see `docs/design/brand-guide.md` for the repo-of-record |
+| **v1.8 scope cut + two-epoch endgame (USER-DIRECTED 2026-07-10)**: v1.8 ends at Phase 48; RSKN/MOBL/PANL (11 reqs) → v1.9; ALL remaining vision compresses into TWO epochs — v1.9 "Cloud Workspace" (live-loop gate FIRST, then re-skin/mobile/panels + E3 email-cluster workflow depth-first on the user's real inbox) and v2.0 "Local Agent Platform" (E4+E5+E6 merged on one daemon/permission-model/ToolExecutor foundation; browser CDP-first, registry as allowlist panel; editor + self-repo stretch); E7 parked as a venture decision | User verdict after v1.5–v1.8: capability shipped but was never felt — deploys/OAuth/live-UAT were autonomously deferred at six consecutive closes, the user's real email never entered the system, and foundation/paint kept out-sequencing value (E3 stayed "one epoch away" for three milestones). Full diagnosis + plan: `.planning/research/two-epoch-endgame/ENDGAME-PLAN.md` | — Pending. STANDING RULE locked with it: deploy/OAuth/live-UAT gates are first-class phase work, NEVER deferrable-by-default; a milestone isn't done until the user touches the capability live |
 
 ## Evolution
 

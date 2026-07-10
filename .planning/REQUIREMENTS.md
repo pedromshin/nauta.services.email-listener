@@ -1,6 +1,11 @@
 # Requirements: polytoken — v1.8 Polytoken Re-skin
 
 **Defined:** 2026-07-10
+**Scope cut 2026-07-10 (user-directed):** v1.8 ends at Phase 48. RSKN-01..05, MOBL-01..02, and
+PANL-01..04 move unchanged to v1.9 "Cloud Workspace" per the two-epoch endgame restructure —
+see `.planning/research/two-epoch-endgame/ENDGAME-PLAN.md`. Rationale: foundation/paint kept
+out-sequencing felt value; the remaining vision compresses into two epochs (v1.9 = live-loop
+gate + re-skin/mobile/panels + E3 email-cluster workflow; v2.0 = E4+E5+E6 local agent platform).
 **Core Value:** Reliably receive every inbound email and make it observable — now wrapped in a product that looks and feels like the personal AI workspace VISION describes.
 
 Sources: `.planning/research/v1.8-design/BRAND-IDENTITY-OPTIONS.md` (DSSR-01; naming USER-LOCKED to polytoken 2026-07-10, alternates purged),
@@ -25,6 +30,18 @@ VISION.md E2 remainder, backlog 999.7 (editable panels) + 999.4 cheap slice (pro
 - [x] **TOKN-06**: A hover/active interactive-state convention is defined once (documented derivation rule) and applied consistently across re-skinned surfaces
 - [x] **TOKN-07**: The breakpoint-awareness question (density/layout behavior across breakpoints) is resolved as a recorded design decision with a minimal working mechanism that MOBL builds on — scoped as a design conversation, not a single alias
 
+### Visual Verification (VRFY)
+
+- [x] **VRFY-01**: `@playwright/test` (+ firefox) is installed; the parked code-island isolation spec runs green on chromium AND firefox, and the auth-redirect spec runs green (closes todo 2026-07-10-playwright-code-island-isolation-run)
+- [x] **VRFY-02**: A screenshot-driven visual review harness exists (Playwright screenshots of the re-skinned surfaces across packs/viewports) and is used to review the re-skin
+
+## Moved to v1.9 (scope cut 2026-07-10 — NOT part of the v1.8 audit bar)
+
+The following 11 requirements are unchanged in content but belong to v1.9 "Cloud Workspace"
+(they will be re-mapped to phases at v1.9 roadmap creation; the ex-Phase-49/50/51 specs in
+ROADMAP.md carry forward as their phase seeds). 999.16's off-token chip/badge surfaces extend
+RSKN scope to `/entities/[id]` when re-mapped.
+
 ### Total UI Re-skin (RSKN)
 
 - [ ] **RSKN-01**: `/chat` is re-skinned in the polytoken register on extended tokens — composer, message stream, tool-round activity rows, citation chips
@@ -44,11 +61,6 @@ VISION.md E2 remainder, backlog 999.7 (editable panels) + 999.4 cheap slice (pro
 - [ ] **PANL-02**: User can tweak a panel's spec parameters in place through a bounded editing surface (schema-validated, same untrusted-input gate as FOUND-6)
 - [ ] **PANL-03**: User can regenerate a panel variant in place, with provenance retained and prior version reachable
 - [ ] **PANL-04**: A promptable design slice exists: a natural-language re-theme instruction on a panel resolves to pack/token choices (DSGN-03's cheap generation-side slice; no visual-compare repair loop)
-
-### Visual Verification (VRFY)
-
-- [x] **VRFY-01**: `@playwright/test` (+ firefox) is installed; the parked code-island isolation spec runs green on chromium AND firefox, and the auth-redirect spec runs green (closes todo 2026-07-10-playwright-code-island-isolation-run)
-- [x] **VRFY-02**: A screenshot-driven visual review harness exists (Playwright screenshots of the re-skinned surfaces across packs/viewports) and is used to review the re-skin
 
 ## v2 Requirements
 
@@ -91,23 +103,24 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TOKN-05 | Phase 48 | Complete |
 | TOKN-06 | Phase 48 | Complete |
 | TOKN-07 | Phase 48 | Complete |
-| RSKN-01 | Phase 49 | Pending |
-| RSKN-02 | Phase 49 | Pending |
-| RSKN-03 | Phase 49 | Pending |
-| RSKN-04 | Phase 49 | Pending |
-| RSKN-05 | Phase 49 | Pending |
-| MOBL-01 | Phase 50 | Pending |
-| MOBL-02 | Phase 50 | Pending |
-| PANL-01 | Phase 51 | Pending |
-| PANL-02 | Phase 51 | Pending |
-| PANL-03 | Phase 51 | Pending |
-| PANL-04 | Phase 51 | Pending |
+| RSKN-01 | → v1.9 (ex-Phase 49) | Moved 2026-07-10 |
+| RSKN-02 | → v1.9 (ex-Phase 49) | Moved 2026-07-10 |
+| RSKN-03 | → v1.9 (ex-Phase 49) | Moved 2026-07-10 |
+| RSKN-04 | → v1.9 (ex-Phase 49) | Moved 2026-07-10 |
+| RSKN-05 | → v1.9 (ex-Phase 49) | Moved 2026-07-10 |
+| MOBL-01 | → v1.9 (ex-Phase 50) | Moved 2026-07-10 |
+| MOBL-02 | → v1.9 (ex-Phase 50) | Moved 2026-07-10 |
+| PANL-01 | → v1.9 (ex-Phase 51) | Moved 2026-07-10 |
+| PANL-02 | → v1.9 (ex-Phase 51) | Moved 2026-07-10 |
+| PANL-03 | → v1.9 (ex-Phase 51) | Moved 2026-07-10 |
+| PANL-04 | → v1.9 (ex-Phase 51) | Moved 2026-07-10 |
 
-**Coverage:**
-- v1 requirements: 23 total
-- Mapped to phases: 23
+**Coverage (after 2026-07-10 scope cut):**
+- v1 requirements: 12 total (BRND 3 + TOKN 7 + VRFY 2) — all Complete ✓
+- Mapped to phases: 12 (Phases 47–48)
+- Moved to v1.9: 11 (RSKN 5 + MOBL 2 + PANL 4)
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-07-10*
-*Last updated: 2026-07-10 after v1.8 roadmap created (5 phases, 47–51, 23/23 requirements mapped)*
+*Last updated: 2026-07-10 — scope cut: v1.8 ends at Phase 48; RSKN/MOBL/PANL → v1.9 per `.planning/research/two-epoch-endgame/ENDGAME-PLAN.md`*
