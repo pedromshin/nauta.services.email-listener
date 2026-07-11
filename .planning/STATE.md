@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Cloud Workspace
-status: planning
-last_updated: "2026-07-11T00:52:39.666Z"
-last_activity: 2026-07-10 — v1.9 ROADMAP.md created (6 phases, 49–54; 27/27 requirements mapped, 0 orphans)
+status: executing
+last_updated: "2026-07-11T01:08:35.009Z"
+last_activity: 2026-07-11 -- Phase 49-01 executed (local cold-start doc + preflight script)
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 6
-  completed_plans: 0
+  completed_plans: 1
   percent: 0
 ---
 
@@ -21,17 +21,48 @@ See: .planning/PROJECT.md (updated 2026-07-10 after v1.8 milestone close)
 
 **Core value:** Reliably receive every inbound email and make it observable — now as a product
 the user actually lives in.
-**Current focus:** v1.9 Cloud Workspace — Phase 49 (Live-Loop Gate: deploy, OAuth, real email).
+**Current focus:** Phase 49 — Live-Loop Gate — Deploy, OAuth & Real Email
 Plan of record: research/two-epoch-endgame/ENDGAME-PLAN.md. STANDING RULE: deploy/OAuth/live-UAT
 gates are first-class phase work, never deferrable-by-default; user-executed steps (Google
 console, SES/DNS, Supabase project-id decision) are in-phase checkpoint tasks in Phase 49.
 
 ## Current Position
 
-Phase: 49 — Live-Loop Gate: Deploy, OAuth & Real Email
-Plan: — (not yet planned; run /gsd:plan-phase 49)
-Status: Roadmap created — ready for phase planning
-Last activity: 2026-07-10 — v1.9 ROADMAP.md created (6 phases, 49–54; 27/27 requirements mapped, 0 orphans)
+Phase: 49 (Live-Loop Gate — Deploy, OAuth & Real Email) — EXECUTING
+Plan: 2 of 6
+Status: Executing Phase 49
+Last activity: 2026-07-11 -- Phase 49-01 executed (local cold-start doc + preflight script)
+
+## Phase 49 — Live-Loop Gate — Plan 01 History
+
+- **49-01 EXECUTED** (`10c846d` docs, `5eadc02` feat, `a62f65f` docs, `210b188` docs):
+  Built LIVE-01's documented, reproducible local start procedure and LIVE-07's
+  local project-id rename actualization. `docs/RUN-LOCAL.md` (161 lines, 7
+  sections) is the canonical cold-start doc: prerequisites (npm workspaces,
+  NOT pnpm — this repo overrides the global pnpm rule), the env-file split
+  as the #1 footgun (listener `.env` vs root `.env.local`, plus the
+  process-env-only Google OAuth `env()` resolution gotcha in
+  `supabase/config.toml`), one-command cold start via the preflight script,
+  the WITHOUT-`--reload` zombie-process rule ("trust the DB not the
+  terminal"), the local `nauta` -> `polytoken` project-id rename note, the
+  fresh-DB seed-before-migrate + grant/`NOTIFY pgrst` recovery ordering, and
+  DB-based verification. `scripts/preflight-local.ps1` (232 lines) scripts
+  the whole path idempotently: kill stale python/uvicorn/node -> ensure
+  Supabase up under `project_id=polytoken` (stopping a stale `nauta` stack
+  first) -> seed exactly one `auth.users` row via GoTrue admin API before
+  migrating (the 0032 backfill precondition) -> `db:migrate` -> idempotent
+  Supabase-role GRANTs + `NOTIFY pgrst` piped via `docker exec -i` -> a
+  DB-based PASS/FAIL gate (`has_table_privilege` + table count), exiting
+  nonzero on failure; no secret ever echoed, all emitted values ASCII.
+  PowerShell syntax validated via the AST parser (no live Docker/Supabase
+  instance available in this execution environment — live exercise deferred
+  to plan 49-03 by the plan's own objective). One deviation logged: the
+  plan's own Task-1 automated verify block has a grep-quoting bug
+  (`grep -qi "--reload"` is parsed by grep as an unrecognized option, not a
+  search pattern) — content presence was confirmed with a dash-safe
+  invocation; no deliverable was affected. Both grep-gated verify blocks'
+  underlying intent passed; no secrets leaked (`GOCSPX-` / hardcoded
+  `service_role...=...ey` patterns absent).
 
 ## Phase 48 — Token System Extensions — Plan 04 History
 
@@ -2486,6 +2517,8 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 
 ## Decisions Log
 
+- 2026-07-10 (49-01): docs/RUN-LOCAL.md + scripts/preflight-local.ps1 built as the LIVE-01 canonical cold-start doc/script pair; local Supabase project-id rename nauta->polytoken (LIVE-07) actualized in documentation (already renamed in supabase/config.toml prior to this plan) — old nauta Docker volumes explicitly left un-migrated (local data disposable), preflight script auto-stops a stale nauta stack if detected
+- 2026-07-10 (49-01): plan's own Task-1 automated verify block has a grep-quoting bug (`grep -qi "--reload"` parsed by grep as an unrecognized option, not a pattern) — verified doc content with a dash-safe invocation instead; no deliverable change needed, flagged for the phase verifier
 - 2026-07-10 (48-01): brutalist pack keeps radius.pill="0rem" (zero-radius identity beats pill-ness, documented D-48-01 exception) and migrates its existing JetBrains Mono display font explicitly onto typography.code.family (display.family left unchanged)
 - 2026-07-10 (48-01): playful-rounded's success color darkened from the plan's suggested "142 70% 40%" to "142 70% 30%" (fg unchanged, white) after the plan's suggestion failed the new computational WCAG-AA contrast gate (2.92:1, below the 4.5:1 floor); the darker value computes to 4.88:1
 - 2026-07-10 (48-01): md (768px) fixed as the canvas->feed responsive-switch breakpoint (D-48-07); pack tokens (packs.ts) stay breakpoint-static by design — no per-breakpoint token dimension
@@ -2816,6 +2849,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 48 P02 | 40min | 2 tasks | 5 files |
 | Phase 48 P05 | 10min | 2 tasks | 3 files |
 | Phase 48 P04 | 20min | 3 tasks | 7 files |
+| Phase 49 P01 | 17min | 2 tasks | 2 files |
 
 ## Operator Next Steps
 

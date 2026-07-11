@@ -30,7 +30,7 @@ key-decisions:
   - "Preflight kill step warns (non-fatal) on missing zombies/ports; sb:start/db:migrate/grant/assertion steps are fatal on failure"
   - "Added a non-blocking warning for missing SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID/_SECRET in the process env (known config.toml env() gotcha) even though it wasn't in the plan's explicit step list — it directly supports LIVE-01's 'reproducibly green' bar for the Google sign-in path this same phase depends on"
 
-requirements-completed: [LIVE-01, LIVE-07]
+requirements-completed: []  # Deliberately NOT marked complete — see "Decisions Made" below
 
 # Metrics
 duration: 17min
@@ -72,6 +72,7 @@ Each task was committed atomically:
 - Kill step (process/port checks) is intentionally non-fatal (warns only) per the plan's explicit instruction ("warn, do not hard-fail, if none found"); all subsequent steps (sb:start read, seed, migrate, grant, final assertion) are fatal on failure since a partial/broken DB state must not be reported as green.
 - Parsed `service_role key` / `anon key` / `API URL` out of `npm run sb:status`'s human-readable text output via line-anchored regex rather than adding a JSON/`-o env` output mode dependency, matching the plan's interface note ("Capture `npm run sb:status` output to read the service_role key and API URL") without introducing a new CLI flag assumption.
 - Added a non-blocking warning (not a plan-mandated step, but directly supports LIVE-01's "reproducibly green" bar and the phase's own OAuth checkpoint later in the phase) when `SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID`/`_SECRET` are absent from the process environment before `sb:start` — this is the exact gotcha `docs/RUN-LOCAL.md` section 2 documents (config.toml's `env()` refs resolve from process env, not `.env.local`). Kept non-fatal since it doesn't block the DB-green gate this plan's must-haves are scoped to.
+- **Did NOT run `requirements mark-complete` for LIVE-01 or LIVE-07 despite both appearing in this plan's frontmatter `requirements` field.** LIVE-01's literal text demands "the local stack runs green end-to-end... verified against the DB" — this plan builds the documented procedure and preflight tooling but does not execute them live (no Docker/Supabase instance in this execution environment; live execution is plan 49-03's explicit scope per this plan's own objective). LIVE-07's literal text covers the FULL external-identity decision set (GitHub/Vercel/AWS renames + local Supabase rename); this plan only closes the local-Supabase-rename slice. Marking either Complete now would misrepresent status, mirroring the project's own established precedent recorded in STATE.md's Decisions Log for THRD-01/THRD-02 ("avoids the premature-completion bug from 44-02"). Both remain `Pending` in REQUIREMENTS.md; expect LIVE-01 to close after plan 49-03's live DB-verified run, and LIVE-07 to close once the remaining external-rename decisions land (this phase, per CONTEXT.md).
 
 ## Deviations from Plan
 

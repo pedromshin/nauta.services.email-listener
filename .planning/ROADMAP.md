@@ -184,12 +184,12 @@ flows into polytoken.
 4. FORWARDING-RUNBOOK.md + the SES rule are wired; a real forwarded message lands in polytoken, threads group correctly, and attachments are stored
 5. External-identity leftovers are decided, not parked: EXTERNAL-RENAME-RUNBOOK.md items are executed or explicitly re-parked by the user, and the local Supabase nauta→polytoken project-id decision is recorded
 
-**Plans:** 6 plans (3 waves)
+**Plans:** 1/6 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 49-01-PLAN.md — Local stack green: RUN-LOCAL.md + preflight script + fresh-DB actualization (LIVE-01, LIVE-07)
+- [x] 49-01-PLAN.md — Local stack green: RUN-LOCAL.md + preflight script + fresh-DB actualization (LIVE-01, LIVE-07)
 - [ ] 49-02-PLAN.md — SES forwarding catch-all terraform rule + read-only plan proof (LIVE-04 prep)
 
 **Wave 2** *(blocked on Wave 1 completion)*
