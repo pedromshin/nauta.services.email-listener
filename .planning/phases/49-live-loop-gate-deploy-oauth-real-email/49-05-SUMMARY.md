@@ -165,3 +165,12 @@ itself).
 ---
 *Phase: 49-live-loop-gate-deploy-oauth-real-email*
 *Completed: 2026-07-11*
+
+## Self-Check: PASSED
+
+- FOUND: .planning/phases/49-live-loop-gate-deploy-oauth-real-email/EXTERNAL-IDENTITY-DECISIONS.md
+- FOUND: .planning/milestones/v1.7-phases/43-auth-google-oauth-sessions-supabase-auth/JWT-SIGNING-KEY-AUDIT.md
+- FOUND: .planning/STATE.md
+- FOUND: 3ba0d22 (Task 1 commit)
+- FOUND: da6891b (Task 2 commit)
+- FOUND: 43cd0c1 (SUMMARY commit)
