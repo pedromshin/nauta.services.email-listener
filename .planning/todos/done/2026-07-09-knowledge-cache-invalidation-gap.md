@@ -36,3 +36,22 @@ should extend to all promotion paths.
 - Add `expandNode` invalidation to the existing `promoteEdge()` in knowledge-graph.tsx.
 - Regression test: promote via the widget path in a test harness → assert the three query keys
   are invalidated (mirror the existing Phase 33 invalidation test pattern).
+
+## Resolution
+
+Closed by Phase 51 plan 51-06 (RSKN-07). Both gaps resolved exactly per the proposed solution:
+`promoteEdge()` in `knowledge-graph.tsx` now invalidates `knowledge.expandNode` alongside
+`knowledge.byId`/`knowledge.graph`, success-branch-only (the `!ok` early return still invalidates
+nothing — the existing three-case test extended, not replaced). `handleTerminal` in
+`use-conversation-controller.ts` now delegates to a new standalone exported
+`invalidateOnChatTerminal(conversationId, utils)` helper (mirrors the `promoteEdge` extraction
+precedent) that invalidates all three `chat.*` keys it always invalidated PLUS all three
+`knowledge.*` keys, fired unconditionally on every terminal turn (not gated to a widget-submit
+continuation — Claude's Discretion: the knowledge.* queries are cheap and staleTime-guarded,
+so a bounded refetch on every turn settle is simpler than threading a "was this a promotion?"
+flag through the stream-terminal callback, and matches the todo's own accepted rationale,
+T-51-07-B). Two regression tests: the extended `knowledge-graph-invalidate.test.tsx` (expandNode
+assertion added to the success case + both `!ok` cases) and the new
+`use-conversation-controller-invalidate.test.ts` (asserts all six invalidate spies fire).
+Zero new deps; no widened data exposure (same authenticated tRPC queries, same inputs).
+See `.planning/phases/51-total-ui-re-skin/51-06-SUMMARY.md` for full detail.
