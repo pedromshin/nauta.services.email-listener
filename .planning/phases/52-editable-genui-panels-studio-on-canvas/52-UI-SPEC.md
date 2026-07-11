@@ -108,7 +108,10 @@ popover primary-submit buttons noted above.
 A new **second header row**, inserted directly below the existing `.node-drag-handle` h-9
 row and above the `ScrollArea` body, in `GenuiPanelNode`'s `GenuiPanelNodeBody`. It is
 **not** part of the drag handle (26-UI-SPEC FIX-04's "the h-9 row is the ONLY drag handle"
-stays untouched — see Judgment Calls #1).
+stays untouched — see Judgment Calls #1). The rendered spec content remains the panel's
+primary visual anchor — the toolbar row is intentionally secondary and low-contrast
+(`text-muted-foreground` at rest, no fills, no accent) so it never competes with the
+generated UI it controls.
 
 ```
 <div role="toolbar" aria-label="Panel actions"
@@ -175,7 +178,7 @@ Trigger: the `SlidersHorizontal` toolbar button (`PopoverTrigger asChild`). Anch
     {/* one row per whitelisted spec parameter — field-type mapping below */}
   </div>
   <div className="flex justify-end gap-2 pt-1">
-    <Button type="button" variant="ghost" size="sm" onClick={handleCancel}>Cancel</Button>
+    <Button type="button" variant="ghost" size="sm" onClick={handleDiscard}>Discard changes</Button>
     <Button type="button" variant="default" size="sm" disabled={!isDirty || !isValid || isPending} onClick={handleSave}>
       {isPending ? <><Loader2 className="mr-1 size-3.5 animate-spin" aria-hidden />Saving…</> : "Save changes"}
     </Button>
@@ -245,7 +248,7 @@ no diff view (52-CONTEXT.md, locked).
           </span>
           <Button type="button" variant="ghost" size="sm" className="h-6 shrink-0 px-2 text-xs"
                   disabled={isRestoring} onClick={() => handleRestore(v.id)}>
-            {isRestoringThisRow ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : "Restore"}
+            {isRestoringThisRow ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : "Restore version"}
           </Button>
         </li>
       ))}
@@ -294,9 +297,9 @@ Trigger: the `Wand2` toolbar button. Anchored `align="end" side="bottom"`.
     <p className="text-right text-xs text-muted-foreground">{instruction.length}/280</p>
   </div>
   <div className="flex justify-end gap-2">
-    <Button type="button" variant="ghost" size="sm" onClick={handleCancel}>Cancel</Button>
+    <Button type="button" variant="ghost" size="sm" onClick={handleDiscard}>Discard</Button>
     <Button type="button" variant="default" size="sm" disabled={!instruction.trim() || isPending} onClick={handleApply}>
-      {isPending ? <><Loader2 className="mr-1 size-3.5 animate-spin" aria-hidden />Re-theming…</> : <><Wand2 className="mr-1 size-3.5" aria-hidden />Apply</>}
+      {isPending ? <><Loader2 className="mr-1 size-3.5 animate-spin" aria-hidden />Re-theming…</> : <><Wand2 className="mr-1 size-3.5" aria-hidden />Apply look</>}
     </Button>
   </div>
 </PopoverContent>
@@ -322,8 +325,8 @@ Every new element follows D-48-06 (hover/active) and the focus-visible rule unch
 | Switch pack (PANL-01) | `Select` shows the new value immediately (optimistic); persists silently, no extra chrome | `toast.error("Couldn't switch style — try again.", { action: { label: "Retry", onClick } })`; `Select` reverts to the prior value | `Select` `disabled`, `aria-busy="true"` |
 | Save parameters (PANL-02) | Popover closes; panel content re-renders with the new params | Inline banner inside the popover (stays open, values preserved) — see Component 2 | `Save changes` button: `Loader2` spinner + "Saving…" label, `disabled` |
 | Regenerate (PANL-03) | Panel content visibly swaps to the new variant; `<GeneratingRing>` deactivates — no toast | `toast.error("Couldn't regenerate this panel — try again.", { action: { label: "Retry", onClick } })` | `RotateCw` `motion-safe:animate-spin`; whole panel wrapped in `<GeneratingRing active>`; toolbar `disabled` except this button |
-| Apply re-theme (PANL-04) | Popover closes; `toast.success("Panel re-themed")`; panel content re-renders on the new pack/tokens; `<GeneratingRing>` deactivates | Inline banner inside the popover (stays open, instruction preserved) — see Component 5 | `Apply` button: `Loader2` spinner + "Re-theming…" label, `disabled`; `Textarea` `readOnly`; panel wrapped in `<GeneratingRing active>` |
-| Restore version (PANL-03) | History popover closes; `toast.success("Restored to an earlier version")`; panel content re-renders | `toast.error("Couldn't restore that version — try again.", { action: { label: "Retry", onClick } })` (popover stays open) | Clicked row's `Restore` button shows `Loader2`; every other `Restore` button in the list `disabled` |
+| Apply re-theme (PANL-04) | Popover closes; `toast.success("Panel re-themed")`; panel content re-renders on the new pack/tokens; `<GeneratingRing>` deactivates | Inline banner inside the popover (stays open, instruction preserved) — see Component 5 | `Apply look` button: `Loader2` spinner + "Re-theming…" label, `disabled`; `Textarea` `readOnly`; panel wrapped in `<GeneratingRing active>` |
+| Restore version (PANL-03) | History popover closes; `toast.success("Restored to an earlier version")`; panel content re-renders | `toast.error("Couldn't restore that version — try again.", { action: { label: "Retry", onClick } })` (popover stays open) | Clicked row's `Restore version` button shows `Loader2`; every other `Restore version` button in the list `disabled` |
 
 `toast.error`/`toast.success` calls use the existing `sonner` import (`import { toast }
 from "sonner"`) and the exact `{ action: { label, onClick } }` shape already established
@@ -352,17 +355,19 @@ placeholder.
 | Edit-disabled tooltip (no editable params) | "This panel has no editable parameters" |
 | Param editor popover heading | "Edit panel parameters" |
 | Param editor primary CTA | "Save changes" (busy: "Saving…") |
+| Param editor secondary CTA | "Discard changes" (the form tracks `isDirty` — never a generic "Cancel") |
 | Param editor server-error banner | "Couldn't save these changes — check the highlighted fields." |
 | Re-theme popover heading | "Describe a new look" |
 | Re-theme placeholder | `e.g. "Make it feel more playful and colorful"` |
-| Re-theme primary CTA | "Apply" (busy: "Re-theming…") |
+| Re-theme primary CTA | "Apply look" (busy: "Re-theming…") |
+| Re-theme secondary CTA | "Discard" (deliberately shorter than the parameter editor's "Discard changes" — nothing has been persisted yet, only the typed instruction is dropped) |
 | Re-theme inline error | "Couldn't apply that look — try describing it differently." |
 | Re-theme success toast | "Panel re-themed" |
 | History popover heading | "Version history" |
 | History empty state | "No earlier versions yet — changes will appear here." |
 | History row current label | "Current" |
 | History row verbs | "Regenerated" / "Re-themed" / "Edited" / "Generated" (see provenance table) |
-| History restore action | "Restore" (busy: spinner only, no text change — row is narrow) |
+| History restore action | "Restore version" (busy: spinner only, no text change — row is narrow) |
 | History restore success toast | "Restored to an earlier version" |
 | History restore error toast | "Couldn't restore that version — try again." |
 | Regenerate error toast | "Couldn't regenerate this panel — try again." |
