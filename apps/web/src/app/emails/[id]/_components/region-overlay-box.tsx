@@ -49,7 +49,7 @@ interface RegionOverlayBoxProps {
   onShiftClick?: (id: string) => void;
   isSelected?: boolean;
   isMutating?: boolean;
-  /** Phase 9 (D-10): when true, draws the active-parent ENTITY ring (ring-4 ring-violet-400/40). */
+  /** Phase 9 (D-10): when true, draws the active-parent ENTITY ring (ring-4 ring-graph-entity/40). */
   isActiveParent?: boolean;
   /** Phase 9 (D-16): when true, renders the inline ✓/✗ confirm/deny slot at the box corner. */
   showConfirmDeny?: boolean;
@@ -73,30 +73,30 @@ interface RegionOverlayBoxProps {
  * REPLACES the default primary statusClasses. Selected adds a role-tinted ring.
  */
 const ROLE_BORDER: Record<NonNullable<ComponentRole>, string> = {
-  entity: "border-violet-500/80 bg-violet-500/10",
-  field: "border-amber-500/80 bg-amber-500/10",
-  unrelated: "border-slate-400/40 bg-slate-400/[0.06] opacity-60",
+  entity: "border-graph-entity/80 bg-graph-entity/10",
+  field: "border-graph-email-component/80 bg-graph-email-component/10",
+  unrelated: "border-graph-email/40 bg-graph-email/[0.06] opacity-60",
 };
 
 /** Selected-ring color per role (09-UI-SPEC §Canvas Selected row). */
 const ROLE_SELECTED_RING: Record<NonNullable<ComponentRole>, string> = {
-  entity: " ring-2 ring-violet-500/50",
-  field: " ring-2 ring-amber-500/50",
-  unrelated: " ring-2 ring-slate-400/50",
+  entity: " ring-2 ring-graph-entity/50",
+  field: " ring-2 ring-graph-email-component/50",
+  unrelated: " ring-2 ring-graph-email/50",
 };
 
 /** Hover border/fill per role (09-UI-SPEC §Canvas Hover row). */
 const ROLE_HOVER: Record<NonNullable<ComponentRole>, string> = {
-  entity: " hover:border-violet-500 hover:bg-violet-500/20",
-  field: " hover:border-amber-500 hover:bg-amber-500/20",
-  unrelated: " hover:border-slate-400 hover:bg-slate-400/20",
+  entity: " hover:border-graph-entity hover:bg-graph-entity/20",
+  field: " hover:border-graph-email-component hover:bg-graph-email-component/20",
+  unrelated: " hover:border-graph-email hover:bg-graph-email/20",
 };
 
 /** Label-chip tint per role (09-UI-SPEC §Canvas label chip). */
 const ROLE_CHIP: Record<NonNullable<ComponentRole>, string> = {
-  entity: "bg-violet-500 text-white",
-  field: "bg-amber-500 text-white",
-  unrelated: "bg-slate-400 text-white",
+  entity: "bg-graph-entity text-graph-entity-foreground",
+  field: "bg-graph-email-component text-graph-email-component-foreground",
+  unrelated: "bg-graph-email text-graph-email-foreground",
 };
 
 function getPolygon(
@@ -203,7 +203,7 @@ export function RegionOverlayBox({
     : "";
 
   // Active-parent ENTITY box gets the outer violet glow (D-10).
-  const activeParentClass = isActiveParent ? " ring-4 ring-violet-400/40" : "";
+  const activeParentClass = isActiveParent ? " ring-4 ring-graph-entity/40" : "";
 
   const mutatingClass = isMutating ? " animate-pulse opacity-70" : "";
 

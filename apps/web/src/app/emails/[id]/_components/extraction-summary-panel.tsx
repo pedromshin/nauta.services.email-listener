@@ -53,7 +53,7 @@ function statusTone(status: string): StatusTone {
 
 const TONE_DOT: Record<StatusTone, string> = {
   confirmed: "bg-success",
-  candidate: "bg-amber-500",
+  candidate: "bg-graph-email-component",
   other: "bg-muted-foreground/50",
 };
 
@@ -151,10 +151,10 @@ export function ExtractionSummaryPanel({
             return (
               <section
                 key={entity.id}
-                className="rounded-md border border-violet-200/60 bg-violet-50/40 dark:border-violet-900/40 dark:bg-violet-950/20"
+                className="rounded-md border border-graph-entity/30 bg-graph-entity/10"
               >
-                <header className="flex items-center justify-between gap-2 border-b border-violet-200/50 px-3 py-2 dark:border-violet-900/30">
-                  <p className="truncate text-sm font-semibold text-violet-900 dark:text-violet-200">
+                <header className="flex items-center justify-between gap-2 border-b border-graph-entity/30 px-3 py-2">
+                  <p className="truncate text-sm font-semibold text-graph-entity">
                     {entity.entityTypeLabel ?? "Unclassified entity"}
                   </p>
                   <StatusDot status={entity.extractionStatus} />

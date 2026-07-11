@@ -65,9 +65,9 @@ interface InspectorPanelProps {
 
 /** Compact role chip used in the Region Identity section. */
 const ROLE_CHIP: Record<NonNullable<ComponentRole>, string> = {
-  entity: "bg-violet-100 text-violet-800",
-  field: "bg-amber-100 text-amber-800",
-  unrelated: "bg-slate-100 text-slate-600",
+  entity: "bg-graph-entity/10 text-graph-entity",
+  field: "bg-graph-email-component/10 text-graph-email-component",
+  unrelated: "bg-graph-email/10 text-graph-email",
 };
 
 const ROLE_LABEL: Record<NonNullable<ComponentRole>, string> = {
