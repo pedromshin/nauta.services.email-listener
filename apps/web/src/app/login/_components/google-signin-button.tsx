@@ -32,8 +32,12 @@ export function GoogleSigninButton(): React.ReactElement {
   };
 
   return (
-    <Button type="button" className="w-full" onClick={handleSignIn}>
-      Continue with Google
+    <Button
+      type="button"
+      onClick={handleSignIn}
+      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+    >
+      Sign in with Google
     </Button>
   );
 }
