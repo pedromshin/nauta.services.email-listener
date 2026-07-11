@@ -13,7 +13,7 @@
  * No font-medium (500) — UI-SPEC Note #5. Only font-normal / font-semibold.
  */
 
-import { Maximize2 } from "lucide-react";
+import { LayoutGrid, Maximize2 } from "lucide-react";
 
 import { Button } from "@polytoken/ui/button";
 
@@ -39,7 +39,7 @@ export function GraphToolbar({
 }: GraphToolbarProps): React.ReactElement {
   return (
     <div
-      className="flex h-11 shrink-0 items-center justify-between border-b border-border/50 bg-background/70 px-4 backdrop-blur-md"
+      className="flex h-11 shrink-0 items-center justify-between border-b border-border/50 bg-background/95 px-4"
     >
       {/* Left: page title */}
       <span className="text-sm font-semibold">Knowledge</span>
@@ -56,6 +56,7 @@ export function GraphToolbar({
           size="sm"
           aria-label="Zoom to fit"
           onClick={onFitView}
+          className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
         >
           <Maximize2 className="size-4" aria-hidden />
         </Button>
@@ -68,9 +69,9 @@ export function GraphToolbar({
           aria-label="Toggle layout"
           aria-pressed={true}
           disabled
+          className="hover:bg-accent hover:text-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
         >
-          {/* No icon specified in UI-SPEC for layout toggle; using a placeholder */}
-          <span className="size-4 flex items-center justify-center text-xs" aria-hidden>⊞</span>
+          <LayoutGrid className="size-4" aria-hidden />
         </Button>
 
         {/* Node count */}

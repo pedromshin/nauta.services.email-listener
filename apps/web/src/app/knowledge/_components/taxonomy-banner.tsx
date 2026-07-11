@@ -5,7 +5,7 @@
  *
  * UI-SPEC Default Render Depth banner:
  *   Position: absolute bottom-0 left-0 right-0 inside canvas (above MiniMap)
- *   Style: bg-background/70 backdrop-blur-md border-t border-border/50 px-4 py-2
+ *   Style: bg-background/95 border-t border-border/50 px-4 py-2 (RSKN-03: solid, no blur)
  *   Copy: "Your extraction schema — {N} entity types, {M} fields. Instances and
  *          knowledge rules appear as emails are processed."
  *   Dismiss: X button (aria-label "Dismiss"); parent persists to localStorage
@@ -43,7 +43,7 @@ export function TaxonomyBanner({
     <div
       role="status"
       aria-live="polite"
-      className="absolute bottom-0 left-0 right-0 flex items-center justify-between border-t border-border/50 bg-background/70 px-4 py-2 backdrop-blur-md"
+      className="absolute bottom-0 left-0 right-0 flex items-center justify-between border-t border-border/50 bg-background/95 px-4 py-2"
     >
       <p className="text-xs text-muted-foreground">
         Your extraction schema &mdash; {entityTypeCount} entity types, {fieldCount} fields.

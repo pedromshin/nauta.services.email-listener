@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * node-detail-pane.tsx — 320px frosted detail pane for the /knowledge graph surface.
+ * node-detail-pane.tsx — 320px detail pane for the /knowledge graph surface (RSKN-03: solid, no blur).
  *
  * UI-SPEC Node Detail Pane:
  *   role="complementary" aria-label="Node details"
@@ -370,7 +370,7 @@ export function NodeDetailPane({
     <div
       role="complementary"
       aria-label="Node details"
-      className="flex h-full w-80 flex-col border-l border-border/50 bg-background/70 backdrop-blur-md"
+      className="flex h-full w-80 flex-col border-l border-border/50 bg-background/95"
     >
       {selectedNode == null ? (
         /* Default empty state */

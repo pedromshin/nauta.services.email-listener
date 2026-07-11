@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * filter-rail.tsx — 240px frosted filter rail for the /knowledge graph surface.
+ * filter-rail.tsx — 240px filter rail for the /knowledge graph surface (RSKN-03: solid, no blur).
  *
  * UI-SPEC Filter Rail:
  *   Header "Show" — text-xs font-semibold uppercase tracking-wide text-muted-foreground
@@ -93,7 +93,7 @@ export function FilterRail({
   counts,
 }: FilterRailProps): React.ReactElement {
   return (
-    <div className="flex h-full w-60 flex-col border-r border-border/50 bg-background/70 backdrop-blur-md">
+    <div className="flex h-full w-60 flex-col border-r border-border/50 bg-background/95">
       {/* Header */}
       <p className="px-4 pb-2 pt-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Show
