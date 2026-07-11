@@ -239,8 +239,22 @@ Phase 50 (Band 1 gate — nothing in Band 2/3 starts before the live loop is gre
 6. The inbox entity chips consume `color.graph.entity` + `radius.pill`, and `/entities/[id]`'s StatusBadge consumes the `color.tier.*` ladder — closing backlog 999.16
 7. Knowledge-canvas cache invalidation extends to chat-driven promotions and expandNode results, not just staleTime self-healing
 
-**Plans:** TBD
+**Plans:** 7 plans
 **UI hint**: yes
+
+Plans:
+**Wave 1** *(6 parallel plans — disjoint files_modified)*
+
+- [ ] 51-01-PLAN.md — /chat interactive surfaces + global chrome (sidebar de-glass + hover/active) (RSKN-01)
+- [ ] 51-02-PLAN.md — Email-detail D-49-03 palette→graph.* conversion + confirm/deny filled-semantic recipe (RSKN-02, RSKN-05)
+- [ ] 51-03-PLAN.md — Inbox entity chips→graph-entity+pill, /entities palette + StatusBadge→tier ladder (backlog 999.16) (RSKN-02, RSKN-06, RSKN-05)
+- [ ] 51-04-PLAN.md — /knowledge re-skin: glassmorphism burn-down (4 files) + ⊞→LayoutGrid + tier/graph confirm (RSKN-03)
+- [ ] 51-05-PLAN.md — /studio + /settings/forwarding + /login register/hover pass + brand-copy confirm (RSKN-04)
+- [ ] 51-06-PLAN.md — RSKN-07 FUNCTIONAL: cache invalidation for chat-driven promotions + expandNode (+ tests) (RSKN-07)
+
+**Wave 2** *(blocked on Wave 1 — the enforceable gate + phase-wide regression)*
+
+- [ ] 51-07-PLAN.md — D-49-05 committed palette-ban gate + E2E regression (live-loop/uat-39/41/43/45/48) + full 16-surface screenshot re-capture vs baseline (RSKN-05)
 
 ### Phase 52: Editable Genui Panels / Studio-on-Canvas
 
