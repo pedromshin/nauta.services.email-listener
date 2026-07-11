@@ -314,10 +314,21 @@ export function ChatCanvas({
   useEffect(() => {
     if (persistence.isRestoring) return;
 
+    // [Rule 1 - Bug] `setNodes`'s functional updater is invoked by React
+    // asynchronously (deferred to the render phase), NOT synchronously at the
+    // `setNodes(...)` call site — so mutating `seededRef.current` AFTER this
+    // call (below) could race ahead of the updater actually running, making
+    // the updater observe the ALREADY-flipped `true` value and fall back to
+    // `prev` (still `[]` on a fresh mount) instead of `persistence.initialNodes`,
+    // silently dropping every restored node beyond the synthesized default
+    // chat node. Captured synchronously, BEFORE either `setNodes` or the ref
+    // mutation, so the updater always sees the seed-state that was actually
+    // true when this effect ran (found live via Phase 50 Plan 02's UAT-41
+    // burn-down — a saved `knowledge-preview` node never survived restore).
+    const wasSeeded = seededRef.current;
+
     setNodes((prev) => {
-      const baseline = seededRef.current
-        ? prev.map(toPersistedShape)
-        : persistence.initialNodes;
+      const baseline = wasSeeded ? prev.map(toPersistedShape) : persistence.initialNodes;
       const reconciled = withDefaultChatNode(
         reconcileNodesFromHistory(baseline, historyRows),
         conversationId,
@@ -325,7 +336,7 @@ export function ChatCanvas({
       return reconciled.map(toFlowNode);
     });
 
-    if (!seededRef.current) {
+    if (!wasSeeded) {
       seededRef.current = true;
       setEdges(persistence.initialEdges.map(toFlowEdge));
       if (persistence.initialViewport) {
