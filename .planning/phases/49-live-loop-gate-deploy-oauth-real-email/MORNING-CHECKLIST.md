@@ -350,8 +350,24 @@ green in CI as of commit `997e1bc`. The running prod service is unaffected (prev
 Tell Claude your choice; it is not something this session can decide (lowering a user-stated
 quality floor was correctly policy-denied for autonomous execution).
 
+### E.3 Brand-mark visual fit sign-off (Phase 47 scenario 47.1, routed by Phase 50 Plan 04)
+
+A one-glance judgment call — no setup needed.
+
+1. Open `.planning/ui-reviews/2026-07-11T04-32-30-989Z/login-desktop.png` (or the live dev
+   server / deployed app's `/login` page — either is fine).
+2. Look at the rendered brand mark (sidebar slot, login card, favicon/browser tab). Does it read
+   as a credible rounded "node/brain hybrid" (D-47-02) that feels at home with the warm polytoken
+   register, and is it an acceptable foundational asset for the total re-skin to build on?
+3. Tell Claude either **"brand mark approved"** or what's off (regenerating the SVG geometry is
+   cheap if it misses).
+
+Recorded in `49-HUMAN-UAT.md` item 6.
+
 ---
 
 *Assembled by Plan 49-06, Task 1 — 2026-07-11. Sources: `GOOGLE-OAUTH-RUNBOOK.md`,
 `FORWARDING-RUNBOOK.md`, `EXTERNAL-IDENTITY-DECISIONS.md`, `artifacts/migration-verification.md`,
-`artifacts/forwarding-catchall-tfplan.txt`, `.env.example`.*
+`artifacts/forwarding-catchall-tfplan.txt`, `.env.example`. Section E.3 added by Plan 50-04
+(LIVE-05) — routes the 47.1 brand-mark aesthetic sign-off here rather than leaving it
+`[pending]` in 47-HUMAN-UAT.md.*

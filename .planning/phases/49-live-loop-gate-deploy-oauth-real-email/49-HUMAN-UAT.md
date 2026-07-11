@@ -32,12 +32,16 @@ result: [pending]
 expected: .env.staging/.env.production POSTGRES_URL_NON_POOLING passwords refreshed from Supabase Dashboard → Database Settings; ten verify-00XX-live.ts scripts pass natively per host
 result: [pending]
 
+### 6. Brand-mark visual fit sign-off (BRND-01 / Phase 47 scenario 47.1)
+expected: user looks at the real captured login-page pixels — `.planning/ui-reviews/2026-07-11T04-32-30-989Z/login-desktop.png` (or the live deployed/dev-server app) — and judges whether the rendered brand mark (sidebar slot, login card, favicon/browser tab) reads as a credible rounded "node/brain hybrid" (D-47-02) that fits the warm polytoken register and is an acceptable foundation for the re-skin. Routed here by Phase 50 Plan 04 (LIVE-05) because no DOM/CSS assertion can close a subjective aesthetic judgment — evidence is already captured, only the human call is outstanding. See MORNING-CHECKLIST.md §E.3.
+result: [pending]
+
 ## Summary
 
-total: 5
+total: 6
 passed: 0
 issues: 0
-pending: 5
+pending: 6
 skipped: 0
 blocked: 0
 
