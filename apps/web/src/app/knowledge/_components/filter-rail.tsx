@@ -106,13 +106,13 @@ export function FilterRail({
           return (
             <label
               key={type}
-              className="flex cursor-pointer items-center gap-2 px-4 py-1.5 text-sm"
+              className="flex cursor-pointer items-center gap-2 px-4 py-1.5 text-sm transition-colors hover:bg-accent hover:text-accent-foreground"
             >
               <input
                 type="checkbox"
                 checked={checked}
                 onChange={() => onToggleType(type)}
-                className="sr-only"
+                className="peer sr-only"
                 aria-label={label}
               />
               {/* Color dot */}
@@ -126,7 +126,7 @@ export function FilterRail({
               </span>
               {/* Visual checkbox indicator */}
               <span
-                className={`ml-auto flex size-4 shrink-0 items-center justify-center rounded border transition-colors ${
+                className={`ml-auto flex size-4 shrink-0 items-center justify-center rounded border transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-1 ${
                   checked
                     ? "border-primary bg-primary text-primary-foreground"
                     : "border-border bg-background"
