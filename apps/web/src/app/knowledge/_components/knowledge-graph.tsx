@@ -145,6 +145,7 @@ export interface PromoteEdgeUtils {
   readonly knowledge: {
     readonly byId: { readonly invalidate: () => void };
     readonly graph: { readonly invalidate: () => void };
+    readonly expandNode: { readonly invalidate: () => void };
   };
 }
 
@@ -174,12 +175,16 @@ export async function promoteEdge(
     };
   }
 
-  // BIND-02: a bound chat-canvas panel's knowledge.byId/knowledge.graph
-  // query shares the SAME browser-side QueryClient singleton (mounted once
-  // at apps/web/src/app/layout.tsx) — invalidating here refetches it without
-  // navigating away from /chat first.
+  // BIND-02: a bound chat-canvas panel's knowledge.byId/knowledge.graph/
+  // knowledge.expandNode query shares the SAME browser-side QueryClient
+  // singleton (mounted once at apps/web/src/app/layout.tsx) — invalidating
+  // here refetches it without navigating away from /chat first. expandNode
+  // (the KnowledgePreviewNode data source) added per RSKN-07 — until this,
+  // NO promotion path ever invalidated it (todo
+  // 2026-07-09-knowledge-cache-invalidation-gap).
   utils.knowledge.byId.invalidate();
   utils.knowledge.graph.invalidate();
+  utils.knowledge.expandNode.invalidate();
 
   return { ok: true };
 }
