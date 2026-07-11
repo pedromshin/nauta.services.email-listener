@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Cloud Workspace
-status: 51-02 (RSKN-02/RSKN-05, email-detail palette burn-down) executed — region/entity type-coding lands on color.graph.* closed palette, confirm-deny-controls filled-semantic recipe complete, zero palette classes; typecheck green outside the pre-existing unrelated `apps/web/src/app/dev/design/` scratch breakage (see 51-02-SUMMARY.md Issues Encountered)
-last_updated: "2026-07-11T21:16:00.000Z"
-last_activity: "2026-07-11 -- Phase 51-02 executed (RSKN-02/RSKN-05: email-detail region/entity type-coding onto color.graph.* closed palette across 7 files, confirm-deny-controls.tsx filled-semantic hover/active recipe completed)"
+status: 51-03 (RSKN-02/RSKN-06/RSKN-05, entity-chip + StatusBadge token burn-down) executed — inbox entity-chips.tsx onto color.graph.entity + radius.pill, /entities/[id] StatusBadge onto the color.tier.* ladder (confirmed->tier-extracted, candidate->tier-inferred), /entities list pages + entity-fields.tsx palette-converted (D-49-04 light-touch); backlog 999.16 closed in full; zero palette classes; token-contrast.test.ts + token-registration.test.ts green; typecheck clean outside the pre-existing unrelated `apps/web/src/app/dev/design/` scratch breakage (see 51-03-SUMMARY.md)
+last_updated: "2026-07-11T20:59:30.829Z"
+last_activity: "2026-07-11 -- Phase 51-03 executed (RSKN-02/RSKN-06/RSKN-05: inbox entity-chips.tsx onto color.graph.entity + radius.pill, /entities/[id] StatusBadge onto the color.tier.* ladder, /entities list pages + entity-fields.tsx palette-converted, backlog 999.16 closed)"
 progress:
   total_phases: 6
   completed_phases: 1
@@ -29,10 +29,40 @@ console, SES/DNS, Supabase project-id decision) are in-phase checkpoint tasks in
 
 ## Current Position
 
-Phase: 51 (Total UI Re-skin) — Wave 1 executing (parallel plans; 51-01 and 51-02 done, siblings may still be in flight)
-Plan: 2 of 7 done; see individual Plan History sections for sibling status
-Status: 51-02 (RSKN-02/RSKN-05, email-detail palette burn-down) executed — region/entity type-coding lands on color.graph.* closed palette, confirm-deny-controls filled-semantic recipe complete, zero palette classes; typecheck green outside the pre-existing unrelated `apps/web/src/app/dev/design/` scratch breakage (see 51-02-SUMMARY.md Issues Encountered)
-Last activity: 2026-07-11 -- Phase 51-02 executed (RSKN-02/RSKN-05: email-detail region/entity type-coding onto color.graph.* closed palette across 7 files, confirm-deny-controls.tsx filled-semantic hover/active recipe completed)
+Phase: 51 (Total UI Re-skin) — Wave 1 executing (parallel plans; 51-01, 51-02, 51-03 done, siblings may still be in flight)
+Plan: 3 of 7 done; see individual Plan History sections for sibling status
+Status: 51-03 (RSKN-02/RSKN-06/RSKN-05, entity-chip + StatusBadge token burn-down) executed — inbox entity-chips.tsx onto color.graph.entity + radius.pill, /entities/[id] StatusBadge onto the color.tier.* ladder (confirmed->tier-extracted, candidate->tier-inferred), /entities list pages + entity-fields.tsx palette-converted (D-49-04 light-touch); backlog 999.16 closed in full; zero palette classes; token-contrast.test.ts + token-registration.test.ts green; typecheck clean outside the pre-existing unrelated `apps/web/src/app/dev/design/` scratch breakage (see 51-03-SUMMARY.md)
+Last activity: 2026-07-11 -- Phase 51-03 executed (RSKN-02/RSKN-06/RSKN-05: inbox entity-chips.tsx onto color.graph.entity + radius.pill, /entities/[id] StatusBadge onto the color.tier.* ladder, /entities list pages + entity-fields.tsx palette-converted, backlog 999.16 closed)
+
+## Phase 51 -- Total UI Re-skin -- Plan 03 History -- RSKN-02/RSKN-06/RSKN-05
+
+- **51-03 EXECUTED** (`dff4401` feat, `82af00d` feat):
+  Closed backlog 999.16 in full — the two off-token chip/badge stragglers the
+  Phase-48 audit named. `entity-chips.tsx`'s 5 raw `violet-*` occurrences
+  converted to `color.graph.entity` (tint recipe matching
+  role-picker.tsx/inspector-panel.tsx), with an explicit `rounded-pill`
+  call-site override on the shared `Badge` (primitive itself untouched,
+  Registry Safety) and the neutral-ghost hover/active + `focus-visible:
+  ring-ring` recipe on the interactive chip, matching `ProvenanceLink`'s pill
+  pattern exactly. `/entities/[id]`'s `StatusBadge` moved off `bg-primary/10`
+  + raw `amber-*` onto solid `tier-extracted`/`tier-inferred` pairs (RSKN-06's
+  named "entities half"). `/entities` list pages (`entities-table.tsx`,
+  `entities-mosaic.tsx`) and `entity-fields.tsx` palette-converted (D-49-04
+  light-touch, no redesign): entity-type badges -> `graph-entity` tint,
+  candidate badge/row -> `tier-inferred`, "possible duplicates"/"conflict"
+  warning badges (raw orange/red, not named in the D-49-03 map) ->
+  `destructive` tint (the codebase's existing problem-state token, reused
+  rather than minting a new alias). `entities-gallery.tsx` read in full —
+  zero raw palette occurrences found, left untouched. One Rule-1 auto-fix:
+  StatusBadge's decorative dots would have rendered invisible against the
+  new solid badge fill (dot color == fill color) if mechanically renamed
+  1:1 — used the pair's own `-foreground` token for both dots instead. Zero
+  palette classes across all 6 owned files; `token-contrast.test.ts` +
+  `token-registration.test.ts` green; `tsc --noEmit` clean outside the
+  pre-existing `apps/web/src/app/dev/design/` scratch exclusion. RSKN-06
+  marked complete in REQUIREMENTS.md (both named sub-scopes now closed);
+  RSKN-02/RSKN-05 remain satisfied from 51-02. See `51-03-SUMMARY.md` for
+  full deviation detail.
 
 ## Phase 51 -- Total UI Re-skin -- Plan 02 History -- RSKN-02/RSKN-05
 
@@ -2873,6 +2903,10 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 
 ## Decisions Log
 
+- 2026-07-11 (51-03): entity-detail.tsx StatusBadge's decorative status dots use the tier pair's own `-foreground` token (`bg-tier-extracted-foreground`/`bg-tier-inferred-foreground`), not the base alias — a literal 1:1 rename from the original `bg-primary`/`bg-amber-400` dots would have made each dot exactly the same color as its own badge fill (now solid, not translucent), rendering it invisible.
+- 2026-07-11 (51-03): raw `orange-*`/`red-*` "possible duplicates"/"conflict" warning badges (entities-table.tsx, entities-mosaic.tsx, entity-fields.tsx) mapped to `bg-destructive/10 text-destructive` — neither color family is named in the D-49-03 conversion map; `destructive` is the codebase's existing problem-state token (already used in these same files' ErrorState), reused rather than minting a new alias.
+- 2026-07-11 (51-03): entities-table.tsx/entities-mosaic.tsx's "Confirmed" StatusBadge branch left on its existing `bg-primary/10` token (not a palette violation) — only entity-detail.tsx's StatusBadge was the RSKN-06-named target for the full tier-ladder swap; D-49-04 scopes the list pages to palette-conversion-only, no redesign. The "Candidate" branch (raw amber, a genuine violation) WAS converted to the same solid `tier-inferred` pair used in entity-detail.tsx for app-wide label consistency.
+- 2026-07-11 (51-03): entities-gallery.tsx read in full per the plan's read_first step; zero raw palette occurrences found (its only non-neutral surfaces are the valid `bg-primary/10` view-toggle token and the out-of-scope glassmorphism `backdrop-blur-md` header, not named by this plan or the UI-SPEC's glassmorphism burn-down list) — left untouched.
 - 2026-07-11 (50-02): Closed the chat-surface slice of LIVE-05 — all 7 deferred scenarios (Phase 39 x2, Phase 41 x5) closed as `passed` with DB/DOM-verified evidence against the local live stack; zero `pending`/tracked-fix remain. 39-HUMAN-UAT.md and 41-HUMAN-UAT.md both moved to `status: complete`. LIVE-05 itself stays Pending — it also spans 43/45/47/48-HUMAN-UAT.md, closed by 50-03/50-04, rolled up by 50-05.
 - 2026-07-11 (50-02): Found and fixed a real production bug in apps/web/src/app/chat/_canvas/chat-canvas.tsx while root-causing why a seeded knowledge-preview canvas node never survived restore — the reconcile effect flipped `seededRef.current = true` synchronously right after calling `setNodes(updaterFn)`, but React invokes a functional setNodes updater asynchronously, so the updater raced ahead of the flip and used an empty baseline instead of the real restored nodes. Any conversation's saved canvas layout with more than the default chat node was silently pruned back to just that node on every page load, until this fix. Verified via 4 consecutive clean 5/5 e2e runs plus all 21 pre-existing chat-canvas/use-canvas-persistence unit tests unmodified and passing.
 - 2026-07-11 (50-02): 39.2's citation-chip scenario closed via honest CONFIRMED-data seeding (real email_components/extraction_records driving search_emails's real RRF retrieval) rather than tracked-fix — within the plan's ~30min seeding-effort budget.
@@ -3224,6 +3258,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 50 P03 | 47min | 2 tasks | 5 files |
 | Phase 50 P04 | 50min | 2 tasks | 5 files |
 | Phase 50 P05 | 35min | 2 tasks | 3 files |
+| Phase 51 P03 | 11min | 2 tasks | 5 files |
 
 ## Operator Next Steps
 
