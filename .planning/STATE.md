@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Cloud Workspace
 status: executing
-last_updated: "2026-07-11T04:36:45.167Z"
-last_activity: 2026-07-11 -- Phase 50-01 executed (screenshot harness extended with /emails/[id] + seeded-session auth — LIVE-06 closed, todo W-1 closed)
+last_updated: "2026-07-11T06:59:09.863Z"
+last_activity: 2026-07-11 -- Phase 50-02 executed (LIVE-05 UAT burn-down: 39.1/39.2 + 41.1-41.5 all DB/DOM-verified passed; fixed chat-canvas.tsx canvas-restore race bug)
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 11
-  completed_plans: 6
+  completed_plans: 8
   percent: 0
 ---
 
@@ -30,9 +30,43 @@ console, SES/DNS, Supabase project-id decision) are in-phase checkpoint tasks in
 ## Current Position
 
 Phase: 50 (Live-Loop Gate — UAT Burn-down & Screenshot Coverage) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Executing Phase 50
-Last activity: 2026-07-11 -- Phase 50-01 executed (screenshot harness extended with /emails/[id] + seeded-session auth — LIVE-06 closed, todo W-1 closed)
+Last activity: 2026-07-11 -- Phase 50-02 executed (LIVE-05 UAT burn-down: 39.1/39.2 + 41.1-41.5 all DB/DOM-verified passed; fixed chat-canvas.tsx canvas-restore race bug)
+
+## Phase 50 -- Live-Loop Gate -- UAT Burn-down & Screenshot Coverage -- Plan 02 History -- LIVE-05
+
+- **50-02 EXECUTED** (`1abcac7` feat, `f0426bd` feat):
+  Burned down all 7 deferred chat-surface UAT scenarios (Phase 39 x2, Phase 41
+  x5) against the local live stack via a seeded session (no interactive
+  Google). Task 1 (`apps/web/e2e/uat-39-tool-round.spec.ts`) drove a real
+  Bedrock Sonnet 4.6 tool round, DB-verified via a `chat_run_events` tool_call
+  row, and closed 39.2's citation-chip scenario with a real CONFIRMED
+  `email_components`/`extraction_records` slice (the honest seeding path, not
+  a tracked-fix). Task 2 (`apps/web/e2e/uat-41-knowledge-preview.spec.ts` +
+  `apps/web/e2e/helpers/uat-chat-fixtures.ts`) covered all 5 knowledge-preview
+  canvas node scenarios against a live React Flow viewport.
+
+  While root-causing why the seeded `knowledge-preview` node never survived
+  canvas restore, found and fixed a REAL production bug in
+  `apps/web/src/app/chat/_canvas/chat-canvas.tsx`: the reconcile effect
+  mutated `seededRef.current = true` synchronously right after calling
+  `setNodes(updaterFn)`, but React invokes a functional `setNodes` updater
+  asynchronously — so the updater observed the already-flipped ref and used
+  an empty baseline instead of the real restored nodes, silently pruning
+  every canvas node beyond the default chat node on EVERY restore whenever a
+  saved layout had more than one node. Fixed by capturing the seed-state
+  synchronously before either the `setNodes` call or the ref mutation. This
+  benefits every canvas-node type, not just `knowledge-preview`.
+
+  Both HUMAN-UAT.md files (39, 41) moved from `partial`/`pending` to
+  `complete`, zero pending scenarios remain. Filed (did not fix, out of
+  scope) a pre-existing `chat_cost_ledger` NOT NULL `user_id` bug found live
+  during Task 1 —
+  `.planning/todos/pending/2026-07-11-chat-cost-ledger-null-user-id.md`.
+  LIVE-05 stays Pending overall (it spans 39/41/43/45/47/48-HUMAN-UAT.md) —
+  this plan closes the 39+41 chat-surface slice only; 50-03/50-04 close the
+  remaining scenarios, 50-05 rolls everything up and closes the requirement.
 
 ## Phase 50 -- Live-Loop Gate -- UAT Burn-down & Screenshot Coverage -- Plan 01 History -- LIVE-06
 
@@ -2676,6 +2710,11 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 
 ## Decisions Log
 
+- 2026-07-11 (50-02): Closed the chat-surface slice of LIVE-05 — all 7 deferred scenarios (Phase 39 x2, Phase 41 x5) closed as `passed` with DB/DOM-verified evidence against the local live stack; zero `pending`/tracked-fix remain. 39-HUMAN-UAT.md and 41-HUMAN-UAT.md both moved to `status: complete`. LIVE-05 itself stays Pending — it also spans 43/45/47/48-HUMAN-UAT.md, closed by 50-03/50-04, rolled up by 50-05.
+- 2026-07-11 (50-02): Found and fixed a real production bug in apps/web/src/app/chat/_canvas/chat-canvas.tsx while root-causing why a seeded knowledge-preview canvas node never survived restore — the reconcile effect flipped `seededRef.current = true` synchronously right after calling `setNodes(updaterFn)`, but React invokes a functional setNodes updater asynchronously, so the updater raced ahead of the flip and used an empty baseline instead of the real restored nodes. Any conversation's saved canvas layout with more than the default chat node was silently pruned back to just that node on every page load, until this fix. Verified via 4 consecutive clean 5/5 e2e runs plus all 21 pre-existing chat-canvas/use-canvas-persistence unit tests unmodified and passing.
+- 2026-07-11 (50-02): 39.2's citation-chip scenario closed via honest CONFIRMED-data seeding (real email_components/extraction_records driving search_emails's real RRF retrieval) rather than tracked-fix — within the plan's ~30min seeding-effort budget.
+- 2026-07-11 (50-02): Filed (did not fix, out of scope) a pre-existing chat_cost_ledger NOT NULL user_id violation on every server-locus chat turn, found live during Task 1 — .planning/todos/pending/2026-07-11-chat-cost-ledger-null-user-id.md.
+- 2026-07-11 (50-02): Restarted a stale, many-hours-uptime Next.js dev server holding port 3000 mid-investigation — it was not reflecting on-disk file edits (added console.log statements never fired), which made the canvas-restore bug appear unreproducible via direct code instrumentation until the restart.
 - 2026-07-11 (50-01): LIVE-06 marked Complete — screenshot-review.spec.ts's isLocalTarget(baseURL, supabaseUrl) fail-closed guard (T-50-01) gates the 49-03 seedAuthenticatedContext helper to localhost/127.0.0.1 targets only; a new screenshot-fixtures.ts seedEmailFixture(userId) upserts a fixed-id thread+email so /emails/[id] renders real content. Live run produced .planning/ui-reviews/2026-07-11T04-32-30-989Z/ with all 16 rows captured (zero /login redirects) — evidence baseline for 50-04 and Phase 51.
 - 2026-07-11 (50-01): seedEmailFixture looks up the seeded user's real auth.users email for the fixture's to_addresses field (rather than the sender's own address) so the rendered /emails/[id] card's "To:" line reads correctly — a small correctness improvement beyond the plan's literal minimal interface spec.
 - 2026-07-11 (50-01): Skipped re-running scripts/preflight-local.ps1 before the live harness run — its Step 1 kills all python/uvicorn/node processes, which would have torn down the already-running 9h-uptime `npm run dev` for no benefit; verified DB-green state directly instead (has_table_privilege = t, 25 public tables, seed user present), the same DB-based check the script itself runs as its PASS/FAIL gate.
