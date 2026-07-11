@@ -1,0 +1,108 @@
+
+> infra:tf
+> terraform -chdir=infrastructure/aws plan
+
+[0m[1mdata.aws_iam_openid_connect_provider.github: Reading...[0m[0m
+[0m[1mdata.aws_caller_identity.current: Reading...[0m[0m
+[0m[1mdata.aws_iam_policy_document.ecs_assume: Reading...[0m[0m
+[0m[1maws_ecs_cluster.main: Refreshing state... [id=arn:aws:ecs:us-east-1:271369143207:cluster/nauta-services-email-listener][0m
+[0m[1mdata.aws_availability_zones.available: Reading...[0m[0m
+[0m[1maws_s3_bucket.ses_inbound: Refreshing state... [id=nauta-services-ses-inbound-emails][0m
+[0m[1maws_cloudwatch_log_group.service["staging"]: Refreshing state... [id=/ecs/nauta-services-email-listener-staging][0m
+[0m[1maws_budgets_budget.monthly_cost: Refreshing state... [id=271369143207:nauta-services-monthly-cost][0m
+[0m[1maws_ecr_repository.email_listener: Refreshing state... [id=nauta-services-email-listener][0m
+[0m[1maws_cloudwatch_log_group.service["production"]: Refreshing state... [id=/ecs/nauta-services-email-listener][0m
+[0m[1mdata.aws_iam_policy_document.ecs_assume: Read complete after 0s [id=1077804475][0m
+[0m[1maws_ses_receipt_rule_set.main: Refreshing state... [id=nauta-services-inbound][0m
+[0m[1mdata.aws_caller_identity.current: Read complete after 0s [id=271369143207][0m
+[0m[1mdata.aws_iam_policy_document.ecs_execution_secrets: Reading...[0m[0m
+[0m[1mdata.aws_iam_policy_document.ecs_execution_secrets: Read complete after 0s [id=1925802262][0m
+[0m[1maws_vpc.main: Refreshing state... [id=vpc-080c81a2c18d77243][0m
+[0m[1maws_ses_domain_identity.main: Refreshing state... [id=magnitudetech.com.br][0m
+[0m[1mdata.aws_availability_zones.available: Read complete after 1s [id=us-east-1][0m
+[0m[1maws_sns_topic.ses_inbound["local"]: Refreshing state... [id=arn:aws:sns:us-east-1:271369143207:nauta-services-ses-inbound-local][0m
+[0m[1maws_sns_topic.ses_inbound["prod"]: Refreshing state... [id=arn:aws:sns:us-east-1:271369143207:nauta-services-ses-inbound-prod][0m
+[0m[1maws_sns_topic.ses_inbound["staging"]: Refreshing state... [id=arn:aws:sns:us-east-1:271369143207:nauta-services-ses-inbound-staging][0m
+[0m[1mdata.aws_iam_openid_connect_provider.github: Read complete after 1s [id=arn:aws:iam::271369143207:oidc-provider/token.actions.githubusercontent.com][0m
+[0m[1maws_iam_role.ecs_execution: Refreshing state... [id=nauta-services-email-listener-ecs-execution][0m
+[0m[1maws_iam_role.ecs_task: Refreshing state... [id=nauta-services-email-listener-ecs-task][0m
+[0m[1mdata.aws_iam_policy_document.ecs_task_bedrock: Reading...[0m[0m
+[0m[1mdata.aws_iam_policy_document.ecs_task_bedrock: Read complete after 0s [id=2071193862][0m
+[0m[1maws_ses_active_receipt_rule_set.main: Refreshing state... [id=nauta-services-inbound][0m
+[0m[1mdata.aws_iam_policy_document.github_assume: Reading...[0m[0m
+[0m[1mdata.aws_iam_policy_document.github_assume: Read complete after 0s [id=450695058][0m
+[0m[1maws_ecr_lifecycle_policy.email_listener: Refreshing state... [id=nauta-services-email-listener][0m
+[0m[1mdata.aws_iam_policy_document.github_deploy: Reading...[0m[0m
+[0m[1mdata.aws_iam_policy_document.github_deploy: Read complete after 0s [id=3896743658][0m
+[0m[1maws_iam_role.github_deploy: Refreshing state... [id=nauta-services-email-listener-github-deploy][0m
+[0m[1maws_sns_topic_subscription.prod: Refreshing state... [id=arn:aws:sns:us-east-1:271369143207:nauta-services-ses-inbound-prod:b2d9d3d7-160d-4e27-a54c-c172698fecbb][0m
+[0m[1maws_sns_topic_subscription.local[0]: Refreshing state... [id=arn:aws:sns:us-east-1:271369143207:nauta-services-ses-inbound-local:5641cb35-9c9d-4835-8ec6-a0ebf55cdd64][0m
+[0m[1maws_sns_topic_policy.ses_inbound["local"]: Refreshing state... [id=arn:aws:sns:us-east-1:271369143207:nauta-services-ses-inbound-local][0m
+[0m[1maws_sns_topic_policy.ses_inbound["prod"]: Refreshing state... [id=arn:aws:sns:us-east-1:271369143207:nauta-services-ses-inbound-prod][0m
+[0m[1maws_sns_topic_policy.ses_inbound["staging"]: Refreshing state... [id=arn:aws:sns:us-east-1:271369143207:nauta-services-ses-inbound-staging][0m
+[0m[1maws_sns_topic_subscription.staging: Refreshing state... [id=arn:aws:sns:us-east-1:271369143207:nauta-services-ses-inbound-staging:e07031bf-0fcc-43d2-bd21-8d9487ff7dc2][0m
+[0m[1maws_iam_role_policy_attachment.ecs_execution_managed: Refreshing state... [id=nauta-services-email-listener-ecs-execution-20260611030956563700000001][0m
+[0m[1maws_iam_role_policy.ecs_execution_secrets[0]: Refreshing state... [id=nauta-services-email-listener-ecs-execution:read-secrets][0m
+[0m[1maws_iam_role_policy.ecs_task_bedrock: Refreshing state... [id=nauta-services-email-listener-ecs-task:invoke-bedrock-claude][0m
+[0m[1maws_ecs_task_definition.service["staging"]: Refreshing state... [id=nauta-services-email-listener-staging][0m
+[0m[1maws_ecs_task_definition.service["production"]: Refreshing state... [id=nauta-services-email-listener][0m
+[0m[1maws_iam_role_policy.github_deploy: Refreshing state... [id=nauta-services-email-listener-github-deploy:deploy-email-listener][0m
+[0m[1maws_internet_gateway.main: Refreshing state... [id=igw-0f9e6dcb402db02ed][0m
+[0m[1maws_lb_target_group.service["production"]: Refreshing state... [id=arn:aws:elasticloadbalancing:us-east-1:271369143207:targetgroup/nauta-el-prod/eb376742fb2fa5d5][0m
+[0m[1maws_lb_target_group.service["staging"]: Refreshing state... [id=arn:aws:elasticloadbalancing:us-east-1:271369143207:targetgroup/nauta-el-staging/493afc555d31a494][0m
+[0m[1maws_subnet.public[1]: Refreshing state... [id=subnet-003947964549fcea9][0m
+[0m[1maws_security_group.alb: Refreshing state... [id=sg-02a160158f4c62b5a][0m
+[0m[1maws_subnet.public[0]: Refreshing state... [id=subnet-061178e853158ef67][0m
+[0m[1maws_route_table.public: Refreshing state... [id=rtb-0a99a912943ab8226][0m
+[0m[1maws_security_group.service: Refreshing state... [id=sg-0a8d249d35dc39813][0m
+[0m[1maws_lb.main: Refreshing state... [id=arn:aws:elasticloadbalancing:us-east-1:271369143207:loadbalancer/app/nauta-services-email-listener/2e369d497fe4e1b0][0m
+[0m[1mdata.aws_iam_policy_document.ecs_task_ses_inbound: Reading...[0m[0m
+[0m[1maws_s3_bucket_policy.ses_inbound: Refreshing state... [id=nauta-services-ses-inbound-emails][0m
+[0m[1maws_s3_bucket_lifecycle_configuration.ses_inbound: Refreshing state... [id=nauta-services-ses-inbound-emails][0m
+[0m[1mdata.aws_iam_policy_document.ecs_task_ses_inbound: Read complete after 0s [id=699110804][0m
+[0m[1maws_iam_role_policy.ecs_task_ses_inbound: Refreshing state... [id=nauta-services-email-listener-ecs-task:read-ses-inbound-emails][0m
+[0m[1maws_route_table_association.public[1]: Refreshing state... [id=rtbassoc-0725fe8a51f40b877][0m
+[0m[1maws_route_table_association.public[0]: Refreshing state... [id=rtbassoc-0ae8024475ddd45f9][0m
+[0m[1maws_ses_receipt_rule.local: Refreshing state... [id=agent-local][0m
+[0m[1maws_ses_receipt_rule.staging: Refreshing state... [id=agent-staging][0m
+[0m[1maws_ses_receipt_rule.prod: Refreshing state... [id=agent-prod][0m
+[0m[1maws_ecs_service.service["production"]: Refreshing state... [id=arn:aws:ecs:us-east-1:271369143207:service/nauta-services-email-listener/nauta-services-email-listener][0m
+[0m[1maws_ecs_service.service["staging"]: Refreshing state... [id=arn:aws:ecs:us-east-1:271369143207:service/nauta-services-email-listener/nauta-services-email-listener-staging][0m
+[0m[1maws_lb_listener.staging: Refreshing state... [id=arn:aws:elasticloadbalancing:us-east-1:271369143207:listener/app/nauta-services-email-listener/2e369d497fe4e1b0/d9bdba9050a4b6e0][0m
+[0m[1maws_lb_listener.http: Refreshing state... [id=arn:aws:elasticloadbalancing:us-east-1:271369143207:listener/app/nauta-services-email-listener/2e369d497fe4e1b0/5e58977195dcd0a7][0m
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  [32m+[0m create[0m
+
+Terraform will perform the following actions:
+
+[1m  # aws_ses_receipt_rule.forwarding_catchall[0m will be created
+[0m  [32m+[0m[0m resource "aws_ses_receipt_rule" "forwarding_catchall" {
+      [32m+[0m[0m after         = "agent-prod"
+      [32m+[0m[0m arn           = (known after apply)
+      [32m+[0m[0m enabled       = true
+      [32m+[0m[0m id            = (known after apply)
+      [32m+[0m[0m name          = "forwarding-catchall"
+      [32m+[0m[0m recipients    = [
+          [32m+[0m[0m "magnitudetech.com.br",
+        ]
+      [32m+[0m[0m rule_set_name = "nauta-services-inbound"
+      [32m+[0m[0m scan_enabled  = false
+      [32m+[0m[0m tls_policy    = (known after apply)
+
+      [32m+[0m[0m s3_action {
+          [32m+[0m[0m bucket_name       = "nauta-services-ses-inbound-emails"
+          [32m+[0m[0m object_key_prefix = "inbound/prod/"
+          [32m+[0m[0m position          = 1
+          [32m+[0m[0m topic_arn         = "arn:aws:sns:us-east-1:271369143207:nauta-services-ses-inbound-prod"
+            [90m# (2 unchanged attributes hidden)[0m[0m
+        }
+    }
+
+[1mPlan:[0m [0m1 to add, 0 to change, 0 to destroy.
+[90m
+─────────────────────────────────────────────────────────────────────────────[0m
+
+Note: You didn't use the -out option to save this plan, so Terraform can't
+guarantee to take exactly these actions if you run "terraform apply" now.
