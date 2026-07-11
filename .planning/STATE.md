@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Cloud Workspace
 status: executing
-last_updated: "2026-07-11T08:12:14.973Z"
-last_activity: "2026-07-11 -- Phase 50-03 executed (LIVE-05 UAT burn-down: 43.2/43.3/43.4 + 45.1-45.4/45.7(UI) all DB/DOM-verified passed; 43.1/45.5/45.6 routed to morning checklist)"
+last_updated: "2026-07-11T11:17:43.518Z"
+last_activity: "2026-07-11 -- Phase 50-04 executed (LIVE-05 UAT burn-down: Phase 47/48 token-surface scenarios closed -- 48.1/48.2 DB/CSS-verified passed via uat-48-token-surfaces.spec.ts, real pixels cited; 47.1 evidence-captured -> routed to morning checklist)"
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 11
-  completed_plans: 8
+  completed_plans: 10
   percent: 0
 ---
 
@@ -30,9 +30,49 @@ console, SES/DNS, Supabase project-id decision) are in-phase checkpoint tasks in
 ## Current Position
 
 Phase: 50 (Live-Loop Gate — UAT Burn-down & Screenshot Coverage) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 Status: Executing Phase 50
-Last activity: 2026-07-11 -- Phase 50-03 executed (LIVE-05 UAT burn-down: 43.2/43.3/43.4 + 45.1-45.4/45.7(UI) all DB/DOM-verified passed; 43.1/45.5/45.6 routed to morning checklist)
+Last activity: 2026-07-11 -- Phase 50-04 executed (LIVE-05 UAT burn-down: Phase 47/48 token-surface scenarios closed -- 48.1/48.2 DB/CSS-verified passed via uat-48-token-surfaces.spec.ts, real pixels cited; 47.1 evidence-captured -> routed to morning checklist)
+
+## Phase 50 -- Live-Loop Gate -- UAT Burn-down & Screenshot Coverage -- Plan 04 History -- LIVE-05
+
+- **50-04 EXECUTED** (`cf7e7eb` feat, `d9446cd` docs):
+  Burned down the last LIVE-05 slice: the two Phase-48 token-extension
+  scenarios (chip/success surfaces on /chat + /emails/[id]; graph/tier
+  surfaces on /knowledge) and the one Phase-47 brand-mark scenario. Task 1
+  (`apps/web/e2e/uat-48-token-surfaces.spec.ts`) proved via live
+  `getComputedStyle` assertions (never a class-name check) that the
+  ProvenanceLink chip's computed border-radius resolves to the pill token
+  (9999px), that /emails/[id]'s confirm/deny controls resolve two distinct
+  non-transparent colors (success vs destructive tokens), that EXTRACTED
+  vs INFERRED knowledge-graph edges resolve visibly distinct stroke color
+  AND dasharray, and that the filter rail's Instances/Emails/Components
+  dots (the closed graph.* palette) resolve 3 distinct colors. Both tests
+  passed live on chromium on the first run, no fixes needed.
+
+  48.1's /chat citation-chip slice DB-seeds a persisted `tool_invocation_result`
+  chat_messages part (replayed verbatim by chat.getHistory, D-18) rather than
+  re-driving a live Bedrock tool round: ProvenanceLink is consumed in exactly
+  one place in this codebase, and the tool-round mechanism itself was already
+  proven live in 50-02 (39.2) — this spec only needed the chip's resolved CSS.
+  Annotated inline and via a test.info() annotation; NOT a tracked-fix.
+
+  Task 2 recorded both dispositions: `48-HUMAN-UAT.md` moved to `complete`
+  (48.1/48.2 both `passed`, citing the spec's live assertions plus real
+  authenticated pixels from 50-01's screenshot-harness run
+  `.planning/ui-reviews/2026-07-11T04-32-30-989Z/`). `47-HUMAN-UAT.md`
+  moved to `evidence-captured` (47.1 is an inherently subjective aesthetic
+  judgment — real login pixels cited, but deliberately neither `passed` nor
+  left `[pending]`) with the sign-off itself routed to a REAL destination:
+  item 6 added to `49-HUMAN-UAT.md` and Section E.3 added to
+  `MORNING-CHECKLIST.md` (both outside this plan's declared file list, but
+  necessary so "routed to the morning checklist" means something concrete —
+  Rule 2 deviation, documented in 50-04-SUMMARY.md).
+
+  Zero `[pending]` scenarios remain in either 47- or 48-HUMAN-UAT.md.
+  Combined with 50-02 (39/41) and 50-03 (43/45), all six deferred-UAT
+  source files now have zero silently-parked scenarios — ready for 50-05's
+  roll-up into `50-UAT-BURNDOWN.md`, which should close LIVE-05 overall.
 
 ## Phase 50 -- Live-Loop Gate -- UAT Burn-down & Screenshot Coverage -- Plan 03 History -- LIVE-05
 
@@ -3098,6 +3138,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 49 P03 | 50min | 2 tasks | 3 files |
 | Phase 50 P01 | ~25min | 2 tasks | 2 files |
 | Phase 50 P03 | 47min | 2 tasks | 5 files |
+| Phase 50 P04 | 50min | 2 tasks | 5 files |
 
 ## Operator Next Steps
 
