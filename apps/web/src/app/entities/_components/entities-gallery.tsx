@@ -248,7 +248,7 @@ export function EntitiesGallery(): React.ReactElement {
       aria-label="Entities gallery"
     >
       {/* Page header */}
-      <header className="flex items-center gap-4 border-b px-6 py-4 shrink-0 bg-background/70 backdrop-blur-md border-border/50">
+      <header className="flex items-center gap-4 border-b px-6 py-4 shrink-0 bg-background/95 border-border/50">
         <h1 className="text-2xl font-semibold tracking-tight">Entities</h1>
         <span className="text-sm text-muted-foreground ml-auto">
           {allItems.length > 0 ? `${allItems.length} entities` : null}

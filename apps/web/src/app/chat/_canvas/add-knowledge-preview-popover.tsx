@@ -76,7 +76,7 @@ export function AddKnowledgePreviewPopover({
                 variant="ghost"
                 size="icon"
                 aria-label="Add knowledge preview"
-                className="size-11 bg-background/70 backdrop-blur-md"
+                className="size-11 bg-background/95"
               >
                 <Share2 className="size-4" aria-hidden />
               </Button>

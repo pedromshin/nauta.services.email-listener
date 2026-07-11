@@ -173,7 +173,7 @@ export default function EntityTypesPage(): React.ReactElement {
     <div className="flex h-svh">
       {/* Master list */}
       <aside className="flex w-72 shrink-0 flex-col border-r border-border/50">
-        <div className="flex h-11 items-center justify-between border-b border-border/50 bg-background/70 px-3 backdrop-blur-md">
+        <div className="flex h-11 items-center justify-between border-b border-border/50 bg-background/95 px-3">
           <span className="text-sm font-semibold">Entity types</span>
           <Button
             size="sm"

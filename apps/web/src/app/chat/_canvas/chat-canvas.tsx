@@ -730,7 +730,7 @@ export function ChatCanvas({
                           size="icon"
                           aria-pressed={showMiniMap}
                           aria-label="Toggle minimap"
-                          className="size-11 bg-background/70 backdrop-blur-md"
+                          className="size-11 bg-background/95"
                           onClick={handleToggleMiniMap}
                         >
                           <MapIcon className="size-4" aria-hidden />

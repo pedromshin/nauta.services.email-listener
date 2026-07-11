@@ -80,8 +80,8 @@ function MosaicCard({ item }: { readonly item: GalleryItem }): React.ReactElemen
       role="article"
       aria-label={`${item.displayName} entity`}
       onClick={() => router.push(`/entities/${item.id}`)}
-      className={`cursor-pointer backdrop-blur-sm border-border/50 hover:border-primary/30 transition-colors ${
-        isCandidate ? "bg-tier-inferred/10 border-tier-inferred/30" : "bg-card/80"
+      className={`cursor-pointer border-border/50 hover:border-primary/30 transition-colors ${
+        isCandidate ? "bg-tier-inferred/10 border-tier-inferred/30" : "bg-card/95"
       }`}
     >
       <CardHeader className="pb-2">

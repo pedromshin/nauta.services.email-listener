@@ -64,7 +64,7 @@ function ConversationView({
       <span className="sr-only" aria-live="polite">
         {controller.liveAnnouncement}
       </span>
-      <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-background/70 px-4 backdrop-blur-md">
+      <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-4">
         <div className="flex items-center gap-2">
           <ChatCanvasViewToggle
             conversationId={conversationId}

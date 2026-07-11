@@ -85,7 +85,7 @@ function FiltersRail({
   ];
 
   return (
-    <div className="flex h-full flex-col bg-background/70 backdrop-blur-md">
+    <div className="flex h-full flex-col bg-background/95">
       <div className="flex h-11 items-center border-b border-border/50 px-4 text-sm font-semibold">
         Filters
       </div>
@@ -120,7 +120,7 @@ function ReadingPreview({
 }): React.ReactElement {
   if (!email) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 bg-background/70 p-12 text-center backdrop-blur-md">
+      <div className="flex h-full flex-col items-center justify-center gap-2 bg-background/95 p-12 text-center">
         <p className="text-sm font-semibold">No email selected</p>
         <p className="text-sm text-muted-foreground">
           Select a message from the list to preview it here.
@@ -134,7 +134,7 @@ function ReadingPreview({
     : email.senderAddress;
 
   return (
-    <div className="flex h-full flex-col bg-background/70 backdrop-blur-md">
+    <div className="flex h-full flex-col bg-background/95">
       <div className="flex min-h-11 items-center justify-between gap-3 border-b border-border/50 px-4 py-2">
         <span className="truncate text-sm font-semibold">
           {email.subject ?? "(no subject)"}
@@ -172,7 +172,7 @@ function ReadingPreview({
 // ---------------------------------------------------------------------------
 
 /**
- * InboxThreePane (D-22, THRD-03) — a resizable, glassy three-pane Gmail-style
+ * InboxThreePane (D-22, THRD-03) — a resizable, three-pane Gmail-style
  * inbox: filters rail · thread-grouped message list · reading preview. The
  * seed page comes from the page-level emails.listThreads query (passed in);
  * "Load more" appends further THREAD pages via the same query (hasMore /
@@ -311,7 +311,7 @@ export function InboxThreePane({
       <ResizableHandle withHandle />
 
       <ResizablePanel defaultSize={42} minSize={28}>
-        <div className="flex h-full flex-col bg-background/70 backdrop-blur-md">
+        <div className="flex h-full flex-col bg-background/95">
           <div className="flex h-11 items-center justify-between border-b border-border/50 px-4">
             <span className="text-sm font-semibold">Inbox</span>
             {data && (
