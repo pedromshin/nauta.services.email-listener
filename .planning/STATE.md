@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Cloud Workspace
-status: completed
-last_updated: "2026-07-11T21:45:22.933Z"
-last_activity: "2026-07-11 -- Phase 51-06 executed (RSKN-07: knowledge.* cache-invalidation gap closed across both promotion paths, todo closed)"
+status: planning
+last_updated: "2026-07-11T22:37:33.821Z"
+last_activity: 2026-07-11 -- Phase 51-07 executed (Task 1 palette-ban gate done+green; Tasks 2/3 blocked by unavailable local Docker stack this session — see 51-07-SUMMARY.md)
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 18
-  completed_plans: 16
-  percent: 17
+  completed_plans: 17
+  percent: 33
 ---
 
 # State
@@ -29,10 +29,32 @@ console, SES/DNS, Supabase project-id decision) are in-phase checkpoint tasks in
 
 ## Current Position
 
-Phase: 51 (Total UI Re-skin) — Wave 1 executing (parallel plans; 51-01, 51-02, 51-03, 51-04, 51-05, 51-06 done; 51-07 still pending/in flight)
-Plan: 6 of 7 done; see individual Plan History sections for sibling status
-Status: 51-06 (RSKN-07, knowledge cache-invalidation gap closure) executed — promoteEdge (/knowledge page) extended to invalidate knowledge.expandNode alongside byId/graph on success only; handleTerminal in use-conversation-controller.ts extended via a new standalone exported invalidateOnChatTerminal(conversationId, utils) helper (mirrors promoteEdge's own extraction) so the chat-driven confirm_action widget promotion path now invalidates all three knowledge.* keys too, fired unconditionally on every terminal turn; two regression tests (extended knowledge-graph-invalidate.test.tsx + new use-conversation-controller-invalidate.test.ts) green; typecheck clean outside the pre-existing unrelated `apps/web/src/app/dev/design/` scratch breakage; todo 2026-07-09-knowledge-cache-invalidation-gap.md closed and moved to done (see 51-06-SUMMARY.md)
-Last activity: 2026-07-11 -- Phase 51-06 executed (RSKN-07: knowledge.* cache-invalidation gap closed across both promotion paths, todo closed)
+Phase: 51 (Total UI Re-skin) — 51-01..51-06 done; 51-07 (final wave) PARTIALLY executed — Task 1 (committed palette-ban gate) done and green; Tasks 2 (E2E regression) and 3 (screenshot re-capture) BLOCKED this session, not executed (Docker Desktop backend never reached ready state — infra availability, not a code/test failure)
+Plan: 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed
+Status: 51-07 executed — Task 1 authored+committed `apps/web/src/app/__tests__/palette-ban.test.ts` (D-49-05 committed regression gate mirroring token-registration.test.ts's grep idiom; green, zero production violations, contrast+registration gates reconfirmed green). Tasks 2/3 require the live local Docker-backed Supabase stack (`scripts/preflight-local.ps1`); Docker Desktop's backend could not reach a ready state despite ~25min across 3 wait cycles + 1 clean process restart — host log showed 2271+ consecutive "context deadline exceeded" failures dialing its internal Linux-VM engine, and every `wsl`/`wsl.exe` invocation hung indefinitely (non-interactive session context). The exact spec needed (live-loop-green.spec.ts) has a persisted artifact proving it ran green earlier the SAME day against this same repo (`.planning/phases/49-live-loop-gate-deploy-oauth-real-email/artifacts/local-green-db-verification.md`, captured 2026-07-11T02:08:24Z) — so this is a session-specific environment blocker, not a regression or a repo/host incompatibility. Full evidence trail in `51-07-SUMMARY.md`.
+Last activity: 2026-07-11 -- Phase 51-07 executed (Task 1 palette-ban gate done+green; Tasks 2/3 blocked by unavailable local Docker stack this session — see 51-07-SUMMARY.md)
+
+## Phase 51 -- Total UI Re-skin -- Plan 07 History -- RSKN-05 enforceability (PARTIAL — see blocker)
+
+- **51-07 PARTIALLY EXECUTED** (`150bfac` feat):
+  Task 1 (COMPLETE): authored the committed D-49-05 palette-ban regression gate
+  (`apps/web/src/app/__tests__/palette-ban.test.ts`) — walks `apps/web/src` (.ts/.tsx),
+  bans classic Tailwind palette classes (family × numeric-scale utility prefixes, plus
+  literal white/black), excludes `app/dev/**` + `globals.css`/`tailwind.config.ts`, ships
+  an empty inline ALLOWLIST. Green on first clean run after fixing one self-referential
+  false positive (the gate's own doc-comment examples matched its own regex — rewritten
+  as prose). Independent grep confirms zero production palette violations anywhere in
+  `apps/web/src` outside `app/dev/**` — Wave 1 (51-01..51-06) left nothing to catch.
+  `token-contrast.test.ts` + `token-registration.test.ts` reconfirmed green alongside it.
+  **Task 2 (E2E regression suite) and Task 3 (16-surface screenshot re-capture): BLOCKED,
+  not executed.** Both require the live local Docker-backed Supabase stack. Docker
+  Desktop's backend never reached a ready state this session — see Current Position above
+  and `51-07-SUMMARY.md`'s "Issues Encountered" section for the full diagnostic trail
+  (host-log evidence, wsl.exe hang pattern, and the same-day prior-session proof this
+  spec DID pass earlier today). **BLOCKER — re-run 51-07 Tasks 2/3 in a session where
+  `docker info` succeeds before considering Phase 51 fully closed**: bring the stack up
+  per `scripts/preflight-local.ps1`, then run the two `<verify>` commands in
+  `51-07-PLAN.md` (playwright E2E suite; `npm run screenshot:review`).
 
 ## Phase 51 -- Total UI Re-skin -- Plan 06 History -- RSKN-07
 
@@ -2377,7 +2399,7 @@ User direction after v1.1: keep LOCAL + `/studio` sandbox (no deploy/convergence
 
 - **Resume file:** 
 
-None
+.planning/phases/51-total-ui-re-skin/51-07-SUMMARY.md
   col); resolution = **suggest-only, never auto** → **parallel BlendedRAG (dense HNSW + lexical
   pg_trgm exact/fuzzy) fused by RRF(k=60)**, on-confirm + re-runnable backfill, confirm writes back
   aliases (flywheel), reranker deferred, degrades to lexical-only without Bedrock. Gallery = table
@@ -3350,7 +3372,16 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 51 P04 | 5min | 2 tasks | 5 files |
 | Phase 51 P05 | 8min | 2 tasks | 3 files |
 | Phase 51 P06 | 5min | 2 tasks | 5 files |
+| Phase 51 P07 | 40min | 3 tasks | 1 files |
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- **BLOCKER — resolve first:** re-run Phase 51 Plan 07's Tasks 2 (E2E regression suite) and 3
+  (16-surface screenshot re-capture) in a session where Docker Desktop's backend is reachable
+  (`docker info` succeeds). Bring the stack up per `scripts/preflight-local.ps1`, then run the
+  two `<verify>` commands in `51-07-PLAN.md`. See `51-07-SUMMARY.md` for full diagnostic detail
+  on why this session couldn't (Docker Desktop's WSL2 backend never reached a ready state).
+
+- Once 51-07 Tasks 2/3 are confirmed green, Phase 51 (Total UI Re-skin) is fully closed and the
+  next milestone step can proceed (`/gsd-new-milestone` or the next Band-2 phase per
+  `ENDGAME-PLAN.md`).

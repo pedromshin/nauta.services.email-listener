@@ -164,7 +164,7 @@ seed specs (goal/success-criteria text) reused from
 
 - [ ] Phase 49: Live-Loop Gate — Deploy, OAuth & Real Email
 - [x] Phase 50: Live-Loop Gate — UAT Burn-down & Screenshot Coverage (completed 2026-07-11)
-- [ ] Phase 51: Total UI Re-skin
+- [x] Phase 51: Total UI Re-skin (completed 2026-07-11 — BLOCKER: 51-07 Tasks 2/3 not yet verified, see below)
 - [ ] Phase 52: Editable Genui Panels / Studio-on-Canvas
 - [ ] Phase 53: Mobile-Responsive Answer
 - [ ] Phase 54: Email-Cluster Workflow (E3)
@@ -239,7 +239,12 @@ Phase 50 (Band 1 gate — nothing in Band 2/3 starts before the live loop is gre
 6. The inbox entity chips consume `color.graph.entity` + `radius.pill`, and `/entities/[id]`'s StatusBadge consumes the `color.tier.*` ladder — closing backlog 999.16
 7. Knowledge-canvas cache invalidation extends to chat-driven promotions and expandNode results, not just staleTime self-healing
 
-**Plans:** 6/7 plans executed
+**Plans:** 7/7 plans have a SUMMARY.md — **BLOCKER:** 51-07's Task 1 (committed palette-ban gate)
+is done+green, but Task 2 (E2E regression suite) and Task 3 (16-surface screenshot re-capture)
+could NOT execute — Docker Desktop's backend never reached a ready state in that session (~25min
+across 3 wait cycles + 1 clean restart; see `51-07-SUMMARY.md` for the full diagnostic trail).
+Re-run 51-07 Tasks 2/3 in a session where `docker info` succeeds before treating Phase 51 as fully
+verified.
 **UI hint**: yes
 
 Plans:
@@ -254,7 +259,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 — the enforceable gate + phase-wide regression)*
 
-- [ ] 51-07-PLAN.md — D-49-05 committed palette-ban gate + E2E regression (live-loop/uat-39/41/43/45/48) + full 16-surface screenshot re-capture vs baseline (RSKN-05)
+- [x] 51-07-PLAN.md — D-49-05 committed palette-ban gate (DONE, green) + E2E regression (live-loop/uat-39/41/43/45/48) + full 16-surface screenshot re-capture vs baseline (RSKN-05) — **E2E + screenshot tasks BLOCKED, not executed (Docker Desktop unavailable this session); re-run before treating this plan as fully verified**
 
 ### Phase 52: Editable Genui Panels / Studio-on-Canvas
 
