@@ -275,10 +275,10 @@ independent of Phase 51 — parallelizable
 3. User can regenerate a panel variant in place, with provenance retained and the prior version reachable
 4. User can issue a natural-language re-theme instruction on a panel that resolves to pack/token choices (DSGN-03's cheap generation-side slice; no visual-compare repair loop)
 
-**Plans:** 6 plans (3 waves)
+**Plans:** 1/6 plans executed
 
 Plans:
-- [ ] 52-01-PLAN.md — Foundation: per-panel overlay model (versions/pack override) + PanelThemeScope + persistence hook (no migration)
+- [x] 52-01-PLAN.md — Foundation: per-panel overlay model (versions/pack override) + PanelThemeScope + persistence hook (no migration)
 - [ ] 52-02-PLAN.md — Panel toolbar chrome + PANL-01 pack switch end-to-end (optimistic/persist/rehydrate) + control skeletons
 - [ ] 52-03-PLAN.md — PANL-02 bounded parameter editor + server-side FOUND-6 gate (applyPanelEdit)
 - [ ] 52-04-PLAN.md — PANL-03 regenerate-in-place + version history/restore (supersede-never-mutate)

@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Cloud Workspace
 status: planning
-last_updated: "2026-07-11T22:37:33.821Z"
-last_activity: 2026-07-11 -- Phase 51-07 executed (Task 1 palette-ban gate done+green; Tasks 2/3 blocked by unavailable local Docker stack this session — see 51-07-SUMMARY.md)
+last_updated: "2026-07-12T00:23:45.931Z"
+last_activity: 2026-07-11 -- Phase 52-01 executed (overlay data model + PanelThemeScope + usePanelOverlay/CanvasPersistenceProvider, all green, no migration — see 52-01-SUMMARY.md)
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 18
-  completed_plans: 17
+  total_plans: 24
+  completed_plans: 18
   percent: 33
 ---
 
@@ -29,10 +29,36 @@ console, SES/DNS, Supabase project-id decision) are in-phase checkpoint tasks in
 
 ## Current Position
 
-Phase: 51 (Total UI Re-skin) — 51-01..51-06 done; 51-07 (final wave) PARTIALLY executed — Task 1 (committed palette-ban gate) done and green; Tasks 2 (E2E regression) and 3 (screenshot re-capture) BLOCKED this session, not executed (Docker Desktop backend never reached ready state — infra availability, not a code/test failure)
-Plan: 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed
-Status: 51-07 executed — Task 1 authored+committed `apps/web/src/app/__tests__/palette-ban.test.ts` (D-49-05 committed regression gate mirroring token-registration.test.ts's grep idiom; green, zero production violations, contrast+registration gates reconfirmed green). Tasks 2/3 require the live local Docker-backed Supabase stack (`scripts/preflight-local.ps1`); Docker Desktop's backend could not reach a ready state despite ~25min across 3 wait cycles + 1 clean process restart — host log showed 2271+ consecutive "context deadline exceeded" failures dialing its internal Linux-VM engine, and every `wsl`/`wsl.exe` invocation hung indefinitely (non-interactive session context). The exact spec needed (live-loop-green.spec.ts) has a persisted artifact proving it ran green earlier the SAME day against this same repo (`.planning/phases/49-live-loop-gate-deploy-oauth-real-email/artifacts/local-green-db-verification.md`, captured 2026-07-11T02:08:24Z) — so this is a session-specific environment blocker, not a regression or a repo/host incompatibility. Full evidence trail in `51-07-SUMMARY.md`.
-Last activity: 2026-07-11 -- Phase 51-07 executed (Task 1 palette-ban gate done+green; Tasks 2/3 blocked by unavailable local Docker stack this session — see 51-07-SUMMARY.md)
+Phase: 52 (Editable Genui Panels / Studio-on-Canvas) — Wave 1 plan 52-01 (Foundation substrate) EXECUTED; 52-02..52-06 (Waves 2/3) not yet started, each depends on 52-01's contracts. Phase 51 (Total UI Re-skin) remains carried as a known blocker: 51-01..51-06 done, 51-07 Task 1 done+green, Tasks 2/3 (E2E regression, screenshot re-capture) BLOCKED pending a session where `docker info` succeeds — see Phase 51 Plan 07 History below.
+Plan: Phase 52 — 1 of 6 have a SUMMARY.md (52-01). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
+Status: 52-01 executed — built the per-panel overlay data model (PanelOverlaySchema/PanelVersionSchema + 6 pure helpers), PanelThemeScope (pack+token-override theming wrapper), and usePanelOverlay/CanvasPersistenceProvider (read/write/persist plumbing wired into chat-canvas.tsx) — zero migration, zero new dependency. See Phase 52 Plan 01 History below and `52-01-SUMMARY.md` for full detail. Phase 51's 51-07 Docker-stack blocker (Tasks 2/3) is UNCHANGED this session — full evidence trail in `51-07-SUMMARY.md`.
+Last activity: 2026-07-11 -- Phase 52-01 executed (overlay data model + PanelThemeScope + usePanelOverlay/CanvasPersistenceProvider, all green, no migration — see 52-01-SUMMARY.md)
+
+## Phase 52 -- Editable Genui Panels / Studio-on-Canvas -- Plan 01 History -- Foundation substrate (PANL-01 data layer)
+
+- **52-01 EXECUTED** (`788f389` test, `1f62196` feat, `01c8159` test, `d4678f5` feat, `75ee5f2` feat):
+  Built the shared, no-migration substrate every editable-panel feature (PANL-01..04) depends
+  on. `panel-overlay.ts`: `PanelOverlaySchema`/`PanelVersionSchema` (both `.strict()`, 50-version/
+  60k-char-per-spec caps documented as the sharedState budget bound) + six pure immutable helpers
+  — `resolveActivePanel` (base-fallback + pack-override precedence + streaming-forces-base),
+  `setPack`, `appendVersion`/`restoreVersion` (supersede-never-mutate), `listPriorVersions`,
+  `parseOverlay` (degrade-not-throw). `panel-theme-scope.tsx`: `PanelThemeScope`, an app-owned
+  pack+bounded-token-override CSS-variable theming wrapper mirroring `ThemedRoot`, zero raw hex/
+  palette classes. `panel-overlay-context.tsx`: `CanvasPersistenceProvider`/
+  `useCanvasPersistenceContext` (scheduleSave + conversationId reachable from any panel) +
+  `usePanelOverlay(panelId)` (useShallow-stable raw slice memoized through `parseOverlay` so
+  `useSyncExternalStore` never loops on a freshly-parsed object) + `usePanelActionLock` +
+  `PanelActionId`/`PanelActionControlProps` (shared mutual-exclusion contract for Plan 02/03/04's
+  toolbar). `chat-canvas.tsx` wraps the existing provider tree with `CanvasPersistenceProvider`
+  just inside `CanvasStoreProvider` — no existing save call site changed. 31 new unit tests (23 +
+  4 + 4), all green; `palette-ban.test.ts`/`token-contrast.test.ts`/`token-registration.test.ts`
+  reconfirmed green; `tsc --noEmit` clean outside the pre-existing `app/dev/design/` scratch
+  exclusion; no `packages/db/migrations/*` file added, no `package.json` diff. Both TDD tasks
+  (overlay model, PanelThemeScope) followed a verified RED (temporary implementation-file
+  removal confirmed the test failed on the missing import) then GREEN cycle. PANL-01 marked
+  Complete per this plan's own frontmatter `requirements` field — note this covers the DATA-layer
+  half (persistence substrate); the per-panel toolbar UI that makes the pack switch user-visible
+  ships in 52-02. See `52-01-SUMMARY.md` for full detail.
 
 ## Phase 51 -- Total UI Re-skin -- Plan 07 History -- RSKN-05 enforceability (PARTIAL — see blocker)
 
@@ -3013,6 +3039,9 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 
 ## Decisions Log
 
+- 2026-07-11 (52-01): Overlay lives under `shared.panelOverlays.{panelId}` (never `panels.{panelId}`) — `toCanvasStoreSeed` only rehydrates the `panels`/`shared` keys on reload, so a new top-level key would persist but not rehydrate.
+- 2026-07-11 (52-01): `isStylePackId()` narrowing helper added — `packages/genui/schema`'s `StylePackIdSchema` is deliberately type-annotated as `z.ZodEnum<[string, ...string[]]>` so the schema module never depends on the theme module's literal types, which meant `SpecRootSchema`'s inferred `style_pack_id` was plain `string`, not the theme module's `StylePackId` literal union `resolveActivePanel` needed to return; re-validated against the SAME `STYLE_PACK_IDS` source array rather than an unsafe cast.
+- 2026-07-11 (52-01): `INITIAL_VERSION_SENTINEL` kept as a plain exported string constant, not a 4th `PanelVersionSchema.generatedBy` enum value — the base spec is never itself a stored version; Plan 02/03's history UI consumes the sentinel purely for the oldest-row display label.
 - 2026-07-11 (51-03): entity-detail.tsx StatusBadge's decorative status dots use the tier pair's own `-foreground` token (`bg-tier-extracted-foreground`/`bg-tier-inferred-foreground`), not the base alias — a literal 1:1 rename from the original `bg-primary`/`bg-amber-400` dots would have made each dot exactly the same color as its own badge fill (now solid, not translucent), rendering it invisible.
 - 2026-07-11 (51-03): raw `orange-*`/`red-*` "possible duplicates"/"conflict" warning badges (entities-table.tsx, entities-mosaic.tsx, entity-fields.tsx) mapped to `bg-destructive/10 text-destructive` — neither color family is named in the D-49-03 conversion map; `destructive` is the codebase's existing problem-state token (already used in these same files' ErrorState), reused rather than minting a new alias.
 - 2026-07-11 (51-03): entities-table.tsx/entities-mosaic.tsx's "Confirmed" StatusBadge branch left on its existing `bg-primary/10` token (not a palette violation) — only entity-detail.tsx's StatusBadge was the RSKN-06-named target for the full tier-ladder swap; D-49-04 scopes the list pages to palette-conversion-only, no redesign. The "Candidate" branch (raw amber, a genuine violation) WAS converted to the same solid `tier-inferred` pair used in entity-detail.tsx for app-wide label consistency.
@@ -3373,6 +3402,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 51 P05 | 8min | 2 tasks | 3 files |
 | Phase 51 P06 | 5min | 2 tasks | 5 files |
 | Phase 51 P07 | 40min | 3 tasks | 1 files |
+| Phase 52 P01 | 20min | 3 tasks | 7 files |
 
 ## Operator Next Steps
 
