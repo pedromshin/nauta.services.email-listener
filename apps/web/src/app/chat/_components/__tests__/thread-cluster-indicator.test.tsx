@@ -263,6 +263,81 @@ describe("ThreadClusterIndicator", () => {
     expect(trigger).not.toBeNull();
   });
 
+  it("trigger uses focus-visible (not bare focus:) with ring-offset-1, per the phase's focus-visible mandate (54-UI-REVIEW.md fix #4)", async () => {
+    threadIdResult = { data: { threadId: THREAD_ID } };
+    threadCardResult = {
+      data: {
+        threadId: THREAD_ID,
+        subject: "Q3 renewal",
+        participantsSummary: "Alice",
+        latestSnippet: "snippet",
+        latestMessageId: LATEST_MESSAGE_ID,
+        messageCount: 1,
+      },
+    };
+    clusterSummaryResult = {
+      data: { hasThread: true, siblingChatCount: 0, capturedSourceCount: 0 },
+    };
+    const container = await mount(
+      <ThreadClusterIndicator conversationId={CONVERSATION_ID} />,
+    );
+
+    const trigger = getTrigger(container);
+    expect(trigger?.className).toContain("focus-visible:ring-ring");
+    expect(trigger?.className).toContain("focus-visible:ring-offset-1");
+    expect(trigger?.className).not.toContain("focus:ring-ring");
+  });
+
+  it("'Open thread' link has focus-visible styling and guards the pending threadCardQuery.data case — mirrors EmailThreadNode's canOpenThread guard (54-UI-REVIEW.md fix #2)", async () => {
+    threadIdResult = { data: { threadId: THREAD_ID } };
+    threadCardResult = { data: undefined }; // threadCard still pending
+    clusterSummaryResult = {
+      data: { hasThread: true, siblingChatCount: 0, capturedSourceCount: 0 },
+    };
+    const container = await mount(
+      <ThreadClusterIndicator conversationId={CONVERSATION_ID} />,
+    );
+    await openPopover(container);
+
+    const openThreadLink = Array.from(document.body.querySelectorAll("a")).find(
+      (a) => a.textContent?.includes("Open thread"),
+    );
+    expect(openThreadLink).not.toBeUndefined();
+    expect(openThreadLink?.className).toContain("focus-visible:ring-ring");
+    expect(openThreadLink?.className).toContain("focus-visible:ring-offset-1");
+    expect(openThreadLink?.getAttribute("aria-disabled")).toBe("true");
+    expect(openThreadLink?.className).toContain("pointer-events-none");
+    expect(openThreadLink?.getAttribute("href")).toBe("#");
+  });
+
+  it("'Open thread' link drops the disabled guard once threadCardQuery.data settles", async () => {
+    threadIdResult = { data: { threadId: THREAD_ID } };
+    threadCardResult = {
+      data: {
+        threadId: THREAD_ID,
+        subject: "Q3 renewal",
+        participantsSummary: "Alice",
+        latestSnippet: "snippet",
+        latestMessageId: LATEST_MESSAGE_ID,
+        messageCount: 1,
+      },
+    };
+    clusterSummaryResult = {
+      data: { hasThread: true, siblingChatCount: 0, capturedSourceCount: 0 },
+    };
+    const container = await mount(
+      <ThreadClusterIndicator conversationId={CONVERSATION_ID} />,
+    );
+    await openPopover(container);
+
+    const openThreadLink = Array.from(document.body.querySelectorAll("a")).find(
+      (a) => a.textContent?.includes("Open thread"),
+    );
+    expect(openThreadLink?.getAttribute("aria-disabled")).toBe("false");
+    expect(openThreadLink?.className).not.toContain("pointer-events-none");
+    expect(openThreadLink?.getAttribute("href")).toBe(`/emails/${LATEST_MESSAGE_ID}`);
+  });
+
   it("does not fetch threadCard/clusterSummary when threadId is null", async () => {
     threadIdResult = { data: { threadId: null } };
     await mount(<ThreadClusterIndicator conversationId={CONVERSATION_ID} />);

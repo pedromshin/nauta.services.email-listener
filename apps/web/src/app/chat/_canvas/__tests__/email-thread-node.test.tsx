@@ -325,6 +325,39 @@ describe("EmailThreadNode", () => {
     expect(container.textContent).toContain(
       "It may have been removed or is no longer accessible.",
     );
+    // Compact recipe (54-UI-REVIEW.md fix #1) has no action for the
+    // not-found branch — never renders a Retry button here.
+    const retryButton = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent === "Retry",
+    );
+    expect(retryButton).toBeUndefined();
+  });
+
+  // Test: error state stays within the fixed shell (54-UI-REVIEW.md fix #1/#3)
+  it("error: renders the compact icon+one-line-message+Retry recipe (not the full-size EmptyState), Retry uses the neutral-ghost recipe and never bg-primary", async () => {
+    queryResult = { data: undefined, isPending: false, isError: true, refetch: vi.fn() };
+    const container = await renderNode();
+
+    // Single compact paragraph carries both the heading and body copy —
+    // NOT `EmptyState`'s separate text-base heading / text-sm body split,
+    // which is what overflowed the 148px body budget.
+    const message = container.querySelector("p");
+    expect(message?.textContent).toBe(
+      "Couldn't load this thread. Try again, or open it from your inbox.",
+    );
+    expect(message?.className).toContain("text-xs");
+    expect(message?.className).not.toContain("text-base");
+    expect(message?.className).not.toContain("text-sm");
+
+    const retryButton = Array.from(container.querySelectorAll("button")).find(
+      (b) => b.textContent === "Retry",
+    ) as HTMLButtonElement;
+    expect(retryButton).not.toBeUndefined();
+    // Neutral-ghost recipe (hover:bg-accent), never the filled bg-primary
+    // `EmptyState`'s default-variant `ActionButton` would have rendered.
+    expect(retryButton.className).toContain("hover:bg-accent");
+    expect(retryButton.className).toContain("focus-visible:ring-ring");
+    expect(retryButton.className).not.toContain("bg-primary");
   });
 
   // Test: success
