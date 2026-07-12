@@ -11,6 +11,7 @@ import { emailEntitySummaryProcedures } from "./entity-summary";
 import { resolveListScope } from "./list-scope";
 import { emailThreadListProcedures } from "./list-threads";
 import { componentMutationProcedures } from "./mutations";
+import { emailThreadCardProcedures } from "./thread-card";
 
 /**
  * The reading-preview snippet length — the inbox list projects bodyText
@@ -40,6 +41,7 @@ export const emailsRouter = createTRPCRouter({
   ...emailDetailProcedures,
   ...emailEntitySummaryProcedures,
   ...emailThreadListProcedures,
+  ...emailThreadCardProcedures,
   ...componentMutationProcedures,
   /**
    * List emails, newest first, scoped to the caller's owned importers.
