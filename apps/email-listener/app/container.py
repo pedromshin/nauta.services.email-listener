@@ -61,6 +61,7 @@ from app.application.use_cases.propose_regions import ProposeRegionsUseCase
 from app.application.use_cases.receive_inbound_email import ReceiveInboundEmailUseCase
 from app.application.use_cases.reprocess_email import ReprocessEmailUseCase
 from app.application.use_cases.resolve_entity_candidates import ResolveEntityCandidatesUseCase
+from app.application.use_cases.resolve_retheme import ResolveRethemeUseCase
 from app.application.use_cases.run_chat_turn import RunChatTurn
 from app.application.use_cases.run_chat_turn_confirm_action import (
     SUGGESTION_KIND_EDGE_TIER_PROMOTION,
@@ -123,7 +124,9 @@ from app.infrastructure.llm.genui_code_generator_adapter import GenuiCodeGenerat
 from app.infrastructure.llm.genui_code_judge_adapter import GenuiCodeJudgeAdapter
 from app.infrastructure.llm.genui_generator_adapter import GenuiGeneratorAdapter
 from app.infrastructure.llm.genui_quarantine_adapter import GenuiQuarantineAdapter
+from app.infrastructure.llm.genui_retheme_adapter import GenuiRethemeAdapter
 from app.infrastructure.llm.genui_retrieval_provider import LexicalRetrievalProvider
+from app.infrastructure.llm.genui_style_packs import DEFAULT_PACK_ID, is_known_pack_id
 from app.infrastructure.llm.openrouter_chat_adapter import OpenRouterChatAdapter
 from app.infrastructure.llm.segmentation_adapter import AnthropicSegmenter
 from app.infrastructure.ocr.textract_adapter import TextractOcrAdapter
@@ -555,6 +558,38 @@ def _provide_genui_generator_adapter(client: AsyncAnthropicBedrock) -> GenuiGene
         escalation_model_id=settings.genui_escalation_model_id,
         max_tokens=settings.GENUI_GENERATOR_MAX_TOKENS,
         timeout_seconds=settings.GENUI_TIMEOUT_SECONDS,
+    )
+
+
+def _provide_genui_retheme_adapter(client: AsyncAnthropicBedrock) -> GenuiRethemeAdapter:
+    """GenuiRethemeAdapter — PANL-04's one-shot NL re-theme resolution (Plan 52-05).
+
+    Reuses the SAME AsyncAnthropicBedrock client + primary model as the
+    declarative generator (genui_model_id) — this is a cheap, one-shot
+    classification-shaped call, not a full generation, so it shares the
+    generator's model tier rather than introducing a new one.
+    """
+    settings = get_settings()
+    return GenuiRethemeAdapter(
+        client=client,
+        model_id=settings.genui_model_id,
+        max_tokens=settings.GENUI_RETHEME_MAX_TOKENS,
+        timeout_seconds=settings.GENUI_TIMEOUT_SECONDS,
+    )
+
+
+def _provide_resolve_retheme_use_case(resolver: GenuiRethemeAdapter) -> ResolveRethemeUseCase:
+    """Factory for ResolveRethemeUseCase — injects the is_known_pack_id predicate + default pack id.
+
+    is_known_pack_id/DEFAULT_PACK_ID are imported here at the composition
+    root (not inside resolve_retheme.py itself) so the use case module stays
+    lint-imports-clean — it never imports app.infrastructure directly (see
+    resolve_retheme.py's module docstring for the full rationale).
+    """
+    return ResolveRethemeUseCase(
+        resolver=resolver,
+        is_known_pack_id=is_known_pack_id,
+        default_pack_id=DEFAULT_PACK_ID,
     )
 
 
@@ -1048,6 +1083,12 @@ def _build_provider() -> Provider:  # noqa: PLR0915
     provider.provide(_provide_lexical_retrieval_provider, provides=RetrievalProvider)
     # GenerateUiSpecUseCase factory: quarantine + generator + audit + templates + retrieval all resolved first.
     provider.provide(_provide_generate_ui_spec_use_case, provides=GenerateUiSpecUseCase)
+
+    # ── GenUI re-theme resolution (PANL-04, Plan 52-05) ───────────────────────
+    # One-shot NL instruction -> {style_pack_id, token_overrides} resolution,
+    # reusing the SAME AsyncAnthropicBedrock client (no new Bedrock transport).
+    provider.provide(_provide_genui_retheme_adapter, provides=GenuiRethemeAdapter)
+    provider.provide(_provide_resolve_retheme_use_case, provides=ResolveRethemeUseCase)
 
     # ── GenUI code-island layer (PARALLEL path) ───────────────────────────────
     # Emits arbitrary JS island code via forced tool-use, alongside the declarative

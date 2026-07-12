@@ -1,4 +1,4 @@
-"""GenUI endpoints — POST /v1/genui/generate, GET /v1/genui/history, GET /v1/genui/history/{id}.
+"""GenUI endpoints — POST /v1/genui/generate, POST /v1/genui/retheme, GET /v1/genui/history[/{id}].
 
 Accepts an intent + raw document content and returns a validated SpecRoot JSON
 via the dual-LLM quarantine->generate pipeline (D-09, SAFE-01/SAFE-02).
@@ -8,6 +8,13 @@ Phase 16-03 (STDO-05/STDO-06): adds read-only history spine:
   - GET /v1/genui/history/{template_id}: single TemplateDetail with spec_json (D-14)
   Both endpoints use the UiSpecTemplateRepository port (D-16: only ui_spec_templates).
   Best-effort (D-15): 404 when find_by_id returns None; list returns [] not 5xx.
+
+Plan 52-05 (PANL-04): adds the one-shot NL re-theme resolution endpoint:
+  - POST /v1/genui/retheme: {instruction, current_style_pack_id} -> validated
+    {style_pack_id, token_overrides, outcome} via ResolveRethemeUseCase. ONE
+    Bedrock forced-tool-use call, no repair loop, no screenshot judging
+    (locked). Always 200 — a resolver failure yields outcome="fallback" with
+    the caller's current pack unchanged, never a partial result.
 
 Security:
   - X-API-Key auth: all routes protected via require_api_key (T-13-auth)
@@ -29,6 +36,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field, field_validator
 
 from app.application.use_cases.generate_ui_spec import GenerateUiSpecUseCase
+from app.application.use_cases.resolve_retheme import ResolveRethemeUseCase
 from app.domain.ports.ui_spec_template_repository import UiSpecTemplateRepository
 from app.infrastructure.llm.genui_style_packs import STYLE_PACK_IDS
 from app.presentation.api.response import ApiResponse
@@ -106,6 +114,38 @@ class GenerateUiSpecView(BaseModel):
     retrieved_ids: tuple[str, ...] = ()
 
 
+class RethemeRequest(BaseModel):
+    """Request body for POST /v1/genui/retheme (PANL-04, 52-05)."""
+
+    instruction: str = Field(
+        ...,
+        min_length=1,
+        max_length=280,
+        description=(
+            "Free-text NL instruction describing the desired look "
+            "(e.g. 'make it more playful and colorful')."
+        ),
+    )
+    current_style_pack_id: str | None = Field(
+        default=None,
+        description=(
+            "The panel's current active pack id — used as resolver context "
+            "and as the fallback target on an unknown resolution or resolver "
+            "failure. Not validated against STYLE_PACK_IDS here: an unrecognized "
+            "value degrades gracefully (ResolveRethemeUseCase falls back to the "
+            "default pack) rather than a hard 422 reject."
+        ),
+    )
+
+
+class RethemeView(BaseModel):
+    """Response view wrapping the validated {style_pack_id, token_overrides, outcome} envelope."""
+
+    style_pack_id: str
+    token_overrides: dict[str, str]
+    outcome: Literal["ok", "fallback"] = "ok"
+
+
 class HistoryRowView(BaseModel):
     """Lightweight summary row for the history list endpoint (D-14: no spec_json).
 
@@ -172,6 +212,42 @@ async def generate_ui_spec(
             outcome=result.outcome,
             style_pack_id=result.style_pack_id,
             retrieved_ids=result.retrieved_ids,
+        )
+    )
+
+
+# ---------------------------------------------------------------------------
+# Re-theme endpoint (PANL-04, 52-05)
+# ---------------------------------------------------------------------------
+
+
+@router.post("/retheme")
+@inject
+async def resolve_retheme(
+    body: RethemeRequest,
+    use_case: FromDishka[ResolveRethemeUseCase],
+) -> ApiResponse[RethemeView]:
+    """Resolve a natural-language re-theme instruction to {style_pack_id, token_overrides}.
+
+    One-shot: ONE Bedrock forced-tool-use call, no repair loop, no screenshot
+    judging (locked, 52-05-PLAN.md). The Python-side validation performed by
+    the use case (known-pack coercion + allowed-override-key filtering) is a
+    BELT — the tRPC web boundary (genui.resolveRetheme's
+    RethemeResolutionSchema) is the AUTHORITATIVE gate (GEN-03/D-08). This
+    endpoint always returns 200 — even on total resolver failure the response
+    carries outcome="fallback" with the caller's current pack unchanged
+    (never partial, never an error status; mirrors /generate's SAFE_FALLBACK
+    posture).
+    """
+    result = await use_case.execute(
+        instruction=body.instruction,
+        current_style_pack_id=body.current_style_pack_id,
+    )
+    return ApiResponse.ok(
+        RethemeView(
+            style_pack_id=result.style_pack_id,
+            token_overrides=result.token_overrides,
+            outcome=result.outcome,
         )
     )
 

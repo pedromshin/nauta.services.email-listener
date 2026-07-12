@@ -109,6 +109,10 @@ class BaseAppSettings(BaseSettings):
     GENUI_TIMEOUT_SECONDS: float = 15.0  # per-call asyncio.timeout (D-17)
     GENUI_QUARANTINE_MAX_TOKENS: int = 1024  # Call A max_tokens (D-16)
     GENUI_GENERATOR_MAX_TOKENS: int = 3000  # Call B (declarative spec) max_tokens (D-16)
+    # Plan 52-05 (PANL-04): one-shot NL re-theme resolution — output is tiny
+    # (a style_pack_id + at most 5 short token_overrides values), mirrors
+    # GENUI_CODE_JUDGE_MAX_TOKENS's "judge output is small" sizing rationale.
+    GENUI_RETHEME_MAX_TOKENS: int = 512
 
     # --- Code-island (Phase 20/21) — dedicated, larger tier for arbitrary UI code ---
     GENUI_CODE_MODEL_ID: str = ""  # primary (attempts 1-2); default Sonnet
