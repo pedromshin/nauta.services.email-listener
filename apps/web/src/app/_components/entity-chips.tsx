@@ -1,5 +1,12 @@
 "use client";
 
+// Explicit React import — this file's JSX compiles fine under Next.js's SWC
+// automatic JSX runtime, but vitest's plain esbuild transform defaults to
+// the classic runtime (React.createElement) and needs `React` in scope
+// whenever a test mounts this component (mirrors genui-panel-node.tsx's
+// identical note — found live, 53-03-PLAN.md Task 1,
+// inbox-mobile-stack.test.tsx).
+import * as React from "react";
 import Link from "next/link";
 
 import { Badge } from "@polytoken/ui/badge";

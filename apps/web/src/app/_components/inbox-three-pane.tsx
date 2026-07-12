@@ -1,7 +1,15 @@
 "use client";
 
 import Link from "next/link";
+// Explicit React import (not just named hook imports) — this file's JSX
+// compiles fine under Next.js's SWC automatic JSX runtime, but vitest's
+// plain esbuild transform defaults to the classic runtime
+// (React.createElement) and needs `React` in scope whenever a test mounts
+// this component directly (mirrors genui-panel-node.tsx's identical note —
+// found live, 53-03-PLAN.md Task 1, inbox-mobile-stack.test.tsx).
+import * as React from "react";
 import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 
 import { Badge } from "@polytoken/ui/badge";
 import { Button } from "@polytoken/ui/button";
@@ -11,6 +19,7 @@ import {
   ResizablePanelGroup,
 } from "@polytoken/ui/resizable";
 import { Skeleton } from "@polytoken/ui/skeleton";
+import { Tabs, TabsList, TabsTrigger } from "@polytoken/ui/tabs";
 
 import { api } from "~/trpc/react";
 
@@ -191,6 +200,14 @@ export function InboxThreePane({
   const [filter, setFilter] = useState<InboxFilter>("all");
   const [selectedEmailId, setSelectedEmailId] = useState<string | null>(null);
 
+  // MOBL-02 (53-UI-SPEC §4): below `md` the inbox is a single-pane
+  // master->detail stack. Tapping a row explicitly flips this to "detail";
+  // the desktop render path never reads it. Default "list" — first paint
+  // never auto-deposits a mobile user into the detail view (guard lives at
+  // handleSelectMemberMobile below vs. the background default-select effect,
+  // which only ever sets selectedEmailId).
+  const [mobileView, setMobileView] = useState<"list" | "detail">("list");
+
   // Accumulated extra pages fetched via Load-more, appended after the seed page.
   const [extraItems, setExtraItems] = useState<ReadonlyArray<InboxThreadItem>>(
     [],
@@ -299,11 +316,22 @@ export function InboxThreePane({
     ? (emailsById.get(selectedEmailId) ?? null)
     : null;
 
+  // Mobile-only: an explicit row tap resolves the email AND swaps the view to
+  // detail. The background default-select effect above intentionally never
+  // calls this — see 53-UI-SPEC §4 point 6.
+  const handleSelectMemberMobile = (emailId: string): void => {
+    setSelectedEmailId(emailId);
+    setMobileView("detail");
+  };
+
   const showLoading = isLoading || emailsListQuery.isLoading;
   const showError = isError || emailsListQuery.isError;
 
   return (
-    <ResizablePanelGroup direction="horizontal" className="h-full">
+    <>
+      {/* Desktop (>=md): the exact three-pane ResizablePanelGroup, byte-identical. */}
+      <div className="hidden h-full md:block">
+        <ResizablePanelGroup direction="horizontal" className="h-full">
       <ResizablePanel defaultSize={18} minSize={14}>
         <FiltersRail filter={filter} onFilterChange={setFilter} />
       </ResizablePanel>
@@ -382,6 +410,110 @@ export function InboxThreePane({
       <ResizablePanel defaultSize={40}>
         <ReadingPreview email={selectedEmail} />
       </ResizablePanel>
-    </ResizablePanelGroup>
+        </ResizablePanelGroup>
+      </div>
+
+      {/* Mobile (<md): single-pane master->detail stack (MOBL-02, 53-UI-SPEC §4). */}
+      <div className="flex h-full flex-col md:hidden">
+        <Tabs
+          value={filter}
+          onValueChange={(next) => setFilter(next as InboxFilter)}
+        >
+          <TabsList
+            aria-label="Inbox filter"
+            className="h-11 w-full justify-start gap-1 bg-background p-1"
+          >
+            <TabsTrigger value="all" className="h-9 flex-1 text-xs">
+              All
+            </TabsTrigger>
+            <TabsTrigger value="unread" className="h-9 flex-1 text-xs">
+              Unread
+            </TabsTrigger>
+            <TabsTrigger value="with-entities" className="h-9 flex-1 text-xs">
+              With entities
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {mobileView === "list" ? (
+          <div className="flex-1 overflow-auto">
+            {showLoading && (
+              <div className="space-y-2 p-4">
+                <Skeleton className="h-16 w-full rounded-md" />
+                <Skeleton className="h-16 w-full rounded-md" />
+                <Skeleton className="h-16 w-full rounded-md" />
+              </div>
+            )}
+
+            {showError && (
+              <div className="p-6 text-center text-sm text-destructive">
+                Unable to load emails. Please try refreshing the page.
+              </div>
+            )}
+
+            {data && visibleItems.length === 0 && !showLoading && (
+              <div className="p-12 text-center text-sm text-muted-foreground">
+                {filter === "with-entities"
+                  ? "Nothing extracted yet — entities will show up as mail arrives."
+                  : "Your inbox is clear — forwarded mail will land here."}
+              </div>
+            )}
+
+            {!showLoading &&
+              visibleItems.map((item) => (
+                <InboxThreadGroup
+                  key={item.key}
+                  subject={item.subject}
+                  messageCount={item.messageCount}
+                  latestReceivedAt={item.latestReceivedAt}
+                  latestSnippet={item.latestSnippet}
+                  members={item.memberEmailIds
+                    .map((id) => emailsById.get(id))
+                    .filter((email): email is InboxEmailItem => email !== undefined)}
+                  entitiesByEmailId={entitiesByEmailId}
+                  selectedEmailId={selectedEmailId}
+                  onSelectMember={handleSelectMemberMobile}
+                />
+              ))}
+
+            {hasMore && filter !== "with-entities" && (
+              <div className="p-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  disabled={loadMoreQuery.isFetching}
+                  onClick={() => void handleLoadMore()}
+                >
+                  {loadMoreQuery.isFetching ? "Loading…" : "Load more"}
+                </Button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+            <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border/50 bg-background px-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label="Back to inbox"
+                className="size-11"
+                onClick={() => setMobileView("list")}
+              >
+                <ArrowLeft className="size-4" aria-hidden />
+              </Button>
+              <span className="truncate text-sm font-semibold">
+                {selectedEmail?.subject ?? "Message"}
+              </span>
+            </div>
+            <div className="min-h-0 flex-1">
+              <ReadingPreview email={selectedEmail} />
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }

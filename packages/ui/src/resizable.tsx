@@ -1,5 +1,14 @@
 "use client";
 
+// Explicit React import (not just a type reference) — this file's JSX
+// compiles fine under Next.js's SWC automatic JSX runtime, but vitest's
+// plain esbuild transform defaults to the classic runtime
+// (React.createElement) and needs `React` in scope whenever a test mounts a
+// tree that renders these components (mirrors genui-panel-node.tsx's
+// identical note — found live, 53-03-PLAN.md Task 1,
+// inbox-mobile-stack.test.tsx, first vitest suite to mount InboxThreePane's
+// desktop ResizablePanelGroup tree).
+import * as React from "react";
 import { DragHandleDots2Icon } from "@radix-ui/react-icons";
 import * as ResizablePrimitive from "react-resizable-panels";
 
