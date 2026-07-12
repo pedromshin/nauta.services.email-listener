@@ -24,6 +24,7 @@
  * No font-medium (500) — UI-SPEC Note #5.
  */
 
+import * as React from "react";
 import { format } from "date-fns";
 import { Share2, X } from "lucide-react";
 import Link from "next/link";
@@ -386,12 +387,16 @@ export function NodeDetailPane({
             <div className="min-w-0 flex-1">
               <p className="truncate text-base font-semibold">{selectedNode.label}</p>
             </div>
+            {/* hidden below md (53-06-PLAN.md Task 2, Judgment Call #5):
+                inside the mobile Sheet, SheetContent already ships its own
+                corner close control — this internal X would be a second,
+                redundant close affordance stacked in the same corner. */}
             <Button
               type="button"
               variant="ghost"
               size="icon"
               aria-label="Close detail panel"
-              className="size-7 shrink-0"
+              className="size-7 shrink-0 hidden md:inline-flex"
               onClick={onClose}
             >
               <X className="size-4" aria-hidden />

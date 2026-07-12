@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { KnowledgeGraphIsland } from "./_components/knowledge-graph-island";
+import { KnowledgeSurface } from "./_components/knowledge-surface";
 
 export const metadata: Metadata = {
   title: "Your knowledge — Polytoken",
@@ -10,11 +10,14 @@ export const metadata: Metadata = {
 /**
  * /knowledge route — server-component shell.
  *
- * The graph itself is a client island (ssr: false) loaded via
- * KnowledgeGraphIsland (a "use client" wrapper around dynamic(ssr:false)).
+ * `KnowledgeSurface` (a "use client" wrapper) branches the presentation on
+ * `useIsMobileViewport()` (53-06-PLAN.md, MOBL-01): below `md` it renders
+ * `KnowledgeMobileList`; at/above `md` it renders `KnowledgeGraphIsland`,
+ * the client island (ssr: false) React-Flow graph.
  *
  * Next.js 15 requires that `ssr: false` lives inside a Client Component —
  * the dynamic() call cannot be placed directly in a Server Component (D-08).
+ * page.tsx itself stays a true server component for metadata + layout.
  */
 export default function KnowledgePage(): React.ReactElement {
   return (
@@ -24,7 +27,7 @@ export default function KnowledgePage(): React.ReactElement {
       </div>
 
       <div className="relative min-h-0 flex-1">
-        <KnowledgeGraphIsland className="absolute inset-0" />
+        <KnowledgeSurface />
       </div>
     </main>
   );
