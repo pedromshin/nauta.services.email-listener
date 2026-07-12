@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Cloud Workspace
-status: 54-02 executed — web_search ToolExecutor (SearchProvider port + double pre/post-DNS SSRF guard + keyless DuckDuckGoSearchProvider + 10-fixture adversarial injection suite + code-gated exposure, flipped True this run). CLUS-03 complete. See Phase 54 Plan 02 History below and `54-02-SUMMARY.md` for full detail.
-last_updated: "2026-07-12T10:35:00.000Z"
-last_activity: 2026-07-12 -- Phase 54-02 executed (web_search ToolExecutor: SSRF guard + DuckDuckGo provider + adversarial suite + code-gated exposure flipped True — see 54-02-SUMMARY.md; Phase 54 now 2/7 plans complete)
+status: 54-03 executed — source capture -> INFERRED knowledge nodes + promotion reuse (SUGGESTION_KIND_SOURCE_CAPTURE + SourceCaptureHandler dispatch target, server-side web_search-result re-read via a {toolUseId}:{index} lookup key -- never model free text, captured edge promotes to EXTRACTED through the completely unmodified PromoteEdgeUseCase). CLUS-04/CLUS-05 complete. See Phase 54 Plan 03 History below and `54-03-SUMMARY.md` for full detail.
+last_updated: "2026-07-12T11:30:00.000Z"
+last_activity: "2026-07-12 -- Phase 54-03 executed (source_capture suggestion kind + parse/tool schema, SourceCaptureHandler + finalize re-read + container wiring, promotion-reuse proof -- see 54-03-SUMMARY.md; Phase 54 now 3/7 plans complete)"
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 37
-  completed_plans: 32
-  percent: 86
+  completed_plans: 33
+  percent: 89
 ---
 
 # State
@@ -30,9 +30,74 @@ console, SES/DNS, Supabase project-id decision) are in-phase checkpoint tasks in
 ## Current Position
 
 Phase: 54 (Email-Cluster Workflow E3) — 54-01 (Migration 0036 + thread<->conversation linkage tRPC seam) EXECUTED this session, Phase 54's FIRST plan (Wave 1, `depends_on: []`, `requirements: [CLUS-02, CLUS-01]`). Task 1 authored migration 0036 (`chat_conversations.thread_id uuid REFERENCES threads(id) ON DELETE SET NULL` + index) via `npx dotenv -e ../../.env.local -- drizzle-kit generate` — Docker/WSL is down tonight, but `drizzle-kit generate` only diffs local schema.ts against the last snapshot and needs no live DB connection, so it ran fully offline and produced a migration byte-consistent with 0035's own `emails.thread_id` precedent (3 statements: ADD COLUMN, ADD CONSTRAINT, CREATE INDEX), a correctly prevId-chained `meta/0036_snapshot.json`, and an appended `meta/_journal.json` entry — APPLIED TO NO ENVIRONMENT (morning §H applies it local->staging->prod). Task 2 (TDD RED->GREEN): new `packages/api-client/src/router/_column-detect.ts` exports `tableColumnExists(db, table, column)` — an `information_schema.columns` probe cached per-process, fail-closed to `false` on ANY error (including its own probe failing) — the single feature-detection point later plans reuse. New `chat/thread-link.ts` exports `chatThreadLinkProcedures`: `attachConversationToThread` (ownership-gated via `assertConversationOwnership`, returns `{attached:false,reason:"linkage_unavailable"}` when the column is absent OR a live 42703 fires from the UPDATE itself — two independent degrade layers, both unit-tested) and `getConversationThreadId` (same degrade posture, `{threadId:null}` when unset or unavailable). `createConversation` (conversations.ts) gained an optional `threadId` input, persisted only when supplied AND the column exists (conditionally spread into the insert so an absent column is never referenced). Registered in `chat/index.ts`. Task 3 (TDD RED->GREEN): new `emails/thread-card.ts` exports pure `deriveThreadCard` (latest-member subject/snippet/id by `(receivedAt,id)` tie-break, deduped "+{n} more" participants capped at 3 reusing the 54-UI-SPEC Component-1 idiom, null on empty rows) + `emailThreadCardProcedures.threadCard` (`userOwnedImporterIds`-scoped, threadId AND importer both required in the WHERE so a foreign threadId yields null not a leak, `MAX_SCAN_ROWS`-bounded, `THREAD_SNIPPET_CHARS`-truncated snippet — both constants reused verbatim from `list-threads.ts`). Registered in `emails/index.ts`. All 5 tasks/sub-steps committed atomically (1 migration commit + RED/GREEN pairs for Tasks 2/3); 17 new tests green (9 thread-link + 8 thread-card); full `packages/api-client` suite reconfirmed green (34 files/398 tests, up from 33/390); `packages/db` suite green (21 tests, unaffected); `tsc --noEmit` clean in both packages. One Rule-1 auto-fix: the plan's `<interfaces>` section stated the new journal entry should be "idx 35", but the live `_journal.json` already had idx 35 assigned to `0035_threads_forwarding` — corrected to the actual next-available idx 36 (confirmed by reading the file before editing; matches what `drizzle-kit generate` itself computed). **CLUS-01/CLUS-02 intentionally left Pending in REQUIREMENTS.md** — this plan ships only the backend linkage seam; the actual user-facing deliverables are 54-04 (`EmailThreadNode` canvas card, CLUS-01) and 54-05 (turn-time cluster context injection, CLUS-02), mirroring the established multi-plan-per-requirement precedent (MOBL-01 stayed open through 53-01..53-05, closed only at the final contributing plan 53-06). `@polytoken/api-client`'s `dist/` was NOT rebuilt this plan — no `apps/web` consumer of the new procedures exists yet (that lands with 54-04/54-05); flagging the known dist-rebuild gotcha for whichever plan first imports these from `apps/web`. Phase 53 (Mobile-Responsive Answer) remains 6/6 PLANS COMPLETE from the prior session (MOBL-01/MOBL-02 both Complete) — see Phase 53 Plan 06 History below.
-Plan: Phase 54 — 2 of 7 have a SUMMARY.md (54-01, 54-02). Phase 53 — 6 of 6 have a SUMMARY.md (53-01..53-06) — PHASE COMPLETE. Phase 52 — 6 of 6 have a SUMMARY.md (52-01..52-06). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
-Status: 54-02 executed — web_search ToolExecutor: SearchProvider port + pure url_safety.py SSRF guard (43 tests) + DuckDuckGoSearchProvider (keyless html.duckduckgo.com/html/ scrape via stdlib HTMLParser, verified live once) + WebSearchExecutor (double pre/post-DNS SSRF guard, bounded streaming fetch, HTML-to-text strip, running envelope-size budget, verified live end-to-end once) + 10-fixture adversarial injection suite (packages/genui/src/eval/web-search-injection-fixtures.json) + code-gated WEB_SEARCH_TOOL_ENABLED wired into container.py, flipped True this run because the suite passed. CLUS-03 marked Complete in REQUIREMENTS.md. Full repo pytest (no -m filter) green, 0 failures (6 expected credential-gated skips); ruff+mypy clean on app/; lint-imports 3/3 kept. See Phase 54 Plan 02 History below and `54-02-SUMMARY.md` for full detail.
-Last activity: 2026-07-12 -- Phase 54-02 executed (web_search ToolExecutor: SSRF guard + DuckDuckGo provider + adversarial suite + code-gated exposure flipped True — see 54-02-SUMMARY.md; Phase 54 now 2/7 plans complete)
+Plan: Phase 54 — 3 of 7 have a SUMMARY.md (54-01, 54-02, 54-03). Phase 53 — 6 of 6 have a SUMMARY.md (53-01..53-06) — PHASE COMPLETE. Phase 52 — 6 of 6 have a SUMMARY.md (52-01..52-06). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
+Status: 54-03 executed — source capture -> INFERRED knowledge nodes + promotion reuse: SUGGESTION_KIND_SOURCE_CAPTURE is a second, parse-validated suggestionRef.kind reachable via emit_confirm_action's own JSON schema; RunChatTurn._finalize_source_capture re-reads a proposed capture's actual url/title SERVER-SIDE from a persisted web_search tool_invocation_result part by a {toolUseId}:{index} lookup key (never model free text); SourceCaptureHandler (a 3rd confirm-action dispatch table entry) writes exactly one INFERRED knowledge_nodes + knowledge_node_edges row on confirm (reusing an existing node for a duplicate url, never a duplicate node), writes nothing on reject, never raises; a dedicated promotion-reuse proof runs the exact captured-edge shape through the COMPLETELY UNMODIFIED PromoteEdgeUseCase/KnowledgeEdgeTierPromotionHandler to EXTRACTED (git diff --stat on promote_edge.py is empty). CLUS-04/CLUS-05 marked Complete in REQUIREMENTS.md. Full repo pytest (no -m filter) green, 0 failures (6 expected credential-gated skips); ruff check + mypy app clean; lint-imports 3/3 kept. Two deviations: (1) submit_widget_interaction.py (not in the plan's declared files_modified) was extended to thread source_payload/conversation_id/thread_id from the stored declaration snapshot into the dispatch call -- required for the feature to actually write anything in production, not just in isolated unit tests; (2) fixed 2 pre-existing bugs (a stale assertion + a silently-swallowed TypeError from a stale test-double signature) found in the SAME confirm-action dispatch test suite this plan extends. `thread_id` is fully plumbed but always None from this Python service today (no read path to chat_conversations.thread_id exists here yet — documented as a Known Stub). A pre-existing, repo-wide `ruff format --check .` drift (~80 files, none caused by this plan) logged to deferred-items.md rather than fixed out of scope. See Phase 54 Plan 03 History below and `54-03-SUMMARY.md` for full detail.
+Last activity: 2026-07-12 -- Phase 54-03 executed (source_capture suggestion kind + SourceCaptureHandler + finalize re-read + container wiring + promotion-reuse proof -- see 54-03-SUMMARY.md; Phase 54 now 3/7 plans complete)
+
+## Phase 54 -- Email-Cluster Workflow (E3) -- Plan 03 History -- Source capture -> INFERRED nodes + promotion reuse (SourceCaptureHandler + server-side web_search-result re-read + CLUS-05 reuse proof)
+
+- **54-03 EXECUTED** (`ee75a1b` feat, `224ebb7` feat, `32d855a` test, `9f3b764` test):
+  Extended the v1.6 confirm-action widget machinery (Phase 40) with a SECOND
+  `suggestionRef.kind`, `source_capture`, satisfying CLUS-04 (suggest-only
+  capture of a web_search result as an INFERRED knowledge node) and CLUS-05
+  (promotion to EXTRACTED via the EXISTING gate, zero new promotion code).
+  Task 1: `SUGGESTION_KIND_SOURCE_CAPTURE` + `parse_confirm_action_call`
+  extended to accept both kinds (still rejecting `entity_merge_confirm`/
+  unknown); `build_source_capture_declaration` (sibling builder, not an
+  overload) turns an ALREADY-server-re-read `{url,title,retrievedAt}` source
+  dict into the frozen confirm/reject declaration, embedding `importerId`/
+  `sourcePayload` snapshots (mirrors the existing `tierSnapshot` precedent);
+  `parse_source_capture_result_id`/`extract_web_search_result` are new pure
+  helpers letting the server resolve a `{toolUseId}:{index}` composite id
+  into an actual web_search result; `chat_tools.py`'s `suggestionRef.kind`
+  enum gains `"source_capture"`, description documents the id format. Task 2:
+  `SourceCaptureHandler` (confirm_action_dispatch.py, a 3rd dispatch-table
+  entry) — on confirm, `find_active_node` reuses an existing INFERRED node
+  for a repeated url (supersede-never-mutate) or `upsert_node`s a new one,
+  then ALWAYS `insert_edge`s a fresh INFERRED edge (attached to
+  `conversation_id`, `target_ref_type="chat_conversation"` — the addressable
+  half of "the cluster" available at this Python layer) with full provenance
+  `{url,title,retrieved_at,conversation_id,thread_id}`; reject writes
+  nothing; never raises (repo errors -> `capture_failed`). `RunChatTurn`
+  gained `_finalize_source_capture`, branching `_finalize_confirm_action` by
+  kind: it scans `list_active_context(conversation_id)` for the persisted
+  `web_search` `tool_invocation_result` part matching the model-supplied
+  `toolUseId`, extracts the result at `index`, and stamps `retrievedAt` at
+  THIS server re-read moment — a malformed id / foreign toolUseId /
+  out-of-range index all collapse into the SAME `CONFIRM_ACTION_UNAVAILABLE_
+  TEXT` (no leak of which case). `container.py` wires `SourceCaptureHandler`
+  into the SAME dispatch table, reusing the SAME `knowledge_repo` instance.
+  Task 3: `test_source_capture_promote_reuse.py` builds the EXACT captured-
+  edge shape `SourceCaptureHandler.insert_edge` produces and runs it through
+  the UNMODIFIED `PromoteEdgeUseCase`/`KnowledgeEdgeTierPromotionHandler` to
+  `EXTRACTED` (`git diff --stat` on `promote_edge.py`: empty) — proves
+  cross-tenant (foreign edge id -> `EdgeNotFound`; mismatched importer_id and
+  the 44-03 user-ownership guard -> `EdgeNotPromotable("tenant_mismatch")`)
+  and idempotent-promote (tier-guard rejection on a second attempt; a
+  genuine CAS-race no-op) never mutate. Two deviations: (Rule 2)
+  `submit_widget_interaction.py` (not in the plan's declared `files_modified`)
+  gained `_resolve_confirm_action_dispatch_args`, threading
+  `source_payload`/`conversation_id`/`thread_id` from the stored declaration
+  snapshot into the dispatch call — without this, confirming a source_capture
+  suggestion in production would always call `SourceCaptureHandler.execute()`
+  with `source_payload=None` and silently do nothing, contradicting the
+  plan's own must_have truth; (Rule 1) fixed 2 pre-existing bugs in
+  `test_confirm_action_dispatch.py`/`test_submit_widget_interaction.py`
+  (a stale assertion missing `user_id=None`, and a `FakeConfirmActionHandler`
+  whose stale signature caused a real `TypeError` the production code's own
+  broad `except Exception` was silently swallowing — 2 tests were asserting
+  a dispatch call that had never actually happened), confirmed pre-existing
+  via `git stash` against the clean tree. 66 new/updated tests across 5
+  files, all green; full repo `pytest` (no `-m` filter) 0 failures, 6
+  expected credential-gated skips; `ruff check .` + `mypy app` clean;
+  `lint-imports` 3/3 contracts kept. `thread_id` is fully plumbed end-to-end
+  but always `None` from this Python service today — no read path to
+  `chat_conversations.thread_id` (a TS/Drizzle-side column, 54-01) exists
+  here yet; documented as a Known Stub in `54-03-SUMMARY.md`, not a blocker
+  for CLUS-04/CLUS-05. A pre-existing, repo-wide `ruff format --check .`
+  drift (~80 files, none caused by this plan, confirmed via `ruff format
+  --diff` line-by-line) logged to `deferred-items.md`. See `54-03-SUMMARY.md`
+  for full detail.
 
 ## Phase 54 -- Email-Cluster Workflow (E3) -- Plan 02 History -- web_search ToolExecutor (SearchProvider port + SSRF guard + DuckDuckGo adapter + adversarial fixtures + code-gated exposure)
 
