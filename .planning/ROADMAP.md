@@ -165,7 +165,8 @@ seed specs (goal/success-criteria text) reused from
 - [ ] Phase 49: Live-Loop Gate — Deploy, OAuth & Real Email
 - [x] Phase 50: Live-Loop Gate — UAT Burn-down & Screenshot Coverage (completed 2026-07-11)
 - [x] Phase 51: Total UI Re-skin (completed 2026-07-11 — BLOCKER: 51-07 Tasks 2/3 not yet verified, see below)
-- [x] Phase 52: Editable Genui Panels / Studio-on-Canvas (completed 2026-07-12)
+- [x] Phase 52: Editable Genui Panels / Studio-on-Canvas
+ (completed 2026-07-12)
 - [ ] Phase 53: Mobile-Responsive Answer
 - [ ] Phase 54: Email-Cluster Workflow (E3)
 
@@ -302,7 +303,16 @@ breakpoint decision); Phase 50 (Band 1 gate, inherited via Phase 51)
 2. Core flows (login → inbox → thread → email detail → chat) show no horizontal overflow on a mobile viewport
 3. Touch targets stay ≥44px on a mobile viewport even under denser style packs
 
-**Plans:** TBD
+**Plans:** 6 plans (2 waves)
+
+Plans:
+- [ ] 53-01-PLAN.md — Foundation: useIsMobileViewport() hook + global mobile nav trigger (wave 1)
+- [ ] 53-02-PLAN.md — Touch-target sweep: Phase-52 toolbar + KnowledgePreviewNode pointer-coarse: (wave 1)
+- [ ] 53-03-PLAN.md — Inbox single-pane master→detail stack below md (wave 1)
+- [ ] 53-04-PLAN.md — Email-detail CanvasShell Sheet-collapse below md (wave 1)
+- [ ] 53-05-PLAN.md — /chat inline feed: canvas never mounts + rail overlay Sheet (wave 2)
+- [ ] 53-06-PLAN.md — /knowledge mobile list + full-width detail sheet (wave 2)
+
 **UI hint**: yes
 
 ### Phase 54: Email-Cluster Workflow (E3)
