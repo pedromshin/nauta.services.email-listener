@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Cloud Workspace
 status: completed
-last_updated: "2026-07-12T03:08:40.219Z"
-last_activity: 2026-07-12 -- Phase 52-06 executed (PANL-04 NL re-theme client + theme-application integration proof — see 52-06-SUMMARY.md; Phase 52 now 6/6 plans complete)
+last_updated: "2026-07-12T04:49:00.000Z"
+last_activity: 2026-07-12 -- Phase 53-01 executed (Foundation: useIsMobileViewport() hook + global mobile nav trigger — see 53-01-SUMMARY.md; Phase 53 now 1/6 plans complete)
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 24
-  completed_plans: 23
-  percent: 50
+  total_plans: 30
+  completed_plans: 24
+  percent: 80
 ---
 
 # State
@@ -29,10 +29,42 @@ console, SES/DNS, Supabase project-id decision) are in-phase checkpoint tasks in
 
 ## Current Position
 
-Phase: 52 (Editable Genui Panels / Studio-on-Canvas) — ALL 6 PLANS EXECUTED this session: 52-01 (Foundation substrate), 52-05 (PANL-04 server side), 52-02 (panel toolbar chrome + pack switch), 52-03 (PANL-02 bounded param editor + server FOUND-6 gate), 52-04 (PANL-03 regenerate-in-place + version history/restore), 52-06 (PANL-04 NL re-theme client + theme-application integration proof) — Phase 52 is now COMPLETE at the plan level (6/6 SUMMARY.md). Live-canvas confirmation for the whole phase remains queued to MORNING-CHECKLIST.md SS G (Docker/FastAPI/Bedrock not concurrently available this session) — not faked as passed. Phase 51 (Total UI Re-skin) remains carried as a known blocker: 51-01..51-06 done, 51-07 Task 1 done+green, Tasks 2/3 (E2E regression, screenshot re-capture) BLOCKED pending a session where `docker info` succeeds — see Phase 51 Plan 07 History below.
-Plan: Phase 52 — 6 of 6 have a SUMMARY.md (52-01, 52-02, 52-03, 52-04, 52-05, 52-06). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
-Status: 52-06 executed — PANL-04 NL re-theme client + theme-application integration proof: `retheme-control.tsx` (replaces Plan 52-02's inert skeleton — calls genui.resolveRetheme via the D-06 useQuery(enabled:false)+refetch idiom, on success appends a `retheme` version via appendVersion carrying the resolved pack+tokenOverrides+unchanged activeSpecJson and fires toast.success("Panel re-themed"), on failure shows the inline banner with the instruction preserved — no partial apply) + `retheme-apply-integration.test.tsx` (proves resolveActivePanel -> PanelThemeScope applies a stored retheme version's pack+overrides to a real rendered panel) + consolidated Phase-52 live-canvas UAT entry appended to MORNING-CHECKLIST.md SS G. 5 new web tests green; full `_canvas` regression suite (25 files/193 tests) green; typecheck/palette-ban/token-contrast/token-registration gates green. PANL-04 now Complete (client+server). Phase 52 is 6/6 plans complete. Zero new dependency, zero migration. See Phase 52 Plan 06 History below and `52-06-SUMMARY.md` for full detail. Phase 51's 51-07 Docker-stack blocker is UNCHANGED this session — see its own History section / SUMMARY file.
-Last activity: 2026-07-12 -- Phase 52-06 executed (PANL-04 NL re-theme client + theme-application integration proof — see 52-06-SUMMARY.md; Phase 52 now 6/6 plans complete)
+Phase: 53 (Mobile-Responsive Answer) — 53-01 (Foundation: useIsMobileViewport() hook + global mobile nav trigger) EXECUTED this session, Phase 53's first of 6 plans (2 waves). `useIsMobileViewport()` is now the single shared mobile-viewport mount/unmount signal Wave-2 plans (53-05 `/chat`, 53-06 `/knowledge`) will consume; a global `md:hidden` `SidebarTrigger` bar in root `layout.tsx` closes a found gap (no nav trigger existed anywhere in the app) so a signed-in phone user can now open app nav on every authenticated route. Desktop chrome byte-identical (diff-verified additive-only). Phase 52 (Editable Genui Panels / Studio-on-Canvas) remains COMPLETE at the plan level (6/6 SUMMARY.md, all this same session, prior activity) — live-canvas confirmation for the whole phase remains queued to MORNING-CHECKLIST.md SS G (Docker/FastAPI/Bedrock not concurrently available). Phase 51 (Total UI Re-skin) remains carried as a known blocker: 51-01..51-06 done, 51-07 Task 1 done+green, Tasks 2/3 (E2E regression, screenshot re-capture) BLOCKED pending a session where `docker info` succeeds — see Phase 51 Plan 07 History below.
+Plan: Phase 53 — 1 of 6 have a SUMMARY.md (53-01). Phase 52 — 6 of 6 have a SUMMARY.md (52-01..52-06). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
+Status: 53-01 executed — Task 1 (TDD RED->GREEN): `use-is-mobile-viewport.ts` exports `useIsMobileViewport(): boolean`, `matchMedia("(max-width: 767px)")` mirroring `@polytoken/ui/sidebar`'s private `useIsMobile()` byte-for-byte, SSR-safe `false` default; 4 tests (false@>=768px, true@<768px, updates-on-change via a fake `MediaQueryList` capturing the `change` handler, SSR-safety proved via `renderToString` showing `matchMedia` is never called during the synchronous render). Task 2: `layout.tsx` gained a `md:hidden` bar inside `SidebarInset` above `{children}` — `size-11` `SidebarTrigger` + glyph `BrandMark` + "Polytoken" label; `SidebarProvider`/`AppSidebar`/`SidebarInset` nesting confirmed unchanged via diff. Typecheck clean outside the pre-existing `app/dev/design/**` exclusion; palette-ban/token-contrast/token-registration gates green; full web suite reconfirmed green (55 files/372 tests). One clarifying (non-blocking) observation logged in `53-01-SUMMARY.md`'s Threat Flags: `/login` actually renders through the SAME root-layout `SidebarProvider`/`AppSidebar` shell as every other route (no auth-conditional rendering in `AppSidebar`), contradicting 53-UI-SPEC's stated T-53-01-01 mitigation — pre-existing, not introduced by this plan, not fixed (Rule 4 territory, out of scope). `MOBL-01`/`MOBL-02` intentionally NOT marked Complete in REQUIREMENTS.md — both requirements span multiple Phase-53 plans (see per-plan `requirements:` frontmatter: 53-02/53-03/53-04 carry MOBL-02, 53-05/53-06 carry MOBL-01) and this plan only delivers the foundation piece, mirroring how LIVE-05/RSKN-05 were only marked Complete after their LAST contributing plan. See Phase 53 Plan 01 History below and `53-01-SUMMARY.md` for full detail.
+Last activity: 2026-07-12 -- Phase 53-01 executed (Foundation: useIsMobileViewport() hook + global mobile nav trigger — see 53-01-SUMMARY.md; Phase 53 now 1/6 plans complete)
+
+## Phase 53 -- Mobile-Responsive Answer -- Plan 01 History -- Foundation: useIsMobileViewport() hook + global mobile nav trigger
+
+- **53-01 EXECUTED** (`c6a63c4` feat, `f6add79` feat):
+  Delivered the two foundation primitives every other Phase-53 surface builds on. Task 1 (TDD):
+  `apps/web/src/hooks/use-is-mobile-viewport.ts` exports the single shared `useIsMobileViewport(): boolean`
+  hook — `matchMedia("(max-width: 767px)")`, the exact numeric complement of Tailwind `md:`, mirroring
+  `@polytoken/ui/sidebar`'s private `useIsMobile()` byte-for-byte (same 768px line, same subscribe/cleanup
+  shape) since that internal is unexported and this hook needs to be public across `/chat` + `/knowledge`.
+  SSR-safe `false` seed, corrected via `useEffect` + `change`-event subscription. RED confirmed live (test
+  written first, failed on module-not-found) before the implementation made it GREEN; 4 tests green
+  (false@>=768px / true@<768px / updates-on-change / SSR-safety via `renderToString` proving `matchMedia`
+  is never called during the synchronous pre-effect render). Task 2: `layout.tsx` gained a `md:hidden` bar
+  inside `SidebarInset` directly above `{children}` — `SidebarTrigger` (`size-11`, default sr-only
+  "Toggle Sidebar" kept verbatim) + `BrandMark variant="glyph"` + "Polytoken" label — closing a
+  grep-verified gap where no `SidebarTrigger` existed anywhere in the app, leaving a signed-in phone user
+  with no way to open app nav (MOBL-02's inbox→chat→knowledge navigation path). Desktop path
+  (`SidebarProvider`/`AppSidebar`/`SidebarInset` nesting) confirmed byte-identical via diff — only
+  additive `md:hidden` markup + 2 new imports. Typecheck clean outside the pre-existing, documented
+  `app/dev/design/**` exclusion; palette-ban/token-contrast/token-registration gates green; full web
+  suite reconfirmed green (55 files/372 tests, no regressions). Zero deviations, zero new dependency,
+  zero migration. One clarifying observation (not a fix, out of scope for this plan's file list): direct
+  code inspection shows `/login` renders through the SAME root-layout shell as every other route (no
+  auth-conditional in `AppSidebar`) — contradicts 53-UI-SPEC's T-53-01-01 mitigation claim, but is a
+  pre-existing codebase characteristic this plan's new trigger doesn't introduce or worsen (the sidebar's
+  nav content was already mounted in the DOM on `/login` before this plan; the trigger only makes it
+  openable on mobile). Logged as a Threat Flag in `53-01-SUMMARY.md` for a future security-focused pass,
+  not fixed here (Rule 4 architectural territory). `MOBL-01`/`MOBL-02` intentionally left Pending in
+  REQUIREMENTS.md — both span multiple Phase-53 plans per their own `requirements:` frontmatter
+  (53-02/53-03/53-04 → MOBL-02; 53-05/53-06 → MOBL-01), matching the established pattern of marking a
+  multi-plan requirement Complete only after its LAST contributing plan (see LIVE-05/RSKN-05). See
+  `53-01-SUMMARY.md` for full detail.
 
 ## Phase 52 -- Editable Genui Panels / Studio-on-Canvas -- Plan 06 History -- PANL-04 NL re-theme client + theme-application integration proof
 
