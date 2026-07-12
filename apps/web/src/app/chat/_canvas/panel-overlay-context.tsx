@@ -68,6 +68,17 @@ export interface CanvasPersistenceContextValue {
    * success, never fires synchronously. */
   readonly scheduleSave: (onError?: () => void) => void;
   readonly conversationId: string;
+  /**
+   * onOpenConversation (54-04, CLUS-01/CLUS-02) — optional callback threaded
+   * from `chat-canvas.tsx`'s own `onOpenConversation` prop, ultimately
+   * `page.tsx`'s `setSelectedId`. `EmailThreadNode`'s "Attach chat" action
+   * calls this with the newly created + thread-attached conversation's id so
+   * the host page can switch the visible conversation — mirrors the rail's
+   * existing "New chat" open UX (page.tsx's `handleNewChat`). Undefined when
+   * no host wiring is provided (e.g. a standalone test) — callers must treat
+   * it as an optional no-op, never throw when it's absent.
+   */
+  readonly onOpenConversation?: (conversationId: string) => void;
 }
 
 const CanvasPersistenceContext = createContext<CanvasPersistenceContextValue | null>(null);
