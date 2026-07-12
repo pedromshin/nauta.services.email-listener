@@ -364,7 +364,9 @@ class FakeChatRunRepository:
         self._next_run_id += 1
         run_id = f"run-{self._next_run_id}"
         self._seq_by_run[run_id] = 0
-        return ChatRun(id=run_id, conversation_id=conversation_id, agent_id=agent_id, model_id=model_id, status="running")
+        return ChatRun(
+            id=run_id, conversation_id=conversation_id, agent_id=agent_id, model_id=model_id, status="running"
+        )
 
     async def append_event(self, *, run_id: str, event_type: str, data: dict[str, Any]) -> ChatRunEvent:
         seq = self._seq_by_run.get(run_id, 0)
@@ -463,7 +465,9 @@ def _seed_web_search_message(*, tool_use_id: str = "toolu_1", turn_index: int = 
     )
 
 
-def _make_use_case(*, provider: FakeChatProvider, seeded: list[ChatMessage] | None = None) -> tuple[RunChatTurn, FakeChatMessageRepository]:
+def _make_use_case(
+    *, provider: FakeChatProvider, seeded: list[ChatMessage] | None = None
+) -> tuple[RunChatTurn, FakeChatMessageRepository]:
     messages = FakeChatMessageRepository(seeded=seeded)
     use_case = RunChatTurn(
         messages=messages,
@@ -489,7 +493,9 @@ def _source_capture_tool_json(*, result_id: str) -> str:
 async def _run_turn(use_case: RunChatTurn) -> list[ChatRunEvent]:
     return [
         event
-        async for event in use_case.run(conversation_id=_CONVERSATION_ID, user_text="Capture that", model_id=_GENUI_MODEL.id)
+        async for event in use_case.run(
+            conversation_id=_CONVERSATION_ID, user_text="Capture that", model_id=_GENUI_MODEL.id
+        )
     ]
 
 
@@ -500,7 +506,9 @@ async def test_source_capture_finalizes_confirm_action_widget_when_result_found(
     provider = FakeChatProvider(
         [
             ToolCallDelta(
-                tool_name="emit_confirm_action", id="tool-1", partial_json=_source_capture_tool_json(result_id="toolu_1:0")
+                tool_name="emit_confirm_action",
+                id="tool-1",
+                partial_json=_source_capture_tool_json(result_id="toolu_1:0"),
             ),
             StreamEnd(stop_reason="tool_use"),
         ]
@@ -531,7 +539,9 @@ async def test_source_capture_second_result_index_resolves_the_second_entry() ->
     provider = FakeChatProvider(
         [
             ToolCallDelta(
-                tool_name="emit_confirm_action", id="tool-1", partial_json=_source_capture_tool_json(result_id="toolu_1:1")
+                tool_name="emit_confirm_action",
+                id="tool-1",
+                partial_json=_source_capture_tool_json(result_id="toolu_1:1"),
             ),
             StreamEnd(stop_reason="tool_use"),
         ]
@@ -552,7 +562,9 @@ async def test_source_capture_out_of_range_index_finalizes_unavailable_text() ->
     provider = FakeChatProvider(
         [
             ToolCallDelta(
-                tool_name="emit_confirm_action", id="tool-1", partial_json=_source_capture_tool_json(result_id="toolu_1:9")
+                tool_name="emit_confirm_action",
+                id="tool-1",
+                partial_json=_source_capture_tool_json(result_id="toolu_1:9"),
             ),
             StreamEnd(stop_reason="tool_use"),
         ]
@@ -602,7 +614,9 @@ async def test_source_capture_malformed_result_id_finalizes_unavailable_text() -
     provider = FakeChatProvider(
         [
             ToolCallDelta(
-                tool_name="emit_confirm_action", id="tool-1", partial_json=_source_capture_tool_json(result_id="not-composite")
+                tool_name="emit_confirm_action",
+                id="tool-1",
+                partial_json=_source_capture_tool_json(result_id="not-composite"),
             ),
             StreamEnd(stop_reason="tool_use"),
         ]
@@ -624,7 +638,9 @@ async def test_source_capture_no_web_search_history_finalizes_unavailable_text()
     provider = FakeChatProvider(
         [
             ToolCallDelta(
-                tool_name="emit_confirm_action", id="tool-1", partial_json=_source_capture_tool_json(result_id="toolu_1:0")
+                tool_name="emit_confirm_action",
+                id="tool-1",
+                partial_json=_source_capture_tool_json(result_id="toolu_1:0"),
             ),
             StreamEnd(stop_reason="tool_use"),
         ]
