@@ -1,20 +1,26 @@
 "use client";
 
 /**
- * pack-switcher.tsx — PackSwitcher (52-02-PLAN.md Task 1 stub / Task 2 TDD
- * target, PANL-01).
+ * pack-switcher.tsx — PackSwitcher: PANL-01's per-panel style-pack Select
+ * (52-UI-SPEC.md Component 1's compact pack-switcher recipe, Judgment Call
+ * #3 — a plain `Select` reusing `generation-sandbox-island.tsx`'s exact
+ * precedent, no color-swatch `DropdownMenu`, 52-02-PLAN.md Task 2).
  *
- * Task 1 ships an INERT interface-first skeleton (renders the resolved pack
- * as a disabled `Select`, no mutation) purely so `PanelActionsToolbar` has a
- * real component to compose against and typechecks cleanly — pack-switcher.tsx
- * is not in Task 1's own file list (Task 2 owns it), but the toolbar's left
- * slot references it, so a stub is required here first (Rule 3 auto-fix:
- * missing referenced file). Task 2's TDD RED/GREEN cycle replaces this body
- * with the real optimistic-apply/revert-on-error/persist behavior — the
- * exported `PackSwitcherProps` contract is stable across both.
+ * Optimistic apply, no confirmation step (52-CONTEXT.md): `onValueChange`
+ * immediately sets the local pending value AND writes the new pack through
+ * `usePanelOverlay`'s `writeOverlay(setPack(overlay, id))`, which persists
+ * via the canvas's existing `scheduleSave` debounce (fire-and-forget — see
+ * `use-canvas-persistence.ts`, which never resolves/rejects a promise this
+ * component could await). Because of that, the REVERT-ON-FAILURE path is
+ * modeled through `writeOverlay` itself throwing synchronously — the
+ * injectable/spyable test seam the plan calls for: a test-supplied
+ * `scheduleSave` that throws simulates "the persist surfaced an error"
+ * without needing the live save (see `__tests__/pack-switcher.test.tsx`).
  */
 
 import * as React from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 import {
   Select,
@@ -26,10 +32,13 @@ import {
 import { STYLE_PACKS, STYLE_PACK_IDS } from "@polytoken/genui/theme";
 import type { StylePackId } from "@polytoken/genui/theme";
 
+import { setPack } from "../panel-overlay";
+import { usePanelOverlay } from "../panel-overlay-context";
+
 export interface PackSwitcherProps {
   readonly panelId: string;
   /** The pack `resolveActivePanel` currently resolves for this panel — the
-   * seed for this Select's local optimistic value (52-02-PLAN.md Task 2). */
+   * seed for this Select's local optimistic value. */
   readonly resolvedPackId: StylePackId;
   readonly isLocked: boolean;
   readonly onBusyChange: (busy: boolean) => void;
@@ -38,10 +47,56 @@ export interface PackSwitcherProps {
 const TRIGGER_CLASS =
   "h-6 w-28 shrink-0 gap-1 rounded-md border-none bg-transparent px-1.5 text-xs font-normal text-muted-foreground shadow-none hover:bg-accent hover:text-accent-foreground focus:ring-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-40";
 
-export function PackSwitcher({ resolvedPackId }: PackSwitcherProps): React.ReactElement {
+export function PackSwitcher({
+  panelId,
+  resolvedPackId,
+  isLocked,
+  onBusyChange,
+}: PackSwitcherProps): React.ReactElement {
+  const { overlay, writeOverlay } = usePanelOverlay(panelId);
+  const [pendingPackId, setPendingPackId] = useState<StylePackId>(resolvedPackId);
+  const [isPending, setIsPending] = useState(false);
+
+  // A rehydrated/externally-resolved pack (reload, or another surface's
+  // write) is the source of truth whenever nothing is in-flight locally.
+  useEffect(() => {
+    if (!isPending) setPendingPackId(resolvedPackId);
+  }, [resolvedPackId, isPending]);
+
+  function applyPack(nextId: StylePackId, priorId: StylePackId): void {
+    setPendingPackId(nextId);
+    setIsPending(true);
+    onBusyChange(true);
+
+    try {
+      writeOverlay(setPack(overlay, nextId));
+      setIsPending(false);
+      onBusyChange(false);
+    } catch {
+      // Persist failure surrogate (see module doc) — revert + toast.
+      setPendingPackId(priorId);
+      setIsPending(false);
+      onBusyChange(false);
+      toast.error("Couldn't switch style — try again.", {
+        action: {
+          label: "Retry",
+          onClick: () => applyPack(nextId, priorId),
+        },
+      });
+    }
+  }
+
+  function handleValueChange(nextId: string): void {
+    applyPack(nextId as StylePackId, pendingPackId);
+  }
+
   return (
-    <Select value={resolvedPackId} disabled>
-      <SelectTrigger aria-label="Style pack" className={TRIGGER_CLASS}>
+    <Select
+      value={pendingPackId}
+      onValueChange={handleValueChange}
+      disabled={isLocked || isPending}
+    >
+      <SelectTrigger aria-label="Style pack" aria-busy={isPending} className={TRIGGER_CLASS}>
         <SelectValue />
       </SelectTrigger>
       <SelectContent>
