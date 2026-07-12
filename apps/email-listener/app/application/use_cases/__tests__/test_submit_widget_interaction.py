@@ -224,7 +224,18 @@ class FakeKnowledgeGraphRepository:
 
 
 class FakeConfirmActionHandler:
-    """Records execute() calls; returns a pre-configured result (or raises, best-effort test)."""
+    """Records execute() calls; returns a pre-configured result (or raises, best-effort test).
+
+    Deviation note (Phase 54-03, Rule 1 bug fix): this double's `execute()`
+    signature previously omitted `user_id` (Phase 44-09) entirely, so the
+    real `_dispatch_confirm_action` call -- which has ALWAYS passed
+    `user_id=user_id` since 44-09 -- raised a TypeError that the caller's
+    broad `except Exception` silently swallowed, leaving `execute_calls`
+    empty and TWO tests below asserting a dispatch call that never actually
+    happened. Fixed here (additive kwargs, all defaulted) while adding the
+    54-03 `source_payload`/`conversation_id`/`thread_id` params the SAME
+    call site now also passes.
+    """
 
     def __init__(self, *, result: dict[str, Any] | None = None, raises: bool = False) -> None:
         self._result = result if result is not None else {"status": "ok"}
@@ -238,6 +249,10 @@ class FakeConfirmActionHandler:
         suggestion_id: str,
         importer_id: str,
         widget_interaction_id: str,
+        user_id: str | None = None,
+        source_payload: dict[str, Any] | None = None,
+        conversation_id: str | None = None,
+        thread_id: str | None = None,
     ) -> dict[str, Any]:
         self.execute_calls.append(
             {
@@ -245,6 +260,10 @@ class FakeConfirmActionHandler:
                 "suggestion_id": suggestion_id,
                 "importer_id": importer_id,
                 "widget_interaction_id": widget_interaction_id,
+                "user_id": user_id,
+                "source_payload": source_payload,
+                "conversation_id": conversation_id,
+                "thread_id": thread_id,
             }
         )
         if self._raises:

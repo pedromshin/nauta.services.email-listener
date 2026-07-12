@@ -26,6 +26,7 @@ from app.application.use_cases.classify_document import ClassifyDocumentUseCase
 from app.application.use_cases.confirm_action_dispatch import (
     ConfirmActionHandler,
     KnowledgeEdgeTierPromotionHandler,
+    SourceCaptureHandler,
     UnsupportedConfirmActionHandler,
 )
 from app.application.use_cases.confirm_region import ConfirmRegionUseCase
@@ -67,6 +68,7 @@ from app.application.use_cases.run_chat_turn import RunChatTurn
 from app.application.use_cases.run_chat_turn_confirm_action import (
     SUGGESTION_KIND_EDGE_TIER_PROMOTION,
     SUGGESTION_KIND_ENTITY_MERGE_CONFIRM,
+    SUGGESTION_KIND_SOURCE_CAPTURE,
 )
 from app.application.use_cases.set_component_relationship import (
     SetComponentEntityTypeUseCase,
@@ -874,15 +876,23 @@ def _provide_submit_widget_interaction(
     singleton exists for KnowledgeGraphRepository, every factory that needs
     one builds its own). promote_edge_use_case is already DI-registered
     (_provide_promote_edge_use_case) and reused here via injection, not
-    rebuilt. The explicit finite 2-entry confirm_action_dispatch table is
-    built entirely server-side (T-40-06) — knowledge_edge_tier_promotion is
-    real; entity_merge_confirm is the registered-but-unsupported stub
+    rebuilt. The explicit finite dispatch table is built entirely
+    server-side (T-40-06) — knowledge_edge_tier_promotion is real;
+    entity_merge_confirm is the registered-but-unsupported stub
     (40-CONTEXT.md's pair-keyed blocker, see confirm_action_dispatch.py).
+
+    Phase 54-03 (CLUS-04/CLUS-05): source_capture is a THIRD real dispatch
+    target — SourceCaptureHandler reuses the SAME `knowledge_repo` instance
+    built above (no second SupabaseKnowledgeGraphRepository instantiation in
+    this factory), writing INFERRED knowledge_nodes/knowledge_node_edges
+    rows on confirm. Its edges promote through the UNCHANGED
+    PromoteEdgeUseCase (CLUS-05) — no new promotion machinery.
     """
     knowledge_repo = SupabaseKnowledgeGraphRepository(client=client)
     confirm_action_dispatch: Mapping[str, ConfirmActionHandler] = {
         SUGGESTION_KIND_EDGE_TIER_PROMOTION: KnowledgeEdgeTierPromotionHandler(promote_edge=promote_edge_use_case),
         SUGGESTION_KIND_ENTITY_MERGE_CONFIRM: UnsupportedConfirmActionHandler(),
+        SUGGESTION_KIND_SOURCE_CAPTURE: SourceCaptureHandler(knowledge_graph=knowledge_repo),
     }
     return SubmitWidgetInteraction(
         widget_interactions=widget_interactions,

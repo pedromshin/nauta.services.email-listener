@@ -48,6 +48,7 @@ def test_confirm_calls_promote_edge_with_chat_confirm_action_mechanism_and_retur
     promote_edge.execute.assert_awaited_once_with(
         edge_id=_EDGE_ID,
         importer_id=_IMPORTER,
+        user_id=None,
         mechanism="chat_confirm_action",
         extra={"widget_interaction_id": _WIDGET_INTERACTION_ID},
     )

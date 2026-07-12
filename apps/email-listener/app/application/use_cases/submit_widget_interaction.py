@@ -61,6 +61,21 @@ conversation ownership -- `user_id` here exists purely to feed the promotion
 guard. `user_id` stays optional (default None) so existing
 `SubmitWidgetInteraction` unit tests / non-endpoint callers are unaffected;
 the endpoint always supplies the real value in production.
+
+Phase 54-03 (CLUS-04/CLUS-05): `_dispatch_confirm_action` gained a per-kind
+argument-resolution step (`_resolve_confirm_action_dispatch_args`) for
+`source_capture`. There is no `knowledge_node_edges` row to derive tenant
+scope from for this kind (unlike `knowledge_edge_tier_promotion`'s
+ALREADY-FETCHED `edge`) -- `importer_id`/`sourcePayload`/`threadId` are
+instead read back from the STORED declaration snapshot
+`RunChatTurn._finalize_source_capture` froze server-side at emission time
+(mirrors `tierSnapshot`'s existing precedent: the declaration is
+server-built and trusted, never client-supplied). `conversation_id` comes
+straight from the interaction row itself. `SourceCaptureHandler` is
+registered in the SAME `confirm_action_dispatch` table (container.py) --
+`_reject_if_confirm_action_edge_stale`'s existing kind check already no-ops
+for `source_capture` (only `knowledge_edge_tier_promotion` has a live
+tier-staleness re-check to perform), so no change was needed there.
 """
 
 from __future__ import annotations
@@ -72,6 +87,7 @@ import structlog
 
 from app.application.use_cases.run_chat_turn_confirm_action import (
     SUGGESTION_KIND_EDGE_TIER_PROMOTION,
+    SUGGESTION_KIND_SOURCE_CAPTURE,
 )
 from app.domain.services.widget_result_validator import validate_result_against_schema
 
@@ -281,11 +297,12 @@ class SubmitWidgetInteraction:
         regardless of this call's outcome: any failure here is logged and
         swallowed, NEVER re-raised past this point.
 
-        `importer_id` is derived from the ALREADY-FETCHED `edge` dict (the
-        staleness check above), never a new caller-supplied parameter on
-        `prepare()` itself (D-21-style). `user_id` (Phase 44-09) is forwarded
-        to the handler so `KnowledgeEdgeTierPromotionHandler` can finally
-        feed `PromoteEdgeUseCase`'s 44-03 user-ownership guard.
+        `importer_id`/`source_payload`/`conversation_id`/`thread_id` are
+        resolved per-kind by `_resolve_confirm_action_dispatch_args` (Phase
+        54-03) -- never a new caller-supplied parameter on `prepare()`
+        itself (D-21-style). `user_id` (Phase 44-09) is forwarded to the
+        handler so `KnowledgeEdgeTierPromotionHandler` can finally feed
+        `PromoteEdgeUseCase`'s 44-03 user-ownership guard.
         """
         if interaction.widget_kind != _WIDGET_KIND_CONFIRM_ACTION:
             return
@@ -300,7 +317,9 @@ class SubmitWidgetInteraction:
         # Already schema-validated to be "confirm"/"reject" by this point
         # (validate_result_against_schema, above) -- safe to narrow.
         action = cast("ConfirmActionKind", result.get("optionId"))
-        importer_id = cast("str", edge.get("importer_id", "")) if edge is not None else ""
+        importer_id, source_payload, conversation_id, thread_id = _resolve_confirm_action_dispatch_args(
+            kind=kind, interaction=interaction, edge=edge
+        )
 
         try:
             await handler.execute(
@@ -309,9 +328,43 @@ class SubmitWidgetInteraction:
                 importer_id=importer_id,
                 widget_interaction_id=interaction.id,
                 user_id=user_id,
+                source_payload=source_payload,
+                conversation_id=conversation_id,
+                thread_id=thread_id,
             )
         except Exception:  # best-effort -- the interaction row is already durably submitted
             logger.warning("confirm_action_dispatch_failed", suggestion_id=suggestion_id, kind=kind)
+
+
+def _resolve_confirm_action_dispatch_args(
+    *,
+    kind: str,
+    interaction: WidgetInteraction,
+    edge: dict[str, object] | None,
+) -> tuple[str, dict[str, Any] | None, str | None, str | None]:
+    """Resolve (importer_id, source_payload, conversation_id, thread_id) per suggestionRef.kind.
+
+    `knowledge_edge_tier_promotion` derives `importer_id` from the
+    ALREADY-FETCHED `edge` (unchanged CONF-02 posture) and needs neither a
+    source payload nor thread/conversation ids. `source_capture` (Phase
+    54-03) has no edge to join through -- its `importer_id`/`sourcePayload`/
+    `threadId` are instead read back from the declaration snapshot
+    `RunChatTurn._finalize_source_capture` froze server-side at emission
+    time (mirrors `tierSnapshot`'s existing precedent: the declaration is
+    server-built and trusted); `conversation_id` comes straight from the
+    interaction row. Any other/unregistered kind resolves to
+    `("", None, None, None)` -- defensive, mirrors the existing
+    empty-importer_id fallback (the dispatch lookup above already no-ops
+    for a kind with no registered handler).
+    """
+    if kind == SUGGESTION_KIND_SOURCE_CAPTURE:
+        importer_id = cast("str", interaction.declaration.get("importerId") or "")
+        source_payload = interaction.declaration.get("sourcePayload")
+        thread_id = interaction.declaration.get("threadId")
+        return importer_id, source_payload, interaction.conversation_id, thread_id
+
+    importer_id = cast("str", edge.get("importer_id", "")) if edge is not None else ""
+    return importer_id, None, None, None
 
 
 def _resolve_summary(interaction: WidgetInteraction, result: dict[str, Any]) -> dict[str, Any]:

@@ -37,6 +37,23 @@ exact call site the 44-08 sweep flagged as a permanent no-op for the 44-03
 ownership guard; threading `user_id` through finally activates it for the
 chat confirm_action path. `UnsupportedConfirmActionHandler` accepts and
 ignores it (never promotes anything).
+
+Phase 54-03 (CLUS-04/CLUS-05): a THIRD handler, `SourceCaptureHandler`, backs
+`suggestionRef.kind == "source_capture"`. Unlike the edge-based handlers
+above, there is no `knowledge_node_edges` row to derive tenant scope from —
+`ConfirmActionHandler.execute()` gains three more additive keyword-only
+params (`source_payload`/`conversation_id`/`thread_id`, all default None)
+threaded from the submit path's stored declaration snapshot
+(`submit_widget_interaction.py`). The two existing handlers accept-and-ignore
+them (unused by an edge-tier promotion or the unsupported stub). On confirm,
+`SourceCaptureHandler` writes exactly one INFERRED `knowledge_nodes` row
+(reusing an existing active node for the same url — supersede-never-mutate)
+plus one INFERRED `knowledge_node_edges` row carrying full provenance
+(`{url, title, retrieved_at, conversation_id, thread_id}`) — promotable
+through the UNCHANGED `PromoteEdgeUseCase` (CLUS-05, no new promotion
+machinery). Reject performs NO write at all — same audit-on-the-row
+convention as `KnowledgeEdgeTierPromotionHandler.execute`'s reject branch.
+Never raises past `execute()`.
 """
 
 from __future__ import annotations
@@ -49,6 +66,7 @@ from app.application.use_cases.promote_edge import EdgeNotFound, EdgeNotPromotab
 
 if TYPE_CHECKING:
     from app.application.use_cases.promote_edge import PromoteEdgeUseCase
+    from app.domain.ports.knowledge_graph_repository import KnowledgeGraphRepository
 
 logger = structlog.get_logger(__name__)
 
@@ -56,6 +74,17 @@ ConfirmActionResult = dict[str, Any]
 ConfirmActionKind = Literal["confirm", "reject"]
 
 _MECHANISM_CHAT_CONFIRM_ACTION = "chat_confirm_action"
+
+# SourceCaptureHandler's node/edge conventions (Phase 54-03, CLUS-04). Kept in
+# lockstep with 54-02-PLAN.md's "SHARED CONTRACT" (WebSearchExecutor) and
+# 54-06's clusterSummary count query -- literals must stay identical across
+# all three plans.
+_SOURCE_CAPTURE_SCOPE = "importer_global"
+_SOURCE_CAPTURE_SCOPE_REF_TYPE = "web_source"
+_SOURCE_CAPTURE_SOURCE = "web_search_capture"
+_SOURCE_CAPTURE_TIER = "INFERRED"
+_SOURCE_CAPTURE_RELATION_TYPE = "captured_from_web"
+_SOURCE_CAPTURE_TARGET_REF_TYPE = "chat_conversation"
 
 
 class ConfirmActionHandler(Protocol):
@@ -69,6 +98,9 @@ class ConfirmActionHandler(Protocol):
         importer_id: str,
         widget_interaction_id: str,
         user_id: str | None = None,
+        source_payload: dict[str, object] | None = None,
+        conversation_id: str | None = None,
+        thread_id: str | None = None,
     ) -> ConfirmActionResult: ...
 
 
@@ -94,7 +126,11 @@ class KnowledgeEdgeTierPromotionHandler:
         importer_id: str,
         widget_interaction_id: str,
         user_id: str | None = None,
+        source_payload: dict[str, object] | None = None,
+        conversation_id: str | None = None,
+        thread_id: str | None = None,
     ) -> ConfirmActionResult:
+        del source_payload, conversation_id, thread_id  # unused -- this handler is edge-based, not source-based
         if action == "reject":
             return {"status": "rejected"}
 
@@ -138,7 +174,11 @@ class UnsupportedConfirmActionHandler:
         importer_id: str,
         widget_interaction_id: str,
         user_id: str | None = None,
+        source_payload: dict[str, object] | None = None,
+        conversation_id: str | None = None,
+        thread_id: str | None = None,
     ) -> ConfirmActionResult:
+        del source_payload, conversation_id, thread_id  # unused -- this stub never writes anything
         logger.warning(
             "confirm_action_unsupported_kind",
             suggestion_id=suggestion_id,
@@ -147,10 +187,108 @@ class UnsupportedConfirmActionHandler:
         return {"status": "unsupported", "reason": "entity_merge_confirm is not yet supported via chat"}
 
 
+class SourceCaptureHandler:
+    """Dispatch target for `source_capture` (Phase 54-03, CLUS-04/CLUS-05).
+
+    On confirm: reuses an existing active INFERRED node for the same url
+    (`find_active_node`, supersede-never-mutate — never a duplicate node),
+    or creates one, then ALWAYS inserts a fresh INFERRED
+    `knowledge_node_edges` row attaching it to the conversation (the
+    addressable half of "the cluster" available at this layer — 54-CONTEXT.md
+    defines a cluster as thread + conversations + captured sources) with full
+    provenance retained. The edge is promotable through the UNCHANGED
+    `PromoteEdgeUseCase` — no new promotion machinery (CLUS-05).
+
+    `reject` performs NO repository call at all — same audit-on-the-row
+    convention as `KnowledgeEdgeTierPromotionHandler.execute`'s reject
+    branch: the interaction row's own `submitted_value` IS the durable
+    rejection record.
+
+    Never raises past `execute()` — any repo failure (or a missing/malformed
+    `source_payload`, which should never happen given the emission-time
+    server re-read, but is defended here too) collapses to
+    `{"status": "capture_failed"}`, logged, not re-raised (mirrors
+    `KnowledgeEdgeTierPromotionHandler`'s `promote_failed` posture).
+    """
+
+    def __init__(self, *, knowledge_graph: KnowledgeGraphRepository) -> None:
+        self._knowledge_graph = knowledge_graph
+
+    async def execute(
+        self,
+        *,
+        action: ConfirmActionKind,
+        suggestion_id: str,
+        importer_id: str,
+        widget_interaction_id: str,
+        user_id: str | None = None,
+        source_payload: dict[str, object] | None = None,
+        conversation_id: str | None = None,
+        thread_id: str | None = None,
+    ) -> ConfirmActionResult:
+        del user_id, widget_interaction_id  # unused -- no per-user ownership resolver at this layer yet
+        if action == "reject":
+            return {"status": "rejected"}
+
+        if not importer_id or not isinstance(source_payload, dict):
+            logger.warning("source_capture_dispatch_missing_payload", suggestion_id=suggestion_id)
+            return {"status": "capture_failed"}
+
+        url = source_payload.get("url")
+        if not isinstance(url, str) or not url:
+            logger.warning("source_capture_dispatch_missing_url", suggestion_id=suggestion_id)
+            return {"status": "capture_failed"}
+        title_raw = source_payload.get("title")
+        title = title_raw if isinstance(title_raw, str) and title_raw else url
+        retrieved_at = source_payload.get("retrievedAt")
+
+        try:
+            existing = await self._knowledge_graph.find_active_node(importer_id, _SOURCE_CAPTURE_SCOPE, url)
+            if existing is not None:
+                node_id = str(existing.get("id"))
+            else:
+                node_id = await self._knowledge_graph.upsert_node(
+                    importer_id=importer_id,
+                    title=title,
+                    content=url,
+                    scope=_SOURCE_CAPTURE_SCOPE,
+                    scope_ref_id=url,
+                    scope_ref_type=_SOURCE_CAPTURE_SCOPE_REF_TYPE,
+                    source=_SOURCE_CAPTURE_SOURCE,
+                    tier=_SOURCE_CAPTURE_TIER,
+                )
+
+            await self._knowledge_graph.insert_edge(
+                source_node_id=node_id,
+                target_ref_id=conversation_id,
+                target_ref_type=_SOURCE_CAPTURE_TARGET_REF_TYPE if conversation_id else None,
+                relation_type=_SOURCE_CAPTURE_RELATION_TYPE,
+                tier=_SOURCE_CAPTURE_TIER,
+                source=_SOURCE_CAPTURE_SOURCE,
+                provenance={
+                    "url": url,
+                    "title": title,
+                    "retrieved_at": retrieved_at,
+                    "conversation_id": conversation_id,
+                    "thread_id": thread_id,
+                },
+            )
+        except Exception as exc:  # never raise -- the interaction row is already durably submitted
+            logger.warning(
+                "source_capture_dispatch_failed",
+                suggestion_id=suggestion_id,
+                error_type=type(exc).__name__,
+            )
+            return {"status": "capture_failed"}
+
+        return {"status": "captured", "node_id": node_id}
+
+
 __all__ = [
     "ConfirmActionHandler",
     "ConfirmActionKind",
     "ConfirmActionResult",
     "KnowledgeEdgeTierPromotionHandler",
+    "SourceCaptureHandler",
     "UnsupportedConfirmActionHandler",
 ]

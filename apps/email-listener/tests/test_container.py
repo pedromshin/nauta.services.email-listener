@@ -7,9 +7,11 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from app.application.use_cases.confirm_action_dispatch import SourceCaptureHandler
 from app.application.use_cases.ingest_inbound_email import IngestInboundEmailUseCase
 from app.application.use_cases.propose_regions import ProposeRegionsUseCase
 from app.application.use_cases.run_chat_turn import RunChatTurn
+from app.application.use_cases.submit_widget_interaction import SubmitWidgetInteraction
 from app.container import create_container
 from app.domain.ports.attachment_repository import AttachmentRepository
 from app.domain.ports.attachment_storage import AttachmentStorage
@@ -277,3 +279,26 @@ class TestWebSearchExposureGate:
             assert "search_emails" in executors
         finally:
             get_settings.cache_clear()
+
+
+class TestSourceCaptureDispatchWiring:
+    """T-54-03 container guard: source_capture is a REAL, wired dispatch target (CLUS-04/CLUS-05).
+
+    Mirrors the exposure-gate classes' resolve-and-inspect pattern, but
+    SourceCaptureHandler has no code-gated flag (Phase 24-style widget
+    dispatch is always registered, exactly like knowledge_edge_tier_
+    promotion/entity_merge_confirm) -- this class just proves the dispatch
+    table entry exists and resolves to the real handler type.
+    """
+
+    def test_source_capture_handler_registered_in_confirm_action_dispatch_table(self) -> None:
+        with _patched_container():
+            container = create_container()
+            submit_widget_interaction = asyncio.run(container.get(SubmitWidgetInteraction))
+
+        dispatch = submit_widget_interaction._confirm_action_dispatch
+        assert "source_capture" in dispatch
+        assert isinstance(dispatch["source_capture"], SourceCaptureHandler)
+        # Additive, not a regression: Phase 40's wiring must stay intact.
+        assert "knowledge_edge_tier_promotion" in dispatch
+        assert "entity_merge_confirm" in dispatch
