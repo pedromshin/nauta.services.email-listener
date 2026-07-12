@@ -153,6 +153,15 @@ function ConversationView({
 export default function ChatPage(): React.ReactElement {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [railCollapsed, setRailCollapsed] = useState(false);
+  // MOBL-01 (53-UI-SPEC.md Judgment Call #3) — the rail becomes a left
+  // overlay Sheet below `md`; this is a SEPARATE boolean from `railCollapsed`
+  // (which defaults to rail-VISIBLE) and defaults CLOSED, so a phone's first
+  // paint never shows the overlay unprompted. The existing top-bar toggle
+  // button below flips BOTH booleans on every click — only one is ever
+  // visually relevant per viewport (desktop reads `railCollapsed`, mobile
+  // reads `mobileRailOpen`; CSS alone, not a second useIsMobileViewport()
+  // read, decides which — 53-UI-SPEC's "only 2 consumers this phase" rule).
+  const [mobileRailOpen, setMobileRailOpen] = useState(false);
   // ONE top-level engine instance (D-08) — never re-instantiated when the
   // selected conversation changes, so switching conversations never
   // re-downloads the (large, first-run-only) WebLLM model weights.
@@ -193,7 +202,10 @@ export default function ChatPage(): React.ReactElement {
             railCollapsed ? "Expand conversation list" : "Collapse conversation list"
           }
           className="size-11"
-          onClick={() => setRailCollapsed((prev) => !prev)}
+          onClick={() => {
+            setRailCollapsed((prev) => !prev);
+            setMobileRailOpen((prev) => !prev);
+          }}
         >
           {railCollapsed ? (
             <PanelLeft className="size-4" aria-hidden />
@@ -211,6 +223,8 @@ export default function ChatPage(): React.ReactElement {
           onDeleted={handleConversationDeleted}
           collapsed={railCollapsed}
           onCollapsedChange={setRailCollapsed}
+          mobileOpen={mobileRailOpen}
+          onMobileOpenChange={setMobileRailOpen}
           onNewChat={handleNewChat}
           creatingConversation={createConversation.isPending}
         />

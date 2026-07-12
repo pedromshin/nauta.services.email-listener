@@ -1,13 +1,18 @@
 /**
- * chat-mobile-feed.test.tsx — 53-05-PLAN.md Task 1: proves `/chat`'s MOBL-01
- * mobile inline feed (53-UI-SPEC.md §2 "/chat mobile feed") without
- * regressing the desktop canvas/toggle behavior.
+ * chat-mobile-feed.test.tsx — 53-05-PLAN.md Tasks 1+2: proves `/chat`'s
+ * MOBL-01 mobile inline feed (53-UI-SPEC.md §2 "/chat mobile feed") without
+ * regressing the desktop canvas/toggle/inline-rail behavior.
  *
- * `useIsMobileViewport` mocked `true`: `ChatCanvasIsland` (the
+ * Task 1 — `useIsMobileViewport` mocked `true`: `ChatCanvasIsland` (the
  * `dynamic(ssr:false)` React-Flow island) is NEVER invoked, even when the
  * persisted `chat:canvas-view:{id}` value is "canvas"; `ChatCanvasViewToggle`
  * is not in the DOM. Mocked `false`: the toggle IS present (desktop path
  * intact) and canvas mode still mounts the island.
+ *
+ * Task 2 — `ConversationRail`'s mobile Sheet is closed by default; the
+ * existing top-bar rail-toggle button (lifted `mobileRailOpen` state, D-11's
+ * `size-11` button) opens it; selecting a conversation from inside the Sheet
+ * closes it.
  *
  * Mounts the REAL `ChatPage` default export (`ConversationView` itself has no
  * named export) — `~/trpc/react`'s handful of direct `.useQuery`/
@@ -29,9 +34,6 @@
  * value of the closed-over variable at CALL time, not at mock-definition
  * time (same "outer const/let referenced inside a hoisted vi.mock factory"
  * shape `inbox-mobile-stack.test.tsx` already establishes for its fixtures).
- *
- * 53-05-PLAN.md Task 2 extends this file with `ConversationRail`'s mobile
- * Sheet-collapse assertions (see the follow-up commit).
  */
 
 import { readFileSync } from "node:fs";
@@ -120,6 +122,10 @@ import ChatPage from "../page";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PAGE_SOURCE = readFileSync(path.join(__dirname, "..", "page.tsx"), "utf-8");
+const RAIL_SOURCE = readFileSync(
+  path.join(__dirname, "..", "_components", "conversation-rail.tsx"),
+  "utf-8",
+);
 
 let containers: HTMLDivElement[] = [];
 
@@ -145,6 +151,14 @@ async function selectConversation(container: HTMLDivElement): Promise<void> {
   await act(async () => {
     newChatButton.click();
   });
+}
+
+function railToggleButton(container: HTMLDivElement): HTMLButtonElement {
+  const button = container.querySelector<HTMLButtonElement>(
+    '[aria-label="Expand conversation list"], [aria-label="Collapse conversation list"]',
+  );
+  if (!button) throw new Error("rail toggle button not found");
+  return button;
 }
 
 afterEach(() => {
@@ -232,5 +246,68 @@ describe("/chat desktop path — useIsMobileViewport mocked false (regression)",
 describe("(source) page.tsx gates the toggle + canvas branch on useIsMobileViewport", () => {
   it("imports useIsMobileViewport", () => {
     expect(PAGE_SOURCE).toContain("useIsMobileViewport");
+  });
+});
+
+describe("ConversationRail becomes an overlay Sheet below md (MOBL-01, 53-UI-SPEC §2 rail bullet)", () => {
+  it("the mobile rail Sheet is closed by default", async () => {
+    mockIsMobile = true;
+
+    await mount(<ChatPage />);
+
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it("the top-bar rail toggle opens the Sheet, revealing rail content", async () => {
+    mockIsMobile = true;
+
+    const container = await mount(<ChatPage />);
+    const toggle = railToggleButton(container);
+
+    await act(async () => {
+      toggle.click();
+    });
+
+    const dialog = document.body.querySelector('[role="dialog"]');
+    expect(dialog).not.toBeNull();
+    expect(dialog?.textContent).toContain("New chat");
+    expect(dialog?.textContent).toContain(FAKE_CONVERSATION.title);
+  });
+
+  it("selecting a conversation from the mobile rail closes the Sheet", async () => {
+    mockIsMobile = true;
+
+    const container = await mount(<ChatPage />);
+    const toggle = railToggleButton(container);
+
+    await act(async () => {
+      toggle.click();
+    });
+
+    const dialog = document.body.querySelector('[role="dialog"]');
+    expect(dialog).not.toBeNull();
+
+    const rowButton = Array.from(dialog!.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes(FAKE_CONVERSATION.title),
+    );
+    if (!rowButton) throw new Error("conversation row button not found in Sheet");
+
+    await act(async () => {
+      rowButton.click();
+    });
+
+    expect(document.body.querySelector('[role="dialog"]')).toBeNull();
+  });
+});
+
+describe("(source) conversation-rail.tsx Sheet-collapse assertions", () => {
+  it("renders a side=\"left\" Sheet gated md:hidden and retains the desktop Collapsible gated hidden md:block", () => {
+    expect(RAIL_SOURCE).toContain('side="left"');
+    expect(RAIL_SOURCE).toMatch(/SheetContent[\s\S]{0,120}md:hidden/);
+    expect(RAIL_SOURCE).toContain("hidden md:block");
+  });
+
+  it("the mobile row-select handler closes the Sheet (onMobileOpenChange(false))", () => {
+    expect(RAIL_SOURCE).toMatch(/onMobileOpenChange\(false\)/);
   });
 });

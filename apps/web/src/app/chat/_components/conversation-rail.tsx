@@ -12,6 +12,7 @@ import { cn } from "@polytoken/ui";
 import { Button } from "@polytoken/ui/button";
 import { Collapsible, CollapsibleContent } from "@polytoken/ui/collapsible";
 import { ScrollArea } from "@polytoken/ui/scroll-area";
+import { Sheet, SheetContent, SheetTitle } from "@polytoken/ui/sheet";
 import { Skeleton } from "@polytoken/ui/skeleton";
 
 import { api } from "~/trpc/react";
@@ -27,6 +28,13 @@ interface ConversationRailProps {
   readonly onDeleted: (deletedId: string) => void;
   readonly collapsed: boolean;
   readonly onCollapsedChange: (collapsed: boolean) => void;
+  /** MOBL-01 (53-UI-SPEC.md Judgment Call #3) — below `md` the rail renders
+   * inside a left overlay `Sheet` instead of the desktop inline `Collapsible`.
+   * A SEPARATE boolean from `collapsed` (which defaults to rail-VISIBLE) —
+   * this one defaults CLOSED, lifted to `page.tsx`'s `ChatPage` so the
+   * existing top-bar rail-toggle button can drive it. */
+  readonly mobileOpen: boolean;
+  readonly onMobileOpenChange: (open: boolean) => void;
   readonly onNewChat: () => void;
   readonly creatingConversation: boolean;
 }
@@ -64,6 +72,8 @@ export function ConversationRail({
   onDeleted,
   collapsed,
   onCollapsedChange,
+  mobileOpen,
+  onMobileOpenChange,
   onNewChat,
   creatingConversation,
 }: ConversationRailProps): React.ReactElement {
@@ -105,66 +115,101 @@ export function ConversationRail({
     },
   });
 
+  // Shared rail body (New-chat button + conversation list) — reused by BOTH
+  // the desktop inline Collapsible and the mobile overlay Sheet below `md`
+  // (MOBL-01, 53-UI-SPEC.md Judgment Call #3). `handleSelect` differs per
+  // caller: the mobile Sheet's row-select ALSO closes the Sheet (a
+  // full-overlay Sheet left open would hide the very conversation the user
+  // just chose), the desktop tree just calls `onSelect` directly.
+  function renderRailBody(
+    handleSelect: (id: string) => void,
+    wrapperClassName: string,
+  ): React.ReactElement {
+    return (
+      <div className={wrapperClassName}>
+        <div className="shrink-0 p-2">
+          <Button
+            type="button"
+            variant="default"
+            size="sm"
+            className="w-full gap-2"
+            onClick={onNewChat}
+            disabled={creatingConversation}
+          >
+            <Plus className="size-4" aria-hidden />
+            New chat
+          </Button>
+        </div>
+
+        <ScrollArea className="min-h-0 flex-1">
+          <div className="space-y-1 p-2 pt-0">
+            {isLoading ? (
+              <RailSkeleton />
+            ) : conversations && conversations.length > 0 ? (
+              conversations.map((conversation) => (
+                <ConversationRow
+                  key={conversation.id}
+                  conversation={conversation}
+                  isActive={conversation.id === selectedId}
+                  isRenaming={renamingId === conversation.id}
+                  onSelect={handleSelect}
+                  onRequestRename={setRenamingId}
+                  onRequestDelete={setDeletingConversation}
+                  onRenameCommit={(id, title) =>
+                    renameConversation.mutate({ id, title })
+                  }
+                  onRenameCancel={() => setRenamingId(null)}
+                />
+              ))
+            ) : (
+              <p className="px-2 py-4 text-center text-xs text-muted-foreground">
+                No conversations yet.
+              </p>
+            )}
+          </div>
+        </ScrollArea>
+      </div>
+    );
+  }
+
+  const handleMobileSelect = (id: string): void => {
+    onSelect(id);
+    onMobileOpenChange(false);
+  };
+
   return (
     <>
-      <Collapsible
-        open={!collapsed}
-        onOpenChange={(open) => onCollapsedChange(!open)}
-      >
-        <div
-          className={cn(
-            "h-full shrink-0 overflow-hidden border-r border-border/50 bg-background/95",
-            "t-panel-reveal",
-            collapsed ? "w-0" : "w-[280px]",
-          )}
+      {/* Desktop (>=md) — byte-identical inline Collapsible, unchanged. */}
+      <div className="hidden md:block h-full">
+        <Collapsible
+          open={!collapsed}
+          onOpenChange={(open) => onCollapsedChange(!open)}
         >
-          <CollapsibleContent forceMount className="h-full w-[280px]">
-            <div className="flex h-full w-[280px] flex-col">
-              <div className="shrink-0 p-2">
-                <Button
-                  type="button"
-                  variant="default"
-                  size="sm"
-                  className="w-full gap-2"
-                  onClick={onNewChat}
-                  disabled={creatingConversation}
-                >
-                  <Plus className="size-4" aria-hidden />
-                  New chat
-                </Button>
-              </div>
+          <div
+            className={cn(
+              "h-full shrink-0 overflow-hidden border-r border-border/50 bg-background/95",
+              "t-panel-reveal",
+              collapsed ? "w-0" : "w-[280px]",
+            )}
+          >
+            <CollapsibleContent forceMount className="h-full w-[280px]">
+              {renderRailBody(onSelect, "flex h-full w-[280px] flex-col")}
+            </CollapsibleContent>
+          </div>
+        </Collapsible>
+      </div>
 
-              <ScrollArea className="min-h-0 flex-1">
-                <div className="space-y-1 p-2 pt-0">
-                  {isLoading ? (
-                    <RailSkeleton />
-                  ) : conversations && conversations.length > 0 ? (
-                    conversations.map((conversation) => (
-                      <ConversationRow
-                        key={conversation.id}
-                        conversation={conversation}
-                        isActive={conversation.id === selectedId}
-                        isRenaming={renamingId === conversation.id}
-                        onSelect={onSelect}
-                        onRequestRename={setRenamingId}
-                        onRequestDelete={setDeletingConversation}
-                        onRenameCommit={(id, title) =>
-                          renameConversation.mutate({ id, title })
-                        }
-                        onRenameCancel={() => setRenamingId(null)}
-                      />
-                    ))
-                  ) : (
-                    <p className="px-2 py-4 text-center text-xs text-muted-foreground">
-                      No conversations yet.
-                    </p>
-                  )}
-                </div>
-              </ScrollArea>
-            </div>
-          </CollapsibleContent>
-        </div>
-      </Collapsible>
+      {/* Mobile (<md) — left overlay Sheet (MOBL-01, Judgment Call #3),
+       * closed by default; opened by page.tsx's lifted `mobileOpen` state via
+       * the existing top-bar rail-toggle button. `md:hidden` on SheetContent
+       * itself is belt-and-suspenders (a Sheet left open across a resize past
+       * `md` still collapses). */}
+      <Sheet open={mobileOpen} onOpenChange={onMobileOpenChange}>
+        <SheetContent side="left" className="md:hidden p-0">
+          <SheetTitle className="sr-only">Conversations</SheetTitle>
+          {renderRailBody(handleMobileSelect, "flex h-full w-full flex-col")}
+        </SheetContent>
+      </Sheet>
 
       <DeleteConversationDialog
         conversationTitle={deletingConversation?.title ?? null}
