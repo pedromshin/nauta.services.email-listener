@@ -47,7 +47,7 @@ completes before any Band 2/3 work starts.
 - [x] **PANL-01**: User can switch a genui panel's `style_pack_id` in place from per-panel controls; the choice persists across reloads
 - [ ] **PANL-02**: User can tweak a panel's spec parameters in place through a bounded editing surface (schema-validated, same untrusted-input gate as FOUND-6)
 - [ ] **PANL-03**: User can regenerate a panel variant in place, with provenance retained and prior version reachable
-- [ ] **PANL-04**: A promptable design slice exists: a natural-language re-theme instruction on a panel resolves to pack/token choices (DSGN-03's cheap generation-side slice; no visual-compare repair loop)
+- [x] **PANL-04**: A promptable design slice exists: a natural-language re-theme instruction on a panel resolves to pack/token choices (DSGN-03's cheap generation-side slice; no visual-compare repair loop)
 
 ### Email-Cluster Workflow (CLUS — Band 3, depth-first on the real inbox)
 
@@ -105,7 +105,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PANL-01 | Phase 52 — Editable Genui Panels / Studio-on-Canvas | Complete |
 | PANL-02 | Phase 52 — Editable Genui Panels / Studio-on-Canvas | Pending |
 | PANL-03 | Phase 52 — Editable Genui Panels / Studio-on-Canvas | Pending |
-| PANL-04 | Phase 52 — Editable Genui Panels / Studio-on-Canvas | Pending |
+| PANL-04 | Phase 52 — Editable Genui Panels / Studio-on-Canvas | Complete |
 | MOBL-01 | Phase 53 — Mobile-Responsive Answer | Pending |
 | MOBL-02 | Phase 53 — Mobile-Responsive Answer | Pending |
 | CLUS-01 | Phase 54 — Email-Cluster Workflow (E3) | Pending |

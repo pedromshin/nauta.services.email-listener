@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Cloud Workspace
 status: planning
-last_updated: "2026-07-12T00:23:45.931Z"
-last_activity: 2026-07-11 -- Phase 52-01 executed (overlay data model + PanelThemeScope + usePanelOverlay/CanvasPersistenceProvider, all green, no migration — see 52-01-SUMMARY.md)
+last_updated: "2026-07-12T00:55:17.000Z"
+last_activity: 2026-07-12 -- Phase 52-05 executed (PANL-04 server side — one-shot Bedrock retheme resolution + resolveRetheme tRPC web-boundary gate, all green, no migration — see 52-05-SUMMARY.md)
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 24
-  completed_plans: 18
+  completed_plans: 19
   percent: 33
 ---
 
@@ -29,10 +29,51 @@ console, SES/DNS, Supabase project-id decision) are in-phase checkpoint tasks in
 
 ## Current Position
 
-Phase: 52 (Editable Genui Panels / Studio-on-Canvas) — Wave 1 plan 52-01 (Foundation substrate) EXECUTED; 52-02..52-06 (Waves 2/3) not yet started, each depends on 52-01's contracts. Phase 51 (Total UI Re-skin) remains carried as a known blocker: 51-01..51-06 done, 51-07 Task 1 done+green, Tasks 2/3 (E2E regression, screenshot re-capture) BLOCKED pending a session where `docker info` succeeds — see Phase 51 Plan 07 History below.
-Plan: Phase 52 — 1 of 6 have a SUMMARY.md (52-01). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
-Status: 52-01 executed — built the per-panel overlay data model (PanelOverlaySchema/PanelVersionSchema + 6 pure helpers), PanelThemeScope (pack+token-override theming wrapper), and usePanelOverlay/CanvasPersistenceProvider (read/write/persist plumbing wired into chat-canvas.tsx) — zero migration, zero new dependency. See Phase 52 Plan 01 History below and `52-01-SUMMARY.md` for full detail. Phase 51's 51-07 Docker-stack blocker (Tasks 2/3) is UNCHANGED this session — full evidence trail in `51-07-SUMMARY.md`.
-Last activity: 2026-07-11 -- Phase 52-01 executed (overlay data model + PanelThemeScope + usePanelOverlay/CanvasPersistenceProvider, all green, no migration — see 52-01-SUMMARY.md)
+Phase: 52 (Editable Genui Panels / Studio-on-Canvas) — Wave 1 plan 52-01 (Foundation substrate) EXECUTED; Plan 52-05 (PANL-04 server side) EXECUTED this session — 52-02/52-03/52-04/52-06 not yet started (52-06 depends on 52-05's tRPC procedure; 52-02..04 depend only on 52-01's contracts, independently startable). Phase 51 (Total UI Re-skin) remains carried as a known blocker: 51-01..51-06 done, 51-07 Task 1 done+green, Tasks 2/3 (E2E regression, screenshot re-capture) BLOCKED pending a session where `docker info` succeeds — see Phase 51 Plan 07 History below.
+Plan: Phase 52 — 2 of 6 have a SUMMARY.md (52-01, 52-05). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
+Status: 52-05 executed — one-shot NL re-theme resolution server side (PANL-04): RethemeResolverPort/RethemeResolution/ALLOWED_OVERRIDE_KEYS (domain) + ResolveRethemeUseCase (two-belt untrusted-output validation, never raises) + GenuiRethemeAdapter (ONE Bedrock forced-tool-use emit_retheme call, no repair loop, reuses the existing client) + POST /v1/genui/retheme + genui.resolveRetheme tRPC procedure with the AUTHORITATIVE RethemeResolutionSchema web-boundary gate (known-pack enum + `.strict()` allowed-override-key object + per-key HSL/radius/spacing-density value-format regexes). Live-verified against real Bedrock (Docker down, IAM role reachable) — a live call surfaced a real malformed `radius:"high"` value, proving the web-boundary regex gate load-bearing; fixed via an improved system prompt, re-verified live. Zero migration, zero new dependency. See Phase 52 Plan 05 History below and `52-05-SUMMARY.md` for full detail. Phase 52 Plan 01 (data-layer substrate) and Phase 51's 51-07 Docker-stack blocker are UNCHANGED this session — see their own History sections / `51-07-SUMMARY.md`.
+Last activity: 2026-07-12 -- Phase 52-05 executed (PANL-04 server side — one-shot Bedrock retheme resolution + resolveRetheme tRPC web-boundary gate, all green, no migration — see 52-05-SUMMARY.md)
+
+## Phase 52 -- Editable Genui Panels / Studio-on-Canvas -- Plan 05 History -- PANL-04 server side (one-shot Bedrock retheme resolution)
+
+- **52-05 EXECUTED** (`e43d52c` test, `7150a2c` feat, `6dfd4b6` test, `ba93867` feat, `89a5301` fix):
+  Delivered the SERVER side of PANL-04 — the promptable design slice (DSGN-03's cheap
+  generation-side flavor). `retheme_resolver.py` (domain): `RethemeResolverPort` Protocol +
+  `RethemeResolution` frozen dataclass + `ALLOWED_OVERRIDE_KEYS` tuple (single source imported by
+  both the application use case and the infrastructure adapter). `resolve_retheme.py`:
+  `ResolveRethemeUseCase` validates the untrusted resolver output — unknown/hallucinated
+  `style_pack_id` coerces to the current pack (or default) + marks outcome="fallback";
+  disallowed `token_overrides` keys are dropped; any resolver exception degrades to a fallback
+  with the unchanged current pack + empty overrides; never raises. `is_known_pack_id`/
+  `DEFAULT_PACK_ID` are constructor-injected primitives (not a top-level infra import) so the use
+  case stays lint-imports-clean — verified `uv run lint-imports` 3/3 contracts kept.
+  `genui_retheme_adapter.py`: `GenuiRethemeAdapter` — ONE Bedrock forced-tool-use `emit_retheme`
+  call (no repair loop, no screenshot judging, locked), reusing the existing
+  `AsyncAnthropicBedrock` client; pure `build_retheme_messages` prompt-assembly helper
+  (independently unit-tested). Wired `POST /v1/genui/retheme` (always 200, ApiResponse envelope)
+  + dishka DI registration in `container.py`; new `GENUI_RETHEME_MAX_TOKENS=512` setting (Rule 2
+  — not in the plan's files_modified list but required for correct operation). TS side:
+  `genui.resolveRetheme` tRPC procedure (`retheme.ts`) proxies to FastAPI then re-validates with
+  `RethemeResolutionSchema` — the AUTHORITATIVE web-boundary gate (GEN-03/D-08): known
+  `STYLE_PACK_IDS` enum, `token_overrides` keys refined via a `.strict()` object schema to
+  `ALLOWED_OVERRIDE_KEYS` (an unlisted key fails outright, not silently stripped), and per-key
+  value-format regexes (HSL channel triplet for colors, rem/px for radius, rem for
+  spacing-density) — authoritative regardless of what FastAPI's own `outcome` field claims.
+  Registered in `genui/index.ts`. 22 Python unit tests + 19 TS unit tests, all green
+  (72/72 genui suite, no regressions); ruff/mypy/import-linter clean; typecheck clean. Both TDD
+  tasks followed a verified RED (temporary implementation-file removal confirmed import failure)
+  then GREEN cycle. **Live-verified against real Bedrock** (Docker down this session, but the IAM
+  role is reachable locally — one real call is acceptable per this plan's own environment note):
+  correctly resolved "make it feel more playful and colorful" to `playful-rounded`; a second call
+  surfaced a REAL malformed `token_overrides={"radius":"high"}` value that the tRPC web boundary
+  would correctly reject — direct live proof the two-belt validation design is load-bearing, not
+  theoretical — fixed via an improved system prompt (Rule 1 auto-fix) and re-verified live to
+  produce `radius:"1.5rem"`. PANL-04 marked Complete per this plan's own frontmatter
+  `requirements` field (52-06 ALSO declares `requirements: [PANL-04]` for its client-side half —
+  same shared-requirement-across-plans convention already used by PANL-01/52-01→52-02, see that
+  plan's History note above). Real FastAPI-up HTTP smoke (as opposed to the direct-adapter Bedrock
+  calls done tonight) remains deferred to `MORNING-CHECKLIST.md` §G — Docker was down. See
+  `52-05-SUMMARY.md` for full detail.
 
 ## Phase 52 -- Editable Genui Panels / Studio-on-Canvas -- Plan 01 History -- Foundation substrate (PANL-01 data layer)
 
