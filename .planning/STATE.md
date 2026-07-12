@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Cloud Workspace
 status: completed
-last_updated: "2026-07-12T05:21:03.000Z"
-last_activity: "2026-07-12 -- Phase 53-03 executed (inbox single-pane master->detail stack below md — see 53-03-SUMMARY.md; Phase 53 now 3/6 plans complete)"
+last_updated: "2026-07-12T05:42:13.000Z"
+last_activity: 2026-07-12 -- Phase 53-04 executed (email-detail CanvasShell Sheet-collapse below md — see 53-04-SUMMARY.md; Phase 53 now 4/6 plans complete; MOBL-02 Complete)
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 30
-  completed_plans: 27
+  completed_plans: 28
   percent: 50
 ---
 
@@ -29,10 +29,60 @@ console, SES/DNS, Supabase project-id decision) are in-phase checkpoint tasks in
 
 ## Current Position
 
-Phase: 53 (Mobile-Responsive Answer) — 53-03 (inbox single-pane master->detail stack below `md`) EXECUTED this session, Phase 53's third of 6 plans (Wave 1, `depends_on: []`). `inbox-three-pane.tsx` gained a `flex md:hidden` mobile stack (segmented Tabs filter, full-width list, tap-through stacked detail with an `ArrowLeft` back bar) alongside the byte-identical `hidden md:block` desktop three-pane. `mobileView` state only flips to "detail" via an explicit row tap — the background default-select effect keeps resolving `selectedEmailId` but never touches `mobileView`, so first paint on a phone always shows the list. Proven by a new 4-test `inbox-mobile-stack.test.tsx`. Two found-live deviations, both auto-fixed: (1) 5 files in the render tree (`inbox-three-pane.tsx`, `resizable.tsx`, `inbox-row.tsx`, `inbox-thread-group.tsx`, `entity-chips.tsx`) were missing the explicit `import * as React from "react"` vitest's classic-runtime JSX transform needs (Next's SWC runtime tolerates its absence; same documented gotcha `genui-panel-node.tsx` already carries) — this is the FIRST vitest suite to mount `InboxThreePane`'s real desktop+mobile tree, so it's the first to trip over it; (2) the new mobile stack's second CSS-hidden DOM tree duplicates every inbox row, breaking 3 of `uat-45-threads.spec.ts`'s plain `page.locator("button").filter(...)` calls (Playwright's `getByRole` locators already exclude `display:none` via the accessibility tree, but plain tag locators do not) — fixed with a `desktopPane()` scoping helper, not run live this session (Docker down). `useIsMobileViewport()` remains unconsumed by this plan (CSS-only per 53-UI-SPEC's Breakpoint & Mount Contract mechanism 1) — still available for Wave-2 plans (53-05 `/chat`, 53-06 `/knowledge`). Phase 52 (Editable Genui Panels / Studio-on-Canvas) remains COMPLETE at the plan level (6/6 SUMMARY.md) — live-canvas confirmation for the whole phase remains queued to MORNING-CHECKLIST.md SS G (Docker/FastAPI/Bedrock not concurrently available). Phase 51 (Total UI Re-skin) remains carried as a known blocker: 51-01..51-06 done, 51-07 Task 1 done+green, Tasks 2/3 (E2E regression, screenshot re-capture) BLOCKED pending a session where `docker info` succeeds — see Phase 51 Plan 07 History below.
-Plan: Phase 53 — 3 of 6 have a SUMMARY.md (53-01, 53-02, 53-03). Phase 52 — 6 of 6 have a SUMMARY.md (52-01..52-06). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
-Status: 53-03 executed — Task 1: `inbox-three-pane.tsx`'s existing `ResizablePanelGroup` wrapped in `hidden h-full md:block` (internals untouched); new sibling `flex h-full flex-col md:hidden` mobile stack (Tabs filter mirroring `FiltersRail`'s labels, duplicated list/loading/error/empty/load-more blocks with a `handleSelectMemberMobile` wrapper on `onSelectMember`, tap-through detail with sticky back bar + byte-identical `ReadingPreview`). New `inbox-mobile-stack.test.tsx` (4 tests) green: Tabs filter aria-label, `hidden md:block`/`md:hidden` source-text assertions, first-paint-always-list guard, tap-to-detail + back-preserves-selection round trip. Full web suite reconfirmed green (57 files/381 tests, up from 55/372); typecheck clean outside the pre-existing `app/dev/design/**` exclusion; palette-ban/token-contrast/token-registration gates green. Two Rule 1/Rule 3 auto-fixes (see Current Position paragraph above and `53-03-SUMMARY.md`). `MOBL-02` intentionally left Pending in REQUIREMENTS.md — it spans 53-02/53-03/53-04 per each plan's own `requirements:` frontmatter; marked Complete only after the LAST contributing plan (53-04), mirroring the LIVE-05/RSKN-05/53-01/53-02 precedent. See Phase 53 Plan 03 History below and `53-03-SUMMARY.md` for full detail.
-Last activity: 2026-07-12 -- Phase 53-03 executed (inbox single-pane master->detail stack below md — see 53-03-SUMMARY.md; Phase 53 now 3/6 plans complete)
+Phase: 53 (Mobile-Responsive Answer) — 53-04 (email-detail `CanvasShell` Sheet-collapse below `md`) EXECUTED this session, Phase 53's fourth of 6 plans (Wave 1, `depends_on: []`). `CanvasShell`'s three persistent side panels (`LAYERS w-64`, `INSPECTOR w-72`, optional `SUMMARY w-72`) each gained `hidden md:flex md:flex-col` — none renders persistently below `md`; `CANVAS` is the sole persistent `flex-1` zone at every width (53-UI-SPEC §5, Judgment Call #7). Two new Sheets (`side="left"` Layers, `side="right"` Inspector+Summary) render the IDENTICAL slot nodes CanvasShell already receives — zero new data path. `CanvasToolbar` gained two OPTIONAL `md:hidden size-11` triggers (`Layers`/`PanelRight`, `aria-label="Show layers"`/`"Show inspector"`) in a refactored right-group wrapper (`ml-auto` moved from the Close button onto the wrapping div, behavior-preserving when the new props are omitted). Proven by a new 7-test `canvas-shell-mobile.test.tsx` (persistent-panel gating, trigger presence, Sheet-open-reveals-correct-content via `document.body` `[role="dialog"]` query, canvas always present, toolbar unchanged when props omitted). One found-live deviation, auto-fixed: `canvas-shell.tsx`/`canvas-toolbar.tsx` were the FIRST vitest suite to mount them directly, exposing the same missing `import * as React from "react"` gotcha 53-03 already documented and fixed for 5 other files — fixed identically here. `MOBL-02` is now marked Complete in REQUIREMENTS.md — this was the LAST of its three contributing plans (53-02/53-03/53-04). `email-detail.tsx` was NOT modified, per the plan's own instruction. Phase 52 (Editable Genui Panels / Studio-on-Canvas) remains COMPLETE at the plan level (6/6 SUMMARY.md) — live-canvas confirmation for the whole phase remains queued to MORNING-CHECKLIST.md SS G (Docker/FastAPI/Bedrock not concurrently available). Phase 51 (Total UI Re-skin) remains carried as a known blocker: 51-01..51-06 done, 51-07 Task 1 done+green, Tasks 2/3 (E2E regression, screenshot re-capture) BLOCKED pending a session where `docker info` succeeds — see Phase 51 Plan 07 History below.
+Plan: Phase 53 — 4 of 6 have a SUMMARY.md (53-01, 53-02, 53-03, 53-04). Phase 52 — 6 of 6 have a SUMMARY.md (52-01..52-06). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
+Status: 53-04 executed — Task 1: `canvas-shell.tsx`'s three persistent side-panel divs gated `hidden md:flex md:flex-col`; two new `Sheet`s (left Layers, right Inspector+Summary) render the same slot nodes below `md`; `canvas-toolbar.tsx`'s right group refactored into an `ml-auto` wrapping div with two new conditional `md:hidden size-11` Tooltip-wrapped icon buttons before the existing Close button. New `canvas-shell-mobile.test.tsx` (7 tests) green: persistent-panel `hidden md:flex` source assertion, trigger presence + `md:hidden`, Sheet-open reveals the correct slot content (scoped to the Radix-portaled `[role="dialog"]` in `document.body`, distinct from the always-present hidden persistent copy), canvas slot always present, toolbar behavior unchanged when the two new props are omitted. Full web suite reconfirmed green (58 files/388 tests, up from 57/381); typecheck clean outside the pre-existing `app/dev/design/**` exclusion; palette-ban/token-contrast/token-registration gates green. One Rule 3 auto-fix (see Current Position paragraph above and `53-04-SUMMARY.md`). `MOBL-02` marked Complete in REQUIREMENTS.md (last contributing plan). See Phase 53 Plan 04 History below and `53-04-SUMMARY.md` for full detail.
+Last activity: 2026-07-12 -- Phase 53-04 executed (email-detail CanvasShell Sheet-collapse below md — see 53-04-SUMMARY.md; Phase 53 now 4/6 plans complete; MOBL-02 Complete)
+
+## Phase 53 -- Mobile-Responsive Answer -- Plan 04 History -- Email-detail CanvasShell Sheet-collapse below md
+
+- **53-04 EXECUTED** (`f9d7fc2` feat):
+  Collapsed `CanvasShell`'s four-zone layout (`LAYERS w-64` | `CANVAS flex-1` |
+  `INSPECTOR w-72` | optional `SUMMARY w-72`) so the two side panels
+  (256+288=544px, already wider than a 360px viewport before the canvas's own
+  content) stop being persistent flex siblings below `md` and instead render
+  inside `Sheet`s opened from two new `CanvasToolbar` triggers (53-UI-SPEC §5,
+  Judgment Call #7 — this surface wasn't itemized file-by-file in
+  53-CONTEXT.md's Integration Points but MOBL-02's own success-criteria text
+  explicitly names "email detail"). `CANVAS` becomes the sole persistent
+  `w-full flex-1` zone below `md`; its own pan/zoom stays a CONTAINED
+  scrollable surface bounded by the existing `overflow-hidden` wrapper, never
+  page-level horizontal scroll. Reused the identical `Sheet`-based pattern
+  already established for `ConversationRail`/`NodeDetailPane` (Judgment Calls
+  #3/#5) — no new mechanism invented. `canvas-toolbar.tsx`'s right group was
+  refactored into a single `ml-auto` wrapping div (`Layers`/`PanelRight`
+  triggers conditionally rendered, then the existing Close button) rather than
+  conditionally deciding which element carries `ml-auto` — provably
+  behavior-preserving for every existing desktop call site since neither new
+  prop is passed there. New committed `canvas-shell-mobile.test.tsx` (7 tests,
+  createRoot-in-jsdom + `act`, mirrors `inbox-mobile-stack.test.tsx`'s
+  convention) proves: both persistent panels carry `hidden`+`md:flex` (source
+  assertion), both mobile triggers exist and carry `md:hidden`, tapping "Show
+  layers" mounts a Radix `[role="dialog"]` into `document.body` containing
+  ONLY the layers slot content, tapping "Show inspector" mounts a dialog with
+  BOTH inspector and summary content, the canvas slot is present before and
+  after opening a Sheet, and the toolbar's existing controls render unchanged
+  when the two new props are omitted. One found-live deviation, auto-fixed
+  within Task 1: [Rule 3] `canvas-shell-mobile.test.tsx` is the FIRST vitest
+  suite to mount `CanvasShell`/`CanvasToolbar` directly, which exposed that
+  both files were missing the explicit `import * as React from "react"`
+  vitest's classic-runtime esbuild JSX transform requires — Next.js's SWC
+  automatic runtime tolerates its absence, so this was silently latent until
+  now; identical, already-documented gotcha 53-03/`genui-panel-node.tsx`
+  carry — fixed identically in both files, zero behavior change. Full web
+  test suite reconfirmed green (58 files/388 tests, up from 57/381 at 53-03's
+  close); typecheck clean outside the pre-existing, documented
+  `app/dev/design/**` exclusion; palette-ban/token-contrast/token-
+  registration gates green. `MOBL-02` marked Complete in REQUIREMENTS.md —
+  this was the LAST of its three contributing plans (53-02/53-03/53-04),
+  mirroring the LIVE-05/RSKN-05/53-01 precedent. `email-detail.tsx` was NOT
+  modified, per the plan's own instruction — `CanvasShell` owns the collapse
+  internally around the slots it already receives. Live 360/390/414
+  no-horizontal-overflow confirmation of the email-detail flow remains
+  DEFERRED to
+  `.planning/phases/49-live-loop-gate-deploy-oauth-real-email/MORNING-CHECKLIST.md`
+  §G, per this plan's own `<verification>` block — not faked as passed. See
+  `53-04-SUMMARY.md` for full detail.
 
 ## Phase 53 -- Mobile-Responsive Answer -- Plan 03 History -- Inbox single-pane master->detail stack below md
 

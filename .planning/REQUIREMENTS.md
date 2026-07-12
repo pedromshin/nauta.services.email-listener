@@ -40,7 +40,7 @@ completes before any Band 2/3 work starts.
 ### Mobile-Responsive Answer (MOBL — Band 2, after RSKN)
 
 - [ ] **MOBL-01**: On small screens, canvas surfaces (chat canvas, knowledge) collapse to a list/feed presentation (inline-first, market-validated pattern); desktop keeps the 2D canvas
-- [ ] **MOBL-02**: Core flows (login → inbox → thread → email detail → chat) are usable on a mobile viewport — no horizontal overflow, ≥44px touch targets even on dense packs
+- [x] **MOBL-02**: Core flows (login → inbox → thread → email detail → chat) are usable on a mobile viewport — no horizontal overflow, ≥44px touch targets even on dense packs
 
 ### Editable Panels / Studio-on-Canvas (PANL — Band 2, parallelizable with RSKN)
 
@@ -107,7 +107,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PANL-03 | Phase 52 — Editable Genui Panels / Studio-on-Canvas | Complete |
 | PANL-04 | Phase 52 — Editable Genui Panels / Studio-on-Canvas | Complete |
 | MOBL-01 | Phase 53 — Mobile-Responsive Answer | Pending |
-| MOBL-02 | Phase 53 — Mobile-Responsive Answer | Pending |
+| MOBL-02 | Phase 53 — Mobile-Responsive Answer | Complete |
 | CLUS-01 | Phase 54 — Email-Cluster Workflow (E3) | Pending |
 | CLUS-02 | Phase 54 — Email-Cluster Workflow (E3) | Pending |
 | CLUS-03 | Phase 54 — Email-Cluster Workflow (E3) | Pending |
