@@ -12,6 +12,11 @@
  * safe) as a side effect of `onValueChange`, then reports it up.
  */
 
+// Explicit React import — Next.js's SWC automatic JSX runtime tolerates its
+// absence, but vitest's classic-runtime esbuild JSX transform needs `React`
+// in scope for any suite that mounts this file directly (documented gotcha,
+// see genui-panel-node.tsx / 53-03 / 53-04's identical fix).
+import * as React from "react";
 import { Tabs, TabsList, TabsTrigger } from "@polytoken/ui/tabs";
 
 export type ChatCanvasViewMode = "chat" | "canvas";

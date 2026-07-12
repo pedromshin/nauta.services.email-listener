@@ -1,10 +1,16 @@
 "use client";
 
+// Explicit React import — Next.js's SWC automatic JSX runtime tolerates its
+// absence, but vitest's classic-runtime esbuild JSX transform needs `React`
+// in scope for any suite that mounts this file directly (documented gotcha,
+// see genui-panel-node.tsx / 53-03 / 53-04's identical fix).
+import * as React from "react";
 import { useCallback, useState } from "react";
 import { PanelLeft, PanelLeftClose } from "lucide-react";
 
 import { Button } from "@polytoken/ui/button";
 
+import { useIsMobileViewport } from "~/hooks/use-is-mobile-viewport";
 import { api } from "~/trpc/react";
 
 import { ChatHomeEmptyState } from "./_components/chat-home-empty-state";
@@ -54,6 +60,16 @@ function ConversationView({
   const [viewMode, setViewMode] = useState<ChatCanvasViewMode>(() =>
     readStoredViewMode(conversationId),
   );
+  // MOBL-01 (53-UI-SPEC.md "Breakpoint & Mount Contract" + Component
+  // Inventory §2) — below `md`, the effective mode is ALWAYS "chat"
+  // regardless of the persisted/stored `viewMode`: `readStoredViewMode` is
+  // still READ above (so returning to desktop restores the prior choice),
+  // it's just never allowed to drive the render while mobile-forced, and
+  // never overwritten (writeStoredViewMode only fires from the toggle's own
+  // onChange, which is unreachable below `md` since the toggle isn't
+  // rendered there at all — see below).
+  const isMobile = useIsMobileViewport();
+  const effectiveViewMode: ChatCanvasViewMode = isMobile ? "chat" : viewMode;
   // Canvas-only ambient save feedback (D-06, 23-UI-SPEC.md "toolbar right
   // zone") — reset to idle whenever the canvas isn't mounted, so switching
   // back to Chat never leaves a stale "Saved"/"retrying" label lingering.
@@ -66,11 +82,13 @@ function ConversationView({
       </span>
       <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-border/50 bg-background/95 px-4">
         <div className="flex items-center gap-2">
-          <ChatCanvasViewToggle
-            conversationId={conversationId}
-            value={viewMode}
-            onChange={setViewMode}
-          />
+          {!isMobile && (
+            <ChatCanvasViewToggle
+              conversationId={conversationId}
+              value={viewMode}
+              onChange={setViewMode}
+            />
+          )}
           <ModelPicker
             conversationId={conversationId}
             currentModelId={modelId}
@@ -84,12 +102,14 @@ function ConversationView({
           />
         </div>
         <div className="flex items-center gap-3">
-          {viewMode === "canvas" && <SaveStatusIndicator status={canvasSaveStatus} />}
+          {effectiveViewMode === "canvas" && (
+            <SaveStatusIndicator status={canvasSaveStatus} />
+          )}
           <CostMeter conversationId={conversationId} />
         </div>
       </div>
       <div className="min-h-0 flex-1">
-        {viewMode === "canvas" ? (
+        {effectiveViewMode === "canvas" ? (
           <ChatCanvasIsland
             conversationId={conversationId}
             controller={controller}
