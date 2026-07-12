@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Cloud Workspace
-status: "52-03 executed — PANL-02 bounded param editor + server FOUND-6 gate: `panel-edit-schema.ts` (the one client/server whitelist, pure+DB-free) + `genui.applyPanelEdit` (`protectedProcedure`, `.mutation()`, re-validates `currentSpecJson` and the patched result via `SpecRootSchema.safeParse`) + `edit-params-control.tsx` (replaces Plan 52-02's inert skeleton — bounded field rows, save appends an `edit` version, server rejection banner preserves typed values, empty-whitelist root disables the button). 20 new api-client tests + 5 new web tests green (both TDD tasks genuinely RED-then-GREEN); full `_canvas` regression suite (20 files/171 tests) green; typecheck clean outside the pre-existing `app/dev/design/` scratch exclusion; palette-ban/token-contrast/token-registration gates green. Zero new dependency, zero migration. See Phase 52 Plan 03 History below and `52-03-SUMMARY.md` for full detail. Phase 52 Plans 01/02/05 and Phase 51's 51-07 Docker-stack blocker are UNCHANGED this session — see their own History sections / SUMMARY files."
-last_updated: "2026-07-12T02:12:34.017Z"
-last_activity: 2026-07-11 -- Phase 52-03 executed (PANL-02 bounded param editor + server FOUND-6 gate — see 52-03-SUMMARY.md)
+status: "52-04 executed — PANL-03 regenerate-in-place + version history/restore: `format-relative-time.ts` (shared relative-time vocabulary, extracted verbatim from history-island.tsx) + `regenerate-control.tsx` (replaces Plan 52-02's inert skeleton — one-click, derives intent from the nearest preceding user message in chat.getHistory, calls genui.generate, appends a provenance-tagged `regenerate` version via appendVersion including the resolved pack, error toast+Retry on fallback/no-data) + `version-history-control.tsx` (replaces Plan 52-02's inert skeleton — History popover with a Current row + listPriorVersions newest-first with per-provenance icon+verb+relative time + empty state; Restore appends a clone via restoreVersion, supersede-never-mutate, success toast; persist-failure surrogate fires error toast+Retry and keeps the popover open, mirroring pack-switcher.tsx's established seam). 17 new web tests green; full `_canvas` regression suite (23 files/188 tests) green; typecheck clean outside the pre-existing `app/dev/design/` scratch exclusion; palette-ban gate green. Zero new dependency, zero migration. See Phase 52 Plan 04 History below and `52-04-SUMMARY.md` for full detail. Phase 52 Plans 01/02/03/05 and Phase 51's 51-07 Docker-stack blocker are UNCHANGED this session — see their own History sections / SUMMARY files."
+last_updated: "2026-07-12T02:41:27.653Z"
+last_activity: 2026-07-11 -- Phase 52-04 executed (PANL-03 regenerate-in-place + version history/restore — see 52-04-SUMMARY.md)
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 24
-  completed_plans: 21
+  completed_plans: 22
   percent: 33
 ---
 
@@ -29,10 +29,54 @@ console, SES/DNS, Supabase project-id decision) are in-phase checkpoint tasks in
 
 ## Current Position
 
-Phase: 52 (Editable Genui Panels / Studio-on-Canvas) — Wave 1 plan 52-01 (Foundation substrate) EXECUTED; Plan 52-05 (PANL-04 server side) EXECUTED; Plan 52-02 (panel toolbar chrome + pack switch end-to-end) EXECUTED; Plan 52-03 (PANL-02 bounded param editor + server FOUND-6 gate) EXECUTED this session — 52-04/52-06 not yet started (52-06 depends on 52-05's tRPC procedure; 52-04 depends only on 52-01/52-02's contracts, independently startable). Phase 51 (Total UI Re-skin) remains carried as a known blocker: 51-01..51-06 done, 51-07 Task 1 done+green, Tasks 2/3 (E2E regression, screenshot re-capture) BLOCKED pending a session where `docker info` succeeds — see Phase 51 Plan 07 History below.
-Plan: Phase 52 — 4 of 6 have a SUMMARY.md (52-01, 52-02, 52-03, 52-05). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
-Status: 52-03 executed — PANL-02 bounded param editor + server FOUND-6 gate: `panel-edit-schema.ts` (the one client/server whitelist, pure+DB-free) + `genui.applyPanelEdit` (`protectedProcedure`, `.mutation()`, re-validates `currentSpecJson` and the patched result via `SpecRootSchema.safeParse`) + `edit-params-control.tsx` (replaces Plan 52-02's inert skeleton — bounded field rows, save appends an `edit` version, server rejection banner preserves typed values, empty-whitelist root disables the button). 20 new api-client tests + 5 new web tests green (both TDD tasks genuinely RED-then-GREEN); full `_canvas` regression suite (20 files/171 tests) green; typecheck clean outside the pre-existing `app/dev/design/` scratch exclusion; palette-ban/token-contrast/token-registration gates green. Zero new dependency, zero migration. See Phase 52 Plan 03 History below and `52-03-SUMMARY.md` for full detail. Phase 52 Plans 01/02/05 and Phase 51's 51-07 Docker-stack blocker are UNCHANGED this session — see their own History sections / SUMMARY files.
-Last activity: 2026-07-11 -- Phase 52-03 executed (PANL-02 bounded param editor + server FOUND-6 gate — see 52-03-SUMMARY.md)
+Phase: 52 (Editable Genui Panels / Studio-on-Canvas) — Wave 1 plan 52-01 (Foundation substrate) EXECUTED; Plan 52-05 (PANL-04 server side) EXECUTED; Plan 52-02 (panel toolbar chrome + pack switch end-to-end) EXECUTED; Plan 52-03 (PANL-02 bounded param editor + server FOUND-6 gate) EXECUTED; Plan 52-04 (PANL-03 regenerate-in-place + version history/restore) EXECUTED this session — only 52-06 not yet started (depends on 52-05's tRPC procedure, independently startable now). Phase 51 (Total UI Re-skin) remains carried as a known blocker: 51-01..51-06 done, 51-07 Task 1 done+green, Tasks 2/3 (E2E regression, screenshot re-capture) BLOCKED pending a session where `docker info` succeeds — see Phase 51 Plan 07 History below.
+Plan: Phase 52 — 5 of 6 have a SUMMARY.md (52-01, 52-02, 52-03, 52-04, 52-05). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
+Status: 52-04 executed — PANL-03 regenerate-in-place + version history/restore: `format-relative-time.ts` (shared relative-time vocabulary, extracted verbatim from history-island.tsx) + `regenerate-control.tsx` (replaces Plan 52-02's inert skeleton — one-click, derives intent from the nearest preceding user message in chat.getHistory, calls genui.generate, appends a provenance-tagged `regenerate` version via appendVersion including the resolved pack, error toast+Retry on fallback/no-data) + `version-history-control.tsx` (replaces Plan 52-02's inert skeleton — History popover with a Current row + listPriorVersions newest-first with per-provenance icon+verb+relative time + empty state; Restore appends a clone via restoreVersion, supersede-never-mutate, success toast; persist-failure surrogate fires error toast+Retry and keeps the popover open, mirroring pack-switcher.tsx's established seam). 17 new web tests green; full `_canvas` regression suite (23 files/188 tests) green; typecheck clean outside the pre-existing `app/dev/design/` scratch exclusion; palette-ban gate green. Zero new dependency, zero migration. See Phase 52 Plan 04 History below and `52-04-SUMMARY.md` for full detail. Phase 52 Plans 01/02/03/05 and Phase 51's 51-07 Docker-stack blocker are UNCHANGED this session — see their own History sections / SUMMARY files.
+Last activity: 2026-07-11 -- Phase 52-04 executed (PANL-03 regenerate-in-place + version history/restore — see 52-04-SUMMARY.md)
+
+## Phase 52 -- Editable Genui Panels / Studio-on-Canvas -- Plan 04 History -- PANL-03 regenerate-in-place + version history/restore
+
+- **52-04 EXECUTED** (`5c6ea63` feat, `ed71d0f` feat):
+  Delivered PANL-03 end-to-end: one-click regenerate + non-destructive version
+  history/restore, both replacing Plan 52-02's inert skeletons. `format-relative-time.ts`
+  extracts the studio's `history-island.tsx` relative-time vocabulary ("just now" /
+  "{n} minute(s) ago" / "{n} hour(s) ago" / "{n} day(s) ago") into a shared canvas util —
+  matched verbatim, not reinvented. `regenerate-control.tsx`: clicking derives the intent
+  from the nearest preceding user message in `chat.getHistory` relative to the panel's own
+  `provenance.messageId` (falling back to a documented constant directive when none
+  exists), calls the SAME `genui.generate` transport the studio sandbox uses
+  (`useQuery(..., {enabled:false})` + manual `refetch()`), and on a non-fallback outcome
+  appends a `regenerate` version via `appendVersion` — including the resolved pack, so a
+  regenerate never silently drops the panel back to the default pack. Icon
+  `motion-safe:animate-spin` + `aria-label="Regenerating panel"` while in flight; a
+  fallback/no-data outcome fires the exact `toast.error` copy with Retry and leaves the
+  current version untouched (no toast on success — the visible content swap is the
+  confirmation). `version-history-control.tsx`: the History popover — a permanent
+  "Current" row, then `listPriorVersions(overlay)` newest-first with a per-provenance
+  icon+verb (Regenerated/Re-themed/Edited) + relative time, or the exact empty-state copy.
+  Restore appends a clone of the target version via `restoreVersion` (supersede-never-
+  mutate — nothing is ever deleted/rewritten), closes the popover, and shows the success
+  toast; the persist-failure surrogate path (mirrors `pack-switcher.tsx`'s established
+  throwing-`scheduleSave` test seam) fires the error toast + Retry and keeps the popover
+  open. 17 new web tests (5 format-relative-time + 7 regenerate-control + 5
+  version-history-control), all green; full `_canvas` regression suite (23 files/188
+  tests) reconfirmed green; typecheck clean outside the pre-existing `app/dev/design/`
+  scratch exclusion;
+  palette-ban gate green. Zero new dependency, zero migration. 4 deviations auto-fixed
+  (2 Rule 1 bugs: `appendVersion`'s call corrected to match the real `AppendVersionInput`
+  type — no `parentVersionId` field, `appendVersion` derives it internally — and
+  `VERB_ICONS` retyped against lucide-react's own `LucideIcon` instead of a hand-rolled
+  prop shape that collided with `LucideProps`'s `Booleanish` `aria-hidden` typing; 1 Rule 2
+  missing-critical: threading `stylePackId: resolvedPackId` into the regenerated version so
+  PANL-01's pack choice survives a regenerate; 1 Rule 1 bug: `genui-panel-node-toolbar.test.tsx`'s
+  `~/trpc/react` mock needed `chat.getHistory`/`genui.generate` stubbed once the real,
+  no-longer-inert `RegenerateControl` mounted inside the toolbar it renders — the same
+  deviation shape 52-03-SUMMARY.md documented for `applyPanelEdit`). PANL-03 marked
+  Complete per this plan's own frontmatter `requirements` field. Live-canvas confirmation
+  (a real regenerate round-trip against FastAPI with a visible content swap, and a real
+  restore) remains AUTHORED-BUT-NOT-RUN — Docker/FastAPI down this session — queued to
+  `MORNING-CHECKLIST.md` §G's existing Phase-52-54 catch-all (no separate edit needed to
+  that file). See `52-04-SUMMARY.md` for full detail.
 
 ## Phase 52 -- Editable Genui Panels / Studio-on-Canvas -- Plan 03 History -- PANL-02 bounded param editor + server FOUND-6 gate
 
@@ -3162,6 +3206,8 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 
 ## Decisions Log
 
+- 2026-07-11 (52-04): `appendVersion`'s real `AppendVersionInput` type has no `parentVersionId` field (it's computed internally from the overlay's own prior `activeVersionId`) — `regenerate-control.tsx` omits it rather than following the plan's illustrative `<behavior>` snippet literally, matching the type's real shape and the established `edit-params-control.tsx` call convention.
+- 2026-07-11 (52-04): Regenerate's `appendVersion` call explicitly threads `stylePackId: resolvedPackId` into the new version — `resolveActivePanel` resolves an active version's pack from that version's OWN `stylePackId` field, never the spec's embedded `style_pack_id`, so omitting it would have silently reset the panel to `DEFAULT_PACK_ID` on every regenerate, discarding a prior PANL-01 pack choice.
 - 2026-07-11 (52-01): Overlay lives under `shared.panelOverlays.{panelId}` (never `panels.{panelId}`) — `toCanvasStoreSeed` only rehydrates the `panels`/`shared` keys on reload, so a new top-level key would persist but not rehydrate.
 - 2026-07-11 (52-01): `isStylePackId()` narrowing helper added — `packages/genui/schema`'s `StylePackIdSchema` is deliberately type-annotated as `z.ZodEnum<[string, ...string[]]>` so the schema module never depends on the theme module's literal types, which meant `SpecRootSchema`'s inferred `style_pack_id` was plain `string`, not the theme module's `StylePackId` literal union `resolveActivePanel` needed to return; re-validated against the SAME `STYLE_PACK_IDS` source array rather than an unsafe cast.
 - 2026-07-11 (52-01): `INITIAL_VERSION_SENTINEL` kept as a plain exported string constant, not a 4th `PanelVersionSchema.generatedBy` enum value — the base spec is never itself a stored version; Plan 02/03's history UI consumes the sentinel purely for the oldest-row display label.
@@ -3527,6 +3573,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 51 P07 | 40min | 3 tasks | 1 files |
 | Phase 52 P01 | 20min | 3 tasks | 7 files |
 | Phase 52 P02 | 28min | 3 tasks | 10 files |
+| Phase 52 P04 | 20min | 2 tasks | 7 files |
 
 ## Operator Next Steps
 
