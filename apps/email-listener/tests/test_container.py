@@ -302,3 +302,26 @@ class TestSourceCaptureDispatchWiring:
         # Additive, not a regression: Phase 40's wiring must stay intact.
         assert "knowledge_edge_tier_promotion" in dispatch
         assert "entity_merge_confirm" in dispatch
+
+
+class TestClusterContextWiring:
+    """T-54-05 container guard: RunChatTurn's thread+cluster context collaborators are REAL (CLUS-02/CLUS-06).
+
+    Mirrors the exposure-gate classes' resolve-and-inspect pattern —
+    email_repository/knowledge_graph have no code-gated flag (the feature is
+    entirely opt-in on a per-conversation thread_id, not a settings toggle);
+    this class just proves both read collaborators the gathering pipeline
+    needs are actually wired, not left at their additive None default.
+    """
+
+    def test_run_chat_turn_resolves_with_email_repository_and_knowledge_graph_wired(self) -> None:
+        with _patched_container():
+            container = create_container()
+            run_chat_turn = asyncio.run(container.get(RunChatTurn))
+
+        assert run_chat_turn._email_repository is not None
+        assert isinstance(run_chat_turn._email_repository, SupabaseEmailRepository)
+        # knowledge_graph is REUSED from Phase 40-01's confirm-action wiring
+        # (same instance, no new provider) — still assert it is not None,
+        # since a regression there would silently drop captured-source reads.
+        assert run_chat_turn._knowledge_graph is not None

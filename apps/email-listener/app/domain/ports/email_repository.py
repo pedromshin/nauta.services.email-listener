@@ -39,6 +39,17 @@ class EmailRepository(Protocol):
         """
         ...
 
+    async def list_by_thread_id(self, *, importer_id: str, thread_id: str, limit: int, offset: int = 0) -> list[Email]:
+        """Return a thread's member emails, scoped to importer_id, newest first (Phase 54-05, CLUS-02).
+
+        A thread_id from a foreign importer resolves to [] — never a
+        cross-tenant leak (T-54-05-02). Bounded by limit; callers needing a
+        token-budget-bounded body must further truncate the returned
+        emails' body_text themselves (this port makes no truncation
+        decisions).
+        """
+        ...
+
     async def update_parse_status(self, email_id: str, status: str, error: str | None) -> None:
         """Update the parse_status and parse_error fields for an email."""
         ...

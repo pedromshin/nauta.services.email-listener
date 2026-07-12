@@ -9,12 +9,13 @@ wrapped in strip_nul, table().upsert/insert/update().execute() call shapes.
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from typing import Any, cast
 
 from supabase import Client
 
 from app.domain.ports.knowledge_graph_repository import (
+    DEFAULT_CAPTURED_SOURCES_LIMIT,
     DEFAULT_EXPAND_NODE_BUDGET,
     DEFAULT_SEARCH_LIMIT,
     MAX_EXPAND_DEPTH,
@@ -23,6 +24,14 @@ from app.domain.ports.knowledge_graph_repository import (
 from app.infrastructure.supabase.sanitize import strip_nul
 
 logger = logging.getLogger(__name__)
+
+# Captured-source literal contract (Phase 54-03's SourceCaptureHandler writes
+# these exact literals; Phase 54-02's WebSearchExecutor establishes the
+# "SHARED CONTRACT" note this mirrors) -- redeclared locally per this file's
+# self-contained-repo convention (see module docstring above).
+_CAPTURED_SOURCE_SOURCE = "web_search_capture"
+_CAPTURED_SOURCE_SCOPE_REF_TYPE = "web_source"
+_CAPTURED_SOURCE_TARGET_REF_TYPE = "chat_conversation"
 
 # ---------------------------------------------------------------------------
 # RRF helpers (pure functions -- testable in isolation). Copied verbatim from
@@ -402,6 +411,55 @@ class SupabaseKnowledgeGraphRepository:
                 extra={"importer_id": importer_id},
             )
             return []
+
+    async def list_captured_sources_for_conversations(
+        self,
+        *,
+        importer_id: str,
+        conversation_ids: Sequence[str],
+        limit: int = DEFAULT_CAPTURED_SOURCES_LIMIT,
+    ) -> list[dict[str, object]]:
+        """Resolve captured-source knowledge_nodes via their chat_conversation edges.
+
+        Two-step read (edges -> nodes), scoped to importer_id on the node
+        side (defense-in-depth, T-54-05-02). Never raises -- degrades to []
+        on any read failure (fail-open, mirrors _vector_search_query /
+        _trgm_search_query's existing posture in this same file).
+        """
+        ids = [cid for cid in conversation_ids if cid]
+        if not ids:
+            return []
+        try:
+            edges_result = (
+                self._client.table("knowledge_node_edges")
+                .select("source_node_id")
+                .eq("target_ref_type", _CAPTURED_SOURCE_TARGET_REF_TYPE)
+                .in_("target_ref_id", ids)
+                .eq("is_active", True)
+                .execute()
+            )
+            edge_rows = cast("list[dict[str, Any]]", edges_result.data or [])
+            node_ids = list({str(row["source_node_id"]) for row in edge_rows if row.get("source_node_id")})
+            if not node_ids:
+                return []
+            nodes_result = (
+                self._client.table("knowledge_nodes")
+                .select("id, title, content")
+                .in_("id", node_ids)
+                .eq("importer_id", importer_id)
+                .eq("source", _CAPTURED_SOURCE_SOURCE)
+                .eq("scope_ref_type", _CAPTURED_SOURCE_SCOPE_REF_TYPE)
+                .eq("is_active", True)
+                .execute()
+            )
+        except Exception:
+            logger.exception(
+                "SupabaseKnowledgeGraphRepository: captured-sources read failed -- returning empty",
+                extra={"importer_id": importer_id},
+            )
+            return []
+        rows = cast("list[dict[str, Any]]", nodes_result.data or [])
+        return [cast("dict[str, object]", row) for row in rows[:limit]]
 
     async def expand_neighbours(
         self,

@@ -8,7 +8,10 @@ layer must not import Supabase (verified by lint-imports rule).
 
 from __future__ import annotations
 
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 # Fork 5's top-8 default result count for search_nodes (Phase 37 -- TOOL-03/TOOL-04).
 DEFAULT_SEARCH_LIMIT = 8
@@ -18,6 +21,10 @@ DEFAULT_SEARCH_LIMIT = 8
 MIN_EXPAND_DEPTH = 1
 MAX_EXPAND_DEPTH = 2
 DEFAULT_EXPAND_NODE_BUDGET = 50
+
+# Phase 54-05 (CLUS-06): bounded default read count for captured-source
+# cluster-context lookups.
+DEFAULT_CAPTURED_SOURCES_LIMIT = 8
 
 
 class KnowledgeGraphRepository(Protocol):
@@ -148,6 +155,26 @@ class KnowledgeGraphRepository(Protocol):
         this port alone is not the final defense (defense-in-depth, mirrors
         the existing `list_injectable_edges` / `ToolExecutor.execute`
         docstring convention in this codebase).
+        """
+        ...
+
+    async def list_captured_sources_for_conversations(
+        self,
+        *,
+        importer_id: str,
+        conversation_ids: Sequence[str],
+        limit: int = DEFAULT_CAPTURED_SOURCES_LIMIT,
+    ) -> list[dict[str, object]]:
+        """Return captured web-source nodes attached to any of conversation_ids (Phase 54-05, CLUS-06).
+
+        A "captured source" is a knowledge_nodes row written by
+        SourceCaptureHandler (Phase 54-03): source='web_search_capture',
+        scope_ref_type='web_source'. Resolved via the active
+        knowledge_node_edges rows whose target_ref_type='chat_conversation'
+        AND target_ref_id IN conversation_ids, joined back to their source
+        knowledge_nodes row — scoped to importer_id (defense-in-depth
+        against cross-tenant bleed, T-54-05-02). Bounded by limit. Never
+        raises (fail-open) — degrades to [] on any read failure.
         """
         ...
 

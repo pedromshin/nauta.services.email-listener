@@ -792,6 +792,14 @@ def _provide_run_chat_turn(
     for BOTH the DuckDuckGoSearchProvider's search step and
     `fetch_page_via_httpx`'s page-fetch step — no second httpx client is
     created.
+
+    Phase 54-05 (CLUS-02/CLUS-06): `email_repo` (already a factory parameter
+    for `search_emails_executor` above) is ALSO threaded into RunChatTurn's
+    additive `email_repository` collaborator — the bounded, quarantined
+    thread+cluster context injection's one new read dependency. No new
+    provider/instance is created; `knowledge_graph=knowledge_repo` (already
+    wired for Phase 40-01's confirm-action re-read) doubles as the
+    captured-source read collaborator too.
     """
     settings = get_settings()
     resolution_repo = SupabaseEntityResolutionRepository(client=client)
@@ -851,6 +859,10 @@ def _provide_run_chat_turn(
             ),
             **({WEB_SEARCH_TOOL_NAME: build_web_search_tool()} if settings.WEB_SEARCH_TOOL_ENABLED else {}),
         },
+        # Phase 54-05 (CLUS-02/CLUS-06): reuses the SAME `email_repo` instance
+        # already built above for search_emails_executor -- the thread+cluster
+        # context gathering step's one new read collaborator.
+        email_repository=email_repo,
     )
 
 

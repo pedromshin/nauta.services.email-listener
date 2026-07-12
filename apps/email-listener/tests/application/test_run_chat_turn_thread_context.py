@@ -118,7 +118,9 @@ class FakeChatRunRepository:
         self._next_run_id += 1
         run_id = f"run-{self._next_run_id}"
         self._seq_by_run[run_id] = 0
-        return ChatRun(id=run_id, conversation_id=conversation_id, agent_id=agent_id, model_id=model_id, status="running")
+        return ChatRun(
+            id=run_id, conversation_id=conversation_id, agent_id=agent_id, model_id=model_id, status="running"
+        )
 
     async def append_event(self, *, run_id: str, event_type: str, data: dict[str, Any]) -> ChatRunEvent:
         seq = self._seq_by_run.get(run_id, 0)
@@ -252,7 +254,9 @@ class _FakeRouter:
         return self._provider
 
 
-def _make_email(*, thread_id: str, sender_name: str, sender_address: str, subject: str, body_text: str, minute: int) -> Email:
+def _make_email(
+    *, thread_id: str, sender_name: str, sender_address: str, subject: str, body_text: str, minute: int
+) -> Email:
     return Email(
         id=f"email-{minute}",
         importer_id=_IMPORTER_ID,
@@ -374,8 +378,7 @@ async def test_get_thread_id_failure_skips_injection_never_raises() -> None:
     use_case = _make_use_case(provider=provider, conversations=conversations, email_repository=email_repo)
 
     events = [
-        event
-        async for event in use_case.run(conversation_id=_CONVERSATION_ID, user_text="Hi", model_id=_TEST_MODEL.id)
+        event async for event in use_case.run(conversation_id=_CONVERSATION_ID, user_text="Hi", model_id=_TEST_MODEL.id)
     ]
 
     assert events[-1].type == "completed"
@@ -392,8 +395,7 @@ async def test_conversations_collaborator_missing_get_thread_id_skips_injection_
     use_case = _make_use_case(provider=provider, conversations=conversations, email_repository=email_repo)
 
     events = [
-        event
-        async for event in use_case.run(conversation_id=_CONVERSATION_ID, user_text="Hi", model_id=_TEST_MODEL.id)
+        event async for event in use_case.run(conversation_id=_CONVERSATION_ID, user_text="Hi", model_id=_TEST_MODEL.id)
     ]
 
     assert events[-1].type == "completed"

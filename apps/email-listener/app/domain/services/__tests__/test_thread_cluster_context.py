@@ -142,7 +142,10 @@ def test_thread_block_bounded_by_budget_under_oversized_input() -> None:
     budget = 500
 
     block = build_thread_context_block(
-        subject="Huge thread", participants=[f"p{i}@example.com" for i in range(50)], recent_bodies=huge_bodies, budget=budget
+        subject="Huge thread",
+        participants=[f"p{i}@example.com" for i in range(50)],
+        recent_bodies=huge_bodies,
+        budget=budget,
     )
 
     assert len(block) <= budget
@@ -150,18 +153,16 @@ def test_thread_block_bounded_by_budget_under_oversized_input() -> None:
 
 @pytest.mark.unit
 def test_thread_block_deterministic() -> None:
-    kwargs = {
-        "subject": "Determinism check",
-        "participants": ["a@example.com", "b@example.com"],
-        "recent_bodies": [
-            ThreadMessageBody(
-                sender_name="A", sender_address="a@example.com", received_at="2026-07-01T10:00:00Z", body_text="hello"
-            )
-        ],
-    }
+    subject = "Determinism check"
+    participants = ["a@example.com", "b@example.com"]
+    recent_bodies = [
+        ThreadMessageBody(
+            sender_name="A", sender_address="a@example.com", received_at="2026-07-01T10:00:00Z", body_text="hello"
+        )
+    ]
 
-    first = build_thread_context_block(**kwargs)
-    second = build_thread_context_block(**kwargs)
+    first = build_thread_context_block(subject=subject, participants=participants, recent_bodies=recent_bodies)
+    second = build_thread_context_block(subject=subject, participants=participants, recent_bodies=recent_bodies)
 
     assert first == second
 
@@ -201,9 +202,7 @@ def test_cluster_block_summary_kept_when_budget_generous_dropped_when_tight() ->
         sibling_summaries=[sibling], captured_sources=[], panel_titles=[], budget=2000
     )
     # 200 chars fits the header/footer/title line but not the extra summary line.
-    tight = build_cluster_context_block(
-        sibling_summaries=[sibling], captured_sources=[], panel_titles=[], budget=200
-    )
+    tight = build_cluster_context_block(sibling_summaries=[sibling], captured_sources=[], panel_titles=[], budget=200)
 
     assert "An extended summary of the related chat." in generous
     assert "Short title" in tight
@@ -306,21 +305,33 @@ def test_assemble_bounded_by_budget_under_oversized_combined_input() -> None:
 
 @pytest.mark.unit
 def test_assemble_deterministic() -> None:
-    kwargs = {
-        "thread_subject": "Subj",
-        "thread_participants": ["a@example.com"],
-        "thread_recent_bodies": [
-            ThreadMessageBody(
-                sender_name="A", sender_address="a@example.com", received_at="2026-07-01T10:00:00Z", body_text="hi"
-            )
-        ],
-        "sibling_summaries": [SiblingConversationSummary(title="Sibling chat")],
-        "captured_sources": [CapturedSourceRef(title="Source", url="https://example.com")],
-        "panel_titles": ["Panel A"],
-    }
+    thread_subject = "Subj"
+    thread_participants = ["a@example.com"]
+    thread_recent_bodies = [
+        ThreadMessageBody(
+            sender_name="A", sender_address="a@example.com", received_at="2026-07-01T10:00:00Z", body_text="hi"
+        )
+    ]
+    sibling_summaries = [SiblingConversationSummary(title="Sibling chat")]
+    captured_sources = [CapturedSourceRef(title="Source", url="https://example.com")]
+    panel_titles = ["Panel A"]
 
-    first = assemble_cluster_context(**kwargs)
-    second = assemble_cluster_context(**kwargs)
+    first = assemble_cluster_context(
+        thread_subject=thread_subject,
+        thread_participants=thread_participants,
+        thread_recent_bodies=thread_recent_bodies,
+        sibling_summaries=sibling_summaries,
+        captured_sources=captured_sources,
+        panel_titles=panel_titles,
+    )
+    second = assemble_cluster_context(
+        thread_subject=thread_subject,
+        thread_participants=thread_participants,
+        thread_recent_bodies=thread_recent_bodies,
+        sibling_summaries=sibling_summaries,
+        captured_sources=captured_sources,
+        panel_titles=panel_titles,
+    )
 
     assert first == second
 

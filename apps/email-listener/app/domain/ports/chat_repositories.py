@@ -197,3 +197,30 @@ class ChatConversationRepository(Protocol):
         this directly.
         """
         ...
+
+    async def get_thread_id(self, conversation_id: str) -> str | None:
+        """Return the linked thread id for conversation_id, or None (Phase 54-05, CLUS-02).
+
+        Feature-detects migration 0036 (chat_conversations.thread_id) —
+        returns None both when the column doesn't exist yet (0036 unapplied)
+        and when the conversation simply has no thread linked. Never raises
+        (fail-open, T-54-05-04) — a caller treats both cases identically:
+        skip cluster-context injection, run the turn unchanged.
+        """
+        ...
+
+    async def list_by_thread_id(
+        self,
+        *,
+        thread_id: str,
+        importer_id: str,
+        exclude_conversation_id: str | None = None,
+        limit: int = 8,
+    ) -> list[ChatConversation]:
+        """Return sibling conversations sharing thread_id, scoped to importer_id (Phase 54-05, CLUS-06).
+
+        Bounded by limit; excludes exclude_conversation_id (the caller's own
+        conversation) when given. Fail-open — any read failure (including an
+        absent thread_id column) returns [] rather than raising.
+        """
+        ...

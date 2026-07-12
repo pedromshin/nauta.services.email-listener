@@ -121,6 +121,19 @@ class SupabaseEmailRepository:
         )
         return [_from_row(cast("dict[str, Any]", row)) for row in result.data]
 
+    async def list_by_thread_id(self, *, importer_id: str, thread_id: str, limit: int, offset: int = 0) -> list[Email]:
+        """Scoped to importer_id — a thread_id from a foreign importer resolves to [] (Phase 54-05, CLUS-02)."""
+        result = (
+            self._client.table("emails")
+            .select("*")
+            .eq("importer_id", importer_id)
+            .eq("thread_id", thread_id)
+            .order("received_at", desc=True)
+            .range(offset, offset + limit - 1)
+            .execute()
+        )
+        return [_from_row(cast("dict[str, Any]", row)) for row in result.data]
+
     async def update_parse_status(self, email_id: str, status: str, error: str | None) -> None:
         (
             self._client.table("emails")
