@@ -101,6 +101,11 @@ _SYSTEM_PROMPT_TEXT = (
     "- Color-family override VALUES (primary/accent/secondary) MUST be an HSL "
     "channel triplet string, e.g. '220 14% 10%' — never a hex code, name, or "
     "rgb()/hsl() function wrapper.\n"
+    "- The 'radius' override VALUE MUST be a raw CSS length with a rem or px "
+    "unit, e.g. '0.75rem' or '9999px' — never a bare word like 'high' or "
+    "'large', and never a unitless number.\n"
+    "- The 'spacing-density' override VALUE MUST be a raw CSS length in rem, "
+    "e.g. '1.25rem' — never a bare word or a px/unitless value.\n"
     "- This is a ONE-SHOT decision: there is no follow-up turn to refine your "
     "answer, so commit to your best single choice."
 )
