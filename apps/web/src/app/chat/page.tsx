@@ -19,6 +19,7 @@ import { ConversationRail } from "./_components/conversation-rail";
 import { CostMeter } from "./_components/cost-meter";
 import { GeneratingIndicator, MessageList } from "./_components/message-list";
 import { ModelPicker } from "./_components/model-picker";
+import { ThreadClusterIndicator } from "./_components/thread-cluster-indicator";
 import { ChatCanvasIsland } from "./_canvas/chat-canvas-island";
 import {
   ChatCanvasViewToggle,
@@ -112,6 +113,10 @@ function ConversationView({
           {effectiveViewMode === "canvas" && (
             <SaveStatusIndicator status={canvasSaveStatus} />
           )}
+          {/* CLUS-02/CLUS-06 (54-06): ambient, additive-only — renders
+              nothing for the overwhelming majority of conversations that
+              aren't thread-linked (54-UI-SPEC.md Component 3). */}
+          <ThreadClusterIndicator conversationId={conversationId} />
           <CostMeter conversationId={conversationId} />
         </div>
       </div>

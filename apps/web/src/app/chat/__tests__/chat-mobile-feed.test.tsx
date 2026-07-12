@@ -68,6 +68,7 @@ const FAKE_UTILS = {
     getHistory: { invalidate: () => undefined },
     sessionCost: { invalidate: () => undefined },
     getWidgetInteractions: { invalidate: () => undefined },
+    clusterSummary: { invalidate: () => undefined },
   },
   knowledge: {
     byId: { invalidate: () => undefined },
@@ -111,6 +112,21 @@ vi.mock("~/trpc/react", () => ({
       setModel: { useMutation: () => ({ mutate: () => undefined }) },
       sessionCost: {
         useQuery: () => ({ data: { totalCostUsd: 0, breakdown: [] } }),
+      },
+      // CLUS-02/CLUS-06 (54-06): ThreadClusterIndicator is now unconditionally
+      // mounted in ConversationView's top bar — a null threadId keeps it
+      // additive-only (renders nothing), matching every conversation in this
+      // suite's fixtures (none are thread-linked).
+      getConversationThreadId: {
+        useQuery: () => ({ data: { threadId: null } }),
+      },
+      clusterSummary: {
+        useQuery: () => ({ data: undefined }),
+      },
+    },
+    emails: {
+      threadCard: {
+        useQuery: () => ({ data: undefined }),
       },
     },
   },

@@ -215,6 +215,12 @@ export function liveAnnouncementFor(state: StreamState): string {
  * elsewhere (T-51-07-B), so a bounded refetch on every turn settle is simpler
  * than threading a "was this a promotion?" flag through the stream-terminal
  * callback, and never produces unbounded fan-out.
+ *
+ * CLUS-02/CLUS-06 (54-06): also invalidates `chat.clusterSummary` — a
+ * widget-submit continuation turn that just confirmed a source_capture
+ * (Phase 54-03) wrote a fresh knowledge_node_edges row targeting this
+ * conversation; without this, `ThreadClusterIndicator`'s captured-source
+ * count would show stale data for up to its own staleTime after capture.
  */
 export interface ChatTerminalUtils {
   readonly chat: {
@@ -225,6 +231,9 @@ export interface ChatTerminalUtils {
       readonly invalidate: (input: { conversationId: string }) => void;
     };
     readonly getWidgetInteractions: {
+      readonly invalidate: (input: { conversationId: string }) => void;
+    };
+    readonly clusterSummary: {
       readonly invalidate: (input: { conversationId: string }) => void;
     };
   };
@@ -248,6 +257,12 @@ export function invalidateOnChatTerminal(
   // A widget-submit continuation turn just settled — the pending widget is
   // now `submitted` server-side (D-16); refetch so its locked state lands.
   void utils.chat.getWidgetInteractions.invalidate({ conversationId });
+  // CLUS-02/CLUS-06 (54-06): a just-confirmed source_capture (or a new
+  // sibling chat attach) may have changed this conversation's cluster
+  // counts — refresh ThreadClusterIndicator's popover data on every
+  // terminal turn (same "cheap staleTime-guarded query" posture as the
+  // knowledge.* invalidations below).
+  void utils.chat.clusterSummary.invalidate({ conversationId });
   // RSKN-07: extend the SAME BIND-02 invalidation contract knowledge-graph.tsx's
   // promoteEdge already applies to the /knowledge page's promote button —
   // a bound chat-canvas panel or knowledge-preview node shares the SAME

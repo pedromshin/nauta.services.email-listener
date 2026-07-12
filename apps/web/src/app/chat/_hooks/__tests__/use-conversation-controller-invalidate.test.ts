@@ -32,6 +32,7 @@ function makeUtils(): ChatTerminalUtils {
       getHistory: { invalidate: vi.fn() },
       sessionCost: { invalidate: vi.fn() },
       getWidgetInteractions: { invalidate: vi.fn() },
+      clusterSummary: { invalidate: vi.fn() },
     },
     knowledge: {
       byId: { invalidate: vi.fn() },
@@ -57,6 +58,11 @@ describe("invalidateOnChatTerminal (RSKN-07 — chat-driven promotion cache inva
     });
     expect(utils.chat.getWidgetInteractions.invalidate).toHaveBeenCalledTimes(1);
     expect(utils.chat.getWidgetInteractions.invalidate).toHaveBeenCalledWith({
+      conversationId: CONVERSATION_ID,
+    });
+    // CLUS-02/CLUS-06 (54-06): ThreadClusterIndicator's counts refresh too.
+    expect(utils.chat.clusterSummary.invalidate).toHaveBeenCalledTimes(1);
+    expect(utils.chat.clusterSummary.invalidate).toHaveBeenCalledWith({
       conversationId: CONVERSATION_ID,
     });
 
