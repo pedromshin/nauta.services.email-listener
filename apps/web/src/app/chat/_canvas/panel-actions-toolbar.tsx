@@ -83,7 +83,7 @@ export function PanelActionsToolbar({
     <div
       role="toolbar"
       aria-label="Panel actions"
-      className="flex h-8 shrink-0 items-center justify-between gap-1 border-b border-border/60 bg-background px-2"
+      className="flex h-8 shrink-0 items-center justify-between gap-1 border-b border-border/60 bg-background px-2 pointer-coarse:h-11"
     >
       <PackSwitcher
         panelId={panelId}

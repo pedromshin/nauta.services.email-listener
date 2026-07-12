@@ -52,7 +52,7 @@ export interface PackSwitcherProps {
 }
 
 const TRIGGER_CLASS =
-  "h-6 w-28 shrink-0 gap-1 rounded-md border-none bg-transparent px-1.5 text-xs font-normal text-muted-foreground shadow-none hover:bg-accent hover:text-accent-foreground focus:ring-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-40";
+  "h-6 w-28 shrink-0 gap-1 rounded-md border-none bg-transparent px-1.5 text-xs font-normal text-muted-foreground shadow-none hover:bg-accent hover:text-accent-foreground focus:ring-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:cursor-not-allowed disabled:opacity-40 pointer-coarse:h-11";
 
 export function PackSwitcher({
   panelId,
