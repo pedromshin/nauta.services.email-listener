@@ -53,7 +53,7 @@ completes before any Band 2/3 work starts.
 
 - [ ] **CLUS-01**: User can place an email-thread card on the `/chat` canvas as a first-class node type (versioned registry entry), showing the thread's real subject/participants/summary
 - [ ] **CLUS-02**: User can attach a chat to an email thread — the conversation is linked to the thread and the agent's answers draw on that thread's content (thread → conversation linkage)
-- [ ] **CLUS-03**: The agent can search the web mid-turn via a `web_search` ToolExecutor behind the same port, allowlist, envelope-quarantine, and adversarial-fixture discipline as the v1.6 tools (exposure code-gated on the suite passing)
+- [x] **CLUS-03**: The agent can search the web mid-turn via a `web_search` ToolExecutor behind the same port, allowlist, envelope-quarantine, and adversarial-fixture discipline as the v1.6 tools (exposure code-gated on the suite passing)
 - [ ] **CLUS-04**: Tool results (URLs/pages) can be captured as INFERRED knowledge nodes attached to the thread/chat cluster — suggest-only, provenance retained
 - [ ] **CLUS-05**: Cluster knowledge is promotable to the global graph through the existing suggest-only promotion gate (confirm-action widgets; supersede-never-mutate)
 - [ ] **CLUS-06**: Cluster context accumulates — artifacts from earlier chats in the cluster (genui panels, captured sources) are available as context to subsequent chats attached to the same thread
@@ -110,7 +110,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MOBL-02 | Phase 53 — Mobile-Responsive Answer | Complete |
 | CLUS-01 | Phase 54 — Email-Cluster Workflow (E3) | Pending |
 | CLUS-02 | Phase 54 — Email-Cluster Workflow (E3) | Pending |
-| CLUS-03 | Phase 54 — Email-Cluster Workflow (E3) | Pending |
+| CLUS-03 | Phase 54 — Email-Cluster Workflow (E3) | Complete |
 | CLUS-04 | Phase 54 — Email-Cluster Workflow (E3) | Pending |
 | CLUS-05 | Phase 54 — Email-Cluster Workflow (E3) | Pending |
 | CLUS-06 | Phase 54 — Email-Cluster Workflow (E3) | Pending |

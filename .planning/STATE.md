@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Cloud Workspace
-status: "54-01 executed — Task 1: migration 0036 (chat_conversations.thread_id, additive/nullable/ON DELETE SET NULL) generated offline via drizzle-kit (Docker down, but `generate` needs no live DB) — journal/snapshot chain verified consistent, applied to NO environment. Task 2 (TDD): new `_column-detect.ts` (`tableColumnExists`, cached per-process) gates `chat.attachConversationToThread`/`getConversationThreadId` + createConversation's new optional `threadId` — degrades cleanly (never throws) both when 0036 is unapplied and on a live 42703. Task 3 (TDD): `emails.threadCard` (pure `deriveThreadCard` + ownership-scoped procedure) returns the real subject/deduped-participants/latest-snippet projection for the EmailThreadNode canvas card. 9+8=17 new tests green; full api-client suite 34 files/398 tests green; packages/db + packages/api-client tsc --noEmit clean. One Rule-1 fix: plan's stated journal idx (35) collided with the already-assigned 0035 entry — corrected to the actual idx 36. CLUS-01/CLUS-02 intentionally left Pending in REQUIREMENTS.md (backend seam only; 54-04/54-05 deliver the user-facing halves). See Phase 54 Plan 01 History below and `54-01-SUMMARY.md` for full detail."
-last_updated: "2026-07-12T09:33:00.000Z"
-last_activity: 2026-07-12 -- Phase 54-01 executed (migration 0036 authored-unapplied + attach/threadId tRPC seam + emails.threadCard — see 54-01-SUMMARY.md; Phase 54 now 1/7 plans complete)
+status: 54-02 executed — web_search ToolExecutor (SearchProvider port + double pre/post-DNS SSRF guard + keyless DuckDuckGoSearchProvider + 10-fixture adversarial injection suite + code-gated exposure, flipped True this run). CLUS-03 complete. See Phase 54 Plan 02 History below and `54-02-SUMMARY.md` for full detail.
+last_updated: "2026-07-12T10:35:00.000Z"
+last_activity: 2026-07-12 -- Phase 54-02 executed (web_search ToolExecutor: SSRF guard + DuckDuckGo provider + adversarial suite + code-gated exposure flipped True — see 54-02-SUMMARY.md; Phase 54 now 2/7 plans complete)
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 37
-  completed_plans: 31
-  percent: 84
+  completed_plans: 32
+  percent: 86
 ---
 
 # State
@@ -30,9 +30,56 @@ console, SES/DNS, Supabase project-id decision) are in-phase checkpoint tasks in
 ## Current Position
 
 Phase: 54 (Email-Cluster Workflow E3) — 54-01 (Migration 0036 + thread<->conversation linkage tRPC seam) EXECUTED this session, Phase 54's FIRST plan (Wave 1, `depends_on: []`, `requirements: [CLUS-02, CLUS-01]`). Task 1 authored migration 0036 (`chat_conversations.thread_id uuid REFERENCES threads(id) ON DELETE SET NULL` + index) via `npx dotenv -e ../../.env.local -- drizzle-kit generate` — Docker/WSL is down tonight, but `drizzle-kit generate` only diffs local schema.ts against the last snapshot and needs no live DB connection, so it ran fully offline and produced a migration byte-consistent with 0035's own `emails.thread_id` precedent (3 statements: ADD COLUMN, ADD CONSTRAINT, CREATE INDEX), a correctly prevId-chained `meta/0036_snapshot.json`, and an appended `meta/_journal.json` entry — APPLIED TO NO ENVIRONMENT (morning §H applies it local->staging->prod). Task 2 (TDD RED->GREEN): new `packages/api-client/src/router/_column-detect.ts` exports `tableColumnExists(db, table, column)` — an `information_schema.columns` probe cached per-process, fail-closed to `false` on ANY error (including its own probe failing) — the single feature-detection point later plans reuse. New `chat/thread-link.ts` exports `chatThreadLinkProcedures`: `attachConversationToThread` (ownership-gated via `assertConversationOwnership`, returns `{attached:false,reason:"linkage_unavailable"}` when the column is absent OR a live 42703 fires from the UPDATE itself — two independent degrade layers, both unit-tested) and `getConversationThreadId` (same degrade posture, `{threadId:null}` when unset or unavailable). `createConversation` (conversations.ts) gained an optional `threadId` input, persisted only when supplied AND the column exists (conditionally spread into the insert so an absent column is never referenced). Registered in `chat/index.ts`. Task 3 (TDD RED->GREEN): new `emails/thread-card.ts` exports pure `deriveThreadCard` (latest-member subject/snippet/id by `(receivedAt,id)` tie-break, deduped "+{n} more" participants capped at 3 reusing the 54-UI-SPEC Component-1 idiom, null on empty rows) + `emailThreadCardProcedures.threadCard` (`userOwnedImporterIds`-scoped, threadId AND importer both required in the WHERE so a foreign threadId yields null not a leak, `MAX_SCAN_ROWS`-bounded, `THREAD_SNIPPET_CHARS`-truncated snippet — both constants reused verbatim from `list-threads.ts`). Registered in `emails/index.ts`. All 5 tasks/sub-steps committed atomically (1 migration commit + RED/GREEN pairs for Tasks 2/3); 17 new tests green (9 thread-link + 8 thread-card); full `packages/api-client` suite reconfirmed green (34 files/398 tests, up from 33/390); `packages/db` suite green (21 tests, unaffected); `tsc --noEmit` clean in both packages. One Rule-1 auto-fix: the plan's `<interfaces>` section stated the new journal entry should be "idx 35", but the live `_journal.json` already had idx 35 assigned to `0035_threads_forwarding` — corrected to the actual next-available idx 36 (confirmed by reading the file before editing; matches what `drizzle-kit generate` itself computed). **CLUS-01/CLUS-02 intentionally left Pending in REQUIREMENTS.md** — this plan ships only the backend linkage seam; the actual user-facing deliverables are 54-04 (`EmailThreadNode` canvas card, CLUS-01) and 54-05 (turn-time cluster context injection, CLUS-02), mirroring the established multi-plan-per-requirement precedent (MOBL-01 stayed open through 53-01..53-05, closed only at the final contributing plan 53-06). `@polytoken/api-client`'s `dist/` was NOT rebuilt this plan — no `apps/web` consumer of the new procedures exists yet (that lands with 54-04/54-05); flagging the known dist-rebuild gotcha for whichever plan first imports these from `apps/web`. Phase 53 (Mobile-Responsive Answer) remains 6/6 PLANS COMPLETE from the prior session (MOBL-01/MOBL-02 both Complete) — see Phase 53 Plan 06 History below.
-Plan: Phase 54 — 1 of 7 have a SUMMARY.md (54-01). Phase 53 — 6 of 6 have a SUMMARY.md (53-01..53-06) — PHASE COMPLETE. Phase 52 — 6 of 6 have a SUMMARY.md (52-01..52-06). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
-Status: 54-01 executed — migration 0036 authored-unapplied (offline drizzle-kit generate) + `tableColumnExists` feature-detection gate + ownership-scoped `chat.attachConversationToThread`/`getConversationThreadId` + `emails.threadCard`. 17 new tests green, full api-client suite green (34/398), both packages' tsc clean. See Phase 54 Plan 01 History below and `54-01-SUMMARY.md` for full detail.
-Last activity: 2026-07-12 -- Phase 54-01 executed (migration 0036 authored-unapplied + attach/threadId tRPC seam + emails.threadCard — see 54-01-SUMMARY.md; Phase 54 now 1/7 plans complete)
+Plan: Phase 54 — 2 of 7 have a SUMMARY.md (54-01, 54-02). Phase 53 — 6 of 6 have a SUMMARY.md (53-01..53-06) — PHASE COMPLETE. Phase 52 — 6 of 6 have a SUMMARY.md (52-01..52-06). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
+Status: 54-02 executed — web_search ToolExecutor: SearchProvider port + pure url_safety.py SSRF guard (43 tests) + DuckDuckGoSearchProvider (keyless html.duckduckgo.com/html/ scrape via stdlib HTMLParser, verified live once) + WebSearchExecutor (double pre/post-DNS SSRF guard, bounded streaming fetch, HTML-to-text strip, running envelope-size budget, verified live end-to-end once) + 10-fixture adversarial injection suite (packages/genui/src/eval/web-search-injection-fixtures.json) + code-gated WEB_SEARCH_TOOL_ENABLED wired into container.py, flipped True this run because the suite passed. CLUS-03 marked Complete in REQUIREMENTS.md. Full repo pytest (no -m filter) green, 0 failures (6 expected credential-gated skips); ruff+mypy clean on app/; lint-imports 3/3 kept. See Phase 54 Plan 02 History below and `54-02-SUMMARY.md` for full detail.
+Last activity: 2026-07-12 -- Phase 54-02 executed (web_search ToolExecutor: SSRF guard + DuckDuckGo provider + adversarial suite + code-gated exposure flipped True — see 54-02-SUMMARY.md; Phase 54 now 2/7 plans complete)
+
+## Phase 54 -- Email-Cluster Workflow (E3) -- Plan 02 History -- web_search ToolExecutor (SearchProvider port + SSRF guard + DuckDuckGo adapter + adversarial fixtures + code-gated exposure)
+
+- **54-02 EXECUTED** (`7e517dc` feat, `450a605` test, `d39d58c` feat, `6e9c76d` test, `839b3eb` feat):
+  Built the `web_search` ToolExecutor behind the SAME port/allowlist/envelope-quarantine/
+  adversarial-fixture/code-gated-exposure discipline the v1.6 tools (Phases 36-38)
+  established, satisfying CLUS-03. Task 1: `SearchProvider` port (`SearchResult` DTO +
+  never-raise Protocol) + pure, stdlib-only `url_safety.py` (`is_public_https_url`,
+  `is_public_ip`, `SsrfRejected` -- rejects loopback/private/link-local/CGNAT/non-https,
+  ALL pre-DNS, zero network I/O in the domain layer; 43 test cases). Task 2 (TDD RED->GREEN):
+  `DuckDuckGoSearchProvider` scrapes the real keyless `html.duckduckgo.com/html/` endpoint
+  with a stdlib `html.parser.HTMLParser` (no new dependency), unwraps the
+  `//duckduckgo.com/l/?uddg=...` redirect wrapper to the real target URL, degrades to `[]`
+  on any error; `WebSearchExecutor` pipelines search -> SSRF guard applied TWICE (pre-DNS
+  literal-IP check, then post-DNS re-check requiring EVERY `socket.getaddrinfo`-resolved
+  address to be public -- DNS-rebinding-safe) -> bounded streaming fetch
+  (`fetch_page_via_httpx`, size-capped) -> stdlib HTML-to-text strip -> `truncate_field` per
+  field -> JSON quarantine envelope -> `cap_tool_output`; never raises past `execute()`.
+  Task 3 (TDD RED->GREEN): 10-fixture adversarial injection suite
+  (`packages/genui/src/eval/web-search-injection-fixtures.json`, 5 categories x 2:
+  instruction-override/tool-call-injection/data-exfil/role-confusion/embedded-system-prompt)
+  proves every fixture's `[CANARY:...]` payload stays confined to the `snippet` DATA field,
+  never elevates to a new structural key or a `citations` entry, and
+  `validate_tool_envelope` still passes; `WEB_SEARCH_TOOL_ENABLED` added to settings.py
+  (mirrors `SEARCH_KNOWLEDGE_TOOL_ENABLED`'s code-gated-exposure convention) and wired into
+  `container.py`'s `_provide_run_chat_turn` via the same conditional-`**`-unpacking pattern
+  into BOTH `tool_executors` and `server_tool_defs`, reusing the existing shared
+  `httpx.AsyncClient` singleton; flipped to `True` in this same run because the adversarial
+  suite passed. One real (non-mocked) DuckDuckGo search + one real end-to-end executor round
+  (real search, real fetches, real envelope-gate pass) verified live against the network per
+  the overnight-mode allowance -- all other tests use a mocked httpx client, no live network.
+  Two Rule-1 auto-fixes: (1) a running envelope-size budget was added after the live smoke
+  test revealed the naive whole-envelope `cap_tool_output` slice could cut mid-JSON on
+  realistic 5-result output (web_search truncates 2 free-text fields/result vs the other 3
+  executors' 1) -- now stops appending results before the budget would be exceeded, with a
+  regression test proving 5 near-max-length results still serialize to valid, gate-passing
+  JSON; (2) two pre-existing regression tests hardcoding "exactly N tool executors"
+  (`test_tool_envelope_contract.py`, `test_run_chat_turn_real_tools_wiring.py`) updated for
+  the new 4th real executor. Full repo `pytest` (no `-m` filter) green: 0 failures, 6
+  expected credential-gated skips (Docker/AWS/live-Supabase, unrelated to this plan); ruff +
+  mypy clean on `app/`; lint-imports 3/3 contracts kept (domain stays stdlib-only). Repo-wide
+  coverage gate shows 66.65% (< 80%) -- a PRE-EXISTING environmental condition from Docker/WSL
+  being down this session (many unrelated Supabase-adapter files have 0%/low coverage), NOT
+  caused by this plan; this plan's own new files are well-covered in isolation
+  (`duckduckgo_search_provider.py` 94%, `web_search_executor.py` 81%) and the plan's own
+  targeted `<verification>` pytest command is fully green. See `54-02-SUMMARY.md` for full
+  detail.
 
 ## Phase 54 -- Email-Cluster Workflow (E3) -- Plan 01 History -- Migration 0036 + thread<->conversation linkage tRPC seam (attach + threadId reads + emails.threadCard)
 
