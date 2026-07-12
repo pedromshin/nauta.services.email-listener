@@ -92,9 +92,12 @@ Inherited unchanged (2-weight ceiling, `font-normal`/`font-semibold` only — lo
 | Micro / meta | 12px (`text-xs`) | 400 (`font-normal`) | `EmailThreadNode` header (thread subject), participants row, footer link/button labels, `ThreadClusterIndicator` trigger + popover body, `AddEmailThreadPopover` list rows, tool-round labels (inherited, unchanged) |
 | Popover heading | 12px (`text-xs`) | 600 (`font-semibold`) | "Add a thread" / "Linked thread" / "Cluster context" popover section headings — matches 52-UI-SPEC's exact popover-heading precedent |
 | Body (card summary) | 12px (`text-xs`) | 400 | `EmailThreadNode`'s summary text (`line-clamp-4`, `text-foreground` not muted — the card's primary readable content). Deliberately compact-register `text-xs`, not the app-wide 14px `Body` default — same precedent 52-UI-SPEC cites for its own popover copy: this is canvas node-chrome, a bounded 320px-wide card, not transcript/page prose. |
+| Body (popover subject emphasis) | 14px (`text-sm`) | 400 | Exactly ONE consumer this phase: `ThreadClusterIndicator`'s popover linked-thread subject line (Component 3). Deliberately one step above the surrounding `text-xs` meta copy so the subject — the popover's one piece of real content — reads as content, not chrome; matches 51-UI-SPEC's app-wide 14px Body role, so this is a reuse of the existing scale, not a new size. |
 
-No new typography role is introduced — every string above reuses one of the two existing
-sizes already governing sibling canvas-node chrome.
+No new typography size or weight is introduced — every string above reuses a size already in
+51-UI-SPEC's inherited scale. Line-height: all body/summary copy inherits each Tailwind size
+utility's own default leading (`text-xs` → 16px/1.33, `text-sm` → 20px/1.43), unchanged from
+Phase 48/51 — this phase sets no explicit `leading-*` class anywhere.
 
 ---
 
@@ -131,6 +134,10 @@ alongside `ChatNode`/`GenuiPanelNode`/`KnowledgePreviewNode`, registered in `nod
 `"email-thread"` (kebab-case, matching the sibling registry-key convention — see Judgment
 Calls #3 for the `email_thread` requirement-prose → `email-thread` registry-key mapping) and
 `CANVAS_NODE_DIMENSIONS["email-thread"] = { width: 320, height: 220 }`.
+
+**Primary visual anchor:** the summary text in the card body (`text-foreground`, the card's
+only non-muted copy) — the header (subject, muted) and footer (actions) are deliberately
+secondary, low-contrast chrome that never competes with the thread content itself.
 
 **`node.data` shape** (new `EmailThreadNodeDataSchema` in `node-data-schemas.ts`, mirroring
 `KnowledgePreviewNodeDataSchema`'s exact provenance-ref-only discipline — `.strict()`, never
@@ -193,7 +200,7 @@ success), rendered inside a `relative flex-1 flex-col gap-1 px-3 py-2` wrapper:
 **Success-state body markup:**
 
 ```
-<div className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+<div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
   <Users className="size-3 shrink-0" aria-hidden />
   <span className="truncate">{participantsSummary}</span>
 </div>
@@ -273,7 +280,7 @@ field to validate here):
           <CommandEmpty>No threads found.</CommandEmpty>
           {threads.map((t) => (
             <CommandItem key={t.threadId ?? t.key} value={t.subject ?? "Untitled thread"} onSelect={() => handleSelect(t)}>
-              <div className="flex min-w-0 flex-col gap-0.5">
+              <div className="flex min-w-0 flex-col gap-1">
                 <span className="truncate text-xs font-normal text-foreground">{t.subject ?? "Untitled thread"}</span>
                 <span className="truncate text-xs text-muted-foreground">
                   {t.messageCount} message{t.messageCount === 1 ? "" : "s"} · {formatRelativeTime(t.latestReceivedAt)}
