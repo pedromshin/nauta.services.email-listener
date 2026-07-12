@@ -75,12 +75,26 @@ const useQueriesMock = vi.fn((callback: (t: typeof FAKE_T) => unknown[]) => {
 // `api.genui.applyPanelEdit.useMutation()` — stubbed inert here since this
 // suite only exercises toolbar/theming wiring, not the edit-params flow
 // itself (covered by edit-params-control.test.tsx).
+//
+// 52-04-PLAN.md Task 1: RegenerateControl (also mounted for real now) calls
+// `api.chat.getHistory.useQuery()` + `api.genui.generate.useQuery()` —
+// stubbed inert here for the same reason (covered by
+// regenerate-control.test.tsx), mirroring the SAME deviation pattern
+// 52-03-SUMMARY.md documented for `applyPanelEdit` above.
 vi.mock("~/trpc/react", () => ({
   api: {
     useQueries: (cb: (t: typeof FAKE_T) => unknown[]) => useQueriesMock(cb),
     genui: {
       applyPanelEdit: {
         useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
+      generate: {
+        useQuery: () => ({ refetch: () => Promise.resolve({ data: undefined }) }),
+      },
+    },
+    chat: {
+      getHistory: {
+        useQuery: () => ({ data: [] }),
       },
     },
   },
