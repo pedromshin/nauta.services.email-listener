@@ -1117,6 +1117,23 @@ class RunChatTurn:
                     logger.warning("confirm_action_source_capture_lookup_failed", tool_id=tool_id)
                     history = []
                 source = _find_web_search_result(history, tool_use_id=tool_use_id, index=index)
+            if source is None:
+                # Models mistranscribe opaque tool ids (observed live
+                # 2026-07-12: 'toolu_01...' fabricated for the real
+                # 'toolu_bdrk_01...'). The id is only a lookup key — content
+                # is still re-read server-side, and the user still sees the
+                # exact url/title in the confirm widget before anything is
+                # written (suggest-only gate) — so fall back to resolving
+                # `index` against THIS turn's own web_search results
+                # (most recent first). Cross-conversation reads stay
+                # impossible; no same-turn search means still-unavailable.
+                source = _find_latest_web_search_result_by_index(cleared.parts, index=index)
+                if source is not None:
+                    logger.warning(
+                        "confirm_action_source_capture_id_fallback",
+                        tool_id=tool_id,
+                        suggestion_id=parsed["id"],
+                    )
 
         if source is None:
             logger.warning("confirm_action_source_capture_unavailable", tool_id=tool_id, suggestion_id=parsed["id"])
@@ -1794,6 +1811,27 @@ def _find_web_search_result(
         found = _find_web_search_result_in_parts(message.parts, tool_use_id=tool_use_id, index=index)
         if found is not None:
             return found
+    return None
+
+
+def _find_latest_web_search_result_by_index(
+    parts: Sequence[dict[str, Any]], *, index: int
+) -> dict[str, object] | None:
+    """Resolve `index` against the MOST RECENT web_search result in this turn's parts.
+
+    The exact-toolUseId fallback for model-mistranscribed ids (see
+    `_finalize_source_capture`) — scans in reverse emission order and returns
+    the first result set where `index` resolves. None when the turn ran no
+    web_search (fail-closed, same 'unavailable' surface as before).
+    """
+    for part in reversed(parts):
+        if part.get("type") == "tool_invocation_result" and part.get("toolName") == _WEB_SEARCH_TOOL_NAME:
+            tool_use_id = part.get("toolUseId")
+            if not isinstance(tool_use_id, str):
+                continue
+            found = _find_web_search_result_in_parts([part], tool_use_id=tool_use_id, index=index)
+            if found is not None:
+                return found
     return None
 
 

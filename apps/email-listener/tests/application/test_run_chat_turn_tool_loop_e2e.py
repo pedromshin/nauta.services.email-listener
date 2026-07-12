@@ -631,6 +631,78 @@ async def test_same_turn_source_capture_resolves_current_round_result() -> None:
 
 @pytest.mark.unit
 @pytest.mark.asyncio
+async def test_source_capture_with_mistranscribed_id_falls_back_to_this_turns_search() -> None:
+    """A hallucinated toolUseId must still resolve against THIS turn's own web_search result.
+
+    Live (2026-07-12): the model fabricated 'toolu_01...' for the real
+    'toolu_bdrk_01...' — models mistranscribe opaque ids. The id is only a lookup
+    key (content is re-read server-side; the user still confirms the exact
+    url/title), so the finalize falls back to index-resolution against the turn's
+    own results instead of collapsing into 'unavailable'.
+    """
+    provider = _MultiRoundFakeChatProvider(
+        rounds=[
+            [
+                ToolCallDelta(tool_name="web_search", id="toolu_bdrk_real", partial_json='{"query": "salaries"}'),
+                StreamEnd(stop_reason="tool_use"),
+            ],
+            [
+                ToolCallDelta(
+                    tool_name="emit_confirm_action",
+                    id="tool-ca",
+                    partial_json='{"suggestionRef": {"kind": "source_capture", "id": "toolu_fabricated:0"}}',
+                ),
+                StreamEnd(stop_reason="end_turn"),
+            ],
+        ]
+    )
+    use_case, fakes = _make_use_case(provider=provider, tool_executors={"web_search": _FakeWebSearchExecutor()})
+
+    async for _ in use_case.run(
+        conversation_id=_CONVERSATION_ID, user_text="search and capture", model_id=_TOOL_ROUND_MODEL.id
+    ):
+        pass
+
+    messages: FakeChatMessageRepository = fakes["messages"]
+    parts = next(m for m in messages.messages if m.role == "assistant").parts
+    widget_parts = [p for p in parts if p.get("type") == "interactive_widget"]
+    assert len(widget_parts) == 1, "the fallback must resolve the capture against this turn's own search"
+    assert "https://l.fyi/ai" in json.dumps(widget_parts[0]["declaration"])
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_source_capture_with_bad_id_and_no_search_stays_unavailable() -> None:
+    """The fallback is scoped: no web_search in the turn -> still the 'unavailable' text (fail-closed)."""
+    provider = _MultiRoundFakeChatProvider(
+        rounds=[
+            [
+                ToolCallDelta(
+                    tool_name="emit_confirm_action",
+                    id="tool-ca",
+                    partial_json='{"suggestionRef": {"kind": "source_capture", "id": "toolu_fabricated:0"}}',
+                ),
+                StreamEnd(stop_reason="end_turn"),
+            ]
+        ]
+    )
+    use_case, fakes = _make_use_case(provider=provider, tool_executors={"web_search": _FakeWebSearchExecutor()})
+
+    async for _ in use_case.run(
+        conversation_id=_CONVERSATION_ID, user_text="capture something", model_id=_TOOL_ROUND_MODEL.id
+    ):
+        pass
+
+    messages: FakeChatMessageRepository = fakes["messages"]
+    parts = next(m for m in messages.messages if m.role == "assistant").parts
+    assert not any(p.get("type") == "interactive_widget" for p in parts)
+    assert any(
+        p.get("type") == "text" and "no longer available" in p.get("text", "") for p in parts
+    ), "no same-turn search means the ref must stay unavailable"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
 async def test_final_round_offers_no_server_tools_and_carries_answer_nudge() -> None:
     """The last allowed stream must offer NO server tools and the last round's fed-back
     message must end with FINAL_ROUND_NUDGE_TEXT — so the model answers instead of
