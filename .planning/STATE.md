@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Cloud Workspace
-status: completed
-last_updated: "2026-07-12T06:28:00.000Z"
-last_activity: 2026-07-12 -- Phase 53-05 executed (/chat inline feed below md — canvas island never mounts, rail becomes overlay Sheet — see 53-05-SUMMARY.md; Phase 53 now 5/6 plans complete)
+status: "53-06 executed — Task 1: `filter-rail.tsx` exports `NODE_TYPE_ROWS`; new `knowledge-mobile-list.tsx` self-fetches `api.knowledge.graph.useQuery` and renders an `h-11` filter-chip bar + `min-h-16` node-list rows + empty states. Task 2: new `knowledge-surface.tsx` client wrapper branches on `useIsMobileViewport()` (below `md`: `KnowledgeMobileList`; at/above: unchanged `KnowledgeGraphIsland`); `knowledge/page.tsx` renders it instead of `KnowledgeGraphIsland` directly; `node-detail-pane.tsx`'s internal close X gains `hidden md:inline-flex` so the mobile Sheet shows exactly one close affordance. New `knowledge-mobile-list.test.tsx` (8 tests) green. Full web suite reconfirmed green (60 files/408 tests, up from 59/400); typecheck clean outside the pre-existing `app/dev/design/**` exclusion; palette-ban/token-contrast/token-registration gates green (10/10). Two auto-fixes (1 Rule 3 React-import gotcha, 1 Rule 1 own-test-bug fix — see `53-06-SUMMARY.md`). PHASE 53 NOW 6/6 PLANS COMPLETE — MOBL-01 marked Complete in REQUIREMENTS.md (both `/chat` and `/knowledge` halves done). See Phase 53 Plan 06 History below and `53-06-SUMMARY.md` for full detail."
+last_updated: "2026-07-12T07:35:00.000Z"
+last_activity: 2026-07-12 -- Phase 53-06 executed (/knowledge mobile list + full-width detail Sheet — graph island never mounts below md — see 53-06-SUMMARY.md; Phase 53 now 6/6 plans complete, MOBL-01 Complete)
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 30
-  completed_plans: 29
-  percent: 50
+  completed_plans: 30
+  percent: 67
 ---
 
 # State
@@ -29,10 +29,84 @@ console, SES/DNS, Supabase project-id decision) are in-phase checkpoint tasks in
 
 ## Current Position
 
-Phase: 53 (Mobile-Responsive Answer) — 53-05 (`/chat` inline feed below `md`) EXECUTED this session, Phase 53's fifth of 6 plans (Wave 2, `depends_on: [53-01]`). `ConversationView` (page.tsx) reads `useIsMobileViewport()` and derives an `effectiveViewMode` that is force-coerced to `"chat"` below `md` regardless of the persisted/forced `viewMode` — the `<ChatCanvasIsland>` branch (the `dynamic(ssr:false)` React-Flow island) is never reached, so its dynamic import is never triggered, and `ChatCanvasViewToggle` is conditionally UNMOUNTED (not CSS-hidden) so there is no user-facing way to request canvas mode on a phone. The persisted `chat:canvas-view:{id}` value is still read on mount but never overwritten while mobile-forced. `ConversationRail` becomes a left overlay `Sheet` (`side="left"`, default `w-3/4 sm:max-w-sm`) below `md`, closed by default via a NEW `mobileOpen`/`onMobileOpenChange` boolean lifted to `ChatPage` — the existing top-bar `size-11` rail-toggle button flips BOTH `railCollapsed` (desktop) and `mobileRailOpen` (mobile) on every click, avoiding a third `useIsMobileViewport()` read (53-UI-SPEC's "only 2 consumers" budget). Selecting a conversation from inside the mobile Sheet closes it. Desktop (`>=md`) behavior is byte-identical — the `Collapsible` tree is wrapped `hidden md:block`, internals untouched. Proven by a new 12-test `chat-mobile-feed.test.tsx` (island-never-mounted-even-with-stored-canvas-preference, toggle-absent, docked-feed-renders, storage-read-not-written, desktop-regression pair, Sheet-closed-by-default, toggle-opens-Sheet, select-closes-Sheet, plus 2 source-string assertions). One found-live deviation, auto-fixed: this suite is the FIRST vitest suite to mount `ChatPage`'s full render tree directly, exposing the same missing `import * as React from "react"` gotcha 53-03/53-04 already documented — fixed identically across 10 files. `MOBL-01` remains Pending in REQUIREMENTS.md — this plan closes `/chat`'s half; `/knowledge`'s mobile list + detail sheet (Component Inventory §3) is still outstanding in a separate, not-yet-executed plan. Phase 52 (Editable Genui Panels / Studio-on-Canvas) remains COMPLETE at the plan level (6/6 SUMMARY.md) — live-canvas confirmation for the whole phase remains queued to MORNING-CHECKLIST.md SS G (Docker/FastAPI/Bedrock not concurrently available). Phase 51 (Total UI Re-skin) remains carried as a known blocker: 51-01..51-06 done, 51-07 Task 1 done+green, Tasks 2/3 (E2E regression, screenshot re-capture) BLOCKED pending a session where `docker info` succeeds — see Phase 51 Plan 07 History below.
-Plan: Phase 53 — 5 of 6 have a SUMMARY.md (53-01, 53-02, 53-03, 53-04, 53-05). Phase 52 — 6 of 6 have a SUMMARY.md (52-01..52-06). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
-Status: 53-05 executed — Task 1: `page.tsx`'s `ConversationView` gates `ChatCanvasIsland`/`ChatCanvasViewToggle`/`SaveStatusIndicator` on `useIsMobileViewport()`-derived `effectiveViewMode`. Task 2: `conversation-rail.tsx` gains a `renderRailBody()`-shared mobile `Sheet` (closed by default, `mobileOpen`/`onMobileOpenChange` lifted to `ChatPage`), desktop `Collapsible` wrapped `hidden md:block`. New `chat-mobile-feed.test.tsx` (12 tests) green across 6 describe blocks. Full web suite reconfirmed green (59 files/400 tests, up from 58/388); typecheck clean outside the pre-existing `app/dev/design/**` exclusion; palette-ban/token-contrast/token-registration gates green. One Rule 3 auto-fix spanning 10 files (see Current Position paragraph above and `53-05-SUMMARY.md`). See Phase 53 Plan 05 History below and `53-05-SUMMARY.md` for full detail.
-Last activity: 2026-07-12 -- Phase 53-05 executed (/chat inline feed below md — canvas island never mounts, rail becomes overlay Sheet — see 53-05-SUMMARY.md; Phase 53 now 5/6 plans complete)
+Phase: 53 (Mobile-Responsive Answer) — 53-06 (`/knowledge` mobile list + full-width detail Sheet) EXECUTED this session, Phase 53's sixth and FINAL plan (Wave 2, `depends_on: [53-01]`). `KnowledgeSurface` (a new `"use client"` wrapper) reads `useIsMobileViewport()` and branches: below `md`, a self-fetching `KnowledgeMobileList` renders (`h-11` filter-chip bar reusing `filter-rail.tsx`'s now-exported `NODE_TYPE_ROWS` facet data + active recipe verbatim, `min-h-16` `InboxRow`-idiom node rows, filtered-to-zero/genuinely-empty/error states); at/above `md`, the unchanged `KnowledgeGraphIsland` (`dynamic(ssr:false)` React-Flow) renders exactly as before — its dynamic import is NEVER triggered on a phone, mirroring `/chat`'s 53-05 `ChatCanvasIsland` gating exactly. `knowledge/page.tsx` renders `<KnowledgeSurface />` instead of `<KnowledgeGraphIsland>` directly, staying a server component with `metadata` intact. Tapping a row opens the completely UNCHANGED `NodeDetailPane` inside a full-width right `Sheet` (`side="right"` `w-full sm:max-w-full p-0`); `NodeDetailPane`'s own internal close X gained `hidden md:inline-flex` so exactly ONE close affordance shows in the mobile Sheet (the Sheet's own corner X) while desktop keeps its own close unchanged. Proven by a new 8-test `knowledge-mobile-list.test.tsx` (graph-island-never-mounted, chips/rows render, filter-toggle changes visible rows, row-tap opens the Sheet with NodeDetailPane content, desktop-regression pair, 2 source-string assertions) — TDD RED confirmed live (the already-drafted `knowledge-surface.tsx` was temporarily relocated so the test's import genuinely failed before being restored for GREEN). Two found-live deviations, both auto-fixed: [Rule 3] `node-detail-pane.tsx` needed the same pre-existing, already-documented `import * as React from "react"` vitest classic-runtime gotcha (53-01/53-03/53-04/53-05) — this suite is the first to mount `NodeDetailPane` directly; [Rule 1] the plan's own new test had a false-positive assertion (checked for the literal phrase `"use client"` anywhere in `page.tsx`'s source, which legitimately appears inside a doc comment) — fixed to match only the file-scope directive. **`MOBL-01` is now marked Complete in REQUIREMENTS.md** (both `/chat` and `/knowledge` halves done) and **PHASE 53 IS NOW 6/6 PLANS COMPLETE** (53-01..53-06 all have a SUMMARY.md). Full web test suite reconfirmed green (60 files/408 tests, up from 59/400 at 53-05's close); typecheck clean outside the pre-existing `app/dev/design/**` exclusion; palette-ban/token-contrast/token-registration gates green (10/10 across the two dedicated gate files). Phase 52 (Editable Genui Panels / Studio-on-Canvas) remains COMPLETE at the plan level (6/6 SUMMARY.md) — live-canvas confirmation for the whole phase remains queued to MORNING-CHECKLIST.md §G (Docker/FastAPI/Bedrock not concurrently available). Phase 51 (Total UI Re-skin) remains carried as a known blocker: 51-01..51-06 done, 51-07 Task 1 done+green, Tasks 2/3 (E2E regression, screenshot re-capture) BLOCKED pending a session where `docker info` succeeds — see Phase 51 Plan 07 History below. Live 360/768/1024 confirmation for Phase 53's mobile surfaces (this plan included) remains DEFERRED to `.planning/phases/49-live-loop-gate-deploy-oauth-real-email/MORNING-CHECKLIST.md` §G per every Phase 53 plan's own `<verification>` block — not faked as passed.
+Plan: Phase 53 — 6 of 6 have a SUMMARY.md (53-01..53-06) — PHASE COMPLETE. Phase 52 — 6 of 6 have a SUMMARY.md (52-01..52-06). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
+Status: 53-06 executed — Task 1: `filter-rail.tsx` exports `NODE_TYPE_ROWS`; new `knowledge-mobile-list.tsx` self-fetches `api.knowledge.graph.useQuery`, renders `h-11` filter chips + `min-h-16` node rows + empty states + a full-width detail `Sheet`. Task 2 (TDD): new `knowledge-surface.tsx` branches on `useIsMobileViewport()`; `knowledge/page.tsx` renders it instead of `KnowledgeGraphIsland` directly; `node-detail-pane.tsx`'s internal close X gains `hidden md:inline-flex`. New `knowledge-mobile-list.test.tsx` (8 tests) green, RED confirmed live. Full web suite reconfirmed green (60 files/408 tests, up from 59/400); typecheck clean outside the pre-existing `app/dev/design/**` exclusion; palette-ban/token-contrast/token-registration gates green. Two auto-fixes (1 Rule 3 React-import gotcha, 1 Rule 1 own-test-bug fix — see Current Position paragraph above and `53-06-SUMMARY.md`). See Phase 53 Plan 06 History below and `53-06-SUMMARY.md` for full detail.
+Last activity: 2026-07-12 -- Phase 53-06 executed (/knowledge mobile list + full-width detail Sheet — graph island never mounts below md — see 53-06-SUMMARY.md; Phase 53 now 6/6 plans complete, MOBL-01 Complete)
+
+## Phase 53 -- Mobile-Responsive Answer -- Plan 06 History -- /knowledge mobile list + full-width detail Sheet (PHASE COMPLETE)
+
+- **53-06 EXECUTED** (`0ddfcb8` feat, `51fa0fd` feat):
+  `filter-rail.tsx`'s `NODE_TYPE_ROWS` changed from module-private to
+  `export const` (zero other changes) — the single source of node-type
+  facet data both desktop `FilterRail` and the new mobile list consume.
+  New `knowledge-mobile-list.tsx`: self-fetching `KnowledgeMobileList`
+  calls `api.knowledge.graph.useQuery` itself (the desktop `KnowledgeGraph`
+  only mounts at `>=md`, so there is no shared query to lift), deriving
+  `includeInstances`/`includeEmails` from local `visibleTypes` state
+  exactly as `knowledge-graph.tsx` does (minus the desktop-only
+  `showInstances` override switch, which has no mobile equivalent).
+  Renders an `h-11` horizontal filter-chip bar (`role="group"
+  aria-label="Filter by type"`, active recipe `border-primary/30
+  bg-primary/10 text-primary` reused verbatim from `FilterRail`'s own),
+  `min-h-16` `InboxRow`-idiom node-list rows below it (`dotClassFor`/
+  `typeLabelFor` helpers built FROM `NODE_TYPE_ROWS`, never a second
+  vocabulary), two empty states (filtered-to-zero new copy; genuinely-empty
+  reuses `GraphNoSchemaState` verbatim), and a found-live Rule 2 addition
+  (query-error branch reuses `GraphErrorState` verbatim — not named in
+  53-UI-SPEC's empty-state table but necessary for a self-fetching
+  component that could otherwise render a blank screen on error). New
+  `knowledge-surface.tsx`: `"use client"` wrapper reading
+  `useIsMobileViewport()`, rendering `KnowledgeMobileList` below `md` and
+  the UNCHANGED `KnowledgeGraphIsland` (`absolute inset-0`) at/above `md` —
+  the `dynamic(ssr:false)` React-Flow import is never triggered on a
+  phone, mirroring `/chat`'s `ChatCanvasIsland` gating from 53-05 exactly
+  (both of 53-UI-SPEC's permitted `useIsMobileViewport()` mount/unmount
+  consumers are now spent). `knowledge/page.tsx` renders `<KnowledgeSurface
+  />` instead of `<KnowledgeGraphIsland>` directly, staying a server
+  component with `metadata` intact. `node-detail-pane.tsx`'s internal
+  close `Button` gains `hidden md:inline-flex` (plus an explanatory
+  comment) so the mobile Sheet shows exactly ONE close affordance (the
+  Sheet's own corner X); desktop keeps `NodeDetailPane`'s own close
+  unchanged (`md:inline-flex` restores the prior always-visible behavior).
+  New committed `knowledge-mobile-list.test.tsx` (8 tests across 4 describe
+  blocks) mounts the real `KnowledgeSurface` default export (mocking
+  `~/hooks/use-is-mobile-viewport` via a mutable `let`, `../knowledge-graph-
+  island` as a spy, and `~/trpc/react`'s `api.knowledge.graph.useQuery` with
+  2 fake nodes matching `DEFAULT_VISIBLE_TYPES`): graph-island-never-
+  mounted, chips/rows-render, filter-toggle-changes-visible-rows, row-tap-
+  opens-detail-Sheet-with-NodeDetailPane-content, desktop-regression pair
+  (island mounts, mobile list absent), plus 2 source-string assertions
+  (node-detail-pane's `hidden md:inline-flex`, page.tsx renders
+  `KnowledgeSurface` and stays a server component). TDD RED confirmed
+  live: the already-drafted `knowledge-surface.tsx` was temporarily
+  relocated so the test's `import { KnowledgeSurface } from
+  "../knowledge-surface"` genuinely failed (`Failed to resolve import`)
+  before being restored for GREEN — same convention 53-01/53-05
+  established, adapted here since Task 2's action bundles three files'
+  worth of implementation with one test file. Two found-live deviations,
+  both auto-fixed within Task 2: [Rule 3] `node-detail-pane.tsx` needed the
+  same pre-existing, already-documented `import * as React from "react"`
+  vitest classic-runtime JSX gotcha 53-01/53-03/53-04/53-05 already fixed
+  elsewhere — this suite is the first to mount `NodeDetailPane` directly
+  (prior knowledge tests only exercised `knowledge-graph.tsx`'s standalone
+  `promoteEdge` helper, never the component tree); [Rule 1] the plan's own
+  new test had a false-positive assertion (`not.toContain('"use
+  client"')` matched the phrase inside `page.tsx`'s own doc comment
+  describing `KnowledgeSurface`, not just the file-scope directive) —
+  fixed to `not.toMatch(/^"use client";?$/m)`. Full web test suite
+  reconfirmed green (60 files/408 tests, up from 59/400 at 53-05's close);
+  typecheck clean outside the pre-existing, documented `app/dev/design/**`
+  exclusion; palette-ban/token-contrast/token-registration gates green
+  (10/10 across the two dedicated gate files). `MOBL-01` is now marked
+  Complete in REQUIREMENTS.md (both `/chat` and `/knowledge` halves done)
+  and Phase 53 is now 6/6 plans complete (53-01..53-06 all have a
+  SUMMARY.md) — PHASE 53 COMPLETE. Live 360/768/1024 confirmation (list
+  below `md`, graph at/above `md`, full-width detail sheet, single close
+  affordance) remains DEFERRED to
+  `.planning/phases/49-live-loop-gate-deploy-oauth-real-email/MORNING-CHECKLIST.md`
+  §G, per this plan's own `<verification>` block — not faked as passed.
+  See `53-06-SUMMARY.md` for full detail.
 
 ## Phase 53 -- Mobile-Responsive Answer -- Plan 05 History -- /chat inline feed below md
 
