@@ -165,7 +165,7 @@ seed specs (goal/success-criteria text) reused from
 - [ ] Phase 49: Live-Loop Gate — Deploy, OAuth & Real Email
 - [x] Phase 50: Live-Loop Gate — UAT Burn-down & Screenshot Coverage (completed 2026-07-11)
 - [x] Phase 51: Total UI Re-skin (completed 2026-07-11 — BLOCKER: 51-07 Tasks 2/3 not yet verified, see below)
-- [ ] Phase 52: Editable Genui Panels / Studio-on-Canvas
+- [x] Phase 52: Editable Genui Panels / Studio-on-Canvas (completed 2026-07-12)
 - [ ] Phase 53: Mobile-Responsive Answer
 - [ ] Phase 54: Email-Cluster Workflow (E3)
 
@@ -275,7 +275,7 @@ independent of Phase 51 — parallelizable
 3. User can regenerate a panel variant in place, with provenance retained and the prior version reachable
 4. User can issue a natural-language re-theme instruction on a panel that resolves to pack/token choices (DSGN-03's cheap generation-side slice; no visual-compare repair loop)
 
-**Plans:** 5/6 plans executed
+**Plans:** 6/6 plans complete
 
 Plans:
 - [x] 52-01-PLAN.md — Foundation: per-panel overlay model (versions/pack override) + PanelThemeScope + persistence hook (no migration)
@@ -283,7 +283,7 @@ Plans:
 - [x] 52-03-PLAN.md — PANL-02 bounded parameter editor + server-side FOUND-6 gate (applyPanelEdit)
 - [x] 52-04-PLAN.md — PANL-03 regenerate-in-place + version history/restore (supersede-never-mutate)
 - [x] 52-05-PLAN.md — PANL-04 server: Bedrock retheme resolution (Python) + resolveRetheme tRPC boundary
-- [ ] 52-06-PLAN.md — PANL-04 client: NL re-theme popover + apply as retheme version
+- [x] 52-06-PLAN.md — PANL-04 client: NL re-theme popover + apply as retheme version
 
 **UI hint**: yes
 
