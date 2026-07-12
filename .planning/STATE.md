@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Cloud Workspace
 status: completed
-last_updated: "2026-07-12T05:00:00.000Z"
-last_activity: "2026-07-12 -- Phase 53-02 executed (touch-target sweep: pointer-coarse: on Phase-52 toolbar + pack switcher + KnowledgePreviewNode — see 53-02-SUMMARY.md; Phase 53 now 2/6 plans complete)"
+last_updated: "2026-07-12T05:21:03.000Z"
+last_activity: "2026-07-12 -- Phase 53-03 executed (inbox single-pane master->detail stack below md — see 53-03-SUMMARY.md; Phase 53 now 3/6 plans complete)"
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 30
-  completed_plans: 26
+  completed_plans: 27
   percent: 50
 ---
 
@@ -29,10 +29,64 @@ console, SES/DNS, Supabase project-id decision) are in-phase checkpoint tasks in
 
 ## Current Position
 
-Phase: 53 (Mobile-Responsive Answer) — 53-02 (touch-target sweep: `pointer-coarse:` on Phase-52 toolbar + pack switcher + KnowledgePreviewNode) EXECUTED this session, Phase 53's second of 6 plans (Wave 1, `depends_on: []`, ran independently of 53-01). Six canvas controls (the Phase-52 panel toolbar row, its 4 shared icon buttons via `PANEL_ACTION_ICON_BUTTON_CLASS`, the pack-switcher trigger, and `KnowledgePreviewNode`'s remove button + footer link) now grow to a >=44px hit-area on any touch-capable pointer via Tailwind's `pointer-coarse:` variant (53-UI-SPEC Judgment Call #1 — a viewport-width check would be a no-op here since these controls only render when the canvas is mounted at >=md). Hit-area only: glyph/color/behavior byte-identical for mouse/trackpad. A new committed test (`touch-target-pointer-coarse.test.tsx`) locks the `pointer-coarse:` class contract via source-text assertion (not a jsdom `matchMedia` mock — `pointer-coarse` is a CSS media FEATURE, not exercisable that way). `useIsMobileViewport()` is the single shared mobile-viewport mount/unmount signal Wave-2 plans (53-05 `/chat`, 53-06 `/knowledge`) will consume (delivered 53-01, unaffected by this plan). Phase 52 (Editable Genui Panels / Studio-on-Canvas) remains COMPLETE at the plan level (6/6 SUMMARY.md) — live-canvas confirmation for the whole phase remains queued to MORNING-CHECKLIST.md SS G (Docker/FastAPI/Bedrock not concurrently available). Phase 51 (Total UI Re-skin) remains carried as a known blocker: 51-01..51-06 done, 51-07 Task 1 done+green, Tasks 2/3 (E2E regression, screenshot re-capture) BLOCKED pending a session where `docker info` succeeds — see Phase 51 Plan 07 History below.
-Plan: Phase 53 — 2 of 6 have a SUMMARY.md (53-01, 53-02). Phase 52 — 6 of 6 have a SUMMARY.md (52-01..52-06). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
-Status: 53-02 executed — Task 1: `panel-actions-toolbar.tsx`'s `role="toolbar"` row appends `pointer-coarse:h-11` (base `h-8` retained); `panel-action-button-class.ts`'s `PANEL_ACTION_ICON_BUTTON_CLASS` appends `pointer-coarse:touch-target` (covers all 4 icon buttons in one shared-class edit; glyph stays `size-3.5`); `pack-switcher.tsx`'s `TRIGGER_CLASS` appends `pointer-coarse:h-11` (base `h-6 w-28` retained). Existing `genui-panel-node-toolbar.test.tsx`/`pack-switcher.test.tsx` (8 tests) reconfirmed green — no `busyAction`/lock/persist regression. Task 2: `knowledge-preview-node.tsx`'s remove button appends `pointer-coarse:touch-target`, footer `Link` appends `pointer-coarse:h-11`; new `touch-target-pointer-coarse.test.tsx` (5 tests) asserts the `pointer-coarse:` variant on all six swept targets via source-text/exported-constant assertion. Full `_canvas` regression suite (27 files/204 tests) green; committed palette-ban/token-contrast/token-registration gates green; typecheck clean outside the pre-existing `app/dev/design/**` exclusion. Zero deviations, zero new dependency. `MOBL-02` intentionally left Pending in REQUIREMENTS.md — it spans 53-02/53-03/53-04 per each plan's own `requirements:` frontmatter; marked Complete only after the LAST contributing plan (53-04), mirroring the LIVE-05/RSKN-05/53-01 precedent. See Phase 53 Plan 02 History below and `53-02-SUMMARY.md` for full detail.
-Last activity: 2026-07-12 -- Phase 53-02 executed (touch-target sweep: pointer-coarse: on Phase-52 toolbar + pack switcher + KnowledgePreviewNode — see 53-02-SUMMARY.md; Phase 53 now 2/6 plans complete)
+Phase: 53 (Mobile-Responsive Answer) — 53-03 (inbox single-pane master->detail stack below `md`) EXECUTED this session, Phase 53's third of 6 plans (Wave 1, `depends_on: []`). `inbox-three-pane.tsx` gained a `flex md:hidden` mobile stack (segmented Tabs filter, full-width list, tap-through stacked detail with an `ArrowLeft` back bar) alongside the byte-identical `hidden md:block` desktop three-pane. `mobileView` state only flips to "detail" via an explicit row tap — the background default-select effect keeps resolving `selectedEmailId` but never touches `mobileView`, so first paint on a phone always shows the list. Proven by a new 4-test `inbox-mobile-stack.test.tsx`. Two found-live deviations, both auto-fixed: (1) 5 files in the render tree (`inbox-three-pane.tsx`, `resizable.tsx`, `inbox-row.tsx`, `inbox-thread-group.tsx`, `entity-chips.tsx`) were missing the explicit `import * as React from "react"` vitest's classic-runtime JSX transform needs (Next's SWC runtime tolerates its absence; same documented gotcha `genui-panel-node.tsx` already carries) — this is the FIRST vitest suite to mount `InboxThreePane`'s real desktop+mobile tree, so it's the first to trip over it; (2) the new mobile stack's second CSS-hidden DOM tree duplicates every inbox row, breaking 3 of `uat-45-threads.spec.ts`'s plain `page.locator("button").filter(...)` calls (Playwright's `getByRole` locators already exclude `display:none` via the accessibility tree, but plain tag locators do not) — fixed with a `desktopPane()` scoping helper, not run live this session (Docker down). `useIsMobileViewport()` remains unconsumed by this plan (CSS-only per 53-UI-SPEC's Breakpoint & Mount Contract mechanism 1) — still available for Wave-2 plans (53-05 `/chat`, 53-06 `/knowledge`). Phase 52 (Editable Genui Panels / Studio-on-Canvas) remains COMPLETE at the plan level (6/6 SUMMARY.md) — live-canvas confirmation for the whole phase remains queued to MORNING-CHECKLIST.md SS G (Docker/FastAPI/Bedrock not concurrently available). Phase 51 (Total UI Re-skin) remains carried as a known blocker: 51-01..51-06 done, 51-07 Task 1 done+green, Tasks 2/3 (E2E regression, screenshot re-capture) BLOCKED pending a session where `docker info` succeeds — see Phase 51 Plan 07 History below.
+Plan: Phase 53 — 3 of 6 have a SUMMARY.md (53-01, 53-02, 53-03). Phase 52 — 6 of 6 have a SUMMARY.md (52-01..52-06). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
+Status: 53-03 executed — Task 1: `inbox-three-pane.tsx`'s existing `ResizablePanelGroup` wrapped in `hidden h-full md:block` (internals untouched); new sibling `flex h-full flex-col md:hidden` mobile stack (Tabs filter mirroring `FiltersRail`'s labels, duplicated list/loading/error/empty/load-more blocks with a `handleSelectMemberMobile` wrapper on `onSelectMember`, tap-through detail with sticky back bar + byte-identical `ReadingPreview`). New `inbox-mobile-stack.test.tsx` (4 tests) green: Tabs filter aria-label, `hidden md:block`/`md:hidden` source-text assertions, first-paint-always-list guard, tap-to-detail + back-preserves-selection round trip. Full web suite reconfirmed green (57 files/381 tests, up from 55/372); typecheck clean outside the pre-existing `app/dev/design/**` exclusion; palette-ban/token-contrast/token-registration gates green. Two Rule 1/Rule 3 auto-fixes (see Current Position paragraph above and `53-03-SUMMARY.md`). `MOBL-02` intentionally left Pending in REQUIREMENTS.md — it spans 53-02/53-03/53-04 per each plan's own `requirements:` frontmatter; marked Complete only after the LAST contributing plan (53-04), mirroring the LIVE-05/RSKN-05/53-01/53-02 precedent. See Phase 53 Plan 03 History below and `53-03-SUMMARY.md` for full detail.
+Last activity: 2026-07-12 -- Phase 53-03 executed (inbox single-pane master->detail stack below md — see 53-03-SUMMARY.md; Phase 53 now 3/6 plans complete)
+
+## Phase 53 -- Mobile-Responsive Answer -- Plan 03 History -- Inbox single-pane master->detail stack below md
+
+- **53-03 EXECUTED** (`1f28166` feat, `a4b88ea` fix):
+  Collapsed the inbox's desktop three-pane (`FiltersRail` | list | `ReadingPreview`)
+  into a genuine single-pane master->detail stack below `md` (MOBL-02,
+  53-UI-SPEC §4). `inbox-three-pane.tsx`'s existing `ResizablePanelGroup` is
+  now wrapped in `hidden h-full md:block`, internals byte-identical/untouched
+  — a sibling `flex h-full flex-col md:hidden` mobile stack renders a
+  segmented `Tabs` filter (All/Unread/With entities, `FiltersRail`'s exact
+  labels), the same `InboxThreadGroup`/`InboxRow` list full-width with no
+  `ResizablePanel` wrapper, and a tap-through detail view (sticky `h-11`
+  `ArrowLeft` back bar + byte-identical `ReadingPreview`). New local
+  `mobileView: "list" | "detail"` state flips to "detail" ONLY via a new
+  `handleSelectMemberMobile` wrapper passed to the mobile list's
+  `onSelectMember` — the existing background default-select effect keeps
+  setting `selectedEmailId` unchanged (feeds `ReadingPreview` prefetch) but
+  never touches `mobileView`, so first paint on a phone always shows the
+  list, never auto-deposits into detail. New committed
+  `inbox-mobile-stack.test.tsx` (4 tests, mocks `~/trpc/react`'s 3 direct
+  `.useQuery` calls) proves: Tabs filter aria-label, `hidden md:block`/
+  `md:hidden` wrapper class-string source assertions, the first-paint guard,
+  and the tap-to-detail + back-preserves-selection round trip (scoped via a
+  literal-className helper since both desktop and mobile trees mount
+  simultaneously in jsdom). Two found-live deviations, both auto-fixed within
+  Task 1: (1) [Rule 3] `inbox-mobile-stack.test.tsx` is the FIRST vitest
+  suite to mount `InboxThreePane`'s real desktop+mobile render tree, which
+  exposed that `resizable.tsx`, `inbox-row.tsx`, `inbox-thread-group.tsx`,
+  and `entity-chips.tsx` (plus `inbox-three-pane.tsx` itself) were all
+  missing the explicit `import * as React from "react"` vitest's
+  classic-runtime esbuild JSX transform requires — Next.js's SWC automatic
+  runtime tolerates its absence, so this was silently latent until now; same
+  documented gotcha `genui-panel-node.tsx` already carries a comment for —
+  fixed identically in all 5 files, zero behavior change. (2) [Rule 1] the
+  new mobile stack's second CSS-hidden (`md:hidden`) DOM tree duplicates
+  every inbox row, breaking 3 of `uat-45-threads.spec.ts`'s plain
+  `page.locator("button").filter(...)` calls (45.1/45.2/45.4) — Playwright's
+  `getByRole` locators already exclude `display:none` elements via the
+  accessibility tree (unaffected), but plain tag locators do not; fixed with
+  a `desktopPane()` scoping helper (`page.locator('[class="hidden h-full
+  md:block"]')`); not run live this session (Docker down, per 53-UI-SPEC's
+  deferred live-viewport gate) — a structural fix reasoned through code
+  inspection, not verified end-to-end. Full web test suite reconfirmed green
+  (57 files/381 tests, up from 55/372 at 53-01's close, +9 from 53-02's
+  close); typecheck clean outside the pre-existing, documented
+  `app/dev/design/**` exclusion; palette-ban/token-contrast/token-
+  registration gates green. `MOBL-02` intentionally left Pending in
+  REQUIREMENTS.md — spans 53-02/53-03/53-04, marked Complete only after
+  53-04 (the last contributing plan), mirroring the LIVE-05/RSKN-05/53-01/
+  53-02 precedent. Live 360/390/414 no-horizontal-overflow confirmation and
+  the `uat-45-threads.spec.ts` live re-run both remain DEFERRED to
+  `.planning/phases/49-live-loop-gate-deploy-oauth-real-email/MORNING-CHECKLIST.md`
+  §G, per this plan's own `<verification>` block — not faked as passed. See
+  `53-03-SUMMARY.md` for full detail.
 
 ## Phase 53 -- Mobile-Responsive Answer -- Plan 02 History -- Touch-target sweep: pointer-coarse: on Phase-52 toolbar + pack switcher + KnowledgePreviewNode
 
