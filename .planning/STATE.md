@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Cloud Workspace
 status: completed
-last_updated: "2026-07-12T04:49:00.000Z"
-last_activity: 2026-07-12 -- Phase 53-01 executed (Foundation: useIsMobileViewport() hook + global mobile nav trigger — see 53-01-SUMMARY.md; Phase 53 now 1/6 plans complete)
+last_updated: "2026-07-12T05:00:00.000Z"
+last_activity: "2026-07-12 -- Phase 53-02 executed (touch-target sweep: pointer-coarse: on Phase-52 toolbar + pack switcher + KnowledgePreviewNode — see 53-02-SUMMARY.md; Phase 53 now 2/6 plans complete)"
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 30
-  completed_plans: 24
-  percent: 80
+  completed_plans: 26
+  percent: 50
 ---
 
 # State
@@ -29,10 +29,53 @@ console, SES/DNS, Supabase project-id decision) are in-phase checkpoint tasks in
 
 ## Current Position
 
-Phase: 53 (Mobile-Responsive Answer) — 53-01 (Foundation: useIsMobileViewport() hook + global mobile nav trigger) EXECUTED this session, Phase 53's first of 6 plans (2 waves). `useIsMobileViewport()` is now the single shared mobile-viewport mount/unmount signal Wave-2 plans (53-05 `/chat`, 53-06 `/knowledge`) will consume; a global `md:hidden` `SidebarTrigger` bar in root `layout.tsx` closes a found gap (no nav trigger existed anywhere in the app) so a signed-in phone user can now open app nav on every authenticated route. Desktop chrome byte-identical (diff-verified additive-only). Phase 52 (Editable Genui Panels / Studio-on-Canvas) remains COMPLETE at the plan level (6/6 SUMMARY.md, all this same session, prior activity) — live-canvas confirmation for the whole phase remains queued to MORNING-CHECKLIST.md SS G (Docker/FastAPI/Bedrock not concurrently available). Phase 51 (Total UI Re-skin) remains carried as a known blocker: 51-01..51-06 done, 51-07 Task 1 done+green, Tasks 2/3 (E2E regression, screenshot re-capture) BLOCKED pending a session where `docker info` succeeds — see Phase 51 Plan 07 History below.
-Plan: Phase 53 — 1 of 6 have a SUMMARY.md (53-01). Phase 52 — 6 of 6 have a SUMMARY.md (52-01..52-06). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
-Status: 53-01 executed — Task 1 (TDD RED->GREEN): `use-is-mobile-viewport.ts` exports `useIsMobileViewport(): boolean`, `matchMedia("(max-width: 767px)")` mirroring `@polytoken/ui/sidebar`'s private `useIsMobile()` byte-for-byte, SSR-safe `false` default; 4 tests (false@>=768px, true@<768px, updates-on-change via a fake `MediaQueryList` capturing the `change` handler, SSR-safety proved via `renderToString` showing `matchMedia` is never called during the synchronous render). Task 2: `layout.tsx` gained a `md:hidden` bar inside `SidebarInset` above `{children}` — `size-11` `SidebarTrigger` + glyph `BrandMark` + "Polytoken" label; `SidebarProvider`/`AppSidebar`/`SidebarInset` nesting confirmed unchanged via diff. Typecheck clean outside the pre-existing `app/dev/design/**` exclusion; palette-ban/token-contrast/token-registration gates green; full web suite reconfirmed green (55 files/372 tests). One clarifying (non-blocking) observation logged in `53-01-SUMMARY.md`'s Threat Flags: `/login` actually renders through the SAME root-layout `SidebarProvider`/`AppSidebar` shell as every other route (no auth-conditional rendering in `AppSidebar`), contradicting 53-UI-SPEC's stated T-53-01-01 mitigation — pre-existing, not introduced by this plan, not fixed (Rule 4 territory, out of scope). `MOBL-01`/`MOBL-02` intentionally NOT marked Complete in REQUIREMENTS.md — both requirements span multiple Phase-53 plans (see per-plan `requirements:` frontmatter: 53-02/53-03/53-04 carry MOBL-02, 53-05/53-06 carry MOBL-01) and this plan only delivers the foundation piece, mirroring how LIVE-05/RSKN-05 were only marked Complete after their LAST contributing plan. See Phase 53 Plan 01 History below and `53-01-SUMMARY.md` for full detail.
-Last activity: 2026-07-12 -- Phase 53-01 executed (Foundation: useIsMobileViewport() hook + global mobile nav trigger — see 53-01-SUMMARY.md; Phase 53 now 1/6 plans complete)
+Phase: 53 (Mobile-Responsive Answer) — 53-02 (touch-target sweep: `pointer-coarse:` on Phase-52 toolbar + pack switcher + KnowledgePreviewNode) EXECUTED this session, Phase 53's second of 6 plans (Wave 1, `depends_on: []`, ran independently of 53-01). Six canvas controls (the Phase-52 panel toolbar row, its 4 shared icon buttons via `PANEL_ACTION_ICON_BUTTON_CLASS`, the pack-switcher trigger, and `KnowledgePreviewNode`'s remove button + footer link) now grow to a >=44px hit-area on any touch-capable pointer via Tailwind's `pointer-coarse:` variant (53-UI-SPEC Judgment Call #1 — a viewport-width check would be a no-op here since these controls only render when the canvas is mounted at >=md). Hit-area only: glyph/color/behavior byte-identical for mouse/trackpad. A new committed test (`touch-target-pointer-coarse.test.tsx`) locks the `pointer-coarse:` class contract via source-text assertion (not a jsdom `matchMedia` mock — `pointer-coarse` is a CSS media FEATURE, not exercisable that way). `useIsMobileViewport()` is the single shared mobile-viewport mount/unmount signal Wave-2 plans (53-05 `/chat`, 53-06 `/knowledge`) will consume (delivered 53-01, unaffected by this plan). Phase 52 (Editable Genui Panels / Studio-on-Canvas) remains COMPLETE at the plan level (6/6 SUMMARY.md) — live-canvas confirmation for the whole phase remains queued to MORNING-CHECKLIST.md SS G (Docker/FastAPI/Bedrock not concurrently available). Phase 51 (Total UI Re-skin) remains carried as a known blocker: 51-01..51-06 done, 51-07 Task 1 done+green, Tasks 2/3 (E2E regression, screenshot re-capture) BLOCKED pending a session where `docker info` succeeds — see Phase 51 Plan 07 History below.
+Plan: Phase 53 — 2 of 6 have a SUMMARY.md (53-01, 53-02). Phase 52 — 6 of 6 have a SUMMARY.md (52-01..52-06). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
+Status: 53-02 executed — Task 1: `panel-actions-toolbar.tsx`'s `role="toolbar"` row appends `pointer-coarse:h-11` (base `h-8` retained); `panel-action-button-class.ts`'s `PANEL_ACTION_ICON_BUTTON_CLASS` appends `pointer-coarse:touch-target` (covers all 4 icon buttons in one shared-class edit; glyph stays `size-3.5`); `pack-switcher.tsx`'s `TRIGGER_CLASS` appends `pointer-coarse:h-11` (base `h-6 w-28` retained). Existing `genui-panel-node-toolbar.test.tsx`/`pack-switcher.test.tsx` (8 tests) reconfirmed green — no `busyAction`/lock/persist regression. Task 2: `knowledge-preview-node.tsx`'s remove button appends `pointer-coarse:touch-target`, footer `Link` appends `pointer-coarse:h-11`; new `touch-target-pointer-coarse.test.tsx` (5 tests) asserts the `pointer-coarse:` variant on all six swept targets via source-text/exported-constant assertion. Full `_canvas` regression suite (27 files/204 tests) green; committed palette-ban/token-contrast/token-registration gates green; typecheck clean outside the pre-existing `app/dev/design/**` exclusion. Zero deviations, zero new dependency. `MOBL-02` intentionally left Pending in REQUIREMENTS.md — it spans 53-02/53-03/53-04 per each plan's own `requirements:` frontmatter; marked Complete only after the LAST contributing plan (53-04), mirroring the LIVE-05/RSKN-05/53-01 precedent. See Phase 53 Plan 02 History below and `53-02-SUMMARY.md` for full detail.
+Last activity: 2026-07-12 -- Phase 53-02 executed (touch-target sweep: pointer-coarse: on Phase-52 toolbar + pack switcher + KnowledgePreviewNode — see 53-02-SUMMARY.md; Phase 53 now 2/6 plans complete)
+
+## Phase 53 -- Mobile-Responsive Answer -- Plan 02 History -- Touch-target sweep: pointer-coarse: on Phase-52 toolbar + pack switcher + KnowledgePreviewNode
+
+- **53-02 EXECUTED** (`3898eec` feat, `dddfef4` feat):
+  Applied the >=44px touch-target floor (WCAG 2.5.8, D-48-07's `.touch-target` guard)
+  to six EXISTING desktop-authored canvas controls via Tailwind v3.4's native
+  `pointer-coarse:` variant (`(pointer: coarse)` media feature, zero extra config) —
+  NOT a viewport-width check, per 53-UI-SPEC Judgment Call #1, since these controls
+  (the Phase-52 panel toolbar, pack switcher, `KnowledgePreviewNode`) only ever render
+  once the canvas is mounted (>=md), so a `max-width` check would be a permanent no-op
+  and would silently miss a touch tablet running the canvas at >=768px. Task 1: three
+  surgical class appends — toolbar row `h-8` -> `+pointer-coarse:h-11`;
+  `PANEL_ACTION_ICON_BUTTON_CLASS` (`size-6`, shared by all 4 toolbar icon buttons) ->
+  `+pointer-coarse:touch-target`; pack-switcher `TRIGGER_CLASS` (`h-6 w-28`) ->
+  `+pointer-coarse:h-11`. Task 2: `KnowledgePreviewNode`'s remove button (`size-6`) ->
+  `+pointer-coarse:touch-target`; its footer `Link` (`h-7`) -> `+pointer-coarse:h-11` —
+  same fix family as the toolbar's sibling controls, consistency extension not scope
+  creep. New committed `touch-target-pointer-coarse.test.tsx` (5 tests) locks the
+  `pointer-coarse:` class contract on all six targets: direct import + assertion for
+  the one exported constant (`PANEL_ACTION_ICON_BUTTON_CLASS`), source-text
+  `readFileSync` assertion (mirrors `palette-ban.test.ts`'s existing
+  `import.meta.url`-based idiom) for the three files' inline `className` literals with
+  no exported constant. Deliberately NO jsdom `matchMedia` mock — `pointer-coarse` is a
+  CSS media FEATURE, not a viewport-width query any test mock in this repo can
+  meaningfully exercise; asserting the class STRING is present is the correct, and
+  only testable, contract at this layer (53-UI-SPEC Verification Gates, verbatim).
+  Hit-area only throughout: every glyph stayed its original size (`size-3.5`), every
+  color/hover/focus-ring class untouched, `busyAction` mutual-exclusion lock and
+  `disabled`/`isLocked` gating on every control left byte-identical. Verification:
+  `genui-panel-node-toolbar.test.tsx` + `pack-switcher.test.tsx` (8 tests) and
+  `knowledge-preview-node.test.tsx` (8 tests) all reconfirmed green — proving zero
+  behavior regression on the exact suites the plan's own threat register (T-53-02-01)
+  names; full `_canvas` regression suite reconfirmed green (27 files/204 tests, no
+  regressions); committed palette-ban/token-contrast/token-registration gates green;
+  typecheck clean outside the pre-existing, documented `app/dev/design/**` exclusion.
+  Zero deviations, zero new dependency, zero migration. `MOBL-02` intentionally left
+  Pending in REQUIREMENTS.md — spans 53-02/53-03/53-04 per each plan's own
+  `requirements:` frontmatter, mirroring the LIVE-05/RSKN-05/53-01 pattern of marking
+  a multi-plan requirement Complete only after its LAST contributing plan. Live
+  touch-target confirmation on a real touch device at 44px remains DEFERRED to
+  `.planning/phases/49-live-loop-gate-deploy-oauth-real-email/MORNING-CHECKLIST.md`
+  §G, per this plan's own `<verification>` block — not faked as passed. See
+  `53-02-SUMMARY.md` for full detail.
 
 ## Phase 53 -- Mobile-Responsive Answer -- Plan 01 History -- Foundation: useIsMobileViewport() hook + global mobile nav trigger
 
