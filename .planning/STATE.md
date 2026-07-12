@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.9
 milestone_name: Cloud Workspace
 status: completed
-last_updated: "2026-07-12T13:15:32.036Z"
-last_activity: 2026-07-12 -- Phase 54-05 executed (thread+cluster context injection -- CLUS-02/CLUS-06 -- see 54-05-SUMMARY.md; Phase 54 now 5/7 plans complete)
+last_updated: "2026-07-12T14:15:00.000Z"
+last_activity: 2026-07-12 -- Phase 54-06 executed (ThreadClusterIndicator + chat.clusterSummary + web_search tool-round copy -- CLUS-02/CLUS-06/CLUS-03 UI -- see 54-06-SUMMARY.md; Phase 54 now 6/7 plans complete)
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 37
-  completed_plans: 35
-  percent: 67
+  completed_plans: 36
+  percent: 97
 ---
 
 # State
@@ -29,12 +29,54 @@ console, SES/DNS, Supabase project-id decision) are in-phase checkpoint tasks in
 
 ## Current Position
 
-Phase: 54 (Email-Cluster Workflow E3) — 54-05 (thread+cluster context injection, CLUS-02/CLUS-06) EXECUTED this session, Wave 3 (`depends_on: [54-01, 54-03]`, `requirements: [CLUS-02, CLUS-06]`). Task 1 (TDD RED->GREEN): new pure domain service `app.domain.services.thread_cluster_context` — `build_thread_context_block`/`build_cluster_context_block`/`assemble_cluster_context` produce a labeled `--- BEGIN/END ---`-wrapped, budget-bounded "untrusted DATA" block (subject/deduped-participants/recent-bodies + metadata-first sibling-titles/captured-source-titles+urls/panel-titles), reimplementing `envelope.py`'s `truncate_field` idiom locally (domain cannot import infrastructure); 18 tests incl. injection-inertness (a crafted "ignore previous instructions" email body stays confined to its own prefixed data line). Task 2 (TDD RED->GREEN): `ChatConversationRepository` gains `get_thread_id`/`list_by_thread_id` — the FIRST Python read path to `chat_conversations.thread_id` (migration 0036, still unapplied everywhere tonight), feature-detecting the column's absence by catching broadly (fail-open, mirrors `_column-detect.ts`'s posture); `RunChatTurn` gains an additive `email_repository` collaborator and, at the ONE `_execute_turn` site, appends the assembled block to the system prompt for any thread-linked conversation with member emails — every gathering step (thread_id read, thread-email read, sibling read, captured-source read, assembly itself) is independently fail-open, an unlinked turn is provably byte-identical to before (regression-guarded). **[Rule 2 deviation x2]** `EmailRepository.list_by_thread_id` and `KnowledgeGraphRepository.list_captured_sources_for_conversations` (both port + Supabase impl) were added beyond the plan's declared `files_modified` — required for CLUS-02/CLUS-06's truths to fire in production, explicitly authorized by the plan's own `<interfaces>` text ("add reads as needed"). **[Rule 1 fix]** corrected the plan's stated Supabase adapter file path (`chat_repositories.py`, nonexistent) to the real file `supabase_chat_conversation_repository.py`. Full run_chat_turn/container/repo regression suites green, full repo suite green (0 failures, 8 expected env-gated skips), ruff+mypy+lint-imports clean. Live turn-with-thread round-trip (real Bedrock + applied 0036) DEFERRED to MORNING-CHECKLIST.md §H. CLUS-02/CLUS-06 marked Complete in REQUIREMENTS.md. See Phase 54 Plan 05 History below and `54-05-SUMMARY.md` for full detail.
+Phase: 54 (Email-Cluster Workflow E3) — 54-06 (ThreadClusterIndicator + chat.clusterSummary + web_search tool-round copy, CLUS-02/CLUS-06/CLUS-03 UI) EXECUTED this session, Wave 3 (`depends_on: [54-01]`, `requirements: [CLUS-02, CLUS-06, CLUS-03]`). Task 1 (TDD RED->GREEN): new `chat.clusterSummary` tRPC query — ownership assertion, migration-0036 feature-detect (degrades to `{hasThread:false,0,0}`, never a 500), a real `siblingChatCount` (other of the caller's own conversations sharing `thread_id`) and a real `capturedSourceCount` (distinct active `knowledge_nodes` with `source="web_search_capture"`/`scope_ref_type="web_source"` attached via an active `knowledge_node_edges` row to ANY conversation in the caller's cluster, scoped to owned importers) — reads `knowledge_node_edges`/`knowledge_nodes` DIRECTLY via Drizzle (same Postgres tables 54-03's Python `SourceCaptureHandler` already writes; no new cross-service seam needed), two-step edge->node select with a JS `Set` dedupe rather than a single JOIN. 7 tests. Task 2 (TDD RED->GREEN): `ThreadClusterIndicator` — one popover, two sections ("Linked thread" + "Cluster context"), additive-only (renders nothing for a null/pending threadId), mounted unconditionally in `page.tsx`'s `ConversationView` top bar between `SaveStatusIndicator` and `CostMeter`; `invalidateOnChatTerminal` extended to also invalidate `chat.clusterSummary`. 10 tests. Task 3 (TDD RED->GREEN): `web_search` copy-map entries added to the EXISTING `tool-round-activity-row.tsx`/`tool-invocation-result-row.tsx` chrome — zero new components, zero new `ProvenanceKind` members (Judgment Call #7 — no citation chips for raw web results). 6 tests. **[Rule 3 x2]** extended `chat-mobile-feed.test.tsx`'s `~/trpc/react` mock (anticipated by the plan's own gotcha note — `ThreadClusterIndicator`'s now-unconditional mount would otherwise throw in that pre-existing 12-test suite) and rebuilt `@polytoken/api-client`'s stale `dist/` (same gotcha 54-01/54-04 already flagged for the first `apps/web` consumer of a new procedure). Full api-client suite (35 files/405 tests) and full web suite (64 files/452 tests) green, zero regressions; `tsc --noEmit` clean outside the pre-existing, unrelated `app/dev/design/**` (untracked, logged to `deferred-items.md`); palette-ban/token gates 12/12. Live header render + a real `web_search` round DEFERRED to MORNING-CHECKLIST.md §H. See Phase 54 Plan 06 History below and `54-06-SUMMARY.md` for full detail.
 
-Prior: 54-04 (`EmailThreadNode` + `AddEmailThreadPopover` + versioned node registry, CLUS-01 UI) EXECUTED, Wave 2 (`depends_on: [54-01]`, `requirements: [CLUS-01]`). The 4th React Flow node type (`"email-thread"`) is registered in the versioned `NODE_TYPE_REGISTRY`; `EmailThreadNode` renders real thread data from `emails.threadCard` (54-01) with Attach-chat (`chat.createConversation` -> `chat.attachConversationToThread`) and Open-thread actions; `AddEmailThreadPopover` is a search-select `Popover`+`Command` picker mounted in the canvas toolbar. Two deviations (Rule 2 `onOpenConversation` plumbing seam, Rule 1 stale registry-order test fixture) — full detail in `54-04-SUMMARY.md` and Phase 54 Plan 04 History below. Phase 53 (Mobile-Responsive Answer) remains 6/6 PLANS COMPLETE from a prior session.
-Plan: Phase 54 — 5 of 7 have a SUMMARY.md (54-01, 54-02, 54-03, 54-04, 54-05). Phase 53 — 6 of 6 have a SUMMARY.md (53-01..53-06) — PHASE COMPLETE. Phase 52 — 6 of 6 have a SUMMARY.md (52-01..52-06). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
-Status: 54-05 executed — thread+cluster context injection (CLUS-02/CLUS-06): a thread-linked chat turn now injects a bounded, quarantine-enveloped thread+cluster context block into the system prompt at the ONE `_execute_turn` injection site; an unlinked turn is byte-identical to before (regression-guarded); every failure mode (missing column, no thread, read errors, an unupgraded collaborator) fails open, never a 500. CLUS-02/CLUS-06 marked Complete in REQUIREMENTS.md. See Phase 54 Plan 05 History below and `54-05-SUMMARY.md` for full detail.
-Last activity: 2026-07-12 -- Phase 54-05 executed (thread+cluster context injection -- CLUS-02/CLUS-06 -- see 54-05-SUMMARY.md; Phase 54 now 5/7 plans complete)
+Prior: 54-05 (thread+cluster context injection, CLUS-02/CLUS-06 Python-side turn injection) EXECUTED, Wave 3 (`depends_on: [54-01, 54-03]`, `requirements: [CLUS-02, CLUS-06]`). New pure domain service `app.domain.services.thread_cluster_context` assembles a labeled, budget-bounded "untrusted DATA" block injected into the system prompt at the ONE `_execute_turn` site for any thread-linked conversation; `ChatConversationRepository` gained the FIRST Python read path to `chat_conversations.thread_id`. Two Rule-2 deviations (new repo reads) + one Rule-1 fix (stale file path) — full detail in `54-05-SUMMARY.md` and Phase 54 Plan 05 History below.
+Plan: Phase 54 — 6 of 7 have a SUMMARY.md (54-01, 54-02, 54-03, 54-04, 54-05, 54-06). Phase 53 — 6 of 6 have a SUMMARY.md (53-01..53-06) — PHASE COMPLETE. Phase 52 — 6 of 6 have a SUMMARY.md (52-01..52-06). Phase 51 — 7 of 7 have a SUMMARY.md; 51-07's own SUMMARY documents its blocked tasks honestly — RE-RUN 51-07 Tasks 2/3 once `docker info` succeeds before treating Phase 51 as fully closed.
+Status: 54-06 executed — ThreadClusterIndicator + chat.clusterSummary + web_search tool-round copy: the chat header now shows a real linked-thread + cluster-context popover for thread-linked conversations (invisible for unlinked ones), and web_search tool rounds render the correct in-progress/success/error labels through the existing chrome. Only 54-07 (the §H runsheet doc plan) remains in Phase 54. See Phase 54 Plan 06 History below and `54-06-SUMMARY.md` for full detail.
+Last activity: 2026-07-12 -- Phase 54-06 executed (ThreadClusterIndicator + chat.clusterSummary + web_search tool-round copy -- CLUS-02/CLUS-06/CLUS-03 UI -- see 54-06-SUMMARY.md; Phase 54 now 6/7 plans complete)
+
+## Phase 54 -- Email-Cluster Workflow (E3) -- Plan 06 History -- ThreadClusterIndicator + chat.clusterSummary + web_search Tool-Round Copy (CLUS-02/CLUS-06/CLUS-03 UI)
+
+- **54-06 EXECUTED** (`f613593` test, `bd04691` feat, `e097eef` test, `df19946` feat, `4608f27` test, `2b1917a` feat):
+  Surfaced the cluster in the chat header and labeled web_search rounds.
+  Task 1: `chat.clusterSummary` (packages/api-client/src/router/chat/cluster-summary.ts)
+  — ownership-asserted, 0036-feature-detected count query returning
+  `{hasThread, siblingChatCount, capturedSourceCount}`; captured-source count
+  reads `knowledge_node_edges`/`knowledge_nodes` directly via Drizzle
+  (target_ref_type="chat_conversation", source="web_search_capture",
+  scope_ref_type="web_source" — the EXACT literal contract 54-03's
+  `SourceCaptureHandler` writes), two-step edge->node select + JS `Set`
+  dedupe so a node attached to multiple cluster conversations counts once.
+  7 tests. Task 2: `thread-cluster-indicator.tsx` — `ThreadClusterIndicator`
+  (54-UI-SPEC.md Component 3 verbatim): trigger mirrors `CostMeter`'s
+  compact-text-button recipe, `Mail` icon `text-graph-email`, CSS-only
+  `max-w-[72px] sm:max-w-[140px]` truncation; popover sections "Linked
+  thread" (subject + "Open thread →") and "Cluster context"
+  (`clusterContextCopy` — literal "(s)" suffix per the Copywriting Contract,
+  not dynamic pluralization); takes only `conversationId`, resolves
+  `threadId` internally via `chat.getConversationThreadId`, renders nothing
+  when null/pending (additive-only); mounted unconditionally in `page.tsx`'s
+  top bar between `SaveStatusIndicator`/`CostMeter`;
+  `invalidateOnChatTerminal` (use-conversation-controller.ts) extended to
+  invalidate `chat.clusterSummary` too. 10 tests. Task 3:
+  `tool-round-activity-row.tsx`/`tool-invocation-result-row.tsx` gain
+  `web_search` copy-map entries ("Searching the web…" / "Searched the web" /
+  "Couldn't search the web.") — zero new component, zero new
+  `ProvenanceKind` member, no citation chips for raw web results (Judgment
+  Call #7). 6 tests. **[Rule 3 x2]** extended `chat-mobile-feed.test.tsx`'s
+  `~/trpc/react` mock (the plan's own gotcha note anticipated this — the
+  now-unconditionally-mounted indicator calls 3 new procedures that
+  pre-existing suite didn't mock) and rebuilt `@polytoken/api-client`'s
+  stale `dist/` (same first-consumer gotcha 54-01/54-04 flagged). Full
+  api-client suite 35 files/405 tests green; full web suite 64 files/452
+  tests green (up from the 436 baseline, zero regressions); `tsc --noEmit`
+  clean outside the pre-existing, untracked, unrelated
+  `app/dev/design/**` (logged to `deferred-items.md`); palette-ban/
+  token-contrast/token-registration gates 12/12. Live header render + a
+  live `web_search` round DEFERRED to `.planning/MORNING-CHECKLIST.md` §H
+  per 54-CONTEXT.md's CLUS-07 gating — not faked tonight. See
+  `54-06-SUMMARY.md` for full detail.
 
 ## Phase 54 -- Email-Cluster Workflow (E3) -- Plan 05 History -- Thread+Cluster Context Injection (CLUS-02/CLUS-06)
 

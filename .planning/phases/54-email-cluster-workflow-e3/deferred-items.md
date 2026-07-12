@@ -45,3 +45,27 @@ the substantive gate) is clean; `mypy app` is clean; targeted `pytest`
 suites are green. Confirmed pre-existing by checking the SAME 4 files at the
 git commit immediately after this plan's Task 2 commit — already flagged
 before Task 3 began.
+
+## 54-06: `apps/web/src/app/dev/design/**` pre-existing typecheck breakage (not caused by this plan)
+
+**Found during:** Task 2 verification (`npm run typecheck -w @polytoken/web`).
+
+**Observation:** `previews-core.tsx`/`previews-vendored.tsx` under
+`apps/web/src/app/dev/design/` fail `tsc --noEmit` with ~50 `Cannot find
+module '@nauta/ui/*'` errors (a pre-rename package alias that no longer
+resolves post-Phase-42) plus 2 implicit-`any` errors. `git status --short`
+confirms this entire directory is UNTRACKED (`?? apps/web/src/app/dev/design/`)
+— it predates this plan's session entirely and was never touched by any
+Phase 54 plan. This mirrors 54-04-SUMMARY.md's own note ("tsc --noEmit clean
+outside app/dev/design/**").
+
+**Why not fixed:** Out of scope per the executor's scope-boundary rule — this
+plan's own new/modified files (`cluster-summary.ts`,
+`thread-cluster-indicator.tsx`, `page.tsx`, `use-conversation-controller.ts`,
+`tool-round-activity-row.tsx`, `tool-invocation-result-row.tsx`) all
+typecheck cleanly in isolation (confirmed by grepping the tsc output for
+each file's path — zero hits outside `app/dev/design/**`).
+
+**Recommendation:** Whichever future plan owns `apps/web/src/app/dev/design/`
+should either finish its `@nauta/ui` -> `@polytoken/ui` import rename or
+delete the directory if abandoned.
