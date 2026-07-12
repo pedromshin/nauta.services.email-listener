@@ -24,6 +24,9 @@ const LABEL_BY_TOOL_NAME: Readonly<Record<string, string>> = {
   lookup_entity: "Looking up an entity…",
   search_emails: "Searching emails…",
   search_knowledge: "Searching knowledge…",
+  // CLUS-03 (Phase 54-06, 54-UI-SPEC.md Component 4) — zero new component,
+  // reuses this existing tool-round chrome verbatim.
+  web_search: "Searching the web…",
 };
 
 const FALLBACK_LABEL = "Running a lookup…";

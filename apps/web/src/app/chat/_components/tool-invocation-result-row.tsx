@@ -41,6 +41,15 @@ const COPY_BY_TOOL_NAME: Readonly<Record<string, ToolCopy>> = {
     baseLabel: "Searched knowledge",
     errorLabel: "Couldn't search the knowledge graph.",
   },
+  // CLUS-03 (Phase 54-06, 54-UI-SPEC.md Component 4) — zero new component;
+  // renders through the SAME no-citation path search_knowledge already uses
+  // (Judgment Call #7 — raw web results carry no ProvenanceKind, so
+  // `citations` is simply absent from the persisted envelope and
+  // parseCitations/CitationChips naturally render nothing).
+  web_search: {
+    baseLabel: "Searched the web",
+    errorLabel: "Couldn't search the web.",
+  },
 };
 
 const FALLBACK_COPY: ToolCopy = {
