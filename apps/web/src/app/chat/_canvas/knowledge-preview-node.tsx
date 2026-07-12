@@ -114,7 +114,7 @@ export const KnowledgePreviewNode = memo(function KnowledgePreviewNode({
         <button
           type="button"
           aria-label="Remove knowledge preview"
-          className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+          className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 pointer-coarse:touch-target"
           onClick={(event) => {
             event.stopPropagation();
             void deleteElements({ nodes: [{ id }] });
@@ -133,7 +133,7 @@ export const KnowledgePreviewNode = memo(function KnowledgePreviewNode({
       />
       <Link
         href={hrefFor("knowledge", data.focusNodeId)}
-        className="flex h-7 w-full shrink-0 items-center justify-center gap-1 border-t border-border/60 px-3 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+        className="flex h-7 w-full shrink-0 items-center justify-center gap-1 border-t border-border/60 px-3 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 pointer-coarse:h-11"
       >
         {footerCopy}
       </Link>
