@@ -26,7 +26,7 @@ from app.application.use_cases.run_chat_turn_widgets import INTERACTIVE_WIDGET_T
 from app.domain.ports.tool_executor import MAX_TOOL_OUTPUT_CHARS
 
 if TYPE_CHECKING:
-    from collections.abc import Collection
+    from collections.abc import Collection, Sequence
 
     from app.domain.ports.tool_executor import ToolExecutionResult
 
@@ -41,6 +41,20 @@ PARSE_FAILURE_TEXT = (
     "I couldn't parse that lookup result, so I stopped before using it. Could you rephrase your request?"
 )
 ROUND_CAP_EXHAUSTED_TEXT = "I couldn't fully resolve that after several lookups. Here's what I have so far."
+
+# A model may emit SEVERAL tool_use blocks in ONE streamed response (observed
+# live 2026-07-12: two web_search calls per response). Every block still gets
+# a tool_result fed back (API contract), but only the first
+# MAX_SERVER_CALLS_PER_ROUND execute — the rest get this is_error result
+# without executing, bounding per-round work the same way _MAX_TOOL_ROUNDS
+# bounds rounds.
+MAX_SERVER_CALLS_PER_ROUND = 5
+PARALLEL_CALL_OVERFLOW_TEXT = "Too many tool calls in one step — this call was not executed."
+
+# Surfaced by _finalize_state for a server-tool call that was queued/pending
+# when the turn terminated (mid-stream failure/stop) — never a silent drop,
+# never a bogus genui_spec part.
+SERVER_CALL_NOT_EXECUTED_TEXT = "[a lookup was interrupted before it could run]"
 
 
 def build_tool_invocation_part(tool_name: str, tool_use_id: str, arguments: dict[str, Any]) -> dict[str, Any]:
@@ -71,6 +85,16 @@ def build_synthetic_tool_result_message(result: ToolExecutionResult) -> dict[str
     -- preferred over string fencing so the model sees a first-class
     tool-result block rather than text pretending to be one.
     """
+    return build_synthetic_tool_results_message([result])
+
+
+def build_synthetic_tool_results_message(results: Sequence[ToolExecutionResult]) -> dict[str, Any]:
+    """Build ONE user message carrying a `tool_result` block per executed call.
+
+    When a response contains several tool_use blocks, the API expects ALL
+    their tool_results in the SAME next user message — one message per
+    result would orphan the earlier tool_use blocks.
+    """
     return {
         "role": "user",
         "content": [
@@ -80,6 +104,7 @@ def build_synthetic_tool_result_message(result: ToolExecutionResult) -> dict[str
                 "content": result.content,
                 "is_error": result.is_error,
             }
+            for result in results
         ],
     }
 
@@ -109,9 +134,13 @@ def cap_tool_output(text: str, limit: int = MAX_TOOL_OUTPUT_CHARS) -> str:
 
 __all__ = [
     "EMIT_UI_SPEC_TOOL_NAME",
+    "MAX_SERVER_CALLS_PER_ROUND",
+    "PARALLEL_CALL_OVERFLOW_TEXT",
     "PARSE_FAILURE_TEXT",
     "ROUND_CAP_EXHAUSTED_TEXT",
+    "SERVER_CALL_NOT_EXECUTED_TEXT",
     "build_synthetic_tool_result_message",
+    "build_synthetic_tool_results_message",
     "build_tool_invocation_part",
     "build_tool_invocation_result_part",
     "cap_tool_output",

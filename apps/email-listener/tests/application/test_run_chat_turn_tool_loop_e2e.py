@@ -30,7 +30,10 @@ from typing import Any
 import pytest
 
 from app.application.use_cases.run_chat_turn import RunChatTurn
-from app.application.use_cases.run_chat_turn_tool_loop import ROUND_CAP_EXHAUSTED_TEXT
+from app.application.use_cases.run_chat_turn_tool_loop import (
+    MAX_SERVER_CALLS_PER_ROUND,
+    ROUND_CAP_EXHAUSTED_TEXT,
+)
 from app.domain.ports.chat_provider import StreamEnd, TextDelta, ToolCallDelta, UsageDelta
 from app.domain.ports.chat_repositories import ChatMessage, ChatRunEvent
 from app.domain.ports.cost_ledger_repository import UsageEvent
@@ -423,6 +426,143 @@ async def test_server_tool_round_continues_streaming_within_single_run() -> None
     round_two_messages = provider.stream_calls[1]["messages"]
     round_two_content = str(round_two_messages)
     assert "tool_result" in round_two_content, "round 2 must see the native tool_result block fed back"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_two_server_tool_calls_in_one_stream_both_execute() -> None:
+    """TWO server-tool calls in one streamed response must BOTH execute in the round.
+
+    Live regression (2026-07-12, CLUS-07 dry run): the model emitted two web_search
+    calls per response; only the last pending call was dispatched at StreamEnd — the
+    first was mangled into a bogus genui_spec part ({'query': ...}), rendering as the
+    SAFE_FALLBACK 'Could not generate a view' panel and polluting history replay.
+    Anthropic's protocol: every tool_use block gets a tool_result in the next user
+    message.
+    """
+    provider = _MultiRoundFakeChatProvider(
+        rounds=[
+            [
+                ToolCallDelta(tool_name="echo", id="tool-1", partial_json='{"q": "first"}'),
+                ToolCallDelta(tool_name="echo", id="tool-2", partial_json='{"q": "second"}'),
+                StreamEnd(stop_reason="tool_use"),
+            ],
+            [
+                TextDelta(text="Done!"),
+                StreamEnd(stop_reason="end_turn"),
+            ],
+        ]
+    )
+    use_case, fakes = _make_use_case(provider=provider, tool_executors={"echo": EchoToolExecutor()})
+
+    events = [
+        event
+        async for event in use_case.run(
+            conversation_id=_CONVERSATION_ID, user_text="two lookups", model_id=_TOOL_ROUND_MODEL.id
+        )
+    ]
+
+    assert events[-1].type == "completed"
+
+    messages: FakeChatMessageRepository = fakes["messages"]
+    assistant_messages = [m for m in messages.messages if m.role == "assistant"]
+    assert len(assistant_messages) == 1
+    parts = assistant_messages[0].parts
+    invocation_ids = [p["toolUseId"] for p in parts if p["type"] == "tool_invocation"]
+    result_ids = [p["toolUseId"] for p in parts if p["type"] == "tool_invocation_result"]
+    assert invocation_ids == ["tool-1", "tool-2"], "both calls must be recorded, in emission order"
+    assert result_ids == ["tool-1", "tool-2"], "both calls must produce results"
+    assert not any(
+        p.get("type") == "genui_spec" for p in parts
+    ), "a server-tool call must NEVER be mangled into a genui_spec part"
+
+    assert len(provider.stream_calls) == 2
+    round_two_messages = provider.stream_calls[1]["messages"]
+    assistant_replay = next(m for m in reversed(round_two_messages) if m["role"] == "assistant")
+    tool_use_ids = [b["id"] for b in assistant_replay["content"] if b.get("type") == "tool_use"]
+    assert tool_use_ids == ["tool-1", "tool-2"], "the replayed assistant message must carry BOTH tool_use blocks"
+    tool_result_message = round_two_messages[-1]
+    assert tool_result_message["role"] == "user"
+    tool_result_ids = [b["tool_use_id"] for b in tool_result_message["content"] if b.get("type") == "tool_result"]
+    assert tool_result_ids == ["tool-1", "tool-2"], "every tool_use must get a matching tool_result (API contract)"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_server_call_finalized_by_text_then_stream_end_still_executes() -> None:
+    """A server-tool call finalized by a LATER TextDelta (pending=None at StreamEnd) must still execute."""
+    provider = _MultiRoundFakeChatProvider(
+        rounds=[
+            [
+                ToolCallDelta(tool_name="echo", id="tool-1", partial_json='{"q": "hi"}'),
+                TextDelta(text="Searching now."),
+                StreamEnd(stop_reason="end_turn"),
+            ],
+            [
+                TextDelta(text="Done!"),
+                StreamEnd(stop_reason="end_turn"),
+            ],
+        ]
+    )
+    use_case, fakes = _make_use_case(provider=provider, tool_executors={"echo": EchoToolExecutor()})
+
+    events = [
+        event
+        async for event in use_case.run(
+            conversation_id=_CONVERSATION_ID, user_text="lookup", model_id=_TOOL_ROUND_MODEL.id
+        )
+    ]
+
+    assert events[-1].type == "completed"
+    assert len(provider.stream_calls) == 2, "the queued call must still trigger a round"
+
+    messages: FakeChatMessageRepository = fakes["messages"]
+    parts = next(m for m in messages.messages if m.role == "assistant").parts
+    part_types = [p["type"] for p in parts]
+    assert "tool_invocation" in part_types
+    assert "tool_invocation_result" in part_types
+    assert not any(p.get("type") == "genui_spec" for p in parts)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_parallel_server_calls_beyond_per_round_cap_get_error_results() -> None:
+    """Calls beyond MAX_SERVER_CALLS_PER_ROUND are not executed but still get (error) tool_results fed back."""
+    n_calls = MAX_SERVER_CALLS_PER_ROUND + 1
+    deltas: list[Any] = [
+        ToolCallDelta(tool_name="echo", id=f"tool-{i}", partial_json='{"q": "x"}') for i in range(n_calls)
+    ]
+    deltas.append(StreamEnd(stop_reason="tool_use"))
+    provider = _MultiRoundFakeChatProvider(
+        rounds=[deltas, [TextDelta(text="Done!"), StreamEnd(stop_reason="end_turn")]]
+    )
+    counting_executor = _CountingEchoToolExecutor()
+    use_case, fakes = _make_use_case(provider=provider, tool_executors={"echo": counting_executor})
+
+    events = [
+        event
+        async for event in use_case.run(
+            conversation_id=_CONVERSATION_ID, user_text="many lookups", model_id=_TOOL_ROUND_MODEL.id
+        )
+    ]
+
+    assert events[-1].type == "completed"
+    assert counting_executor.call_count == MAX_SERVER_CALLS_PER_ROUND, "overflow calls must NOT execute"
+
+    round_two_messages = provider.stream_calls[1]["messages"]
+    tool_result_blocks = [
+        b for b in round_two_messages[-1]["content"] if b.get("type") == "tool_result"
+    ]
+    assert len(tool_result_blocks) == n_calls, "EVERY tool_use still needs a tool_result (API contract)"
+    overflow_block = tool_result_blocks[-1]
+    assert overflow_block["is_error"] is True
+
+    messages: FakeChatMessageRepository = fakes["messages"]
+    parts = next(m for m in messages.messages if m.role == "assistant").parts
+    overflow_results = [
+        p for p in parts if p["type"] == "tool_invocation_result" and p["isError"] is True
+    ]
+    assert len(overflow_results) == 1
 
 
 @pytest.mark.unit
