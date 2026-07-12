@@ -487,3 +487,210 @@ With the stack up (§G.1-2), confirm on a real mobile viewport (DevTools device 
   pointer-coarse)
 Note: Playwright viewport specs were NOT authored (plans scoped them optional) — this item
 is the manual sweep; author specs later if you want the regression locked in CI.
+
+---
+
+## H. Phase-54 Email-Cluster Workflow — live acceptance scenario (CLUS-07)
+
+**This is the milestone's acceptance bar.** Phase 54 built the depth-first "ONE scenario"
+(CLUS-01..06, all code-complete and unit-tested against fakes/mocks tonight — see
+`54-01-SUMMARY.md` through `54-06-SUMMARY.md`): real thread → attach chat → web research with
+the thread in context → sources captured → promotion confirmed → a follow-up chat sees the
+cluster context. CLUS-07 itself — proving that scenario works live, end to end, on your real
+inbox — was **never executed or faked tonight** (Docker/WSL was down, no OAuth session, no
+applied migration, no real inbox reachable this session). You run it now; Claude verifies each
+leg live against the real database, never against logs.
+
+Do this section **after** A, B, and G — it depends on all three.
+
+### H.1 Prerequisites checklist
+
+Confirm all five before starting the scenario in H.4:
+
+1. **Section A (OAuth) done** — signed in on the deployed app, session persists across reload.
+2. **Section B (forwarding) done** — at least one real forwarded email has landed in your inbox,
+   forming a real thread you'll pick in H.4 step 1. CLUS-07 requires a REAL thread from your own
+   inbox, not a seeded fixture — do Section B first if you haven't.
+3. **Section G.1–G.2 done** — local stack up (`docker info` succeeds; listener (FastAPI) + web
+   (Next.js) running per `docs/RUN-LOCAL.md`) and Bedrock reachable (AWS IAM role — no API key
+   needed; a normal chat turn responding confirms this).
+4. **Migration 0036 applied** to whichever environment(s) you're about to test against — local at
+   minimum, staging/production if you're testing the deployed app. See H.2 below; do this BEFORE
+   H.4.
+5. **`WEB_SEARCH_TOOL_ENABLED` is `true`** in the environment you're testing. It shipped `True` by
+   default tonight (`54-02-SUMMARY.md`: the 10-fixture adversarial injection suite passed, and the
+   flag was flipped `True` in that same run) — this should already be the case with no action
+   needed. Only if some `.env` file in your environment explicitly overrides it to `false`: first
+   re-run the suite —
+   ```bash
+   uv run pytest tests/evals/test_web_search_injection_suite.py --no-cov
+   ```
+   (run from `apps/email-listener/`) — confirm green, THEN set `WEB_SEARCH_TOOL_ENABLED=true`
+   before continuing.
+
+### H.2 Apply migration 0036 (local → staging → prod, in that order)
+
+Migration 0036 (`packages/db/migrations/0036_chat_conversation_thread_id.sql`, authored by
+Plan 54-01) adds `chat_conversations.thread_id` — nullable `uuid`, `FOREIGN KEY` → `threads(id)
+ON DELETE SET NULL`, plus an index — additive-only, mirroring `emails.thread_id` (0035). It has
+been unit-tested against fakes tonight but **applied to no environment yet**.
+
+**Local (do this first):**
+
+1. With the local stack up (H.1.3), from the repo root:
+   ```bash
+   npm run db:migrate
+   ```
+   This applies every unapplied migration through 0036 against `POSTGRES_URL_NON_POOLING` (root
+   `.env.local`, `127.0.0.1:54322`) — the same native path that applied 0000–0035 originally.
+2. If this is a FRESH local DB (i.e. you ran `supabase db reset` recently), also re-run the
+   grant + `NOTIFY pgrst` block from `docs/RUN-LOCAL.md` §6 (not durable across resets) — skip
+   this if your local DB already has grants from a prior session.
+3. Verify (any Postgres client against `127.0.0.1:54322`, or the app itself once H.4 starts):
+   ```sql
+   SELECT column_name FROM information_schema.columns
+   WHERE table_name = 'chat_conversations' AND column_name = 'thread_id';
+   ```
+   Expect exactly one row.
+
+**Staging (`fyfwkjvbcrmjqjysdyqw`) then production (`dazyccjijdahxyciptkp`) — staging BEFORE
+production, same discipline 0021–0035 followed:**
+
+Try the native path first:
+```bash
+npm run db:migrate:staging
+npm run db:migrate:prod
+```
+This is a real Postgres connection via `POSTGRES_URL_NON_POOLING` from `.env.staging` /
+`.env.production`. **Known gotcha (Section E.1 above):** those passwords were STALE (`28P01`) as
+of the 49-06 session. If Section E.1 (refresh the hosted DB passwords) hasn't been done yet, this
+fails with a password-authentication error — do E.1 first, or use the fallback below.
+
+**Fallback — Supabase Dashboard SQL Editor** (the exact path that applied 0021–0035 tonight; see
+`.planning/phases/49-live-loop-gate-deploy-oauth-real-email/artifacts/migration-verification.md`):
+
+1. Open the Supabase Dashboard for the target project (`fyfwkjvbcrmjqjysdyqw` for staging,
+   `dazyccjijdahxyciptkp` for production) → **SQL Editor**.
+2. Paste and run 0036's SQL verbatim:
+   ```sql
+   ALTER TABLE "chat_conversations" ADD COLUMN "thread_id" uuid;
+   ALTER TABLE "chat_conversations" ADD CONSTRAINT "chat_conversations_thread_id_threads_id_fk" FOREIGN KEY ("thread_id") REFERENCES "public"."threads"("id") ON DELETE set null ON UPDATE no action;
+   CREATE INDEX "idx_chat_conversations_thread_id" ON "chat_conversations" USING btree ("thread_id");
+   ```
+3. Record the migration in Drizzle's own tracking table so a later native `db:migrate` run doesn't
+   try to reapply it (same discipline the 0021–0035 Management-API path followed — `hash` is
+   `sha256` of the migration file's exact bytes, `created_at` is the journal's `when` value for
+   this entry):
+   ```sql
+   INSERT INTO drizzle."__drizzle_migrations" (hash, created_at)
+   VALUES ('c294272d6d9c32dcda942231912cd72ef1cb6a966e16b850a410e5a342068554', 1784227200000);
+   ```
+4. Verify (same SQL Editor, per environment):
+   ```sql
+   SELECT column_name FROM information_schema.columns
+   WHERE table_name = 'chat_conversations' AND column_name = 'thread_id';
+   ```
+   Expect exactly one row, on BOTH staging and production, before moving to H.4.
+
+### H.3 What Claude verifies on your "migration 0036 verified" resume signal
+
+Read-only queries against each environment you applied to (local / staging / prod as
+applicable), never against logs:
+- `information_schema.columns` confirms `chat_conversations.thread_id` exists (`uuid`, nullable).
+- `pg_constraint` / `information_schema.table_constraints` confirms the FK to `threads(id)` with
+  `ON DELETE SET NULL`.
+- `pg_indexes` confirms `idx_chat_conversations_thread_id` exists.
+- `SELECT count(*) FROM drizzle."__drizzle_migrations";` returns **37** (36 pre-existing rows,
+  0000–0035, plus the new 0036 row), confirming journal parity whichever path (native migrate or
+  the Dashboard fallback) you used.
+
+### H.4 Scenario — the ONE end-to-end walkthrough
+
+Run this on whichever environment(s) had 0036 applied in H.2 (local first is recommended; repeat
+against the deployed app if you also migrated staging/prod).
+
+1. **Pick a real thread on the canvas.** Open `/chat`. In the canvas toolbar, click the **"Add
+   thread"** button (tooltip/`aria-label="Add thread"`, `AddEmailThreadPopover`) → the "Add a
+   thread" search-select list opens → pick the real thread from your Section B forwarded email →
+   the card lands on the canvas at viewport center as the 4th versioned node type
+   (`EmailThreadNode`, kind `email-thread`), showing the REAL subject, deduped participants
+   ("+{n} more" if applicable), and the latest-message snippet (fetched live via
+   `emails.threadCard`).
+   - **DB verify:** `SELECT id, subject FROM threads WHERE id = '<threadId>';` returns your real
+     thread; `SELECT count(*) FROM emails WHERE thread_id = '<threadId>';` returns ≥ 1.
+
+2. **Attach chat.** On the card, click **"Attach chat"** → a `Loader2` spinner shows in-flight →
+   the app switches to a NEW conversation (the visible conversation switch IS the confirmation,
+   per 54-UI-SPEC.md) → the chat header now shows the linked-thread indicator
+   (`ThreadClusterIndicator`, `aria-label="Linked thread: {subject}"`, `Mail` icon, mounted
+   between `SaveStatusIndicator` and `CostMeter`).
+   - **DB verify:** `SELECT id, thread_id FROM chat_conversations WHERE id = '<newConversationId>';`
+     — `thread_id` matches the thread from step 1.
+
+3. **Web research with the thread in context.** Ask a question that needs live web info (e.g.
+   "search the web for the latest on <a topic mentioned in the real thread>"). The tool-round
+   chrome shows **"Searching the web…"** then **"Searched the web — N results"** (or "Couldn't
+   search the web." on failure — retry). Then ask a follow-up question that only the thread's
+   real email content could answer, and confirm the agent's reply correctly references it — this
+   proves the bounded thread-context block (54-05) actually reached the model, not just that
+   `web_search` ran.
+   - **DB verify:** none directly (the thread-context block is a system-prompt injection, not a
+     DB write) — this leg is verified by (a) `chat_conversations.thread_id` being set (step 2)
+     and (b) the assistant's reply correctly reflecting a real, specific detail from the thread's
+     email content that you supply as the check.
+
+4. **Capture a source.** After the web_search round, the agent proposes one or more source
+   captures via the existing confirm-action widget (the same Confirm/Reject widget used for
+   knowledge-edge promotion, now also serving the `source_capture` suggestion kind — Plan 54-03).
+   Click **Confirm** on one.
+   - **DB verify:**
+     ```sql
+     SELECT id, tier, source, scope_ref_type FROM knowledge_nodes
+     WHERE source = 'web_search_capture' ORDER BY created_at DESC LIMIT 1;
+     ```
+     Expect `tier = 'INFERRED'`, `scope_ref_type = 'web_source'`. Then:
+     ```sql
+     SELECT target_ref_type, target_ref_id FROM knowledge_node_edges
+     WHERE source_node_id = '<node id from above>' AND status = 'active';
+     ```
+     Expect `target_ref_type = 'chat_conversation'`, `target_ref_id` = the conversation id from
+     step 2.
+
+5. **Promote.** Open the same captured source's promotion affordance (the unmodified suggest-only
+   promotion gate — confirm-action widget, Phase 30/40) → confirm the promotion.
+   - **DB verify:** re-run the `knowledge_node_edges` query from step 4 — the edge's tier/
+     promotion state now shows `EXTRACTED` (provenance retained, supersede-never-mutate). Then,
+     in the app, send one more message in this conversation to reach a terminal turn (triggers
+     `invalidateOnChatTerminal`, Plan 54-06), reopen `ThreadClusterIndicator`'s "Cluster context"
+     popover section, and confirm the captured-source count reflects the promoted source.
+
+6. **New chat sees cluster context.** From the SAME thread card on the canvas (or via "Add
+   thread" → the same thread again), click **"Attach chat"** a second time to create a SECOND
+   conversation linked to the same `thread_id`. Open its header's `ThreadClusterIndicator` —
+   confirm the "Cluster context" section shows a nonzero sibling-chat count (includes the
+   conversation from step 2) and lists the captured source's title/URL from step 4/5. Ask a
+   question in this NEW chat and confirm the agent's answer references the sibling context (e.g.
+   the earlier search result) — proving `assemble_cluster_context`'s cluster block (54-05) reaches
+   the model, not just the popover UI.
+   - **DB verify:** `SELECT id, thread_id FROM chat_conversations WHERE thread_id = '<threadId>';`
+     returns 2 rows (both conversations, same `thread_id`).
+
+### H.5 Acceptance
+
+CLUS-07 — and with it, the v1.9 "Cloud Workspace" milestone's live acceptance bar — is met when
+ALL SIX legs of H.4 are directly observed in a real desktop browser session against a real,
+migrated Postgres environment: thread card renders real data → Attach chat opens a thread-linked
+conversation → a web_search round runs with the thread demonstrably in context → a source capture
+confirms into a real INFERRED `knowledge_nodes` row → that row promotes to `EXTRACTED` through the
+unmodified promotion gate → a second thread-linked chat visibly sees the cluster (sibling count +
+captured source + a context-aware answer). Tell Claude **"CLUS-07 verified"** (or describe what
+broke) — Claude checks the six DB-verify queries above against the real database (never logs) and
+records the outcome; only then does the CLUS-07 checkbox in `REQUIREMENTS.md` flip from Pending to
+Complete.
+
+### H.6 §H supersedes the individual "queued to §H" deferrals
+
+Every `54-0N-SUMMARY.md` (01 through 06) deferred its own live-browser/live-round-trip
+verification to "the morning §H flow" rather than faking it tonight — this section is that single
+consolidated runsheet, not six separate ones. Nothing above has been executed or marked passed by
+this plan; it is a runsheet for you to run live.
