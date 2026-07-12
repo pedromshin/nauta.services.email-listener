@@ -16,6 +16,7 @@ import { chatConversationsProcedures } from "./conversations";
 import { chatCostProcedures } from "./cost";
 import { chatHistoryProcedures } from "./history";
 import { modelsProcedure } from "./models";
+import { chatThreadLinkProcedures } from "./thread-link";
 import { chatWidgetInteractionsProcedures } from "./widget-interactions";
 
 export const chatRouter = createTRPCRouter({
@@ -25,5 +26,6 @@ export const chatRouter = createTRPCRouter({
   ...browserTurnProcedures,
   ...chatCanvasProcedures,
   ...chatWidgetInteractionsProcedures,
+  ...chatThreadLinkProcedures,
   models: modelsProcedure,
 });

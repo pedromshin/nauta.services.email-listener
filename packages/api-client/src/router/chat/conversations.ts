@@ -25,6 +25,7 @@ import { ChatConversations } from "@polytoken/db/schema";
 import { assertConversationOwnership } from "@polytoken/db/ownership";
 
 import { protectedProcedure } from "../../trpc";
+import { tableColumnExists } from "../_column-detect";
 import { assertOwnedOrNotFound } from "../_ownership";
 
 // ---------------------------------------------------------------------------
@@ -43,6 +44,12 @@ export const DEFAULT_CHAT_MODEL_ID = "us.anthropic.claude-sonnet-4-6";
 export const createConversationInputSchema = z.object({
   modelId: z.string().min(1).max(200).optional(),
   importerId: z.string().uuid().optional(),
+  // Phase 54 (CLUS-02): optional linkage at creation time — e.g. the
+  // canvas's "Attach chat" action creating a NEW conversation already
+  // scoped to a thread. Persisted only when migration 0036's thread_id
+  // column exists (feature-detected below) — silently dropped otherwise,
+  // never a validation error, since "no linkage yet" is a valid state.
+  threadId: z.string().uuid().optional(),
 });
 export type CreateConversationInput = z.infer<
   typeof createConversationInputSchema
@@ -130,12 +137,29 @@ export const chatConversationsProcedures = {
 
       const modelId = resolveDefaultModelId(input.modelId, lastUsedModelId);
 
+      // Phase 54 (CLUS-02): only attempt to persist threadId when both (a)
+      // the caller supplied one and (b) migration 0036's column exists —
+      // conditionally spread so the INSERT never references a column that
+      // might not physically exist yet (mirrors thread-link.ts's gate).
+      let threadIdToInsert: string | undefined;
+      if (input.threadId !== undefined) {
+        const columnExists = await tableColumnExists(
+          ctx.db,
+          "chat_conversations",
+          "thread_id",
+        );
+        threadIdToInsert = columnExists ? input.threadId : undefined;
+      }
+
       const [row] = await ctx.db
         .insert(ChatConversations)
         .values({
           userId: ctx.user.id,
           modelId,
           importerId: input.importerId ?? null,
+          ...(threadIdToInsert !== undefined
+            ? { threadId: threadIdToInsert }
+            : {}),
         })
         .returning({ id: ChatConversations.id });
 
