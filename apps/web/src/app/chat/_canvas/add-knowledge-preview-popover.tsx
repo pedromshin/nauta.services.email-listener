@@ -5,13 +5,17 @@
  * toolbar creation affordance for a `knowledge-preview` canvas node
  * (PREV-01, 41-UI-SPEC.md section 6).
  *
- * Manual paste-an-ID only (41-CONTEXT.md's explicit discretion resolution —
- * no search/picker UI). `z.string().uuid().safeParse` gates `onAdd`
- * (T-41-07): an invalid/empty value never calls `onAdd`, never creates a
- * node, never fires `expandNode` — the popover stays open with inline error
- * copy instead. Controlled `open` state (unlike edge-creation-picker.tsx's
- * always-open anchored popover) so a successful add can close itself
- * programmatically.
+ * Upgraded from Phase 41's manual paste-an-ID-only form (its explicit scope
+ * cut) after Phase 54 (CLUS-04): captured web sources land as
+ * knowledge_nodes, and a user who just confirmed a capture must be able to
+ * put it on the canvas without fishing a UUID off /knowledge. The popover
+ * now lists the most recent knowledge nodes (`knowledge.list`, newest
+ * first) as one-click rows; the manual ID input stays below as the
+ * fallback for chat-citation-chip pastes. `z.string().uuid().safeParse`
+ * still gates the manual path (T-41-07): an invalid/empty value never calls
+ * `onAdd`, never creates a node — the popover stays open with inline error
+ * copy instead. Controlled `open` state so a successful add can close
+ * itself programmatically.
  */
 
 import * as React from "react";
@@ -29,10 +33,20 @@ import {
   TooltipTrigger,
 } from "@polytoken/ui/tooltip";
 
+import { api } from "~/trpc/react";
+
 const NODE_ID_SCHEMA = z.string().uuid();
 
 export interface AddKnowledgePreviewPopoverProps {
   readonly onAdd: (focusNodeId: string, label: string | undefined) => void;
+}
+
+/** Short human label for a knowledge node's origin (list row subtitle). */
+function sourceLabel(source: string | null, scopeRefType: string | null): string {
+  if (source === "web_search_capture" || scopeRefType === "web_source") {
+    return "captured web source";
+  }
+  return source ?? "knowledge";
 }
 
 export function AddKnowledgePreviewPopover({
@@ -43,10 +57,19 @@ export function AddKnowledgePreviewPopover({
   const [labelInput, setLabelInput] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
 
+  const { data } = api.knowledge.list.useQuery({ limit: 8 }, { enabled: open });
+  const recentNodes = data?.items ?? [];
+
   function resetForm(): void {
     setNodeIdInput("");
     setLabelInput("");
     setValidationError(null);
+  }
+
+  function handleSelectRecent(nodeId: string, title: string | null): void {
+    onAdd(nodeId, title ?? undefined);
+    resetForm();
+    setOpen(false);
   }
 
   function handleAddClick(): void {
@@ -87,9 +110,32 @@ export function AddKnowledgePreviewPopover({
       </TooltipProvider>
       <PopoverContent align="end" className="w-72 space-y-3">
         <p className="text-sm font-normal text-foreground">Add knowledge preview</p>
+        {recentNodes.length > 0 && (
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">Recent knowledge</p>
+            <ul className="max-h-48 space-y-0.5 overflow-y-auto">
+              {recentNodes.map((node) => (
+                <li key={node.id}>
+                  <button
+                    type="button"
+                    className="w-full rounded-md px-2 py-1.5 text-left transition-colors hover:bg-accent"
+                    onClick={() => handleSelectRecent(node.id, node.title)}
+                  >
+                    <span className="block truncate text-xs font-normal text-foreground">
+                      {node.title ?? "Untitled knowledge"}
+                    </span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      {sourceLabel(node.source, node.scopeRefType)}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div className="space-y-1">
           <label htmlFor="kp-node-id" className="text-xs text-muted-foreground">
-            Knowledge node ID
+            Or paste a knowledge node ID
           </label>
           <Input
             id="kp-node-id"

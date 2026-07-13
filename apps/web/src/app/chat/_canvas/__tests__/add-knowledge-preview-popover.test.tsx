@@ -13,7 +13,28 @@
 import * as React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// Mutable per-test payload for the mocked knowledge.list query (the picker
+// rows added post-Phase-54; defaults empty so the original manual-ID tests
+// exercise the form exactly as before).
+interface MockListItem {
+  readonly id: string;
+  readonly title: string | null;
+  readonly source: string | null;
+  readonly scopeRefType: string | null;
+}
+let mockListItems: MockListItem[] = [];
+
+vi.mock("~/trpc/react", () => ({
+  api: {
+    knowledge: {
+      list: {
+        useQuery: () => ({ data: { items: mockListItems } }),
+      },
+    },
+  },
+}));
 
 import { AddKnowledgePreviewPopover } from "../add-knowledge-preview-popover";
 
@@ -35,6 +56,10 @@ async function mount(element: React.ReactElement): Promise<HTMLDivElement> {
   });
   return container;
 }
+
+beforeEach(() => {
+  mockListItems = [];
+});
 
 afterEach(async () => {
   for (const root of roots) {
@@ -176,6 +201,46 @@ describe("AddKnowledgePreviewPopover", () => {
     });
 
     expect(onAdd).toHaveBeenCalledWith(VALID_UUID, "the typed label");
+  });
+
+  // Test 7 (Phase 54 follow-up): the recent-knowledge picker rows
+  it("lists recent knowledge nodes; clicking one calls onAdd(id, title) and closes", async () => {
+    mockListItems = [
+      {
+        id: VALID_UUID,
+        title: "AI Salary Benchmarks 2026",
+        source: "web_search_capture",
+        scopeRefType: "web_source",
+      },
+    ];
+    const onAdd = vi.fn();
+    const container = await mount(<AddKnowledgePreviewPopover onAdd={onAdd} />);
+    await openPopover(container);
+
+    expect(document.body.textContent).toContain("Recent knowledge");
+    expect(document.body.textContent).toContain("AI Salary Benchmarks 2026");
+    expect(document.body.textContent).toContain("captured web source");
+
+    const row = Array.from(document.body.querySelectorAll("button")).find((b) =>
+      b.textContent?.includes("AI Salary Benchmarks 2026"),
+    );
+    expect(row).not.toBeUndefined();
+    await act(async () => {
+      row!.click();
+    });
+
+    expect(onAdd).toHaveBeenCalledTimes(1);
+    expect(onAdd).toHaveBeenCalledWith(VALID_UUID, "AI Salary Benchmarks 2026");
+    expect(nodeIdInputEl()).toBeNull(); // popover closed
+  });
+
+  // Test 8: no recent nodes -> no picker section, manual form unchanged
+  it("hides the recent-knowledge section when the list is empty", async () => {
+    const container = await mount(<AddKnowledgePreviewPopover onAdd={vi.fn()} />);
+    await openPopover(container);
+
+    expect(document.body.textContent).not.toContain("Recent knowledge");
+    expect(nodeIdInputEl()).not.toBeNull();
   });
 
   // Test 6
