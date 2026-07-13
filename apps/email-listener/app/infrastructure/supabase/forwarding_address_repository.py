@@ -17,7 +17,7 @@ from supabase import Client
 
 logger = structlog.get_logger(__name__)
 
-_TOKEN_PREFIX = "u-"  # noqa: S105 — email local-part prefix, not a credential
+_TOKEN_PREFIX = "u-"  # noqa: S105  # nosec B105 — email local-part prefix, not a credential
 
 
 def token_from_recipient(address: str) -> str | None:
