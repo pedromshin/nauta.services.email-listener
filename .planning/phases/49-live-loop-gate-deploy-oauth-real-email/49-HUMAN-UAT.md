@@ -22,7 +22,7 @@ result: [partial — 2026-07-12: terraform apply DONE (user-authorized, fresh pl
 
 ### 3. GitHub-rename decision (LIVE-07 final slice)
 expected: user chooses Option 1 (rename + companion IAM terraform apply in the same sitting) or Option 2 (re-park, documented) — MORNING-CHECKLIST.md §C
-result: passed — 2026-07-12: user chose **Option 2 (re-park)**. No rename, no IAM apply; deploys unaffected. Recorded in EXTERNAL-IDENTITY-DECISIONS.md (disposition table row updated to DECIDED — re-parked). LIVE-07 now 5/5 decided.
+result: passed — 2026-07-12: user chose Option 2 (re-park). **SUPERSEDED 2026-07-13: user executed Option 1** — renamed the repo to `pedromshin/polytoken.ai`; companion IAM trust-policy apply ran the same sitting (0 add/1 change/0 destroy verified, live condition now `repo:pedromshin/polytoken.ai:*`), local remote re-pointed, deploys re-verified green post-rename. LIVE-07 remains 5/5 decided (decision upgraded from re-parked to executed).
 
 ### 4. ECS deploy coverage-gate decision (LIVE-02 exception)
 expected: user decides: approve documented ratchet of --cov-fail-under (80 → 65 with step-ups tracked in .planning/todos) or hold ECS image deploys until coverage recovers; lowering it was policy-denied for the autonomous run

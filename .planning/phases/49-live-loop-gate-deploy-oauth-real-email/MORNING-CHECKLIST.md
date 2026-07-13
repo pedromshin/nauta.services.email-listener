@@ -247,10 +247,13 @@ Outcomes recorded in `49-HUMAN-UAT.md`.
 
 ## C. GitHub repo rename decision (LIVE-07)
 
-> **DECIDED 2026-07-12 — Option 2 (re-park).** No rename, no IAM apply; deploys unaffected.
-> Recorded in `EXTERNAL-IDENTITY-DECISIONS.md` (disposition table) and `49-HUMAN-UAT.md` item 3.
-> LIVE-07 is now 5/5 decided. Revisit whenever ready to do the rename + companion IAM apply
-> together.
+> ~~DECIDED 2026-07-12 — Option 2 (re-park).~~ **SUPERSEDED 2026-07-13 — Option 1 EXECUTED.**
+> The user renamed the repo to **`pedromshin/polytoken.ai`**; Claude ran the companion steps
+> the same sitting: `terraform.tfvars` github_repository updated, IAM plan verified
+> (`0 add / 1 change / 0 destroy`, `aws_iam_role.github_deploy` in-place only), applied, and
+> the live trust condition confirmed reading `repo:pedromshin/polytoken.ai:*`. Local git
+> remote re-pointed. AWS resource names remain re-parked (unchanged). LIVE-07 stays 5/5
+> decided — the decision changed from re-park to executed.
 
 **The hazard:** `infrastructure/aws/iam.tf:110-131` grants GitHub Actions' OIDC deploy role via a
 trust condition matching `sub = repo:${var.github_repository}:*`, and
