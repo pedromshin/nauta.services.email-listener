@@ -42,7 +42,7 @@ IDNT-02 is locked.
 - [x] **SURF-01**: The inbox (three-pane, thread groups, mobile feed) is redesigned on the new identity — layout, hierarchy, information density, interactions — not merely re-tokened
 - [ ] **SURF-02**: `/chat` + its canvas is redesigned on the new identity (composer, message stream, tool-round rows, panels, canvas chrome)
 - [ ] **SURF-03**: The `/knowledge` canvas is redesigned on the new identity
-- [ ] **SURF-04**: The email-detail view (`/emails/[id]`, region overlays) is redesigned on the new identity
+- [x] **SURF-04**: The email-detail view (`/emails/[id]`, region overlays) is redesigned on the new identity
 - [ ] **SURF-05**: `/studio`, `/settings/*`, and `/login` are redesigned on the new identity
 - [ ] **SURF-06**: Every redesigned surface has production-grade empty, loading, and error states (not first-draft placeholders)
 - [ ] **SURF-07**: Editable-panel chrome is reachable on mobile and the docked/mobile transcript honors panel overlays (closes 999.17)
@@ -100,7 +100,7 @@ Which phases cover which requirements. Filled by the roadmapper.
 | IDNT-03 | Phase 59 — Visual Identity: Designed Token Set & Brand Guide | Complete |
 | IDNT-04 | Phase 59 — Visual Identity: Designed Token Set & Brand Guide | Complete |
 | SURF-01 | Phase 60 — Surface Redesign: Inbox & Email Detail | Complete |
-| SURF-04 | Phase 60 — Surface Redesign: Inbox & Email Detail | Pending |
+| SURF-04 | Phase 60 — Surface Redesign: Inbox & Email Detail | Complete |
 | SURF-02 | Phase 61 — Surface Redesign: Chat, Canvas & Mobile Panel Chrome | Pending |
 | SURF-07 | Phase 61 — Surface Redesign: Chat, Canvas & Mobile Panel Chrome | Pending |
 | SURF-03 | Phase 62 — Surface Redesign: Knowledge, Studio & Production States | Pending |

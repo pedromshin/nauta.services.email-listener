@@ -66,8 +66,10 @@ proof verbatim in the summary). Plan 03 (four-pane inbox: filters/list chrome + 
 serif reading pane, the new entities rail, mobile feed) EXECUTED — see the Plan 03 History entry
 below and `60-03-SUMMARY.md`; criterion 1's gate grew to 8 legs and was re-proven able to fail over
 the complete inbox component set (a module-resolution RED, since the new rail has no pre-Phase-60
-analogue).** Next: Phase 60 Plan 04 (region-vocabulary.ts; region overlays re-encoded tier=colour/
-role=structure; the 20-case role x status matrix gate; 4 plans remain in this 7-plan phase).
+analogue). Plan 04 (region-vocabulary.ts; region overlays re-encoded tier=colour/role=structure;
+the 20-case role x status matrix gate) EXECUTED — see the Plan 04 History entry below and
+`60-04-SUMMARY.md`; both required negative proofs RED (a reintroduced role hue, a role-collapse),
+both reverted clean.** Next: Phase 60 Plan 05 (3 plans remain in this 7-plan phase).
 
 **Done so far in v1.10:**
 
@@ -81,6 +83,7 @@ role=structure; the 20-case role x status matrix gate; 4 plans remain in this 7-
 - Phase 60 Plan 01 — EXECUTED (colour-blind `fingerprintTree` + frozen `inbox-pre-60.json` baseline for the anti-re-token gate; `entitySummary` rewritten to a per-FACT contract with `totalCount`; `EntityChips` now a tier-only provenance mark, zero entity-type hue)
 - Phase 60 Plan 02 — EXECUTED (inbox row restructured to a four-band registry entry with a NEW serif snippet; thread group restructured to a ruled sub-list, stock Badge replaced; `inbox-structure.test.tsx` makes ROADMAP criterion 1 executable and was proven able to fail via a real pre-60 component restore — 2/4 legs genuinely RED)
 - Phase 60 Plan 03 — EXECUTED (four-pane desktop inbox: reading pane rebuilt as a serif document, new `InboxEntitiesRail` fourth pane, law-1-clean error/empty/loading states on both trees, mobile chrome restyled; `inbox-structure.test.tsx` grew to 8 legs and was re-proven able to fail over the full component set — SURF-01 marked complete)
+- Phase 60 Plan 04 — EXECUTED (`region-vocabulary.ts` — tier is the ONLY colour, role is pure structure; `region-overlay-box.tsx` re-encoded so tier+role ALWAYS compose (fixing the pre-60-04 role-replaces-tier inversion); 20-case role x status matrix gate proven able to fail on both possible regressions — SURF-04 marked complete)
 
 Migrations 0037 (chat_source_ledger + chat_context_edges), 0038 (entity_type_corrections),
 0039 (entity-resolution dismiss filter) are AUTHORED + journal-coherent, APPLIED NOWHERE.
@@ -163,6 +166,36 @@ CLUS-07 (§H) — `phases/49-live-loop-gate-deploy-oauth-real-email/MORNING-CHEC
   attribute breaks a single-substring match) — rewritten as two independent substring checks.
   `apps/web`: tsc clean, 67/67 files 739/739+1skipped green, `build:local` succeeds. SURF-01 marked
   complete. See `60-03-SUMMARY.md` for the full negative-proof output and deviation detail.
+
+## Phase 60 -- Surface Redesign: Inbox & Email Detail -- Plan 04 History -- region vocabulary: tier is colour, role is structure
+
+- **60-04 EXECUTED** (`690bb5c` test/RED, `8324d89` feat/GREEN, `faa89f7` feat, `64fa160` test):
+  Task 1 (tdd="true", full RED-then-GREEN two-commit cycle) created `region-vocabulary.ts` —
+  `tierOf(status)` maps `extractionStatus` to confirmed/suggested/terminal, defaulting ANY
+  unrecognized status to "suggested", never "confirmed" (T-60-08); `REGION_TIER` carries the ONLY
+  colour on the surface (confirmed=conf-toned+solid, suggested=sugg-toned+dashed,
+  terminal=hue-free); `REGION_ROLE_GEOMETRY` carries border weight/style/opacity only, zero colour,
+  zero `border-dashed` (tier already owns solid-vs-dashed); `regionLabelFor` preserves B1's exact
+  fallback precedence as a discriminated `{kind: "type"|"text"|"status", text}`. One internal-
+  consistency bug fixed forward: the plan's own literal spec would have made `field` and `none`
+  both resolve to the identical string "border", making them structurally indistinguishable and
+  violating the plan's OWN Task 3 "role is legible" requirement — `field` got `opacity-80` added.
+  Task 2 rewrote `region-overlay-box.tsx`, deleting all five pre-60-04 class maps (ROLE_BORDER/
+  ROLE_SELECTED_RING/ROLE_HOVER/ROLE_CHIP + inline statusClasses) and INVERTING the composition
+  rule: tier and role now ALWAYS compose (the pre-60-04 `roleClass ?? statusClasses` meant a
+  classified region lost its tier signal completely the moment it got a role — exactly backwards
+  for a provenance product). Hover/active/selected/active-parent are all ink now, for every role.
+  Task 3 committed `region-overlay-law.test.tsx` — the 20-case (4 role x 5 status) matrix gate
+  asserting tier-is-colour, role-is-not-colour, role-is-legible, law-1-on-chrome, and law-2's
+  serif/data-evidence discrimination — and ran BOTH required negative proofs: reintroducing a role
+  hue on `entity` (RED on 4/5 statuses — the 5th, `confirmed`, already contains that exact class
+  via its OWN tier box, masking the duplicate); collapsing `field` onto `entity`'s exact value (RED
+  on 5/5 statuses — precisely the role-collapsing-into-indistinguishability regression Phase 59
+  caused and this plan exists to repair). Both reverted via `git checkout --`, `git diff --stat`
+  empty both times. One blocking fix: `region-overlay-box.tsx` needed an explicit React import
+  (first direct test mount; vitest's classic JSX runtime throws without it, unlike Next's SWC
+  automatic runtime). `apps/web`: tsc clean, 69/69 files 794/794+1skipped green, `build:local`
+  succeeds. SURF-04 marked complete. See `60-04-SUMMARY.md` for the full negative-proof output.
 
 ## Phase 55 -- Platform Migration — Tailwind v4 + React 19 -- Plan 04 History -- React 18->19 core bump + six low-risk dependency bumps
 
@@ -4492,6 +4525,9 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 
 ## Decisions Log
 
+- 2026-07-15 (60-04): [Rule 1] `REGION_ROLE_GEOMETRY.field` is `"border opacity-80"`, not the plan's literal one-line `"border"` — the plan's own per-role description text gives `field` and `none` the identical literal string "border", which would make the two roles structurally indistinguishable and violate the plan's OWN Task 3 requirement that all four roles produce distinct class strings. Fixed forward by adding an opacity nuance to `field` (keeping it honestly "subordinate", the plan's own word for that role) rather than shipping a gate that could never pass by the plan's own literal spec.
+- 2026-07-15 (60-04): Tier and role compose unconditionally now — no `isTerminal` branch in `region-overlay-box.tsx`. `REGION_TIER.terminal`'s own hue-free ghost treatment (opacity-40/bg-shade/border-rule/border-dashed) is sufficient on its own; role geometry never needed suppressing in the first place since it carries zero colour under the new vocabulary.
+- 2026-07-15 (60-04): A known, unresolved cosmetic nuance — a (terminal, field) or (terminal, unrelated) box carries two competing `opacity-*` utility classes simultaneously (tier's opacity-40 + role's opacity-80/60). Not asserted by this plan's tests (class-string presence only, no computed-style check; jsdom doesn't evaluate CSS). Flagged for a future visual-QA pass, not fixed this session.
 - 2026-07-15 (60-03): Confirm/Dismiss buttons from the reference's `.ent-actions` are NOT built in `InboxEntitiesRail` — confirm/deny is an existing, canonical capability (`ConfirmDenyControls`, `components/{id}/confirm`) that lives on `/emails/[id]`, the surface designed for it. Adding a second mutation path in the inbox would be new product behaviour, not a redesign; a suggested fact instead links onward ("Review in email →") to the detail view where the real control lives.
 - 2026-07-15 (60-03): The reference's 1120px four-pane crush guard is realized as `hidden xl:flex` (1280px), not a custom 1120px breakpoint — 1280 is the nearest registered Tailwind step; a one-off custom breakpoint for a single rail was judged not worth the vocabulary sprawl.
 - 2026-07-15 (60-03): [Rule 3] `inbox-mobile-stack.test.tsx`'s literal whole-tag source-string assertion (`SOURCE.toContain('<div className="hidden h-full md:block">')`) broke the instant the plan's required `data-tree` marker was added to that div — any additional JSX attribute breaks a single-literal-substring match regardless of placement. Rewritten to check the class-gating and the `data-tree` marker as two independent substrings.
