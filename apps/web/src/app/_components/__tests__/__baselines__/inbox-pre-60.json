@@ -1,0 +1,22 @@
+{
+  "shape": "div(div(div(div(div(div#tnav(button[aria-pressed]#tbutton[aria-pressed]#tbutton[aria-pressed]#t)))div[role=separator](div(svg(path)))div(div(div(span#tdiv#t)div(div[role=button][aria-pressed](div(span#tspan#t)span#tdiv(a(div(span[aria-hidden]span#tspan#t))a(div(span[aria-hidden]span#t))))div[role=button][aria-pressed](div(span#tspan#t)span#t))))div[role=separator](div(svg(path)))div(div(div(span#ta#t)div(div(span#tspan#t)p#t)))))div(div(div[role=tablist](button[role=tab][aria-selected]#tbutton[role=tab][aria-selected]#tbutton[role=tab][aria-selected]#t))div(div[role=button][aria-pressed](div(span#tspan#t)span#tdiv(a(div(span[aria-hidden]span#tspan#t))a(div(span[aria-hidden]span#t))))div[role=button][aria-pressed](div(span#tspan#t)span#t))))",
+  "elementCount": 81,
+  "maxDepth": 10,
+  "leafTextCount": 32,
+  "tagCounts": {
+    "a": 5,
+    "button": 6,
+    "div": 38,
+    "nav": 1,
+    "p": 1,
+    "path": 2,
+    "span": 26,
+    "svg": 2
+  },
+  "roleCounts": {
+    "button": 4,
+    "separator": 2,
+    "tab": 3,
+    "tablist": 1
+  }
+}
