@@ -17,10 +17,28 @@ interface Email {
   parseStatus: string;
 }
 
+/**
+ * NOTE (60-06): this component is currently UNREFERENCED — nothing renders
+ * it. It is left in place rather than deleted (that is a call for a phase
+ * that owns this surface, not for a law-1 sweep), but its prop type has been
+ * narrowed, because a dead file is exactly where a killed bug waits to be
+ * resurrected.
+ *
+ * The madder variant is GONE from `parseStatusVariant`'s return type. Its
+ * live twin in `email-detail.tsx` mapped a FAILED PARSE to madder, and 60-06
+ * Task 2 removed it: law 1 spends madder on the irreversible, and a failed
+ * parse is reprocessable — the detail header renders the Reprocess button
+ * that proves it. Had this signature survived, reviving the component would
+ * have revived the violation with it. Same judgement, same precedent as
+ * `status-badge.ts`'s return type in 60-05.
+ *
+ * Narrowing is safe: `Badge`'s own variant union is wider than this, so the
+ * remaining members still satisfy it.
+ */
 interface MetadataCardProps {
   email: Email;
   fmt: (d: Date | string | null) => string;
-  parseStatusVariant: (status: string) => "default" | "secondary" | "destructive";
+  parseStatusVariant: (status: string) => "default" | "secondary";
 }
 
 export function MetadataCard({ email, fmt, parseStatusVariant }: MetadataCardProps) {

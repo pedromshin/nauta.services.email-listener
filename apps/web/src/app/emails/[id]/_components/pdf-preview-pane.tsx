@@ -452,7 +452,23 @@ export function PdfPreviewPane({
           <CardTitle className="text-base">PDF Preview</CardTitle>
         </CardHeader>
         <CardContent className="py-8 text-center space-y-2">
-          <Badge variant="destructive">Preview failed</Badge>
+          {/* "Preview failed" is a STATUS, and a reversible one — the button
+              directly below it opens the very file that failed to preview.
+              Law 1 spends madder on the irreversible only, so this reads in
+              ink weight on the same marker shape the detail header uses.
+
+              Worth naming: `role-hue-ban.test.ts` did NOT catch this one. Its
+              rule allows the madder VARIANT (an irreversible button is
+              legitimate) and bans only madder TEXT and BORDERS — a proxy for
+              "a state is talking", and this was a state talking through the
+              allowed door. A source gate cannot read intent; a human read
+              this line. */}
+          <Badge
+            variant="outline"
+            className="border-rule bg-bright text-2xs font-semibold text-ink"
+          >
+            Preview failed
+          </Badge>
           <p className="text-muted-foreground text-sm">
             Could not load PDF preview. Try downloading the file directly.
           </p>

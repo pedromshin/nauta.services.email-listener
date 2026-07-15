@@ -69,7 +69,10 @@ export function ForwardingAddressCard(): React.ReactElement {
         {isLoading && <Skeleton className="h-9 w-full rounded-md" />}
 
         {isError && !isLoading && (
-          <p className="text-sm text-destructive">
+          // An error is not irreversible, so it carries no madder (law 1:
+          // "never errors, never warnings"). Ink, like every other failed
+          // load on this surface.
+          <p className="text-sm text-ink">
             Unable to load your forwarding address. Please try refreshing the
             page.
           </p>

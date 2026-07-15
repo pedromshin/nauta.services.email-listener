@@ -131,7 +131,9 @@ export function AttachmentsCard({
                   )}
                 </div>
                 {fetchErrors[att.id] && (
-                  <p className="text-destructive mt-1 pl-11 text-sm">
+                  // A failed fetch is retryable, not irreversible — ink, not
+                  // madder (law 1: "never errors, never warnings").
+                  <p className="mt-1 pl-11 text-sm text-ink">
                     {fetchErrors[att.id]}
                   </p>
                 )}

@@ -135,8 +135,11 @@ export function InspectorPanel({
   /**
    * A weak candidate is a WARNING, and law 1 spends madder only on the
    * irreversible — "never errors, never warnings" (58-IDENTITY). Pre-60 this
-   * drove `text-destructive`, which told the user an uncertain guess was a
-   * dangerous one. It is neither: it is a machine's low-confidence read that
+   * painted the percentage in madder text, which told the user an uncertain
+   * guess was a dangerous one. (The retired class is described rather than
+   * named: `role-hue-ban.test.ts` walks this file line by line and cannot
+   * tell a citation from a class.) It is neither: it is a machine's
+   * low-confidence read that
    * a human is about to confirm or correct, which is the entire job of this
    * panel. Distinguished now by ink WEIGHT, not hue, so it survives
    * greyscale — and pencil, not madder, is the ladder's word for "uncertain".
