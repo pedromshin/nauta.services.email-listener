@@ -273,7 +273,7 @@ canvas chrome ships in this phase.
 - [x] 56-02-PLAN.md — RCNV-01 auto-collect: fail-open source-ledger write hook in the tool-round loop (wave 2)
 - [ ] 56-03-PLAN.md — RCNV-04 seam: context-edges tRPC router + write-time cross-tenant ownership check (wave 2)
 - [ ] 56-04-PLAN.md — RCNV-04 read: independent fail-open linked-context injection pipeline at turn time (wave 3)
-- [ ] 56-05-PLAN.md — Promotion-gate reuse seam: ledger to SourceCaptureHandler, zero new promotion code (wave 3)
+- [x] 56-05-PLAN.md — Promotion-gate reuse seam: ledger to SourceCaptureHandler, zero new promotion code (wave 3)
 
 ### Phase 57: Email Learning Loop
 

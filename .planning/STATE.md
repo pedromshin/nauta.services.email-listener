@@ -164,6 +164,41 @@ Progress: [███░░░░░░░] 29%
   fakes, live-UAT deferred" posture). See `56-02-SUMMARY.md` for full
   detail.
 
+## Phase 56 -- Research Canvas — Backend & Semantic Context Model -- Plan 05 History -- promotion-gate reuse seam (RCNV-01 groundwork)
+
+- **56-05 EXECUTED** (`4f2225f` feat, `3260c41` feat — executed concurrently
+  alongside Phase 55's own in-flight execution, palette-independent per this
+  milestone's parallel-safe grouping; STATE.md "Current Position" above
+  intentionally left untouched by this plan, owned by the Phase 55 executor):
+  Landed the promotion-gate reuse seam (phase Success Criterion #3). Task 1:
+  `SourceLedgerRepository` Protocol gains `set_knowledge_node_id(id, node_id)`;
+  `SupabaseSourceLedgerRepository` implements it as a single parameterized
+  `update(...).eq("id", ...)` call on `chat_source_ledger.knowledge_node_id` —
+  the ONE new write this seam performs beyond the reused promotion machinery.
+  Task 2: `PromoteSourceLedgerEntryUseCase` (`promote_source_ledger_entry.py`,
+  ~50 lines) reads a ledger row, reshapes it into the exact `source_payload`
+  shape the UNCHANGED `SourceCaptureHandler.execute()` (54-03) already
+  accepts, calls it verbatim (`action="confirm"`, `widget_interaction_id=""`
+  — no widget, RCNV-01's anti-ceremony intent), and on a `"captured"` result
+  calls `set_knowledge_node_id` before returning the handler's result
+  unchanged. Contains zero tier-flip/node-upsert/edge-insert logic of its
+  own. The reuse proof: `test_promote_source_ledger_reuse.py` (6/6 green)
+  includes an EXECUTABLE `git diff --stat <pre-plan-base-sha> --
+  confirm_action_dispatch.py promote_edge.py` subprocess assertion (empty
+  stdout confirmed) — goes beyond the CLUS-05 precedent test, which only
+  claims zero-diff in its docstring. Neither `confirm_action_dispatch.py`
+  nor `promote_edge.py` was touched. Not wired into DI, no route exposed —
+  Phase 63 owns the consumer, per the plan's stated scope boundary. No
+  deviations — plan executed exactly as written (one minor scope note: the
+  reuse test file was built incrementally across both tasks since Task 1's
+  `<verify>` filters within a file not listed in Task 1's own `<files>`).
+  Full adjacent regression suite green (60 tests across 5 files); ruff/mypy/
+  bandit/lint-imports all clean. `state.advance-plan` was invoked, found to
+  incorrectly bump Phase 55's own "Current Position" plan counter (the exact
+  concurrent-tracking hazard 56-01/56-02 already avoided), and was reverted
+  via `git checkout -- .planning/STATE.md` before this section was appended
+  by hand instead. See `56-05-SUMMARY.md` for full detail.
+
 ## Phase 54 -- Email-Cluster Workflow (E3) -- Plan 07 History -- section:H CLUS-07 Live-Acceptance Runsheet
 
 - **54-07 EXECUTED** (`01c4b23` docs):
