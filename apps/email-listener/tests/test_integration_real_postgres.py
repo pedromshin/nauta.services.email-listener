@@ -483,3 +483,114 @@ async def _run_confirm_fallback() -> None:
 def test_confirm_fallback_no_save_embedding_persisted() -> None:
     """Confirm-fallback (no candidate): extraction_records row NOT created; embedding IS stored."""
     asyncio.run(_run_confirm_fallback())
+
+
+# ---------------------------------------------------------------------------
+# LEARN-02 (57-03): dismiss-then-resolve real-Postgres exclusion, both directions
+# ---------------------------------------------------------------------------
+
+
+async def _run_dismiss_then_resolve_excludes_both_directions() -> None:
+    """RejectMergeUseCase durably dismisses a pair; the RPC NOT EXISTS filter must
+    exclude it from ResolveEntityCandidates symmetrically in BOTH directions.
+
+    Seeds two entity_instances with an identical display_name (guarantees pg_trgm
+    similarity=1.0, deterministic — no Bedrock embed call needed). Proves B resolves
+    as a candidate for A BEFORE rejection. Seeds a candidate-link row in ONLY ONE
+    ordering (component_id=A, entity_instance_id=B) then rejects the merge — this
+    means only ONE physical row ever gets was_dismissed=true. The AFTER assertions
+    then prove the SQL filter's OWN symmetric OR clause (Pitfall 1), not merely
+    that dismiss_candidate_link happens to write both orderings: resolving from A
+    must exclude B AND resolving from B must exclude A, even though the single
+    dismissed row is keyed the first way round.
+    """
+    from app.application.use_cases.curate_entity_merge import RejectMergeUseCase
+    from app.application.use_cases.resolve_entity_candidates import ResolveEntityCandidatesUseCase
+    from app.domain.entities.entity_instance import EntityInstance
+    from app.infrastructure.supabase.entity_instance_repository import SupabaseEntityInstanceRepository
+    from app.infrastructure.supabase.entity_resolution_repository import SupabaseEntityResolutionRepository
+    from app.infrastructure.supabase.importer_repository import SupabaseImporterRepository
+
+    client = _client()
+    entity_instances_repo = SupabaseEntityInstanceRepository(client)
+    resolution_repo = SupabaseEntityResolutionRepository(client)
+    importer_repo = SupabaseImporterRepository(
+        client=client,
+        default_importer_id="00000000-0000-0000-0000-000000000001",
+    )
+    resolve_use_case = ResolveEntityCandidatesUseCase(
+        entity_instances=entity_instances_repo,
+        resolution_repo=resolution_repo,
+    )
+    reject_use_case = RejectMergeUseCase(entity_instances=entity_instances_repo)
+
+    entity_id_a = str(uuid.uuid4())
+    entity_id_b = str(uuid.uuid4())
+    shared_display_name = f"Integration Dismiss Test {uuid.uuid4().hex[:8]}"
+    created_entity_type_id: str | None = None
+
+    try:
+        importer_id = await importer_repo.resolve(_SENDER)
+        entity_type_id, created_entity_type_id = _find_or_create_entity_type(client)
+
+        for entity_id in (entity_id_a, entity_id_b):
+            await entity_instances_repo.upsert(
+                EntityInstance(
+                    id=entity_id,
+                    importer_id=importer_id,
+                    entity_type_id=entity_type_id,
+                    nauta_id=None,
+                    source="email_extracted",
+                    display_name=shared_display_name,
+                    identifiers={},
+                    aliases=[],
+                    summary_text=None,
+                    embedding=None,
+                    is_active=True,
+                )
+            )
+
+        # BEFORE: B resolves as a candidate for A (identical display_name → trgm sim=1.0)
+        candidates_before = await resolve_use_case.execute(entity_instance_id=entity_id_a)
+        assert entity_id_b in [c.entity_instance_id for c in candidates_before], (
+            "precondition failed: B must resolve as a candidate for A before rejection"
+        )
+
+        # Seed ONLY ONE candidate-link ordering so the AFTER assertions prove the SQL
+        # filter's own symmetric OR clause, not the dual write in dismiss_candidate_link.
+        await entity_instances_repo.record_candidate_link(
+            component_id=entity_id_a,
+            entity_instance_id=entity_id_b,
+            entity_type_id=entity_type_id,
+            match_type="semantic",
+            similarity_score=1.0,
+        )
+
+        # Human rejects the merge suggestion (the correction being tested).
+        await reject_use_case.execute(entity_id_a, entity_id_b)
+
+        # AFTER: same resolution call, same inputs — B must no longer resurface for A.
+        candidates_after_a = await resolve_use_case.execute(entity_instance_id=entity_id_a)
+        assert entity_id_b not in [c.entity_instance_id for c in candidates_after_a]
+
+        # AFTER (Pitfall 1 direction test): A must not resurface for B either, even
+        # though the only dismissed row is keyed (component_id=A, entity_instance_id=B)
+        # — the filter's OR clause must catch the reverse-subject case.
+        candidates_after_b = await resolve_use_case.execute(entity_instance_id=entity_id_b)
+        assert entity_id_a not in [c.entity_instance_id for c in candidates_after_b]
+    finally:
+        client.table("component_entity_candidate_links").delete().eq("component_id", entity_id_a).eq(
+            "entity_instance_id", entity_id_b
+        ).execute()
+        client.table("component_entity_candidate_links").delete().eq("component_id", entity_id_b).eq(
+            "entity_instance_id", entity_id_a
+        ).execute()
+        client.table("entity_instances").delete().in_("id", [entity_id_a, entity_id_b]).execute()
+        if created_entity_type_id:
+            client.table("entity_types").delete().eq("id", created_entity_type_id).execute()
+
+
+def test_dismiss_then_resolve_excludes_both_directions_against_real_postgres() -> None:
+    """RejectMergeUseCase's was_dismissed flag now excludes the pair from
+    ResolveEntityCandidates symmetrically in both directions (LEARN-02, Pitfall 1)."""
+    asyncio.run(_run_dismiss_then_resolve_excludes_both_directions())

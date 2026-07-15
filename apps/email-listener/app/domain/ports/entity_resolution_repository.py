@@ -44,11 +44,18 @@ class EntityResolutionRepository(Protocol):
         importer_id: str,
         embedding: list[float] | None,
         top_n: int = 5,
+        subject_entity_instance_id: str | None = None,
     ) -> list[EntityCandidate]:
         """Return top-N resolution candidates fused by RRF(k=60).
 
         Dense vector arm is skipped when embedding is None (D-12 degradation).
         Lexical arm always runs. Both arms enforce tenant isolation via
         match_importer_id (T-10-10 cross-tenant isolation).
+
+        subject_entity_instance_id (optional, LEARN-02): when provided, both RPC
+        arms exclude candidates the human already dismissed as a duplicate of this
+        subject (component_entity_candidate_links.was_dismissed), checked
+        symmetrically across both link orderings. None preserves legacy behavior
+        (no exclusion) — backward compatible for callers that omit it.
         """
         ...

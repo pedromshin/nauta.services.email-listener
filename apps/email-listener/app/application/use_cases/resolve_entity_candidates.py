@@ -74,6 +74,7 @@ class ResolveEntityCandidatesUseCase:
             importer_id=importer_id,
             embedding=instance.embedding,
             top_n=top_n,
+            subject_entity_instance_id=entity_instance_id,
         )
 
         log.info("resolve_entity_candidates_done", count=len(candidates))

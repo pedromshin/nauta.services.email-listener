@@ -128,12 +128,18 @@ class SupabaseEntityResolutionRepository:
         importer_id: str,
         embedding: list[float] | None,
         top_n: int = 5,
+        subject_entity_instance_id: str | None = None,
     ) -> list[EntityCandidate]:
         """Return top-N entity candidates fused by RRF(k=60).
 
         Dense arm skipped when embedding is None (D-12 graceful degradation).
         Lexical arm always runs (D-12 lexical-always).
         Both arms pass match_importer_id (T-10-10 cross-tenant isolation).
+
+        subject_entity_instance_id (optional, LEARN-02): threaded into both RPC
+        arms as match_subject_entity_instance_id so a dismissed pair
+        (component_entity_candidate_links.was_dismissed) is excluded in-SQL,
+        symmetrically across both link orderings. None preserves legacy behavior.
         """
         # Build identifier query text from all identifier values
         id_values = " ".join(str(v) for v in identifiers.values() if v)
@@ -146,6 +152,7 @@ class SupabaseEntityResolutionRepository:
                 embedding=embedding,
                 entity_type_id=entity_type_id,
                 importer_id=importer_id,
+                subject_entity_instance_id=subject_entity_instance_id,
             )
 
         # Run lexical arm unconditionally (D-12 lexical-always)
@@ -153,6 +160,7 @@ class SupabaseEntityResolutionRepository:
             query_text=query_text,
             entity_type_id=entity_type_id,
             importer_id=importer_id,
+            subject_entity_instance_id=subject_entity_instance_id,
         )
 
         if not vector_rows and not trgm_rows:
@@ -231,6 +239,7 @@ class SupabaseEntityResolutionRepository:
         embedding: list[float],
         entity_type_id: str,
         importer_id: str,
+        subject_entity_instance_id: str | None = None,
     ) -> list[dict[str, Any]]:
         """Dense cosine similarity query over entity_instances.embedding (HNSW)."""
         try:
@@ -241,6 +250,7 @@ class SupabaseEntityResolutionRepository:
                     "match_importer_id": importer_id,
                     "match_entity_type_id": entity_type_id,
                     "match_count": _CANDIDATE_LIMIT,
+                    "match_subject_entity_instance_id": subject_entity_instance_id,
                 },
             ).execute()
             rows: list[dict[str, Any]] = result.data or []
@@ -258,6 +268,7 @@ class SupabaseEntityResolutionRepository:
         query_text: str,
         entity_type_id: str,
         importer_id: str,
+        subject_entity_instance_id: str | None = None,
     ) -> list[dict[str, Any]]:
         """pg_trgm similarity query over entity display_name + identifiers + aliases."""
         try:
@@ -268,6 +279,7 @@ class SupabaseEntityResolutionRepository:
                     "match_importer_id": importer_id,
                     "match_entity_type_id": entity_type_id,
                     "match_count": _CANDIDATE_LIMIT,
+                    "match_subject_entity_instance_id": subject_entity_instance_id,
                 },
             ).execute()
             rows: list[dict[str, Any]] = result.data or []

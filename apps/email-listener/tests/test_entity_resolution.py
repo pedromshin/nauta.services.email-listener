@@ -293,8 +293,13 @@ class FakeSupabaseClient:
         self._trgm_rows = trgm_rows
         self.vector_called = False
         self.trgm_called = False
+        # Records every (name, params) pair passed to .rpc(...) — LEARN-02 assertions
+        # inspect this to prove match_subject_entity_instance_id is threaded into
+        # BOTH arms without relying on internal RPC dispatch order.
+        self.rpc_calls: list[tuple[str, dict[str, Any]]] = []
 
     def rpc(self, name: str, params: dict[str, Any]) -> FakeSupabaseClient:
+        self.rpc_calls.append((name, params))
         if name == "match_entities_by_embedding":
             self.vector_called = True
             self._pending_rows = self._vector_rows
@@ -429,6 +434,76 @@ class TestLexicalOnlyDegradation:
 
 
 # ---------------------------------------------------------------------------
+# 3b. LEARN-02: subject_entity_instance_id threaded into BOTH RPC arms
+# ---------------------------------------------------------------------------
+
+
+class TestSubjectEntityInstanceIdThreading:
+    """Proves the dead was_dismissed signal is actually consumed at the RPC boundary.
+
+    match_subject_entity_instance_id must reach BOTH match_entities_by_embedding
+    and match_entities_by_trgm's param dicts when provided, and must be explicitly
+    None (not absent) when the caller omits it — preserving legacy no-arg behavior
+    for the SQL-side `match_subject_entity_instance_id IS NULL OR ...` guard.
+    """
+
+    def test_subject_id_passed_to_both_rpc_arms_when_provided(self) -> None:
+        vector_row = {"id": _ENTITY_ID_B, "display_name": "MSCU Corp", "distance": 0.2}
+        trgm_row = {
+            "id": _ENTITY_ID_C,
+            "display_name": "MSCU Industries",
+            "sim": 0.8,
+            "name_sim": 0.8,
+            "identifier_sim": 0.0,
+            "alias_sim": 0.0,
+        }
+        fake_client = FakeSupabaseClient(vector_rows=[vector_row], trgm_rows=[trgm_row])
+        repo = SupabaseEntityResolutionRepository(client=fake_client)
+
+        repo.find_candidates(
+            display_name="MSCU",
+            identifiers={},
+            entity_type_id=_ENTITY_TYPE_ID,
+            importer_id=_IMPORTER_ID,
+            embedding=_NONZERO_EMBEDDING,
+            subject_entity_instance_id=_ENTITY_ID_A,
+        )
+
+        assert len(fake_client.rpc_calls) == 2
+        for name, params in fake_client.rpc_calls:
+            assert params["match_subject_entity_instance_id"] == _ENTITY_ID_A, (
+                f"{name} did not receive match_subject_entity_instance_id"
+            )
+
+    def test_subject_id_omitted_passes_none_to_both_arms(self) -> None:
+        """Legacy callers (no subject id) must still send an explicit None — the
+        SQL guard `match_subject_entity_instance_id IS NULL OR ...` depends on it."""
+        vector_row = {"id": _ENTITY_ID_B, "display_name": "MSCU Corp", "distance": 0.2}
+        trgm_row = {
+            "id": _ENTITY_ID_C,
+            "display_name": "MSCU Industries",
+            "sim": 0.8,
+            "name_sim": 0.8,
+            "identifier_sim": 0.0,
+            "alias_sim": 0.0,
+        }
+        fake_client = FakeSupabaseClient(vector_rows=[vector_row], trgm_rows=[trgm_row])
+        repo = SupabaseEntityResolutionRepository(client=fake_client)
+
+        repo.find_candidates(
+            display_name="MSCU",
+            identifiers={},
+            entity_type_id=_ENTITY_TYPE_ID,
+            importer_id=_IMPORTER_ID,
+            embedding=_NONZERO_EMBEDDING,
+        )
+
+        assert len(fake_client.rpc_calls) == 2
+        for _name, params in fake_client.rpc_calls:
+            assert params["match_subject_entity_instance_id"] is None
+
+
+# ---------------------------------------------------------------------------
 # 4. D-09 provenance write on PromoteEntityOnConfirmUseCase
 # ---------------------------------------------------------------------------
 
@@ -510,8 +585,13 @@ class FakeResolutionRepo:
 
     def __init__(self, candidates: list[EntityCandidate] | None = None) -> None:
         self._candidates = candidates or []
+        # Records every find_candidates(...) call's kwargs — LEARN-02 use-case-level
+        # threading assertions (subject_entity_instance_id consumption proof) inspect
+        # the last call without needing a full mock framework.
+        self.calls: list[dict[str, Any]] = []
 
     def find_candidates(self, **kwargs: Any) -> list[EntityCandidate]:
+        self.calls.append(kwargs)
         return self._candidates
 
 
@@ -825,6 +905,32 @@ class TestPromoteEntityOnConfirm:
         instance = next(iter(entity_instances._instances.values()))
         assert "bl_number" not in instance.identifiers
 
+    # ── LEARN-02: subject_entity_instance_id consumption proof ─────────────────
+
+    def test_threads_subject_entity_instance_id_to_resolution_repo(self) -> None:
+        """find_candidates is called with subject_entity_instance_id=persisted.id.
+
+        This is the wiring that lets a later RejectMergeUseCase call on THIS
+        instance suppress its own resurfacing candidates (LEARN-02 gap 2). Before
+        this plan, the kwarg was absent entirely.
+        """
+        comp = _make_component()
+        entity_instances = FakeEntityInstanceRepository()
+        resolution_repo = FakeResolutionRepo([])
+        components_repo = FakeComponentRepository({comp.id: comp})
+        promote = PromoteEntityOnConfirmUseCase(
+            components=components_repo,
+            entity_instances=entity_instances,
+            entity_types=FakeEntityTypeRepository(),
+            extractions=FakeExtractionRepository(),
+            resolution_repo=resolution_repo,
+        )
+        asyncio.run(promote.execute(component_id=_COMP_ID))
+
+        assert len(resolution_repo.calls) == 1
+        persisted_id = next(iter(entity_instances._instances.values())).id
+        assert resolution_repo.calls[0]["subject_entity_instance_id"] == persisted_id
+
 
 # ---------------------------------------------------------------------------
 # 5. D-10 BackfillEntityIdentitiesUseCase — idempotent + partial success
@@ -964,6 +1070,23 @@ class TestResolveEntityCandidatesUseCase:
         # No provenance writes from resolve-only path
         assert entity_instances.candidate_links == []
         assert entity_instances.alias_writes == []
+
+    def test_threads_subject_entity_instance_id_to_resolution_repo(self) -> None:
+        """LEARN-02 consumption proof: find_candidates(entity_instance_id="S") calls
+        resolution_repo.find_candidates(..., subject_entity_instance_id="S"). Before
+        this plan the kwarg was absent entirely — a dismissed pair resurfaced forever."""
+        instance = _make_instance()
+        entity_instances = FakeEntityInstanceRepository()
+        entity_instances._instances[instance.id] = instance
+        resolution_repo = FakeResolutionRepo([])
+        use_case = ResolveEntityCandidatesUseCase(
+            entity_instances=entity_instances,
+            resolution_repo=resolution_repo,
+        )
+        asyncio.run(use_case.execute(entity_instance_id=instance.id))
+
+        assert len(resolution_repo.calls) == 1
+        assert resolution_repo.calls[0]["subject_entity_instance_id"] == instance.id
 
 
 # ---------------------------------------------------------------------------

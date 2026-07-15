@@ -260,6 +260,7 @@ class PromoteEntityOnConfirmUseCase:
             entity_type_id=entity_type_id,
             importer_id=importer_id,
             embedding=persisted.embedding,
+            subject_entity_instance_id=persisted.id,
         )
 
         # Write provenance for each candidate (D-09); D-05 no merge
