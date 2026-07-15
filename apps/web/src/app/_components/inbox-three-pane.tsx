@@ -23,6 +23,7 @@ import { Tabs, TabsList, TabsTrigger } from "@polytoken/ui/tabs";
 import { api } from "~/trpc/react";
 
 import type { EntityChipEntry } from "./entity-chips";
+import { InboxEntitiesRail } from "./inbox-entities-rail";
 import { InboxThreadGroup } from "./inbox-thread-group";
 import type { InboxEmail } from "./inbox-row";
 
@@ -139,7 +140,10 @@ function ReadingPreview({
 }): React.ReactElement {
   if (!email) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-2 bg-leaf p-12 text-center">
+      <div
+        data-pane="reading"
+        className="flex h-full flex-col items-center justify-center gap-2 bg-leaf p-12 text-center"
+      >
         <p className="text-sm font-semibold text-ink">No email selected</p>
         <p className="text-sm text-faded">
           Select a message from the list to preview it here.
@@ -153,35 +157,48 @@ function ReadingPreview({
     : email.senderAddress;
 
   return (
-    <div className="flex h-full flex-col bg-leaf">
-      <div className="flex min-h-11 items-center justify-between gap-3 border-b border-hair px-4 py-2">
-        <span className="truncate text-sm font-semibold text-ink">
+    <div data-pane="reading" className="flex h-full flex-col overflow-auto bg-leaf p-panel">
+      {/* .rp-head: the subject is the user's own material (law 2) — a
+          serif h2, not muted chrome. */}
+      <div className="flex items-start justify-between gap-4">
+        <h2
+          data-field="subject"
+          data-evidence
+          className="min-w-0 flex-1 font-serif text-xl text-ink"
+        >
           {email.subject ?? "(no subject)"}
-        </span>
-        <Button asChild size="sm" variant="outline">
-          <Link href={`/emails/${email.id}`}>Open editor →</Link>
+        </h2>
+        <Button asChild size="sm" variant="outline" className="shrink-0">
+          <Link href={`/emails/${email.id}`}>Open email →</Link>
         </Button>
       </div>
 
-      <div className="flex flex-col gap-4 overflow-auto p-4">
-        <div className="flex flex-col gap-1 text-sm">
-          <span className="font-semibold text-ink">{sender}</span>
-          <span className="text-faded">
-            To: {email.toAddresses.join(", ") || "—"}
-          </span>
-        </div>
-
-        {email.bodyText ? (
-          <p className="whitespace-pre-line text-sm text-faded">
-            {email.bodyText.slice(0, 2000)}
-          </p>
-        ) : (
-          <p className="text-sm text-faded">
-            This email has no plain-text body. Open the editor to view the full
-            document and its regions.
-          </p>
-        )}
+      {/* .rp-meta: From/To are the user's material but they are metadata,
+          not prose — sans, under a ruled boundary. */}
+      <div className="mt-2.5 border-b border-hair pb-3.5 text-xs text-faded">
+        From: {sender} · To: {email.toAddresses.join(", ") || "—"}
       </div>
+
+      {email.bodyText ? (
+        // .rp-body: --text-lg (15.5px/1.7) is the step Phase 59 anchored
+        // on THIS pane's body specifically (59-02-SUMMARY.md's scale
+        // table) — the designed value, not a guess. The 56ch measure is
+        // the reference's own, and is what makes long mail readable.
+        // T-60-04: the 2000-char bound stays — never rely on CSS
+        // truncation alone to tame a megabyte body.
+        <p
+          data-field="body"
+          data-evidence
+          className="mt-4 max-w-[56ch] whitespace-pre-line font-serif text-lg text-ink"
+        >
+          {email.bodyText.slice(0, 2000)}
+        </p>
+      ) : (
+        <p className="mt-4 text-sm text-faded">
+          This email has no plain-text body. Open the editor to view the full
+          document and its regions.
+        </p>
+      )}
     </div>
   );
 }
@@ -435,7 +452,22 @@ export function InboxThreePane({
       <ResizableHandle withHandle />
 
       <ResizablePanel defaultSize={40}>
-        <ReadingPreview email={selectedEmail} />
+        {/* Reading column + the fourth pane, as a horizontal flex INSIDE
+            this one ResizablePanel — not a fourth ResizablePanel (the
+            reference's `.entities` is a fixed-width aside, not a
+            resizable one; adding a panel would renegotiate all three
+            existing defaultSizes for no design gain). */}
+        <div className="flex h-full">
+          <div className="min-w-0 flex-1">
+            <ReadingPreview email={selectedEmail} />
+          </div>
+          <InboxEntitiesRail
+            entities={
+              selectedEmailId ? (entitiesByEmailId.get(selectedEmailId) ?? []) : []
+            }
+            emailId={selectedEmailId ?? ""}
+          />
+        </div>
       </ResizablePanel>
         </ResizablePanelGroup>
       </div>
