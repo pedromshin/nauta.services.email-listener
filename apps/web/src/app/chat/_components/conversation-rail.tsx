@@ -181,7 +181,13 @@ export function ConversationRail({
     <>
       {/* Desktop (>=md) — byte-identical inline Collapsible, unchanged. */}
       <div className="hidden md:block h-full">
+        {/* `h-full` is load-bearing: Radix renders this root as a bare <div> with no
+         * class of its own, so without it the height chain breaks here — the div grows
+         * to fit every conversation, CollapsibleContent's `h-full` resolves against
+         * *that* instead of the 856px wrapper, and the page scrolls to ~11,000px
+         * instead of the rail scrolling inside itself. */}
         <Collapsible
+          className="h-full"
           open={!collapsed}
           onOpenChange={(open) => onCollapsedChange(!open)}
         >
