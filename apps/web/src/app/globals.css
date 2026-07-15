@@ -406,6 +406,77 @@
   font-variant-numeric: tabular-nums lining-nums;
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   THE SIGNATURE ELEMENT -- the provenance mark (D-58-01 "Signature
+   element", 59-02-PLAN.md Task 2). Ported from direction-final.html's
+   `.pm`/`.pm.c`/`.pm.s` (sketch lines 212-217). One mark language used
+   IDENTICALLY on entity chips, cited spans inside chat answers, and
+   knowledge entity labels: solid border = confirmed, dashed border =
+   suggested. Phases 60-63 should reach for `pmark pmark-confirmed` /
+   `pmark pmark-suggested` rather than re-hand-rolling a chip per surface
+   -- that reuse is the entire point of building it here, once, now.
+   ══════════════════════════════════════════════════════════════════════ */
+@utility pmark {
+  font-family: var(--font-serif);
+  font-variant-numeric: tabular-nums lining-nums;
+  border-radius: 3px;
+  padding: 0 0.22em;
+  margin: 0 0.04em;
+}
+@utility pmark-confirmed {
+  background: var(--conf-wash);
+  border: 1px solid var(--conf-line);
+  color: var(--conf);
+}
+@utility pmark-suggested {
+  background: var(--sugg-wash);
+  border: 1px dashed var(--sugg-line);
+  color: var(--sugg);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ENTITY-TYPE SHAPE VOCABULARY -- LAW 3: entity type is shape, never hue
+   (58-IDENTITY.md). Type surrendered its five hues so tier could own
+   colour outright -- that is what makes law 1 possible. Drawn in
+   --faded, not --ink: per the sketch's own finding, full ink out-shouts
+   the tier colour it must defer to (caught by rendering -- the ink dots
+   led the eye). Ported from direction-final.html's `.tshape*` (sketch
+   lines 255-260). No variant below carries a hue.
+
+   CHANEL RULE (the sketch's own finding, kept as a comment here since it
+   governs WHERE these utilities may be used): type shapes belong only
+   where there is no room for a word -- filter rails, canvas nodes --
+   never beside a label that already says the type. There is deliberately
+   no shape for `date`, which has none of its own; do not invent one.
+   ══════════════════════════════════════════════════════════════════════ */
+@utility tshape {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  background: var(--faded);
+  display: block;
+}
+@utility tshape-supplier {
+  border-radius: 2px; /* square */
+}
+@utility tshape-person {
+  border-radius: 50%; /* circle */
+}
+@utility tshape-amount {
+  width: 9px;
+  height: 9px;
+  border-radius: 1px;
+  transform: rotate(45deg); /* diamond */
+}
+@utility tshape-document {
+  clip-path: polygon(50% 0, 100% 100%, 0 100%); /* triangle */
+}
+@utility tshape-email {
+  background: transparent;
+  border: 1.5px solid var(--pencil);
+  border-radius: 50%; /* hollow */
+}
+
 @layer base {
   * {
     @apply border-border;
