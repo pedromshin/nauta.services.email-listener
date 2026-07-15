@@ -107,7 +107,9 @@ export function EntityChips({
             // also toggling the row's reading-preview selection.
             onClick={(event) => event.stopPropagation()}
           >
-            <span className="truncate font-serif tabular">{primaryText}</span>
+            <span data-evidence className="truncate font-serif tabular">
+              {primaryText}
+            </span>
             <span className="shrink-0 text-2xs opacity-75">· {entity.typeLabel}</span>
           </Link>
         );
