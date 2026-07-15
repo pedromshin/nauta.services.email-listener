@@ -27,8 +27,8 @@ IDNT-02 is locked.
 
 - [x] **STCK-01**: `apps/web` + `packages/ui` build and run on Tailwind v4 — the HSL tokens in `globals.css` are ported to `@theme`/oklch, and every existing WCAG-AA contrast + token-family-registration regression gate stays green on the new engine
 - [x] **STCK-02**: `apps/web` + `packages/ui` build and run on React 19 — every vendored `packages/ui` component is revalidated and renders correctly (no runtime regressions in the 16-surface screenshot harness)
-- [ ] **STCK-03**: The Radix-vs-Base-UI primitive stance is decided and documented (upstream shadcn moved its default primitives to Base UI, 2026-07); the design-system skill is updated to match
-- [ ] **STCK-04**: A direct shadcn registry install (`shadcn add @kibo-ui/…`) works in place of the vendor-and-adapt workflow — verified on at least one real component (the payoff that justifies the migration)
+- [x] **STCK-03**: The Radix-vs-Base-UI primitive stance is decided and documented (upstream shadcn moved its default primitives to Base UI, 2026-07); the design-system skill is updated to match
+- [x] **STCK-04**: A direct shadcn registry install (`shadcn add @kibo-ui/…`) works in place of the vendor-and-adapt workflow — verified on at least one real component (the payoff that justifies the migration)
 
 ### Visual Identity (IDNT — Band 2; BLOCKING HUMAN GATE)
 
@@ -89,8 +89,8 @@ Which phases cover which requirements. Filled by the roadmapper.
 |-------------|-------|--------|
 | STCK-01 | Phase 55 — Platform Migration: Tailwind v4 + React 19 | Complete |
 | STCK-02 | Phase 55 — Platform Migration: Tailwind v4 + React 19 | Complete |
-| STCK-03 | Phase 55 — Platform Migration: Tailwind v4 + React 19 | Pending |
-| STCK-04 | Phase 55 — Platform Migration: Tailwind v4 + React 19 | Pending |
+| STCK-03 | Phase 55 — Platform Migration: Tailwind v4 + React 19 | Complete |
+| STCK-04 | Phase 55 — Platform Migration: Tailwind v4 + React 19 | Complete |
 | RCNV-01 | Phase 56 — Research Canvas: Backend & Semantic Context Model | Complete |
 | RCNV-04 | Phase 56 — Research Canvas: Backend & Semantic Context Model | Pending |
 | LEARN-01 | Phase 57 — Email Learning Loop | Complete |
