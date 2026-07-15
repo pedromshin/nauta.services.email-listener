@@ -353,3 +353,37 @@ every screenshot review, which is worth knowing before someone files it as a bug
   the region overlays, and the extraction registry cannot be visually verified by any capture until
   the fixture seeds entities/regions, or LIVE-04 lands a real message.
 - **999.21 — still unassessed.** Not dismissed as "pre-existing" a fourth time on no evidence.
+
+---
+
+## CORRECTION — "inbox — PASS" above was asserted on desktop only
+
+The Phase 60 verifier caught this, and it is worth recording as a defect in *this document*
+rather than quietly amending the verdict.
+
+The FOLLOW-UP section's "inbox — PASS" was written after reading `inbox-desktop.png`. It was not
+qualified as desktop-only, so it reads as a verdict on the surface. **`inbox-mobile.png` in the
+same run is three grey skeleton rows** — I had not looked at it when I wrote PASS. That is the same
+overreach this document criticises 60-07 for nearly making, committed one section later.
+
+**Settled, on real pixels** (probe at 390×844, `networkidle` + 3s, same method as the theme probe):
+
+```
+PROBE mobile-settled: {"skeletons":0,"serif":34,"evidence":34,"chips":4}
+```
+
+`inbox-mobile-settled.png` shows a genuine redesigned mobile feed: serif subjects and snippets,
+verdigris provenance chips, the thread-group affordance, tabular dates, no skeletons.
+
+So the committed capture's skeleton is **999.24 again** (the harness screenshots before async data
+lands), not a mobile defect — and this is now established from pixels rather than inferred from
+`inbox-three-pane.tsx:544` rendering the same component as desktop's `:419`.
+
+**A bonus the gates could not give us:** `serif === evidence === 34`. Law 2's mutual implication
+(`font-serif` ⟺ `data-evidence`) is enforced by the gates only as *class strings*; this is the
+first confirmation it holds at **runtime**, on a real DOM.
+
+**The lesson, for the third time tonight:** the sidebar shipped half-width through 4/4 verification;
+60-07 nearly reported a dead app as a design verdict; and here a reviewer wrote PASS for a surface
+from one of its two viewports. Every one of these was caught by looking at the actual thing, and
+every one would have survived any amount of green.
