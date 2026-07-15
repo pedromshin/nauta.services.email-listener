@@ -6,9 +6,9 @@
  * ThemedRoot is the SINGLE alias→CSS-var boundary in the genui render path.
  * It resolves a StylePackId to a curated set of CSS variables (from
  * pack.resolvedVars) and applies them as inline `style` on a wrapper div.
- * All shadcn/ui components in @polytoken/ui read `hsl(var(--*))` automatically,
- * so swapping the pack id changes the entire visual theme without any component
- * changes.
+ * All shadcn/ui components in @polytoken/ui read `var(--*)` directly (as of
+ * 55-02's Tailwind v4 migration), so swapping the pack id changes the entire
+ * visual theme without any component changes.
  *
  * Security contracts:
  *   GR-01: ZERO eval/new Function/dangerouslySetInnerHTML. CSS vars are set
@@ -21,10 +21,17 @@
  *            never throws on bad input.
  *
  * CSS variable format:
- *   globals.css declares `--primary: 164 39% 22%` (HSL channels, no "hsl()" wrapper).
- *   pack.resolvedVars uses the same format: bare HSL channels for color tokens,
- *   raw values for radius/shadow/font family tokens.
- *   ThemedRoot sets `--<varName>: <value>` inline — matching globals.css behavior.
+ *   globals.css declares `--primary: oklch(38.9% 0.053 173.7)` (a full color
+ *   function, as of 55-02's Tailwind v4 migration) and every consumer reads
+ *   it bare via `var(--primary)`. pack.resolvedVars (packages/genui's own
+ *   runtime re-theme surface, deliberately kept HSL — 55-RESEARCH.md
+ *   Pitfall 1) still uses bare HSL channel triplets for color tokens, raw
+ *   values for radius/shadow/font-family tokens. ThemedRoot therefore wraps
+ *   ONLY the color-group values in `hsl(...)` before injecting them as
+ *   `--<varName>: <value>` — an unwrapped triplet like `164 39% 22%` is not
+ *   a valid CSS color on its own once every call site reads the var bare;
+ *   `hsl(164 39% 22%)` is. Non-color vars (radius/spacing/shadow/typography)
+ *   are injected raw, unchanged.
  *
  * Usage:
  *   <ThemedRoot packId="linear-clean">
@@ -35,7 +42,24 @@
 import React from "react";
 
 import { getStylePack } from "./packs";
-import type { StylePackId } from "./tokens";
+import { TOKEN_ALIAS_TO_CSS_VAR } from "./tokens";
+import type { StylePackId, TokenAlias } from "./tokens";
+
+/**
+ * The CSS var names (without `--`) whose DTCG alias starts with `color.` —
+ * the subset of `pack.resolvedVars` that are actual colors and therefore
+ * need the `hsl(...)` wrapper below (55-02 Task 2, Pitfall 1 corollary).
+ */
+const COLOR_CSS_VAR_NAMES: ReadonlySet<string> = new Set(
+  (Object.entries(TOKEN_ALIAS_TO_CSS_VAR) as ReadonlyArray<[TokenAlias, string]>)
+    .filter(([alias]) => alias.startsWith("color."))
+    .map(([, cssVarName]) => cssVarName),
+);
+
+/** Wraps color-group values in `hsl(...)`; non-color values pass through raw. */
+function resolveVarValue(varName: string, value: string): string {
+  return COLOR_CSS_VAR_NAMES.has(varName) ? `hsl(${value})` : value;
+}
 
 // ---------------------------------------------------------------------------
 // Props
@@ -71,7 +95,7 @@ export function ThemedRoot({ packId, children }: ThemedRootProps): React.ReactEl
   // React accepts CSS custom properties as `--varName: value` in the style object.
   const cssVarStyle: Record<string, string> = {};
   for (const [varName, value] of Object.entries(pack.resolvedVars)) {
-    cssVarStyle[`--${varName}`] = value;
+    cssVarStyle[`--${varName}`] = resolveVarValue(varName, value);
   }
 
   // GR-01: style prop (not dangerouslySetInnerHTML) is the only way values

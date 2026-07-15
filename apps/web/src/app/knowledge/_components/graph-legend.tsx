@@ -26,7 +26,7 @@ function LegendSwatch({ label, tier }: LegendSwatchProps): React.ReactElement {
           y1="6"
           x2="12"
           y2="6"
-          stroke={style?.stroke ?? "hsl(var(--foreground))"}
+          stroke={style?.stroke ?? "var(--foreground)"}
           strokeWidth={1.5}
           strokeDasharray={style?.strokeDasharray}
           opacity={style?.opacity ?? 1}

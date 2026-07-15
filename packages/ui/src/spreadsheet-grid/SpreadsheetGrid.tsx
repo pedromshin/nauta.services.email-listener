@@ -73,20 +73,20 @@ ModuleRegistry.registerModules([AllCommunityModule]);
  * (frozen-column shadow, conditional-formatting cell classes, etc.).
  */
 const platformTheme = themeQuartz.withParams({
-  backgroundColor: "hsl(var(--background))",
-  foregroundColor: "hsl(var(--foreground))",
-  headerBackgroundColor: "hsl(var(--card))",
-  headerTextColor: "hsl(var(--card-foreground))",
-  borderColor: "hsl(var(--border))",
-  rowHoverColor: "hsl(var(--accent))",
-  selectedRowBackgroundColor: "hsl(var(--primary) / 0.08)",
-  rangeSelectionBackgroundColor: "hsl(var(--primary) / 0.1)",
-  rangeSelectionBorderColor: "hsl(var(--primary))",
+  backgroundColor: "var(--background)",
+  foregroundColor: "var(--foreground)",
+  headerBackgroundColor: "var(--card)",
+  headerTextColor: "var(--card-foreground)",
+  borderColor: "var(--border)",
+  rowHoverColor: "var(--accent)",
+  selectedRowBackgroundColor: "color-mix(in srgb, var(--primary) 8%, transparent)",
+  rangeSelectionBackgroundColor: "color-mix(in srgb, var(--primary) 10%, transparent)",
+  rangeSelectionBorderColor: "var(--primary)",
   fontSize: 14,
   fontFamily: "var(--font-geist-sans, ui-sans-serif, system-ui, sans-serif)",
   rowHeight: 36,
   headerHeight: 40,
-  inputFocusBorder: "solid 2px hsl(var(--ring))",
+  inputFocusBorder: "solid 2px var(--ring)",
 });
 
 /** Drag handle column — pinned left, before row number */

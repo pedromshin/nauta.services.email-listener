@@ -91,7 +91,7 @@ function PreviewEdge({
       y1={from.y}
       x2={to.x}
       y2={to.y}
-      stroke={style.style?.stroke ?? "hsl(var(--foreground))"}
+      stroke={style.style?.stroke ?? "var(--foreground)"}
       strokeWidth={1.5}
       strokeDasharray={style.style?.strokeDasharray}
       opacity={style.style?.opacity ?? 1}

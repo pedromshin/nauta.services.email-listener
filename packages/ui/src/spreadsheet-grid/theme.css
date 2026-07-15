@@ -1,15 +1,15 @@
 .ag-theme-platform {
-  --ag-background-color: hsl(var(--background));
-  --ag-foreground-color: hsl(var(--foreground));
-  --ag-header-background-color: hsl(var(--card));
-  --ag-header-foreground-color: hsl(var(--card-foreground));
-  --ag-border-color: hsl(var(--border));
-  --ag-row-hover-color: hsl(var(--accent));
-  --ag-selected-row-background-color: hsl(var(--primary) / 0.08);
-  --ag-range-selection-background-color: hsl(var(--primary) / 0.1);
-  --ag-range-selection-border-color: hsl(var(--primary));
-  --ag-cell-horizontal-border: 1px solid hsl(var(--border));
-  --ag-header-column-resize-handle-color: hsl(var(--border));
+  --ag-background-color: var(--background);
+  --ag-foreground-color: var(--foreground);
+  --ag-header-background-color: var(--card);
+  --ag-header-foreground-color: var(--card-foreground);
+  --ag-border-color: var(--border);
+  --ag-row-hover-color: var(--accent);
+  --ag-selected-row-background-color: color-mix(in srgb, var(--primary) 8%, transparent);
+  --ag-range-selection-background-color: color-mix(in srgb, var(--primary) 10%, transparent);
+  --ag-range-selection-border-color: var(--primary);
+  --ag-cell-horizontal-border: 1px solid var(--border);
+  --ag-header-column-resize-handle-color: var(--border);
   --ag-font-size: 14px;
   --ag-font-family: var(
     --font-geist-sans,
@@ -19,13 +19,13 @@
   );
   --ag-row-height: 36px;
   --ag-header-height: 40px;
-  --ag-input-focus-box-shadow: 0 0 0 2px hsl(var(--ring));
+  --ag-input-focus-box-shadow: 0 0 0 2px var(--ring);
 }
 
 /* Glass treatment for column headers (D-24) */
 .ag-theme-platform .ag-header-row {
   backdrop-filter: blur(4px);
-  background: hsl(var(--background) / 0.85);
+  background: color-mix(in srgb, var(--background) 85%, transparent);
 }
 
 /* Frozen column shadow (D-14) */
@@ -36,20 +36,20 @@
 
 /* Cell focus ring uses primary color */
 .ag-theme-platform .ag-cell-focus:not(.ag-cell-range-selected) {
-  border-color: hsl(var(--primary)) !important;
+  border-color: var(--primary) !important;
   border-width: 2px;
 }
 
 /* Validation error cell (D-04) */
 .ag-theme-platform .ag-cell.cell-error {
-  border-color: hsl(var(--destructive)) !important;
-  background: hsl(var(--destructive) / 0.1);
+  border-color: var(--destructive) !important;
+  background: color-mix(in srgb, var(--destructive) 10%, transparent);
 }
 
 /* Read-only cells (D-17) */
 .ag-theme-platform .ag-cell.cell-readonly {
-  background: hsl(var(--muted));
-  color: hsl(var(--muted-foreground));
+  background: var(--muted);
+  color: var(--muted-foreground);
   cursor: not-allowed;
 }
 
@@ -57,48 +57,48 @@
 .ag-theme-platform .ag-header-cell.auto-detected .ag-header-cell-text {
   font-family: var(--font-geist-mono, ui-monospace, monospace);
   font-style: italic;
-  color: hsl(var(--muted-foreground));
+  color: var(--muted-foreground);
 }
 
 /* Range selection highlight (used by plan 07-05) */
 .ag-theme-platform .ag-cell.range-selected {
-  background: hsl(var(--primary) / 0.1) !important;
-  border-color: hsl(var(--primary) / 0.3);
+  background: color-mix(in srgb, var(--primary) 10%, transparent) !important;
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
 }
 
 /* Find bar match highlight (used by plan 07-05) */
 .ag-theme-platform .ag-cell.find-match {
-  outline: 2px solid hsl(var(--primary));
+  outline: 2px solid var(--primary);
   outline-offset: -2px;
 }
 .ag-theme-platform .ag-cell.find-match-current {
-  background: hsl(var(--primary) / 0.15) !important;
-  outline: 2px solid hsl(var(--primary));
+  background: color-mix(in srgb, var(--primary) 15%, transparent) !important;
+  outline: 2px solid var(--primary);
   outline-offset: -2px;
 }
 
 /* Conditional formatting colors (used by plan 07-07) */
 .ag-theme-platform .ag-cell.cf-chart-1 {
-  background: hsl(var(--chart-1) / 0.15);
+  background: color-mix(in srgb, var(--chart-1) 15%, transparent);
 }
 .ag-theme-platform .ag-cell.cf-chart-2 {
-  background: hsl(var(--chart-2) / 0.15);
+  background: color-mix(in srgb, var(--chart-2) 15%, transparent);
 }
 .ag-theme-platform .ag-cell.cf-chart-3 {
-  background: hsl(var(--chart-3) / 0.15);
+  background: color-mix(in srgb, var(--chart-3) 15%, transparent);
 }
 .ag-theme-platform .ag-cell.cf-chart-4 {
-  background: hsl(var(--chart-4) / 0.15);
+  background: color-mix(in srgb, var(--chart-4) 15%, transparent);
 }
 .ag-theme-platform .ag-cell.cf-chart-5 {
-  background: hsl(var(--chart-5) / 0.15);
+  background: color-mix(in srgb, var(--chart-5) 15%, transparent);
 }
 .ag-theme-platform .ag-cell.cf-chart-6 {
-  background: hsl(var(--chart-6) / 0.15);
+  background: color-mix(in srgb, var(--chart-6) 15%, transparent);
 }
 .ag-theme-platform .ag-cell.cf-chart-7 {
-  background: hsl(var(--chart-7) / 0.15);
+  background: color-mix(in srgb, var(--chart-7) 15%, transparent);
 }
 .ag-theme-platform .ag-cell.cf-chart-8 {
-  background: hsl(var(--chart-8) / 0.15);
+  background: color-mix(in srgb, var(--chart-8) 15%, transparent);
 }

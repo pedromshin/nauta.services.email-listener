@@ -47,8 +47,14 @@ describe("PanelThemeScope", () => {
     const wrapper = container.firstElementChild as HTMLElement;
     const expectedPack = getStylePack("linear-clean");
 
-    expect(wrapper.style.getPropertyValue("--primary")).toBe(expectedPack.resolvedVars.primary);
-    expect(wrapper.style.getPropertyValue("--background")).toBe(expectedPack.resolvedVars.background);
+    // 55-02 Task 2: color vars are wrapped in hsl(...) before injection —
+    // globals.css tokens are now full oklch(...) functions, so consumers
+    // read the var bare (var(--primary)); an unwrapped HSL triplet would no
+    // longer be a valid color.
+    expect(wrapper.style.getPropertyValue("--primary")).toBe(`hsl(${expectedPack.resolvedVars.primary})`);
+    expect(wrapper.style.getPropertyValue("--background")).toBe(
+      `hsl(${expectedPack.resolvedVars.background})`,
+    );
     expect(wrapper.querySelector('[data-testid="child"]')?.textContent).toBe("hello");
   });
 
@@ -61,10 +67,14 @@ describe("PanelThemeScope", () => {
     const wrapper = container.firstElementChild as HTMLElement;
     const expectedPack = getStylePack("linear-clean");
 
-    expect(wrapper.style.getPropertyValue("--primary")).toBe("12 80% 50%");
-    expect(wrapper.style.getPropertyValue("--primary")).not.toBe(expectedPack.resolvedVars.primary);
+    expect(wrapper.style.getPropertyValue("--primary")).toBe("hsl(12 80% 50%)");
+    expect(wrapper.style.getPropertyValue("--primary")).not.toBe(
+      `hsl(${expectedPack.resolvedVars.primary})`,
+    );
     // Non-overridden vars still come from the pack.
-    expect(wrapper.style.getPropertyValue("--background")).toBe(expectedPack.resolvedVars.background);
+    expect(wrapper.style.getPropertyValue("--background")).toBe(
+      `hsl(${expectedPack.resolvedVars.background})`,
+    );
   });
 
   it("an unknown packId renders without throwing (default fallback)", async () => {
@@ -82,7 +92,7 @@ describe("PanelThemeScope", () => {
     ).resolves.not.toThrow();
 
     const wrapper = container!.firstElementChild as HTMLElement;
-    expect(wrapper.style.getPropertyValue("--primary")).toBe(defaultPack.resolvedVars.primary);
+    expect(wrapper.style.getPropertyValue("--primary")).toBe(`hsl(${defaultPack.resolvedVars.primary})`);
   });
 
   it("renders zero token overrides gracefully (undefined tokenOverrides)", async () => {
@@ -93,6 +103,6 @@ describe("PanelThemeScope", () => {
     );
     const wrapper = container.firstElementChild as HTMLElement;
     const expectedPack = getStylePack("brutalist");
-    expect(wrapper.style.getPropertyValue("--primary")).toBe(expectedPack.resolvedVars.primary);
+    expect(wrapper.style.getPropertyValue("--primary")).toBe(`hsl(${expectedPack.resolvedVars.primary})`);
   });
 });

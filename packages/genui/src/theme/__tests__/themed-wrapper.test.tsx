@@ -177,8 +177,14 @@ describe("ThemedRoot", () => {
     expect(wrapper.innerHTML).toBe("<span>safe child</span>");
   });
 
-  it("T-17-02: style values are exactly pack.resolvedVars — not arbitrary strings", () => {
-    // All style values come from pack.resolvedVars (curated at build time)
+  it("T-17-02: style values are exactly pack.resolvedVars (color vars hsl()-wrapped) — not arbitrary strings", () => {
+    // All style values come from pack.resolvedVars (curated at build time).
+    // 55-02 Task 2: ThemedRoot now wraps color-group values in hsl(...)
+    // before injection (globals.css tokens are oklch(...) as of 55-02) — so
+    // a color declaration's value is `hsl(<curated value>)`, not the bare
+    // curated value. This assertion unwraps hsl(...) before the membership
+    // check, preserving the original "never an arbitrary/uncurated string"
+    // guarantee for both color and non-color vars.
     const pack = getStylePack(DEFAULT_PACK_ID);
     const curatedValues = new Set(Object.values(pack.resolvedVars));
 
@@ -195,9 +201,11 @@ describe("ThemedRoot", () => {
     for (const decl of cssDeclarations) {
       const colonIdx = decl.indexOf(":");
       if (colonIdx === -1) continue;
-      const value = decl.slice(colonIdx + 1).trim();
+      const rawValue = decl.slice(colonIdx + 1).trim();
+      const hslMatch = rawValue.match(/^hsl\((.+)\)$/);
+      const value = hslMatch ? hslMatch[1] : rawValue;
       // Every value in the style must come from the curated pack
-      expect(curatedValues.has(value), `unexpected value "${value}" in style`).toBe(true);
+      expect(curatedValues.has(value), `unexpected value "${rawValue}" in style`).toBe(true);
     }
   });
 

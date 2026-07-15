@@ -779,15 +779,15 @@ export function ChatCanvas({
                     proOptions={{ hideAttribution: false }}
                     aria-label="Conversation canvas"
                   >
-                    <Background gap={16} size={1} color="hsl(var(--border))" />
+                    <Background gap={16} size={1} color="var(--border)" />
                     <Controls showZoom showFitView showInteractive />
                     {showMiniMap && (
                       <MiniMap
                         pannable
                         zoomable
-                        maskColor="hsl(var(--background) / 0.6)"
-                        nodeColor="hsl(var(--muted-foreground) / 0.35)"
-                        nodeStrokeColor="hsl(var(--border))"
+                        maskColor="color-mix(in srgb, var(--background) 60%, transparent)"
+                        nodeColor="color-mix(in srgb, var(--muted-foreground) 35%, transparent)"
+                        nodeStrokeColor="var(--border)"
                       />
                     )}
                     <Panel position="top-right">

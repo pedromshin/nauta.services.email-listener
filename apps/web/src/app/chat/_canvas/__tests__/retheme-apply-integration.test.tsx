@@ -224,8 +224,12 @@ describe("Retheme -> theme integration (PANL-04, 52-06-PLAN.md Task 2)", () => {
     // "262 83% 58%" value — this assertion isolates the one var PANL-04's
     // override targets, proving the VERSION's tokenOverrides won there
     // specifically, not just that the substring appears somewhere).
+    // 55-02 Task 2: PanelThemeScope now wraps color-group vars in hsl(...)
+    // before injection (globals.css tokens are oklch(...) as of 55-02; see
+    // panel-theme-scope.tsx's resolveVarValue) — the raw HSL triplet is no
+    // longer a valid color on its own once consumers read the var bare.
     const style = themed?.getAttribute("style") ?? "";
     const primaryDeclaration = style.split(";").find((decl) => decl.trim().startsWith("--primary:"));
-    expect(primaryDeclaration?.trim()).toBe(`--primary: ${PRIMARY_OVERRIDE}`);
+    expect(primaryDeclaration?.trim()).toBe(`--primary: hsl(${PRIMARY_OVERRIDE})`);
   });
 });

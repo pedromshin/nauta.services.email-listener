@@ -252,7 +252,7 @@ export const KnowledgeNodeNode = memo(function KnowledgeNodeNode({
   return (
     <div
       style={{ width: 160, height: 48 }}
-      className={`${nodeClasses("bg-primary/15 border-primary/60", selected)} shadow-[0_0_8px_hsl(var(--primary)/0.25)]`}
+      className={`${nodeClasses("bg-primary/15 border-primary/60", selected)} shadow-[0_0_8px_color-mix(in_srgb,var(--primary)_25%,transparent)]`}
       role="button"
       tabIndex={0}
       aria-pressed={selected}

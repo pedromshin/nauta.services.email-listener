@@ -10,8 +10,12 @@
  *   - PackTokenMap: a flat map from alias -> value string (the renderer-facing shape).
  *   - StylePack: a frozen pack record — metadata + flat token map.
  *
- * Color values throughout are HSL channel-triplet strings (e.g. "164 39% 22%"),
- * consumed as `hsl(var(--alias))` by @polytoken/ui — exactly the globals.css shape.
+ * Color values throughout are HSL channel-triplet strings (e.g. "164 39% 22%")
+ * — this surface deliberately stays HSL (55-RESEARCH.md Pitfall 1) even though
+ * globals.css's own tokens moved to full oklch(...) functions in 55-02.
+ * ThemedRoot/PanelThemeScope wrap these values in hsl(...) before injecting
+ * them as CSS custom properties, since @polytoken/ui now reads every token
+ * var bare (`var(--alias)`, no wrapper) rather than the old hsl()-wrapped form.
  * Raw hex values are FORBIDDEN by design (D-03/STYLE-03).
  *
  * No React imports — this is pure data + types for consumption by both TS (renderer)
@@ -33,7 +37,8 @@
  * The schema/token-props-schema.ts Zod schema derives its z.enum from this constant.
  *
  * Groups:
- *   color.*         — HSL channel-triplet strings (H S% L%), consumed as hsl(var(--*))
+ *   color.*         — HSL channel-triplet strings (H S% L%); ThemedRoot/
+ *                     PanelThemeScope wrap these in hsl(...) at injection time
  *   radius.*        — CSS length values (e.g. "0.5rem", "0rem", "1rem")
  *   spacing.*       — CSS length values for density (e.g. "1rem", "1.5rem")
  *   shadow.*        — CSS box-shadow values (e.g. "none", "0 1px 3px ...")

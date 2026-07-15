@@ -5,8 +5,8 @@
  * FK-derived edges never carry a tier and must never receive one of these overrides —
  * enforced by the caller (`toFlowEdges` in knowledge-graph.tsx), not here.
  *
- * Token-only — the purpose-built tier ladder (D-48-04: `hsl(var(--tier-inferred))` /
- * `hsl(var(--tier-extracted))`), never `--muted-foreground` (overloaded) and never
+ * Token-only — the purpose-built tier ladder (D-48-04: `var(--tier-inferred)` /
+ * `var(--tier-extracted)`), never `--muted-foreground` (overloaded) and never
  * raw hex (v1.4 bans apply).
  *
  * Single source of truth for the legend's `LegendSwatch` values too — do not
@@ -30,7 +30,7 @@ export function tierEdgeStyle(tier: string | undefined): TierEdgeStyle {
     return {
       style: {
         strokeDasharray: "5 3",
-        stroke: "hsl(var(--tier-inferred))",
+        stroke: "var(--tier-inferred)",
       },
     };
   }
@@ -38,7 +38,7 @@ export function tierEdgeStyle(tier: string | undefined): TierEdgeStyle {
   if (tier === "AMBIGUOUS") {
     return {
       style: {
-        stroke: "hsl(var(--tier-inferred))",
+        stroke: "var(--tier-inferred)",
         opacity: 0.45,
       },
       labelStyle: { opacity: 0.6 },
@@ -48,7 +48,7 @@ export function tierEdgeStyle(tier: string | undefined): TierEdgeStyle {
   if (tier === "EXTRACTED") {
     return {
       style: {
-        stroke: "hsl(var(--tier-extracted))",
+        stroke: "var(--tier-extracted)",
       },
     };
   }

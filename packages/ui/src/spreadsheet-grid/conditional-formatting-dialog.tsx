@@ -71,7 +71,7 @@ const ALL_COLORS: FormatColor[] = [
 
 /** CSS variable name for a given chart color */
 function colorVar(color: FormatColor): string {
-  return `hsl(var(--${color}) / 0.7)`;
+  return `color-mix(in srgb, var(--${color}) 70%, transparent)`;
 }
 
 // ---------------------------------------------------------------------------
@@ -108,7 +108,7 @@ function ColorPicker({ value, onChange }: ColorPickerProps) {
             background: colorVar(color),
             boxShadow:
               value === color
-                ? `0 0 0 2px hsl(var(--background)), 0 0 0 3px hsl(var(--${color}))`
+                ? `0 0 0 2px var(--background), 0 0 0 3px var(--${color})`
                 : undefined,
           }}
           aria-label={`Color ${color}`}

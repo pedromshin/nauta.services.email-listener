@@ -36,3 +36,25 @@ resolve correctly post-oklch-port.
 **Disposition:** Deferred — out of 55-02's scope (not caused by this plan's changes). Needs a
 fresh investigation into the `/knowledge` filter-rail's DOM layering / the seeded test fixture's
 sidebar-expansion state in a follow-up session, independent of the Tailwind v4 migration.
+
+## 55-02: `packages/genui` `artifacts.test.ts` registryVersion hash drift — pre-existing
+
+**Found during:** 55-02 Task 2's `npm run test -w @polytoken/genui` gate (run to confirm the
+`themed-wrapper.tsx`/`tokens.ts` edits didn't regress the genui suite).
+
+**Symptom:** `src/generation/__tests__/artifacts.test.ts`'s committed-vs-fresh
+`buildGenuiPromptPayload()` snapshot comparison fails on a `registryVersion.version` hash
+mismatch (committed `eaaf8d3e...` vs freshly computed `2562c1fb...`) — unrelated to color/CSS
+content; this is a content-hash of the genui component catalog/registry payload sent to Bedrock.
+
+**Root-cause isolation performed:** `git stash`'d all 3 of 55-02 Task 2's `packages/genui/src/theme`
+file changes (`themed-wrapper.tsx`, `tokens.ts`, `__tests__/themed-wrapper.test.tsx`) and re-ran
+this exact test in isolation against the untouched baseline. **The identical failure reproduced**
+— confirming this hash drift pre-exists this plan's changes entirely (not caused by the
+`hsl(...)`-wrapping fix or the comment rewording). All 3 files were then restored via
+`git stash pop` (`git diff --stat` confirms byte-identical to pre-stash state).
+
+**Disposition:** Deferred — out of 55-02's scope (not caused by this plan's changes; unrelated
+to STCK-01's oklch/`@theme`/`@source` surface entirely). The committed `GENUI_PROMPT_PATH`
+artifact needs regenerating in a follow-up session against whatever change in the catalog/
+registry actually drifted it (not diagnosed here — orthogonal to this plan).

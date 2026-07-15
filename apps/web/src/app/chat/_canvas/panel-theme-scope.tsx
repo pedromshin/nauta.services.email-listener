@@ -10,8 +10,14 @@
  * Resolves `getStylePack(packId).resolvedVars`, merges `tokenOverrides` ON
  * TOP (override wins per-key), and renders a wrapper `div` whose inline
  * style sets every entry as `--{cssVarName}: value` — every shadcn/ui
- * component in `@polytoken/ui` reads `hsl(var(--*))` automatically, so this
+ * component in `@polytoken/ui` reads `var(--*)` directly (globals.css's
+ * tokens are full `oklch(...)` color functions as of 55-02), so this
  * swaps the panel's entire visual theme without any component changes.
+ * COLOR-named vars are wrapped in `hsl(...)` below before injection (mirrors
+ * `@polytoken/genui/theme`'s `ThemedRoot` fix, 55-02 Task 2) since
+ * `pack.resolvedVars`/`tokenOverrides` still carry bare HSL channel triplets
+ * (packs.ts stays HSL by design) — an unwrapped triplet is not a valid CSS
+ * color once consumers read the var bare.
  *
  * Security/discipline contracts (mirrors ThemedRoot's, T-17-02/T-17-04):
  *   - ZERO eval/new Function/dangerouslySetInnerHTML — values reach the DOM
@@ -30,8 +36,29 @@
 
 import * as React from "react";
 
-import { getStylePack } from "@polytoken/genui/theme";
-import type { StylePackId } from "@polytoken/genui/theme";
+import { getStylePack, TOKEN_ALIAS_TO_CSS_VAR } from "@polytoken/genui/theme";
+import type { StylePackId, TokenAlias } from "@polytoken/genui/theme";
+
+/**
+ * The CSS var names (without `--`) whose DTCG alias starts with `color.` —
+ * i.e. the subset of `pack.resolvedVars`/`tokenOverrides` entries that are
+ * actual colors and therefore need the `hsl(...)` wrapper below. Derived
+ * from `TOKEN_ALIAS_TO_CSS_VAR` (mirrors `ThemedRoot`'s identical
+ * derivation, 55-02 Task 2) rather than hand-maintained, so this set never
+ * drifts from the token contract.
+ */
+const COLOR_CSS_VAR_NAMES: ReadonlySet<string> = new Set(
+  (Object.entries(TOKEN_ALIAS_TO_CSS_VAR) as ReadonlyArray<[TokenAlias, string]>)
+    .filter(([alias]) => alias.startsWith("color."))
+    .map(([, cssVarName]) => cssVarName),
+);
+
+/** Wraps color-group values in `hsl(...)` (packs.ts stays bare-HSL by
+ * design); non-color values (radius/spacing/shadow/typography) pass through
+ * raw. */
+function resolveVarValue(varName: string, value: string): string {
+  return COLOR_CSS_VAR_NAMES.has(varName) ? `hsl(${value})` : value;
+}
 
 export interface PanelThemeScopeProps {
   /**
@@ -59,10 +86,10 @@ export function PanelThemeScope({
 
   const cssVarStyle: Record<string, string> = {};
   for (const [varName, value] of Object.entries(pack.resolvedVars)) {
-    cssVarStyle[`--${varName}`] = value;
+    cssVarStyle[`--${varName}`] = resolveVarValue(varName, value);
   }
   for (const [varName, value] of Object.entries(tokenOverrides ?? {})) {
-    cssVarStyle[`--${varName}`] = value;
+    cssVarStyle[`--${varName}`] = resolveVarValue(varName, value);
   }
 
   return (
