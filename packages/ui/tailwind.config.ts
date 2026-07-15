@@ -7,9 +7,16 @@ import type { Config } from "tailwindcss";
 import baseConfig from "@polytoken/tailwind-config/web";
 
 export default {
-  darkMode: ["class"],
+  // Bare "class" (not the ["class"] tuple) — behaviorally identical v3/v4
+  // class-based dark-mode strategy, but only the bare string is directly in
+  // v4's DarkModeStrategy union without a second selector element.
+  darkMode: "class",
   content: ["./src/**/*.tsx"],
-  presets: [baseConfig],
+  // baseConfig (packages/tailwind-config, still v3-typed — out of this
+  // stage's scope, ported natively in Stage 2/3) doesn't structurally match
+  // v4's stricter UserConfig shape (see apps/web/tailwind.config.ts's
+  // identical comment) — same transient, type-only bridge cast.
+  presets: [baseConfig as unknown as Config],
   theme: {
     extend: {
       keyframes: {
