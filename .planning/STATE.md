@@ -4592,6 +4592,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 55 P03 | 25min | 2 tasks | 2 files |
 | Phase 55 P05 | 135min | 2 tasks | 6 files |
 | Phase 57 P01 | ~65min | 3 tasks | 12 files — entity_type_corrections table + importer-scoped trgm RPC + migration 0038 (authored, not applied) + load-before-mutate capture hook in SetComponentEntityTypeUseCase (LEARN-01) |
+| Phase 56 P03 | ~30min | 2 tasks | 4 files — assertSourceRefOwnership dispatcher + chat.createContextEdge/removeContextEdge/listContextEdges (RCNV-04), 33-test adversarial two-user suite (all sourceRef types), D-56-A ownership-only tier-agnostic knowledge_node check |
 
 ## Operator Next Steps
 
