@@ -59,3 +59,13 @@ class SourceLedgerRepository(Protocol):
     async def get(self, ledger_entry_id: str) -> SourceLedgerEntry | None:
         """Return the ledger row matching ledger_entry_id, or None if not found."""
         ...
+
+    async def set_knowledge_node_id(self, ledger_entry_id: str, node_id: str) -> None:
+        """Back-reference a promoted knowledge node id onto the ledger row (Phase 56-05).
+
+        The ONE new write the promotion-gate reuse seam performs beyond the
+        UNCHANGED promotion machinery -- lets a future read show "already
+        captured" state. A missing row does not raise (an update-by-id of an
+        absent row simply affects zero rows).
+        """
+        ...

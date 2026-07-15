@@ -83,3 +83,13 @@ class SupabaseSourceLedgerRepository:
         if result is None or not result.data:
             return None
         return _row_to_entry(cast("dict[str, Any]", result.data))
+
+    async def set_knowledge_node_id(self, ledger_entry_id: str, node_id: str) -> None:
+        """Single parameterized update of chat_source_ledger.knowledge_node_id for the given row id.
+
+        A missing row simply affects zero rows -- never raises (Phase 56-05,
+        the ONE new write the promotion-gate reuse seam performs).
+        """
+        self._client.table("chat_source_ledger").update({"knowledge_node_id": node_id}).eq(
+            "id", ledger_entry_id
+        ).execute()
