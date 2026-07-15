@@ -9,7 +9,7 @@ import {
 } from "@polytoken/ui/tooltip";
 
 import { ConfirmDenyControls } from "./confirm-deny-controls";
-import { contentSnippet } from "./region-label";
+import { REGION_ROLE_GEOMETRY, REGION_TIER, regionLabelFor, tierOf } from "./region-vocabulary";
 
 interface ComponentLocation {
   page_index?: number;
@@ -31,7 +31,7 @@ interface RegionComponent {
   entityTypeSlug: string | null;
   extractedFields: unknown;
   confidenceScore: unknown;
-  /** Phase 9 (D-10): relationship role, drives role-color rendering. Optional for back-compat. */
+  /** Phase 9 (D-10): relationship role, drives role-geometry rendering. Optional for back-compat. */
   role?: ComponentRole;
 }
 
@@ -49,9 +49,9 @@ interface RegionOverlayBoxProps {
   onShiftClick?: (id: string) => void;
   isSelected?: boolean;
   isMutating?: boolean;
-  /** Phase 9 (D-10): when true, draws the active-parent ENTITY ring (ring-4 ring-graph-entity/40). */
+  /** Phase 9 (D-10): when true, draws the active-parent ENTITY ring — ink under law 1, never a hue. */
   isActiveParent?: boolean;
-  /** Phase 9 (D-16): when true, renders the inline ✓/✗ confirm/deny slot at the box corner. */
+  /** Phase 9 (D-16): when true, renders the inline confirm/deny slot at the box corner. */
   showConfirmDeny?: boolean;
   /**
    * Phase 9 (D-18/WR-05): whether this box was auto-detected by autofill. Drives
@@ -59,45 +59,13 @@ interface RegionOverlayBoxProps {
    * deny → Undo toast; user-drawn deny → no toast, geometry kept).
    */
   isAutoDetected?: boolean;
-  /** Confirm callback for the inline ✓ control (D-16/D-17). */
+  /** Confirm callback for the inline confirm control (D-16/D-17). */
   onConfirm?: (id: string) => void;
-  /** Deny callback for the inline ✗ control (D-16/D-18). */
+  /** Deny callback for the inline deny control (D-16/D-18). */
   onDeny?: (id: string) => void;
   /** Restore callback for the inline Undo (auto-detected deny, WR-01). */
   onRestore?: (id: string) => void;
 }
-
-/**
- * Role-color palette (D-10, 09-UI-SPEC §Color). When a role is set and the
- * region is not in a terminal (rejected/superseded) state, the role border/fill
- * REPLACES the default primary statusClasses. Selected adds a role-tinted ring.
- */
-const ROLE_BORDER: Record<NonNullable<ComponentRole>, string> = {
-  entity: "border-graph-entity/80 bg-graph-entity/10",
-  field: "border-graph-email-component/80 bg-graph-email-component/10",
-  unrelated: "border-graph-email/40 bg-graph-email/[0.06] opacity-60",
-};
-
-/** Selected-ring color per role (09-UI-SPEC §Canvas Selected row). */
-const ROLE_SELECTED_RING: Record<NonNullable<ComponentRole>, string> = {
-  entity: " ring-2 ring-graph-entity/50",
-  field: " ring-2 ring-graph-email-component/50",
-  unrelated: " ring-2 ring-graph-email/50",
-};
-
-/** Hover border/fill per role (09-UI-SPEC §Canvas Hover row). */
-const ROLE_HOVER: Record<NonNullable<ComponentRole>, string> = {
-  entity: " hover:border-graph-entity hover:bg-graph-entity/20",
-  field: " hover:border-graph-email-component hover:bg-graph-email-component/20",
-  unrelated: " hover:border-graph-email hover:bg-graph-email/20",
-};
-
-/** Label-chip tint per role (09-UI-SPEC §Canvas label chip). */
-const ROLE_CHIP: Record<NonNullable<ComponentRole>, string> = {
-  entity: "bg-graph-entity text-graph-entity-foreground",
-  field: "bg-graph-email-component text-graph-email-component-foreground",
-  unrelated: "bg-graph-email text-graph-email-foreground",
-};
 
 function getPolygon(
   location: unknown,
@@ -108,7 +76,7 @@ function getPolygon(
     "polygon" in location &&
     Array.isArray((location as ComponentLocation).polygon) &&
     // Guard: empty array bypasses the overlay-layer hasPolygon check and
-    // would produce Infinity CSS values via polygonToRect (CR-02)
+    // would produce Infinity CSS values via polygonToRect (T-60-07/CR-02).
     ((location as ComponentLocation).polygon?.length ?? 0) > 0
   ) {
     return (location as ComponentLocation).polygon ?? null;
@@ -137,6 +105,23 @@ function buildTooltipContent(
   return `${label}\nAwaiting extraction`;
 }
 
+/**
+ * RegionOverlayBox (60-04-PLAN.md Task 2) — the OCR polygon as the
+ * provenance mark it always was. Colour states the TIER and nothing else;
+ * ROLE is carried structurally (`region-vocabulary.ts`'s
+ * `REGION_ROLE_GEOMETRY`).
+ *
+ * COMPOSITION RULE (the inversion this plan fixes): tier and role ALWAYS
+ * compose. The pre-60-04 box did `roleClass ?? statusClasses` — a role,
+ * when set, REPLACED the tier treatment entirely, so the moment a region
+ * got classified it stopped showing whether a human confirmed it. Every
+ * box now carries both tier colour AND role geometry, always.
+ *
+ * T-60-02 (Tampering/XSS): every class below is selected by LOOKUP from
+ * `region-vocabulary.ts`'s closed maps — never built by concatenating
+ * anything derived from `component` (attacker-influenced `contentText`/
+ * `entityTypeLabel`). Those render as React text nodes only.
+ */
 export function RegionOverlayBox({
   component,
   pageSize,
@@ -162,48 +147,28 @@ export function RegionOverlayBox({
 
   const isActive = component.id === activeComponentId;
 
-  // Status-differentiated styling (06-UI-SPEC §2):
-  // pending = dashed/provisional; rejected/superseded = muted ghost;
-  // candidate (default) = solid primary.
-  const isTerminal =
-    component.extractionStatus === "rejected" ||
-    component.extractionStatus === "superseded";
-
-  const statusClasses =
-    component.extractionStatus === "pending"
-      ? "border-primary/50 border-dashed bg-primary/[0.08]"
-      : isTerminal
-        ? "border-border/40 border-dashed bg-muted/50 opacity-40"
-        : "border-primary/80 bg-primary/10";
-
-  // Role-color override (D-10): when a role is set and the box is not terminal,
-  // the role border/fill REPLACES the default primary statusClasses. Boxes with
-  // no role fall back to the existing statusClasses (Phase 6/7 behavior intact).
+  const tier = tierOf(component.extractionStatus);
   const role = component.role ?? null;
-  const roleClass = role !== null && !isTerminal ? ROLE_BORDER[role] : null;
-  const baseClass = roleClass ?? statusClasses;
+  const tierClasses = REGION_TIER[tier];
+  const roleGeometry = REGION_ROLE_GEOMETRY[role ?? "none"];
 
-  // Hover: role-tinted when a role is set, otherwise the primary hover.
-  const hoverClass =
-    role !== null && !isTerminal
-      ? ROLE_HOVER[role]
-      : " hover:border-primary hover:bg-primary/20";
+  // Tier supplies colour + solid/dashed; role supplies weight/style/
+  // opacity. They ALWAYS compose — see the doc comment above.
+  const baseClass = `${tierClasses.box} ${roleGeometry}`;
 
-  // Active (hover-tracked) — keep the existing primary ring for unclassified.
-  const activeClasses =
-    isActive && role === null
-      ? " border-primary ring-2 ring-primary/40 bg-primary/20"
-      : "";
+  // Hover + active (hover-tracked) are ink-only under law 1 — for EVERY
+  // role, not just the unclassified one. The pre-60-04 `role === null`
+  // guard existed solely because role hues took over the visual channel;
+  // with role no longer holding a hue, the guard is obsolete.
+  const hoverClass = " hover:border-ink";
+  const activeClasses = isActive ? " ring-2 ring-ink/40" : "";
 
-  // Selected ring — role-tinted when classified, primary otherwise.
-  const selectedClass = isSelected
-    ? role !== null
-      ? ROLE_SELECTED_RING[role]
-      : " border-primary ring-2 ring-primary/50 bg-primary/25"
-    : "";
+  // Selected ring — tier's ring value (always ring-ink under law 1), never
+  // a role hue.
+  const selectedClass = isSelected ? ` ring-2 ${tierClasses.ring}` : "";
 
-  // Active-parent ENTITY box gets the outer violet glow (D-10).
-  const activeParentClass = isActiveParent ? " ring-4 ring-graph-entity/40" : "";
+  // Active-parent ENTITY box: a quieter ink glow, still the outer ring, no hue.
+  const activeParentClass = isActiveParent ? " ring-4 ring-ink/20" : "";
 
   const mutatingClass = isMutating ? " animate-pulse opacity-70" : "";
 
@@ -213,15 +178,12 @@ export function RegionOverlayBox({
     component.extractedFields,
   );
 
-  // B1: the box chip reads as the detected content, not the raw status. Prefer
-  // the entity-type label, fall back to a snippet of the region's detected text,
-  // and only show the status when there is no text at all.
-  const labelText =
-    component.entityTypeLabel ??
-    contentSnippet(component.contentText) ??
-    component.extractionStatus;
-  const chipClass =
-    role !== null ? ROLE_CHIP[role] : "bg-primary text-primary-foreground";
+  // The label chip is where the signature lands — the same mark language
+  // as the inbox chip ("one mark language everywhere"). Colour comes ONLY
+  // from tier; the chip is serif ONLY when it carries the document's own
+  // words (law 2, no exceptions).
+  const label = regionLabelFor(component);
+  const labelFontClass = label.kind === "text" ? " font-serif" : "";
 
   return (
     <TooltipProvider>
@@ -235,14 +197,15 @@ export function RegionOverlayBox({
               width: rect.width * pageSize.width,
               height: rect.height * pageSize.height,
             }}
-            className={`pointer-events-auto border-2 ${baseClass} rounded-sm${hoverClass} transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none cursor-pointer${activeClasses}${selectedClass}${activeParentClass}${mutatingClass}`}
+            className={`pointer-events-auto ${baseClass} rounded-sm${hoverClass} transition-colors focus-visible:ring-2 focus-visible:ring-ink focus-visible:outline-none cursor-pointer${activeClasses}${selectedClass}${activeParentClass}${mutatingClass}`}
             role="region"
-            aria-label={`${role ? `${role}: ` : ""}${labelText} region`}
+            aria-label={`${role ? `${role}: ` : ""}${label.text} region`}
             aria-pressed={isSelected}
             aria-busy={isMutating}
             tabIndex={0}
             data-component-id={component.id}
             data-role={role ?? undefined}
+            data-tier={tier}
             onClick={(e) => {
               e.stopPropagation();
               if (e.shiftKey) {
@@ -256,16 +219,18 @@ export function RegionOverlayBox({
             onFocus={() => setActiveComponentId(component.id)}
             onBlur={() => setActiveComponentId(null)}
           >
-            {/* Label chip — pointer-events-none so the box stays interactive */}
+            {/* Label chip — pointer-events-none so the box stays interactive. */}
             <span
-              className={`absolute -top-5 left-0 text-xs font-semibold ${chipClass} px-2 py-0.5 rounded-sm whitespace-nowrap max-w-[160px] truncate pointer-events-none`}
+              data-evidence={label.kind === "text" ? true : undefined}
+              className={`absolute -top-5 left-0 text-2xs font-semibold ${tierClasses.chip}${labelFontClass} px-2 py-0.5 rounded-sm whitespace-nowrap max-w-[160px] truncate pointer-events-none`}
             >
-              {labelText}
+              {label.text}
             </span>
 
-            {/* Inline ✓/✗ confirm/deny slot (D-16/D-17/D-18). Converged on the
-                canonical ConfirmDenyControls (WR-01) — origin-aware deny + undo.
-                Only rendered on candidate FIELD boxes via showConfirmDeny. */}
+            {/* Inline confirm/deny slot (D-16/D-17/D-18). Converged on the
+                canonical ConfirmDenyControls (WR-01) — origin-aware deny +
+                undo. Only rendered on candidate FIELD boxes via
+                showConfirmDeny. */}
             {showConfirmDeny && onConfirm && onDeny && (
               <ConfirmDenyControls
                 componentId={component.id}
