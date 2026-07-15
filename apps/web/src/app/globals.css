@@ -1,5 +1,308 @@
 @import "tailwindcss";
-@config "../../tailwind.config.ts";
+
+/* 55-02-PLAN.md Task 1 step 4 (Pitfall 4/A2): Tailwind v4's automatic content
+   detection does not reach sibling monorepo packages outside this file's own
+   directory tree — apps/web/src/app is FOUR levels below the repo root
+   (app -> src -> web -> apps -> root), so both sibling packages' source trees
+   need the explicit directives below or their Tailwind classes get purged
+   from production builds with no build error (verified via the compiled-CSS
+   proof in 55-02-SUMMARY.md, not just a green build). */
+@source "../../../../packages/ui/src";
+@source "../../../../packages/genui/src";
+
+/* shadcn v4 canonical shape: @theme inline maps every existing token family
+   to a Tailwind color namespace entry. `inline` (not a plain @theme) is
+   required so the .dark block's overrides below cascade correctly at
+   runtime — see 55-RESEARCH.md Pattern 1. */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-tier-extracted: var(--tier-extracted);
+  --color-tier-extracted-foreground: var(--tier-extracted-foreground);
+  --color-tier-inferred: var(--tier-inferred);
+  --color-tier-inferred-foreground: var(--tier-inferred-foreground);
+  --color-graph-entity: var(--graph-entity);
+  --color-graph-entity-foreground: var(--graph-entity-foreground);
+  --color-graph-email-component: var(--graph-email-component);
+  --color-graph-email-component-foreground: var(--graph-email-component-foreground);
+  --color-graph-email: var(--graph-email);
+  --color-graph-email-foreground: var(--graph-email-foreground);
+  --color-sidebar: var(--sidebar-background);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* Native @theme port of packages/tailwind-config/{base,web}.ts's borderRadius/
+   boxShadow/fontFamily (55-RESEARCH.md Pattern 2 + "Code Examples"). Radius
+   keys deliberately RECOMPUTE the same calc()/literal formulas already
+   declared on --radius-xl/--radius-2xl/--radius-pill below (kept unchanged
+   in :root, D-48-01) rather than var()-referencing those same-named
+   properties from inside @theme — referencing --radius-xl from a @theme
+   declaration ALSO named --radius-xl would be a self-referential (circular)
+   custom property, which the CSS spec treats as invalid at computed-value
+   time. Duplicating the identical formula is harmless (both resolve to the
+   same value) and avoids that trap entirely. Same reasoning applies to
+   --font-code below (D-48-03): its @theme entry repeats the exact literal
+   stack already in :root rather than doing `var(--font-code)` inside its own
+   declaration — the panel-level re-theme override path (PanelThemeScope /
+   ThemedRoot setting --font-code via inline `style` on a descendant div)
+   still works correctly, since an inline style on a DOM element always wins
+   over any :root-level rule for that same custom property, regardless of
+   which stylesheet declaration "wins" at :root scope. */
+@theme {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-pill: 9999px;
+
+  --shadow-elevation-1: var(--elevation-1);
+  --shadow-elevation-2: var(--elevation-2);
+  --shadow-elevation-3: var(--elevation-3);
+
+  --font-sans: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji",
+    "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+  --font-code: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+  /* magicui vendored components (marquee, shimmer-button, shine-border,
+     typing-animation) — mechanical 1:1 port of web.ts's keyframes/animation,
+     see the top-level @keyframes block below. */
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-marquee: marquee var(--duration) infinite linear;
+  --animate-marquee-vertical: marquee-vertical var(--duration) linear infinite;
+  --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
+  --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
+  --animate-shine: shine var(--duration) infinite linear;
+  --animate-blink-cursor: blink-cursor 1.2s step-end infinite;
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-100% - var(--gap)));
+  }
+}
+@keyframes marquee-vertical {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(calc(-100% - var(--gap)));
+  }
+}
+@keyframes shimmer-slide {
+  to {
+    transform: translate(calc(100cqw - 100%), 0);
+  }
+}
+@keyframes spin-around {
+  0% {
+    transform: translateZ(0) rotate(0);
+  }
+  15%,
+  35% {
+    transform: translateZ(0) rotate(90deg);
+  }
+  65%,
+  85% {
+    transform: translateZ(0) rotate(270deg);
+  }
+  100% {
+    transform: translateZ(0) rotate(360deg);
+  }
+}
+@keyframes shine {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  to {
+    background-position: 0% 0%;
+  }
+}
+@keyframes blink-cursor {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* v3 container config (packages/tailwind-config/web.ts: center/padding/
+   screens.2xl) ported to v4's @utility override mechanism — a literal
+   1400px breakpoint (NOT tied to the --breakpoint-2xl theme var, which
+   drives the unrelated app-wide `2xl:` variant at Tailwind's own default
+   1536px) since the old config's `container.screens` override was always
+   container-scoped only, never the global screens theme. */
+@utility container {
+  margin-inline: auto;
+  padding-inline: 2rem;
+  @media (width >= 1400px) {
+    max-width: 1400px;
+  }
+}
+
+/* Radix animate-in/animate-out enter/exit utilities — ported from
+   tailwindcss-animate@1.0.7 (the v3 JS plugin every packages/ui Radix
+   component's data-[state=open]/data-[state=closed] animation classes
+   depend on: dialog, dropdown-menu, popover, select, sheet, tooltip, etc.).
+   The plugin's own addUtilities/matchUtilities JS API has no confirmed v4
+   compatibility path verified in this session (55-RESEARCH.md flags this as
+   an implementation-time verification item, not a settled fact) — per the
+   plan's own explicit fallback instruction, ported natively here rather than
+   risk a silent utility-generation gap. Scoped to the EXACT closed set of
+   utility classes this repo actually uses (verified via
+   `grep -rohE "animate-(in|out)|fade-in|fade-out-0|zoom-(in|out)-95|slide-(in-from|out-to)-[a-z]+-[0-9]+" packages/ui/src apps/web/src`),
+   not a general reimplementation of the plugin's full dynamic-value API.
+   duration-150/200/300/500 (also used alongside these) are Tailwind's own
+   built-in utilities and are left untouched — see 55-02-SUMMARY.md for the
+   one documented, non-blocking timing caveat (animation-duration always
+   falls back to this file's 150ms default; only transition-duration is
+   affected by Tailwind's stock duration-* utility, a cosmetic-only gap, not
+   a visibility regression). */
+@keyframes enter {
+  from {
+    opacity: var(--tw-enter-opacity, 1);
+    transform: translate3d(
+        var(--tw-enter-translate-x, 0),
+        var(--tw-enter-translate-y, 0),
+        0
+      )
+      scale3d(
+        var(--tw-enter-scale, 1),
+        var(--tw-enter-scale, 1),
+        var(--tw-enter-scale, 1)
+      )
+      rotate(var(--tw-enter-rotate, 0));
+  }
+}
+@keyframes exit {
+  to {
+    opacity: var(--tw-exit-opacity, 1);
+    transform: translate3d(
+        var(--tw-exit-translate-x, 0),
+        var(--tw-exit-translate-y, 0),
+        0
+      )
+      scale3d(
+        var(--tw-exit-scale, 1),
+        var(--tw-exit-scale, 1),
+        var(--tw-exit-scale, 1)
+      )
+      rotate(var(--tw-exit-rotate, 0));
+  }
+}
+
+@utility animate-in {
+  animation-name: enter;
+  animation-duration: var(--tw-duration, 150ms);
+  --tw-enter-opacity: initial;
+  --tw-enter-scale: initial;
+  --tw-enter-rotate: initial;
+  --tw-enter-translate-x: initial;
+  --tw-enter-translate-y: initial;
+}
+@utility animate-out {
+  animation-name: exit;
+  animation-duration: var(--tw-duration, 150ms);
+  --tw-exit-opacity: initial;
+  --tw-exit-scale: initial;
+  --tw-exit-rotate: initial;
+  --tw-exit-translate-x: initial;
+  --tw-exit-translate-y: initial;
+}
+@utility fade-in {
+  --tw-enter-opacity: 0;
+}
+@utility fade-in-0 {
+  --tw-enter-opacity: 0;
+}
+@utility fade-out-0 {
+  --tw-exit-opacity: 0;
+}
+@utility zoom-in-95 {
+  --tw-enter-scale: 0.95;
+}
+@utility zoom-out-95 {
+  --tw-exit-scale: 0.95;
+}
+@utility slide-in-from-top-2 {
+  --tw-enter-translate-y: -0.5rem;
+}
+@utility slide-in-from-bottom-2 {
+  --tw-enter-translate-y: 0.5rem;
+}
+@utility slide-in-from-left-2 {
+  --tw-enter-translate-x: -0.5rem;
+}
+@utility slide-in-from-right-2 {
+  --tw-enter-translate-x: 0.5rem;
+}
+@utility slide-in-from-left-1 {
+  --tw-enter-translate-x: -0.25rem;
+}
+@utility slide-in-from-bottom-1 {
+  --tw-enter-translate-y: 0.25rem;
+}
+@utility slide-out-to-left-1 {
+  --tw-exit-translate-x: -0.25rem;
+}
 
 @layer base {
   * {
@@ -11,33 +314,39 @@
   }
 
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 164 39% 22%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 164 8% 93.5%;
-    --secondary-foreground: 164 4% 11%;
-    --muted: 164 6% 95.3%;
-    --muted-foreground: 164 5% 41.5%;
-    --accent: 164 10% 94.3%;
-    --accent-foreground: 164 6% 12%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
+    /* 55-02: ported from bare HSL triplets to full oklch(...) color
+       functions (shadcn v4 canonical shape, 55-RESEARCH.md Pattern 1).
+       Every value below is a faithful, WCAG-AA-verified conversion of the
+       PRE-migration HSL value (same perceived color) — see
+       55-02-SUMMARY.md for the precompute script + before/after contrast
+       ratios per gated pair. */
+    --background: oklch(100% 0 0);
+    --foreground: oklch(14.5% 0 0);
+    --card: oklch(100% 0 0);
+    --card-foreground: oklch(14.5% 0 0);
+    --popover: oklch(100% 0 0);
+    --popover-foreground: oklch(14.5% 0 0);
+    --primary: oklch(38.9% 0.053 173.7);
+    --primary-foreground: oklch(98.5% 0 0);
+    --secondary: oklch(95.2% 0.003 178.7);
+    --secondary-foreground: oklch(22.9% 0.004 178.3);
+    --muted: oklch(96.5% 0.002 178.7);
+    --muted-foreground: oklch(53.2% 0.014 178);
+    --accent: oklch(95.8% 0.003 178.7);
+    --accent-foreground: oklch(24.1% 0.006 178.1);
+    --destructive: oklch(63.7% 0.208 25.3);
+    --destructive-foreground: oklch(98.5% 0 0);
     /* D-48-02: success pair — matches polytoken-teal pack's success pair (Task 1) */
-    --success: 142 71% 29%;
-    --success-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 164 39% 22%;
-    --chart-2: 168 45% 38%;
-    --chart-3: 182 40% 46%;
-    --chart-4: 152 32% 54%;
-    --chart-5: 196 38% 30%;
+    --success: oklch(52.3% 0.136 149.9);
+    --success-foreground: oklch(98.5% 0 0);
+    --border: oklch(92.2% 0 0);
+    --input: oklch(92.2% 0 0);
+    --ring: oklch(14.5% 0 0);
+    --chart-1: oklch(38.9% 0.053 173.7);
+    --chart-2: oklch(58.4% 0.088 177.5);
+    --chart-3: oklch(65.6% 0.086 198.4);
+    --chart-4: oklch(69.6% 0.092 162.5);
+    --chart-5: oklch(44.4% 0.054 223.8);
     --radius: 0.5rem;
     --radius-xl: calc(var(--radius) + 4px);
     --radius-2xl: calc(var(--radius) + 8px);
@@ -48,19 +357,19 @@
     /* D-48-04: tier-ladder — EXTRACTED (confirmed, solid cyan-teal) vs
        INFERRED (provisional, pale indigo) — matches polytoken-teal pack's
        tier pair (Task 1). Never overloads --accent/--muted. */
-    --tier-extracted: 178 55% 30%;
-    --tier-extracted-foreground: 0 0% 98%;
-    --tier-inferred: 230 40% 90%;
-    --tier-inferred-foreground: 230 45% 28%;
+    --tier-extracted: oklch(51.8% 0.078 191.8);
+    --tier-extracted-foreground: oklch(98.5% 0 0);
+    --tier-inferred: oklch(90.5% 0.023 276.9);
+    --tier-inferred-foreground: oklch(33.9% 0.094 272);
     /* D-48-05: closed graph node-type palette — matches polytoken-teal
        pack's graph values (Task 2). CLOSED set — a new node type requires a
        new alias, never a repurposed one. */
-    --graph-entity: 262 83% 58%;
-    --graph-entity-foreground: 0 0% 100%;
-    --graph-email-component: 38 92% 50%;
-    --graph-email-component-foreground: 20 14% 10%;
-    --graph-email: 215 20% 65%;
-    --graph-email-foreground: 215 25% 15%;
+    --graph-entity: oklch(54.2% 0.245 293);
+    --graph-entity-foreground: oklch(100% 0 0);
+    --graph-email-component: oklch(77% 0.165 70.6);
+    --graph-email-component-foreground: oklch(21.5% 0.009 48.3);
+    --graph-email: oklch(71% 0.035 256.8);
+    --graph-email-foreground: oklch(26% 0.024 256.8);
     --sidebar-background: var(--background);
     --sidebar-foreground: var(--foreground);
     --sidebar-primary: var(--primary);
@@ -69,61 +378,69 @@
     --sidebar-accent-foreground: var(--accent-foreground);
     --sidebar-border: var(--border);
     --sidebar-ring: var(--primary);
-    --elevation-1: 0 0 0 1px hsl(var(--border) / 0.6), 0 1px 2px 0 hsl(164 25% 15% / 0.06);
-    --elevation-2: 0 0 0 1px hsl(var(--border) / 0.6), 0 2px 4px 0 hsl(164 25% 15% / 0.08),
-      0 1px 2px -1px hsl(164 25% 15% / 0.04);
-    --elevation-3: 0 0 0 1px hsl(var(--border) / 0.6), 0 4px 8px 0 hsl(164 25% 15% / 0.10),
-      0 2px 4px -2px hsl(164 25% 15% / 0.06);
+    /* 55-02: the old hsl()-wrapped border alpha -> color-mix() (var already
+       holds a full oklch() function; wrapping it in hsl() again would be
+       invalid CSS); the literal `164 25% 15% / a` shadow tint -> its own
+       precomputed oklch(... / a) literal (see 55-02-SUMMARY.md for the
+       conversion). */
+    --elevation-1: 0 0 0 1px color-mix(in srgb, var(--border) 60%, transparent),
+      0 1px 2px 0 oklch(29% 0.027 175.8 / 0.06);
+    --elevation-2: 0 0 0 1px color-mix(in srgb, var(--border) 60%, transparent),
+      0 2px 4px 0 oklch(29% 0.027 175.8 / 0.08),
+      0 1px 2px -1px oklch(29% 0.027 175.8 / 0.04);
+    --elevation-3: 0 0 0 1px color-mix(in srgb, var(--border) 60%, transparent),
+      0 4px 8px 0 oklch(29% 0.027 175.8 / 0.1),
+      0 2px 4px -2px oklch(29% 0.027 175.8 / 0.06);
   }
   .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 164 39% 22%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 164 8% 17.7%;
-    --secondary-foreground: 164 10% 97%;
-    --muted: 164 6% 15%;
-    --muted-foreground: 164 6% 65%;
-    --accent: 164 12% 17.5%;
-    --accent-foreground: 164 8% 97%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    --background: oklch(14.5% 0 0);
+    --foreground: oklch(98.5% 0 0);
+    --card: oklch(14.5% 0 0);
+    --card-foreground: oklch(98.5% 0 0);
+    --popover: oklch(14.5% 0 0);
+    --popover-foreground: oklch(98.5% 0 0);
+    --primary: oklch(38.9% 0.053 173.7);
+    --primary-foreground: oklch(98.5% 0 0);
+    --secondary: oklch(30.5% 0.011 177.8);
+    --secondary-foreground: oklch(97.8% 0.002 178.7);
+    --muted: oklch(27.4% 0.007 178);
+    --muted-foreground: oklch(73.2% 0.013 178.3);
+    --accent: oklch(30.6% 0.015 177.2);
+    --accent-foreground: oklch(97.8% 0.001 178.7);
+    --destructive: oklch(39.6% 0.133 25.7);
+    --destructive-foreground: oklch(98.5% 0 0);
     /* D-48-02: success pair, darkened for the dark surface (mirrors --destructive's
        light->dark deepening pattern above) */
-    --success: 142 65% 24%;
-    --success-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 164 45% 52%;
-    --chart-2: 168 50% 66%;
-    --chart-3: 182 42% 73%;
-    --chart-4: 152 35% 80%;
-    --chart-5: 196 45% 59%;
+    --success: oklch(44.7% 0.11 150.8);
+    --success-foreground: oklch(98.5% 0 0);
+    --border: oklch(26.9% 0 0);
+    --input: oklch(26.9% 0 0);
+    --ring: oklch(87% 0 0);
+    --chart-1: oklch(72.2% 0.11 172.7);
+    --chart-2: oklch(80.9% 0.088 179.7);
+    --chart-3: oklch(83.6% 0.057 198.8);
+    --chart-4: oklch(87% 0.044 165.5);
+    --chart-5: oklch(70.9% 0.079 223.4);
     /* D-48-01/D-48-03: breakpoint-static — identical to :root, mirrored per D-48-07 */
     --radius-pill: 9999px;
     --font-code: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
     /* D-48-04: tier-ladder, darkened/inverted for the dark surface (mirrors
        --success's light->dark deepening pattern above) */
-    --tier-extracted: 178 60% 26%;
-    --tier-extracted-foreground: 0 0% 98%;
-    --tier-inferred: 230 25% 18%;
-    --tier-inferred-foreground: 230 40% 88%;
+    --tier-extracted: oklch(47.8% 0.074 191.7);
+    --tier-extracted-foreground: oklch(98.5% 0 0);
+    --tier-inferred: oklch(27.5% 0.036 275.1);
+    --tier-inferred-foreground: oklch(88.6% 0.028 276.8);
     /* D-48-05: graph node-type palette — entity/email-component stay
        identical to :root (vivid solid badges read fine on dark, mirrors
        --primary staying unchanged between themes); email darkens since its
        light-mode value is a pale neutral (mirrors --muted's light->dark
        inversion). */
-    --graph-entity: 262 83% 58%;
-    --graph-entity-foreground: 0 0% 100%;
-    --graph-email-component: 38 92% 50%;
-    --graph-email-component-foreground: 20 14% 10%;
-    --graph-email: 215 20% 30%;
-    --graph-email-foreground: 215 15% 92%;
+    --graph-entity: oklch(54.2% 0.245 293);
+    --graph-entity-foreground: oklch(100% 0 0);
+    --graph-email-component: oklch(77% 0.165 70.6);
+    --graph-email-component-foreground: oklch(21.5% 0.009 48.3);
+    --graph-email: oklch(40.5% 0.034 256.8);
+    --graph-email-foreground: oklch(93.6% 0.006 256.7);
     --sidebar-background: var(--background);
     --sidebar-foreground: var(--foreground);
     --sidebar-primary: var(--primary);
@@ -132,11 +449,13 @@
     --sidebar-accent-foreground: var(--accent-foreground);
     --sidebar-border: var(--border);
     --sidebar-ring: var(--primary);
-    --elevation-1: 0 0 0 1px hsl(var(--border)), 0 1px 2px 0 hsl(0 0% 0% / 0.24);
-    --elevation-2: 0 0 0 1px hsl(var(--border)), 0 2px 4px 0 hsl(0 0% 0% / 0.32),
-      0 1px 2px -1px hsl(0 0% 0% / 0.20);
-    --elevation-3: 0 0 0 1px hsl(var(--border)), 0 4px 8px 0 hsl(0 0% 0% / 0.40),
-      0 2px 4px -2px hsl(0 0% 0% / 0.24);
+    /* 55-02: the old hsl()-wrapped border (no alpha) -> bare var(--border);
+       the literal `0 0% 0% / a` black tint -> oklch(0% 0 0 / a). */
+    --elevation-1: 0 0 0 1px var(--border), 0 1px 2px 0 oklch(0% 0 0 / 0.24);
+    --elevation-2: 0 0 0 1px var(--border), 0 2px 4px 0 oklch(0% 0 0 / 0.32),
+      0 1px 2px -1px oklch(0% 0 0 / 0.2);
+    --elevation-3: 0 0 0 1px var(--border), 0 4px 8px 0 oklch(0% 0 0 / 0.4),
+      0 2px 4px -2px oklch(0% 0 0 / 0.24);
   }
 }
 
@@ -154,7 +473,12 @@
     @apply bg-muted;
   }
   .react-flow__controls-button svg {
-    fill: hsl(var(--foreground));
+    /* 55-02: the old hsl()-wrapped foreground -> bare var(--foreground) —
+       --foreground now holds a full oklch(...) function; re-wrapping it in
+       hsl() would be invalid CSS the browser drops silently (55-RESEARCH.md
+       Pitfalls 2/4). Guarded by apps/web/e2e/token-render.spec.ts's
+       /knowledge Controls-fill assertion. */
+    fill: var(--foreground);
   }
   .react-flow__minimap {
     @apply overflow-hidden rounded-md border border-border bg-card;
@@ -171,7 +495,8 @@
 @layer utilities {
   .scrollbar-token {
     scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border)) transparent;
+    /* 55-02: the old hsl()-wrapped border -> bare var(--border) (see .react-flow__controls-button svg note above). */
+    scrollbar-color: var(--border) transparent;
   }
   .scrollbar-token::-webkit-scrollbar {
     width: 10px;
@@ -181,7 +506,7 @@
     background: transparent;
   }
   .scrollbar-token::-webkit-scrollbar-thumb {
-    background-color: hsl(var(--border));
+    background-color: var(--border);
     border-radius: 9999px;
     background-clip: content-box;
     border: 1px solid transparent;
@@ -228,12 +553,14 @@
     inset: -2px;
     border-radius: inherit;
     padding: 2px;
+    /* 55-02: the old hsl()-wrapped primary -> bare var(--primary); its 0.85-alpha
+       variant -> color-mix(in srgb, var(--primary) 85%, transparent) (see .react-flow__controls-button svg note above). */
     background-image: linear-gradient(
       90deg,
       transparent 0%,
-      hsl(var(--primary) / 0.85) 45%,
-      hsl(var(--primary)) 50%,
-      hsl(var(--primary) / 0.85) 55%,
+      color-mix(in srgb, var(--primary) 85%, transparent) 45%,
+      var(--primary) 50%,
+      color-mix(in srgb, var(--primary) 85%, transparent) 55%,
       transparent 100%
     );
     background-size: 250% 100%;
@@ -277,12 +604,14 @@
     from {
       opacity: 0;
       transform: scale(0.96);
-      box-shadow: 0 0 0 0 hsl(var(--foreground) / 0);
+      /* 55-02: the old hsl()-wrapped zero-alpha foreground -> transparent (same rendered result). */
+      box-shadow: 0 0 0 0 transparent;
     }
     to {
       opacity: 1;
       transform: scale(1);
-      box-shadow: 0 8px 24px -4px hsl(var(--foreground) / 0.12);
+      /* 55-02: the old hsl()-wrapped 0.12-alpha foreground -> color-mix() (see .react-flow__controls-button svg note above). */
+      box-shadow: 0 8px 24px -4px color-mix(in srgb, var(--foreground) 12%, transparent);
     }
   }
 
