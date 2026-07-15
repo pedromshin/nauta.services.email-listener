@@ -93,6 +93,48 @@ Progress: [███░░░░░░░] 29%
   — both are later 56-0N waves, not this plan). See `56-01-SUMMARY.md` for
   full detail.
 
+## Phase 56 -- Research Canvas — Backend & Semantic Context Model -- Plan 02 History -- fail-open auto-collect ledger write hook (RCNV-01)
+
+- **56-02 EXECUTED** (`6a726a3` feat, `7f896db` feat — executed concurrently
+  alongside Phase 55's own in-flight execution, palette-independent per this
+  milestone's parallel-safe grouping; STATE.md "Current Position" above
+  intentionally left untouched by this plan, owned by the Phase 55 executor):
+  Landed RCNV-01's Python auto-collect write hook. Task 1:
+  `source_ledger_repository.py` domain port (`SourceLedgerEntry` dataclass +
+  `SourceLedgerRepository` Protocol, mirrors `KnowledgeGraphRepository`'s
+  shape) + `SupabaseSourceLedgerRepository` adapter (idempotent upsert on
+  the `(conversation_id, tool_use_id, result_index)` dedupe index from
+  56-01's migration 0037; `get` via `.maybe_single()`). Task 2:
+  `RunChatTurn` gains an additive-default `source_ledger` collaborator
+  (mirrors `email_repository`'s exact posture) and a fail-open
+  `_write_source_ledger_entries` helper fired inside
+  `_run_server_tool_round` immediately after the FOUND-6 envelope gate +
+  `cap_tool_output`, guarded by a `_LEDGER_ELIGIBLE_TOOL_NAMES` allowlist
+  (starts as `{web_search}`) + `is_error is False` — one ledger row per
+  result, urlless entries skipped, zero knowledge-graph writes. No new
+  settings kill-switch (A4 — gating inherits transitively from
+  `WEB_SEARCH_TOOL_ENABLED`). `container.py` wires
+  `SupabaseSourceLedgerRepository -> SourceLedgerRepository` and threads it
+  into `_provide_run_chat_turn`. Tests: 9/9 green in
+  `test_run_chat_turn_source_ledger.py` (4 adapter call-shape + 5 hook
+  behaviors incl. a real truncation-induced malformed-envelope fixture
+  proving Pitfall 1's fail-open path end-to-end, and a byte-identical
+  no-collaborator regression guard). Full application-layer regression
+  suite green (288 tests). One self-corrected Rule-3 blocking issue during
+  execution: the adapter's `Client` import initially followed the domain
+  port's TYPE_CHECKING-only convention, which broke dishka's DI-graph
+  analysis (`UndefinedTypeAnalysisError`) — fixed to a real top-level
+  import, matching `knowledge_graph_repository.py`'s own adapter
+  convention; caught by `tests/test_container.py` before commit. No other
+  deviations — plan executed exactly as written. RCNV-01 marked complete in
+  REQUIREMENTS.md (mechanism proven at the deterministic/unit-test layer,
+  per the plan's own success criteria; live-DB proof — apply migration
+  0037, issue a real web_search turn, confirm a row lands — is a documented
+  `checkpoint:human-verify` follow-up, not yet performed this session,
+  mirrors this milestone's established "code-complete + unit-tested against
+  fakes, live-UAT deferred" posture). See `56-02-SUMMARY.md` for full
+  detail.
+
 ## Phase 54 -- Email-Cluster Workflow (E3) -- Plan 07 History -- section:H CLUS-07 Live-Acceptance Runsheet
 
 - **54-07 EXECUTED** (`01c4b23` docs):

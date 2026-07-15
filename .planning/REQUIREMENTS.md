@@ -49,7 +49,7 @@ IDNT-02 is locked.
 
 ### Research Canvas (RCNV — Band 4; backend palette-independent, visuals depend on IDNT-02)
 
-- [ ] **RCNV-01**: Sources the agent uses in a conversation (web_search results and other tool outputs) are auto-collected into a per-conversation source ledger — no per-turn capture-confirm ceremony (today's CLUS-04 widget is the explicit anti-goal)
+- [x] **RCNV-01**: Sources the agent uses in a conversation (web_search results and other tool outputs) are auto-collected into a per-conversation source ledger — no per-turn capture-confirm ceremony (today's CLUS-04 widget is the explicit anti-goal)
 - [ ] **RCNV-02**: Auto-collected sources appear as nodes on the canvas, visibly related to the research, without the user asking
 - [ ] **RCNV-03**: The user can select auto-collected sources into a personal canon through a canvas-level curation UX built over the existing suggest-only promotion gate (INFERRED → EXTRACTED), never per-turn chat widgets
 - [ ] **RCNV-04**: Connecting a source / generated-table / panel node to a chat node on the canvas injects that node's content as context for that chat — semantic edges, not visual-only (canvas sharedState was explicitly NOT the linkage store per D-54; this needs its own design)
@@ -91,7 +91,7 @@ Which phases cover which requirements. Filled by the roadmapper.
 | STCK-02 | Phase 55 — Platform Migration: Tailwind v4 + React 19 | Pending |
 | STCK-03 | Phase 55 — Platform Migration: Tailwind v4 + React 19 | Pending |
 | STCK-04 | Phase 55 — Platform Migration: Tailwind v4 + React 19 | Pending |
-| RCNV-01 | Phase 56 — Research Canvas: Backend & Semantic Context Model | Pending |
+| RCNV-01 | Phase 56 — Research Canvas: Backend & Semantic Context Model | Complete |
 | RCNV-04 | Phase 56 — Research Canvas: Backend & Semantic Context Model | Pending |
 | LEARN-01 | Phase 57 — Email Learning Loop | Pending |
 | LEARN-02 | Phase 57 — Email Learning Loop | Pending |
