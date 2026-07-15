@@ -7,12 +7,20 @@ description: Polytoken web design system — token source, @polytoken/ui convent
 
 ## Stack pin (hard constraints)
 
-- Tailwind **v3.4** + React **18** + Next 15. NOT Tailwind v4, NOT React 19.
-- Primitives: **Radix** (`@radix-ui/react-*`). Upstream shadcn defaults to Base UI
-  since July 2026 — stay on the Radix track; diff any payload before vendoring.
-- Third-party registry payloads are increasingly Tailwind v4 (`@theme`, oklch).
-  Adapt to v3 (HSL variables + tailwind.config) before committing. Never
-  auto-install blindly.
+- Tailwind **v4** (`@theme inline` + oklch tokens, CSS-first config) + React **19** + Next 15.
+  Migrated in Phase 55 (STCK-01/STCK-02) — `packages/ui/components.json`'s `tailwind.config`
+  is blank (`""`) per the v4 registry-install shape.
+- Primitives: **Radix** (`@radix-ui/react-*`) — DECIDED, documented in
+  [`docs/design/radix-vs-base-ui.md`](../../../docs/design/radix-vs-base-ui.md) (STCK-03).
+  Upstream shadcn defaults to Base UI since July 2026, but its own changelog states Radix is
+  not deprecated; pin every non-interactive `shadcn init`/`add` to the Radix track with
+  `-b radix`. Diff any payload before vendoring regardless.
+- Third-party registry payloads are increasingly Tailwind v4-native (`@theme`, oklch) — this
+  is now this repo's own shape too, so a v4/oklch payload usually needs **no adaptation**
+  (see STCK-04 proof: a direct `shadcn add @kibo-ui/rating` install required zero v3/Base-UI
+  changes). Still inspect every payload via `--dry-run --view` first — never auto-install
+  blindly — but "adapt Tailwind v4 syntax to v3" is no longer a default step, only a
+  contingency if a payload assumes a different token shape than this repo's.
 
 ## Where things live
 
@@ -22,9 +30,11 @@ description: Polytoken web design system — token source, @polytoken/ui convent
   dropzone, dialog-stack, tags, …) — already adapted to Tailwind v3; their
   keyframes live in `packages/tailwind-config/web.ts`.
 - `cn` util: exported from the `@polytoken/ui` root (`packages/ui/src/index.ts`).
-- Tokens: `apps/web/src/app/globals.css` — HSL CSS variables, shadcn v3
-  convention. Brand primary `164 39% 22%`. Sidebar tokens extended in
-  `packages/ui/tailwind.config.ts` (IntelliSense-only file).
+- Tokens: `apps/web/src/app/globals.css` — full-color-function CSS variables
+  (`oklch(...)`), shadcn v4 `@theme inline` convention. Brand primary
+  `oklch(38.9% 0.053 173.7)`. Sidebar tokens extended in
+  `packages/ui/tailwind.config.ts` (IntelliSense-only file). Call sites read
+  the var directly (`var(--primary)`), never re-wrapped in `hsl(...)`.
 - Tailwind preset: `@polytoken/tailwind-config/web`.
 - Import convention: `import { Button } from "@polytoken/ui/button"`,
   `import { cn } from "@polytoken/ui"`.
@@ -45,19 +55,32 @@ Refresh the catalog when registries drift or new components are vendored:
 
 ## shadcn CLI workflow (vendor + adapt)
 
-`packages/ui/components.json` wires the CLI and registries. Run from
-`packages/ui/`.
+`packages/ui/components.json` wires the CLI and registries — `tailwind.config` is
+blank (v4 shape, per shadcn v4 docs: "For Tailwind CSS v4, leave this blank"). Run
+from `packages/ui/`.
 
 - Discover: catalog first (above); fall back to `npx shadcn@latest search @kibo-ui -q <term>`
-- Inspect: `npx shadcn@latest add <item> --dry-run --view`
-  (import rewriting to `@polytoken/ui` conventions is correct in the payload)
+- Inspect: `npx shadcn@latest add -b radix <item> --dry-run --view`
+  (import rewriting to `@polytoken/ui` conventions is correct in the payload;
+  `-b radix` pins the Radix track per `docs/design/radix-vs-base-ui.md`, STCK-03)
 - Diff vendored components against canonical: `npx shadcn@latest diff <name>`
 - **DO NOT run plain `add`** — it resolves the write path through the package
   `exports` map and targets `src/index.ts/<name>.tsx` (broken). Instead:
   1. Copy the payload from `--dry-run --view` into `packages/ui/src/<name>.tsx`.
-  2. Adapt Tailwind v4 syntax to v3 if present.
-  3. Swap Base UI primitives for the Radix equivalent (or justify an exception).
-  4. Add runtime deps to `packages/ui/package.json`; `npm install` at root.
+  2. **Since this repo's own tokens are now Tailwind v4/oklch (Phase 55), a v4-native
+     payload usually needs NO adaptation** — verified live for `@kibo-ui/rating`
+     (STCK-04 proof: the payload's classes, imports (`@polytoken/ui` convention
+     already matched), and Radix-based runtime hook all landed unmodified). Only
+     adapt if the payload assumes a different token/class shape than this repo's.
+  3. Confirm the payload resolved a Radix (not Base UI) primitive when the
+     registry offers both — pass `-b radix` at inspect time (above) so this is
+     already handled; if a component is Base-UI-only, treat that as the
+     re-evaluation trigger in `docs/design/radix-vs-base-ui.md`, not a silent
+     exception.
+  4. Add runtime deps to `packages/ui/package.json` (check first — a dep may
+     already be present, e.g. `@radix-ui/react-use-controllable-state` was
+     already installed for `relative-time`/`dialog-stack`/`code-block`); `npm
+     install` at root if a new one is needed.
 
 ## Approved external sources
 
