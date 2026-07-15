@@ -370,7 +370,7 @@ Plans:
 - [x] 60-02-PLAN.md — Inbox row + thread group restructured (serif subject/snippet, ruled member rail); the anti-re-token gate, proven able to fail
 - [x] 60-03-PLAN.md — Four-pane inbox: filters/list chrome + states (law-1 madder fix), serif reading pane, the new entities rail, mobile feed; pane-level gate
 - [x] 60-04-PLAN.md — region-vocabulary.ts (tier=colour, role=geometry); region overlays re-encoded; the 20-case role x status matrix gate
-- [ ] 60-05-PLAN.md — Extraction registry on the vocabulary (law 2 turned right way up); status-badge/confirm-deny/layers-row; extraction shape gate
+- [x] 60-05-PLAN.md — Extraction registry on the vocabulary (law 2 turned right way up); status-badge/confirm-deny/layers-row; extraction shape gate
 - [ ] 60-06-PLAN.md — Remaining editor panels + detail frame (serif subject, ink error); role-hue-ban.test.ts (scoped, ratcheting)
 - [ ] 60-07-PLAN.md — 16-surface screenshot harness capture (criterion 4) or honest gap; brand guide + design-system skill for Phases 61-63
 **UI hint**: yes

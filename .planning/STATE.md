@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Product Design & Research Canvas
 status: in-progress
-last_updated: "2026-07-15T20:51:47.028Z"
+last_updated: "2026-07-15T22:16:39.230Z"
 progress:
   total_phases: 9
   completed_phases: 4
   total_plans: 24
-  completed_plans: 21
+  completed_plans: 23
   percent: 44
 ---
 
@@ -69,7 +69,12 @@ the complete inbox component set (a module-resolution RED, since the new rail ha
 analogue). Plan 04 (region-vocabulary.ts; region overlays re-encoded tier=colour/role=structure;
 the 20-case role x status matrix gate) EXECUTED — see the Plan 04 History entry below and
 `60-04-SUMMARY.md`; both required negative proofs RED (a reintroduced role hue, a role-collapse),
-both reverted clean.** Next: Phase 60 Plan 05 (3 plans remain in this 7-plan phase).
+both reverted clean. Plan 05 (extraction surface onto the tier vocabulary; law 2 inverted back;
+the extraction shape gate) EXECUTED — see the Plan 05 History entry below and `60-05-SUMMARY.md`;
+the pre-60 baseline was frozen and committed BEFORE the component was touched (order verified in
+git), and the negative proof drove the candidate-tier leg RED against the exact
+node-type-hue-as-tier violation 60-CONTEXT named, then reverted clean.** Next: Phase 60 Plan 06
+(2 plans remain in this 7-plan phase).
 
 **Done so far in v1.10:**
 
@@ -84,6 +89,7 @@ both reverted clean.** Next: Phase 60 Plan 05 (3 plans remain in this 7-plan pha
 - Phase 60 Plan 02 — EXECUTED (inbox row restructured to a four-band registry entry with a NEW serif snippet; thread group restructured to a ruled sub-list, stock Badge replaced; `inbox-structure.test.tsx` makes ROADMAP criterion 1 executable and was proven able to fail via a real pre-60 component restore — 2/4 legs genuinely RED)
 - Phase 60 Plan 03 — EXECUTED (four-pane desktop inbox: reading pane rebuilt as a serif document, new `InboxEntitiesRail` fourth pane, law-1-clean error/empty/loading states on both trees, mobile chrome restyled; `inbox-structure.test.tsx` grew to 8 legs and was re-proven able to fail over the full component set — SURF-01 marked complete)
 - Phase 60 Plan 04 — EXECUTED (`region-vocabulary.ts` — tier is the ONLY colour, role is pure structure; `region-overlay-box.tsx` re-encoded so tier+role ALWAYS compose (fixing the pre-60-04 role-replaces-tier inversion); 20-case role x status matrix gate proven able to fail on both possible regressions — SURF-04 marked complete)
+- Phase 60 Plan 05 — EXECUTED (extraction surface on the tier vocabulary: the CONTEXT-flagged `candidate: node-type-hue` violation killed; law 2 inverted back so the extracted VALUE reads as serif evidence and the property label recedes to chrome; tier is now a visible WORD + swatch, not a dot with an `sr-only` whisper; `status-badge.ts`/`confirm-deny-controls.tsx`/`layers-tree-row.tsx` moved onto one `tierOf`; shape gate proven RED against the exact violation — elements 64→67, leafText 22→24)
 
 Migrations 0037 (chat_source_ledger + chat_context_edges), 0038 (entity_type_corrections),
 0039 (entity-resolution dismiss filter) are AUTHORED + journal-coherent, APPLIED NOWHERE.
@@ -196,6 +202,44 @@ CLUS-07 (§H) — `phases/49-live-loop-gate-deploy-oauth-real-email/MORNING-CHEC
   (first direct test mount; vitest's classic JSX runtime throws without it, unlike Next's SWC
   automatic runtime). `apps/web`: tsc clean, 69/69 files 794/794+1skipped green, `build:local`
   succeeds. SURF-04 marked complete. See `60-04-SUMMARY.md` for the full negative-proof output.
+
+## Phase 60 -- Surface Redesign: Inbox & Email Detail -- Plan 05 History -- extraction surface on the vocabulary + law 2 the right way up
+
+- **60-05 EXECUTED** (`a8dfb5b` test/freeze, `1e4a6d3` feat, `81a60d1` feat, `da6892c` test):
+  Task 1 Step 1 froze `extraction-summary-pre-60.json` (elements=64, leafText=22, depth=11) from
+  the component AS IT SHIPPED PRE-PHASE-60 and committed it BEFORE the rewrite — order verified in
+  git (`a8dfb5b` carries the artifact plus an import-only diff; the rewrite lands in `1e4a6d3`), so
+  the Task 3 gate is provably non-vacuous. Step 2 rebuilt the panel: `statusTone`/`TONE_DOT`/
+  `TONE_LABEL` deleted, tier routed through `tierOf`+`REGION_TIER` alone (T-60-08); the
+  CONTEXT-flagged `candidate: "bg-graph-email-component"` (a node-TYPE hue meaning a TIER) is gone
+  and a candidate now wears pencil-amber; `confirmed: "bg-success"` was right only BY ACCIDENT
+  (`--success` aliases `--conf`) and is now an explicit lookup. LAW 2 INVERTED BACK: the property
+  label became chrome (`text-2xs text-pencil`, sans) and the extracted VALUE became evidence
+  (`font-serif` + `tabular` + the `pmark` mark tinted by its OWN tier, never its parent's) — pre-60
+  the label was `font-medium text-foreground` and the value `text-muted-foreground`, i.e. the
+  document's own words rendered as the least important thing on the row. `StatusDot` → `TierBadge`:
+  a swatch PLUS the visible word (pre-60 the word was `sr-only`; a `pending` field said "—", now
+  "Suggested"). Task 2 moved `status-badge.ts` (where `candidate → variant "default"` had painted a
+  candidate in full ink, LOUDER than a confirmed fact, while `confirmed` had no case at all),
+  `confirm-deny-controls.tsx`, and `layers-tree-row.tsx` (three role-as-hue chips deleted; role now
+  structural via `REGION_ROLE_GEOMETRY`; its unclassified `??` label chain routed through
+  `regionLabelFor` so only the document's words earn the serif) onto the one vocabulary.
+  §D DESTRUCTIVE DISPOSITION, judged individually, not blanket-removed: both ✗ DENY controls KEPT
+  madder (irreversible server-side action — removing it would break law 1 from the other side);
+  `destructive` REMOVED from `getStatusBadge`'s return type (a status is not an action; never
+  returned; leaving it invited a future edit to paint a status madder). Task 3's gate (6 legs)
+  proves shape ≠ baseline with elements 64→67 and leafText 22→24 — and the leafText leg needed an
+  honest source, since the plan's stated reason for it is factually wrong (the class-blind
+  fingerprint ALREADY counted the `sr-only` word, so the badge swap is net-zero); the growth comes
+  from each entity header gaining the entity's own detected words, a fact the panel genuinely
+  lacked (it could say "Supplier" but never WHICH supplier). NEGATIVE PROOF RED against the exact
+  named violation, reverted clean (`git diff --stat` empty vs `81a60d1`). Two internal-consistency
+  fixes forward: the plan asks for a tier badge both "on the reference's `.badge` pattern" (sans)
+  and "coloured via `REGION_TIER[tier].chip`" (`chip` is `pmark`, which forces SERIF) — mutually
+  exclusive, and `pmark` would have smuggled the serif past this plan's OWN className-based law-2
+  gate; resolved per Task 2's sanctioned rule by growing `REGION_TIER` with `badge`/`swatch` (sans
+  chrome) beside `chip` (serif evidence). `apps/web`: tsc clean, 71/71 files, 801 passed/2 skipped,
+  `build:local` succeeds. SURF-04 already complete (shared with 60-04). See `60-05-SUMMARY.md`.
 
 ## Phase 55 -- Platform Migration — Tailwind v4 + React 19 -- Plan 04 History -- React 18->19 core bump + six low-risk dependency bumps
 
