@@ -507,9 +507,10 @@ export const CodeBlockCopyButton = ({
   };
 
   if (asChild) {
-    return cloneElement(children as ReactElement, {
-      onClick: copyToClipboard,
-    });
+    return cloneElement(
+      children as ReactElement<{ onClick?: () => void }>,
+      { onClick: copyToClipboard },
+    );
   }
 
   const Icon = isCopied ? CheckIcon : CopyIcon;

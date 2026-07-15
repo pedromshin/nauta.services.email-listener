@@ -1,5 +1,6 @@
 import type { ICellRendererParams } from "ag-grid-community";
 import { format, isValid, parseISO } from "date-fns";
+import type { JSX } from "react";
 
 /** Formats a date value as "Mar 24, 2026" (D-09) */
 export function DateCellRenderer(

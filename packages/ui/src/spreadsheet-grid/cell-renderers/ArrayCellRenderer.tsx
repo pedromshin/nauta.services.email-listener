@@ -1,5 +1,5 @@
 import type { ICellRendererParams } from "ag-grid-community";
-import * as React from "react";
+import type { JSX } from "react";
 
 import { Badge } from "../../badge";
 

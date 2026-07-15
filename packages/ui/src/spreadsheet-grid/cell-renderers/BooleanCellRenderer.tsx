@@ -1,4 +1,5 @@
 import type { ICellRendererParams } from "ag-grid-community";
+import type { JSX } from "react";
 
 import { Checkbox } from "../../checkbox";
 

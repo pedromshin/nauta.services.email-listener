@@ -1,5 +1,6 @@
 import type { ICellRendererParams } from "ag-grid-community";
 import { ExternalLink } from "lucide-react";
+import type { JSX } from "react";
 
 /** Renders a truncated URL with an external link icon (D-09) */
 export function UrlCellRenderer(

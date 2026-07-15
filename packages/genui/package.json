@@ -26,19 +26,21 @@
   "dependencies": {
     "@babel/parser": "^7.29.7",
     "axe-core": "^4.12.1",
-    "react": "^18.3.1",
+    "react": "^19.2.7",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@polytoken/ui": "*",
-    "@types/react": "^18.3.3",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "jsdom": "^25.0.1",
+    "react-dom": "^19.2.7",
     "typescript": "^5.8.0",
     "vitest": "^2.1.9",
     "zod-to-json-schema": "3.25.2"
   },
   "peerDependencies": {
-    "react": "^18.3.1",
+    "react": "^18.3.1 || ^19.0.0",
     "zod": "^3.23.8"
   }
 }

@@ -37,6 +37,34 @@ resolve correctly post-oklch-port.
 fresh investigation into the `/knowledge` filter-rail's DOM layering / the seeded test fixture's
 sidebar-expansion state in a follow-up session, independent of the Tailwind v4 migration.
 
+**55-04 update:** Same exact failure signature (`data-sidebar="content"`/`data-sidebar="menu"`
+under `data-side="left"` intercepting pointer events, deterministic 60s timeout after 80-100+
+retries) reproduces identically on React 19 — confirmed via isolated re-run
+(`npx playwright test e2e/token-render.spec.ts --project=chromium` from `apps/web`) both inside
+the full parallel suite and standalone. 55-04's Task 1/Task 2 changes never touch
+`packages/ui/src/sidebar.tsx` (confirmed: `git diff --stat` for this plan's commits shows zero
+changes to that file) — this is the same pre-existing sidebar-layering bug, not a React-19
+regression. `uat-48-token-surfaces.spec.ts`'s "48.1: citation chip resolves the fully-rounded
+pill radius; confirm/deny controls render distinct success/destructive colors" test exhibits the
+identical signature on a different page (`/emails/[id]`'s layers-panel `[role="treeitem"]`, also
+intercepted by `data-sidebar="menu"` under `data-side="left"`) — same root-cause class, added to
+this entry rather than opening a new one.
+
+`npm run screenshot:review -w @polytoken/web` (55-04 Task 2) hit the same bug a third time: after
+successfully capturing 5 of 6 base surfaces (login/inbox/chat/knowledge/studio x mobile+desktop =
+10 PNGs, plus one successful `studio-mobile-linear-clean.png` alternate-pack capture), the run
+timed out (300s) on `captureAlternatePackIfPresent`'s `Sandbox` tab click for the `studio`
+surface — same `data-sidebar="menu"` under `data-side="left"` intercepting the click, same
+retry-then-timeout pattern (505 retries before giving up). This is now confirmed across THREE
+independent interaction contexts (a sidebar nav-rail label, an email-detail layers-panel
+treeitem, and a Studio-page tab trigger) — strong evidence this is a systemic, pre-existing
+sidebar pointer-events/z-index issue affecting any click near the expanded left sidebar, not a
+narrow test-specific flake. The 11 screenshots that WERE captured (spot-checked visually:
+chat-desktop.png, knowledge-desktop.png) show fully correct, non-regressed rendering — colors,
+layout, and the React Flow knowledge-graph canvas all render as expected on React 19.
+`.planning/ui-reviews/2026-07-15T06-55-10-082Z/` is the resulting partial-but-real capture
+artifact.
+
 ## 55-02: `packages/genui` `artifacts.test.ts` registryVersion hash drift — pre-existing
 
 **Found during:** 55-02 Task 2's `npm run test -w @polytoken/genui` gate (run to confirm the
