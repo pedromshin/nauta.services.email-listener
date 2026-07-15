@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Product Design & Research Canvas
 status: in-progress
-last_updated: "2026-07-15T17:52:46Z"
+last_updated: "2026-07-15T18:30:00.000Z"
 progress:
   total_phases: 9
   completed_phases: 3
-  total_plans: 17
-  completed_plans: 17
+  total_plans: 18
+  completed_plans: 18
   percent: 33
 ---
 
@@ -21,7 +21,7 @@ See: .planning/PROJECT.md (updated 2026-07-14 after v1.9 milestone close)
 **Core value:** Reliably receive every inbound email and make it observable — now as a *designed*
 product the user actually lives in: a research canvas that collects sources without ceremony, lets
 the user select a personal canon, and treats canvas edges as context.
-**Current focus:** Phase 59 — Visual Identity — Designed Token Set & Brand Guide (1/3 plans done: 59-01 executed, 59-02/59-03 remain). Execute `59-02-PLAN.md` next.
+**Current focus:** Phase 59 — Visual Identity — Designed Token Set & Brand Guide (2/3 plans done: 59-01, 59-02 executed, 59-03 remains). Execute `59-03-PLAN.md` next.
 
 **Two things carry into execution, both user-raised at v1.9 close and still live:**
 
@@ -47,12 +47,13 @@ work, never deferrable-by-default.
 Meaningful Colour" (`.planning/phases/58-visual-identity-sketch-pick-human-gate/58-IDENTITY.md`).
 Phase 59 (Designed Token Set & Brand Guide) is now executing against that locked contract.
 
-**Phase 59 progress: 1/3 plans done.** 59-01 (oklch ladder port + shadcn semantic mapping + WCAG-AA
+**Phase 59 progress: 2/3 plans done.** 59-01 (oklch ladder port + shadcn semantic mapping + WCAG-AA
 + token-registration gate rewrites) EXECUTED — see the Plan 01 History entry below and
-`59-01-SUMMARY.md`. Next: 59-02 (type scale + serif role + density scale + provenance-mark/
-entity-type-shape utilities + a new law-1 chroma-ceiling gate), then 59-03 (brand guide's
-visual-identity section + SKILL.md update). Run `/gsd:plan-phase 59` continuation or execute
-`59-02-PLAN.md` directly.
+`59-01-SUMMARY.md`. 59-02 (type scale + serif role + density scale + the provenance mark +
+entity-type-shape utilities + a new law-1 structural-enforcement gate, `colour-law.test.ts`)
+EXECUTED — see the Plan 02 History entry below and `59-02-SUMMARY.md`. Next: 59-03 (brand
+guide's visual-identity section + SKILL.md update). Run `/gsd:plan-phase 59` continuation or
+execute `59-03-PLAN.md` directly.
 
 **Done so far in v1.10:**
 
@@ -61,6 +62,7 @@ visual-identity section + SKILL.md update). Run `/gsd:plan-phase 59` continuatio
 - Phase 57 Email Learning Loop — 3/3 plans, VERIFIED human_needed (3/3 criteria at code level; live legs need migrations 0038/0039 applied)
 - Phase 58 — D-58-01 LOCKED (Provenance × Meaningful Colour, both themes, three laws, 12-token oklch ladder)
 - Phase 59 Plan 01 — EXECUTED (identity ladder ported, shadcn mapping complete, both gates rewritten + re-proven able to fail)
+- Phase 59 Plan 02 — EXECUTED (6-step type scale + serif role + density scale + provenance-mark/entity-type-shape utilities + new law-1 `colour-law.test.ts` gate, proven able to fail twice; Archivo self-hosted successfully, no fallback needed)
 
 Migrations 0037 (chat_source_ledger + chat_context_edges), 0038 (entity_type_corrections),
 0039 (entity-resolution dismiss filter) are AUTHORED + journal-coherent, APPLIED NOWHERE.
@@ -417,6 +419,67 @@ CLUS-07 (§H) — `phases/49-live-loop-gate-deploy-oauth-real-email/MORNING-CHEC
   missing-env-var build failure — confirmed not caused by this plan,
   removed after verification). See `59-01-SUMMARY.md` for full detail,
   including verbatim negative-proof output.
+
+## Phase 59 -- Visual Identity — Designed Token Set & Brand Guide -- Plan 02 History -- type scale + serif role + density scale + the provenance mark + entity-type shapes + the law-1 gate
+
+- **59-02 EXECUTED** (`92489ef` feat, `f060115` feat, `dd8b6e5` feat):
+  Built the rest of D-58-01's design system on top of 59-01's colour ladder.
+  Task 1: a 6-step designed `--text-*` scale (2xs/xs/sm/base/lg/xl, each
+  with a paired `--line-height`) registered in the native `@theme` block,
+  clustered from `direction-final.html`'s 13 measured font-size values and
+  anchored on the sketch's own `14px/1.55` body — not Tailwind's stock 16px
+  base, per the plan's explicit instruction ("that is the point of criterion
+  2" — the scale REPLACES stock Tailwind sizing wherever `text-xs`/`sm`/
+  `base`/`lg`/`xl` are already used). `--font-serif` (system stack) is law
+  2's real token role; `--font-sans` is the Archivo-first stack, self-hosted
+  via `next/font/google` in `layout.tsx` (400/600 weights only, exposed as
+  `--font-archivo`) — **the webfont fetch succeeded, no §B fallback branch
+  was needed**. A `tabular` utility names law 2's "tabular numerals
+  everywhere." 9 named `--spacing-*` density steps (control/control-sm/
+  chip/row x/y pairs + panel) plus `--radius-card`/`--radius-frame` give
+  Phases 60-63 a measured rhythm. Task 2 added THE signature element — the
+  provenance mark — as `pmark`/`pmark-confirmed`/`pmark-suggested`
+  `@utility` declarations (solid = confirmed, dashed = suggested), plus the
+  entity-type shape vocabulary (`tshape` + 5 type variants, all hue-free —
+  verified structurally via a `grep -A4 ... | grep -c` assertion, not just
+  by eye). Task 3 added `colour-law.test.ts`, a new committed gate
+  structurally enforcing law 1: chrome ceiling (every non-earned-hue colour
+  token <=0.03 chroma), earned-hue floor (every earned-hue token >=0.06
+  chroma), and cross-theme hue+chroma invariance for conf/sugg/bad (only
+  lightness may differ between `:root` and `.dark`). Colour-token discovery
+  is dynamic (resolve + parse every `:root`/`.dark` key as oklch, skip on
+  parse failure) rather than a hardcoded name list — a future colour token
+  addition is automatically gated. `--chart-1..5` is a documented, closed
+  exemption from BOTH bounds (several of its own chroma values, e.g. light
+  chart-1=0.053, sit between the two bands) — logged via `console.info`,
+  not silently skipped. `token-registration.test.ts` extended with 2 new
+  tests covering the type scale/serif/density/card-frame-radii
+  registrations. Both required negative proofs run and reverted: reverting
+  `--primary` to its pre-59 stock teal (`oklch(38.9% 0.053 173.7)`)
+  correctly turned the chrome-ceiling test red, naming BOTH `--primary` and
+  the derived `--sidebar-primary` alias at chroma 0.053; drifting `.dark`'s
+  `--conf` chroma from 0.068 to 0.07 correctly turned the cross-theme
+  invariance test red. Both reverted, full suite green (284/284: 44
+  contrast + 51 registration + 187 colour-law + 2 palette-ban) after each.
+  One self-caught Rule-1 fix during Task 1's first build verification: a
+  newly-authored comment's prose contained the literal substring `*/`
+  (inside "p-, gap-, m-"), prematurely closing the enclosing CSS block
+  comment and producing a webpack "Unknown word" syntax error — reworded,
+  confirmed no other `*/`-forming sequences existed in the new prose via a
+  targeted grep. One documented plan-frontmatter inconsistency (not a scope
+  violation): `layout.tsx` is absent from the plan's top-level
+  `files_modified` list but is explicitly named in Task 1's own `<files>`
+  tag and required by interfaces §B's Archivo decision rule — Task 1's own
+  instruction was treated as authoritative. `npx tsc --noEmit` clean;
+  `npm run build -w @polytoken/web` exits 0 with all 20 routes generated
+  (root `.env.local` temporarily copied into `apps/web/` to isolate the
+  same pre-existing missing-env-var gap 59-01 already documented, `.next`
+  cache cleared between runs to avoid a stale-cache artifact, removed after
+  each verification). Scope fence held: `git diff --stat
+  packages/genui/src/theme/packs.ts` empty, `grep -c "hsl(var(--"
+  apps/web/src/app/globals.css` returns 0. See `59-02-SUMMARY.md` for full
+  detail, including both negative proofs' verbatim output and the derived
+  type-scale/density tables.
 
 ## Phase 54 -- Email-Cluster Workflow (E3) -- Plan 07 History -- section:H CLUS-07 Live-Acceptance Runsheet
 
@@ -4302,6 +4365,9 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 
 ## Decisions Log
 
+- 2026-07-15 (59-02): Type scale clustered to 6 steps (2xs/xs/sm/base/lg/xl) from `direction-final.html`'s 13 raw font-size values, deliberately reusing Tailwind's own `xs`/`sm`/`base`/`lg`/`xl` scale names — this REPLACES stock Tailwind text sizing wherever those classes are already used anywhere in the app, per the plan's explicit instruction ("that is the point of ROADMAP criterion 2"), not just for future Phase 60-63 consumers.
+- 2026-07-15 (59-02): `colour-law.test.ts`'s earned-hue chroma FLOOR (>=0.06) deliberately does NOT include `--chart-1..5`, even though interfaces §D lists chart tokens as part of the CEILING-exempt set — several chart chroma values (light chart-1=0.053, dark chart-3=0.057/chart-4=0.044) sit below 0.06, so applying the floor would make an always-red gate. Chart tokens get their own "documented exemption" describe block (parses + logs chroma via console.info, asserts nothing) instead — excluded from both bounds, but auditable rather than silently skipped.
+- 2026-07-15 (59-02): Archivo (via `next/font/google`, layout.tsx, 400/600 weights) self-hosted successfully on the first build attempt — the plan's §B build-failure fallback branch (drop the import, keep the literal Archivo-first stack) was NOT needed this session.
 - 2026-07-15 (57-01): Migration number is 0038 (journal idx 38; previous head was idx 37/`0037_serious_sugar_man` from Phase 56) — `packages/db/migrations/meta/_journal.json` re-checked at execution time per RESEARCH Pitfall 3's own instruction, not assumed. Downstream 57-03 must reference 0038 as the floor and re-check the head itself before allocating.
 - 2026-07-15 (57-01): [Rule 1] `npm run migration:generate --name=entity_type_corrections` did not forward `--name` through the `migration:generate` npm script (no `--` pass-through in package.json), producing a random-slug filename (`0038_known_hemingway.sql`) — renamed to `0038_entity_type_corrections.sql` and corrected the journal `tag` to match, satisfying the plan's own `*_entity_type_corrections.sql` acceptance-criteria glob; `drizzle-kit check` re-verified green after the rename.
 - 2026-07-15 (57-01): `match_entity_type_corrections_by_trgm` retrieval RPC is importer_id-scoped ONLY, with NO entity_type_id filter parameter (RESEARCH Pitfall 4) — this retrieval runs BEFORE classification decides the entity type, so an entity_type_id filter would make it structurally incapable of ever returning results. The literal substring `match_entity_type_id` was also scrubbed from ALL prose (SQL comments + Python docstrings), not just the actual signature, after an early draft's explanatory comment tripped its own "must not exist" acceptance grep gate.
@@ -4711,6 +4777,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 55 P05 | 135min | 2 tasks | 6 files |
 | Phase 57 P01 | ~65min | 3 tasks | 12 files — entity_type_corrections table + importer-scoped trgm RPC + migration 0038 (authored, not applied) + load-before-mutate capture hook in SetComponentEntityTypeUseCase (LEARN-01) |
 | Phase 56 P03 | ~30min | 2 tasks | 4 files — assertSourceRefOwnership dispatcher + chat.createContextEdge/removeContextEdge/listContextEdges (RCNV-04), 33-test adversarial two-user suite (all sourceRef types), D-56-A ownership-only tier-agnostic knowledge_node check |
+| Phase 59 P02 | ~30min | 3 tasks | 4 files — 6-step type scale + serif role + density scale + Archivo self-host (landed, no fallback) + provenance-mark/entity-type-shape utilities + colour-law.test.ts law-1 gate (proven able to fail twice) |
 
 ## Operator Next Steps
 
