@@ -212,7 +212,8 @@ WCAG-AA contrast + token-registration gates, and the 32/32 E2E suite.
 - [x] Phase 57: Email Learning Loop
  (completed 2026-07-15)
 - [ ] Phase 58: Visual Identity — Sketch & Pick (HUMAN GATE)
-- [x] Phase 59: Visual Identity — Designed Token Set & Brand Guide (completed 2026-07-15)
+- [x] Phase 59: Visual Identity — Designed Token Set & Brand Guide
+ (completed 2026-07-15)
 - [ ] Phase 60: Surface Redesign — Inbox & Email Detail
 - [ ] Phase 61: Surface Redesign — Chat, Canvas & Mobile Panel Chrome
 - [ ] Phase 62: Surface Redesign — Knowledge, Studio & Production States
@@ -362,7 +363,16 @@ information density, interactions — not merely re-tokened.
      document-preview + entity-region interaction visibly improved in hierarchy and density.
   4. The 16-surface screenshot harness captures both surfaces under the new design with zero
      unintended regressions elsewhere.
-**Plans**: TBD
+**Plans**: 7 plans
+
+Plans:
+- [ ] 60-01-PLAN.md — Frozen pre-60 structural baseline + colour-blind fingerprint; per-fact entitySummary (value+tier); the provenance chip (law 1 leaves the inbox)
+- [ ] 60-02-PLAN.md — Inbox row + thread group restructured (serif subject/snippet, ruled member rail); the anti-re-token gate, proven able to fail
+- [ ] 60-03-PLAN.md — Four-pane inbox: filters/list chrome + states (law-1 madder fix), serif reading pane, the new entities rail, mobile feed; pane-level gate
+- [ ] 60-04-PLAN.md — region-vocabulary.ts (tier=colour, role=geometry); region overlays re-encoded; the 20-case role x status matrix gate
+- [ ] 60-05-PLAN.md — Extraction registry on the vocabulary (law 2 turned right way up); status-badge/confirm-deny/layers-row; extraction shape gate
+- [ ] 60-06-PLAN.md — Remaining editor panels + detail frame (serif subject, ink error); role-hue-ban.test.ts (scoped, ratcheting)
+- [ ] 60-07-PLAN.md — 16-surface screenshot harness capture (criterion 4) or honest gap; brand guide + design-system skill for Phases 61-63
 **UI hint**: yes
 
 ### Phase 61: Surface Redesign — Chat, Canvas & Mobile Panel Chrome
