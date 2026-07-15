@@ -28,6 +28,16 @@ interface ConfirmDenyControlsProps {
  * auto-detected → deny + `toast.info("Field value cleared.", { Undo, 3000ms })`
  * (box leaves view); user-drawn → deny (keeps box, clears value). The exact undo
  * toast copy + 3000ms duration come from the Copywriting Contract.
+ *
+ * LAW 1 DISPOSITION OF THE TWO HUES HERE (60-05-PLAN.md §D):
+ *   ✓ CONFIRM wears the confirmed token (verdigris). It states a TIER — this
+ *     value is now confirmed — which is precisely the hue tier has earned.
+ *   ✗ DENY KEEPS madder, and this is correct, not an oversight. Law 1 reserves
+ *     madder for controls that perform an IRREVERSIBLE action, and deny is one:
+ *     it soft-rejects the region or clears the extracted value on the server.
+ *     Blanket-removing `destructive` here would break law 1 from the other
+ *     side — leaving the one genuinely destructive control on this surface
+ *     indistinguishable from the benign one sitting 4px to its left.
  */
 export function ConfirmDenyControls({
   componentId,
@@ -58,7 +68,7 @@ export function ConfirmDenyControls({
       <button
         type="button"
         aria-label="Confirm field value"
-        className="h-5 w-5 rounded-full bg-success hover:bg-success/90 active:bg-success/80 text-success-foreground flex items-center justify-center text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+        className="h-5 w-5 rounded-full bg-conf hover:bg-conf/90 active:bg-conf/80 text-on-fill flex items-center justify-center text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
         onClick={(e) => {
           e.stopPropagation();
           onConfirm(componentId);

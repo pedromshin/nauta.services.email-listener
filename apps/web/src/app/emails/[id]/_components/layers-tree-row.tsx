@@ -2,18 +2,28 @@
 
 import { ChevronDown, ChevronRight, Square } from "lucide-react";
 
-import { contentSnippet } from "./region-label";
+import { REGION_ROLE_GEOMETRY, REGION_TIER, regionLabelFor, tierOf } from "./region-vocabulary";
 
 import type { ComponentRole } from "./region-overlay-box";
 
 /**
- * Role-chip tint per role (09-UI-SPEC §LAYERS Panel → Role Chips).
- * Compact inline chips: `text-xs px-2 py-1 rounded-sm font-semibold`.
+ * The role chip (09-UI-SPEC §LAYERS Panel → Role Chips), re-encoded onto the
+ * vocabulary (60-05-PLAN.md Task 2).
+ *
+ * Pre-60 each role wore its own node-TYPE hue — role-as-hue, which law 3
+ * forbids and which post-59 collapsed into three near-identical greys anyway,
+ * so the chips had stopped distinguishing anything at all. Role now carries
+ * STRUCTURE (border weight/style, from REGION_ROLE_GEOMETRY) over a hue-free
+ * chrome fill, mirroring direction-final.html's `.badge.type` treatment: an
+ * entity chip is heavy-bordered, a field chip light, an unrelated chip dotted.
+ * Colour on this surface belongs to tier alone.
  */
-const ROLE_CHIP: Record<NonNullable<ComponentRole>, string> = {
-  entity: "bg-graph-entity/10 text-graph-entity",
-  field: "bg-graph-email-component/10 text-graph-email-component",
-  unrelated: "bg-graph-email/10 text-graph-email",
+const ROLE_CHIP_BASE = "border-rule bg-shade text-pencil";
+
+const ROLE_LABEL_GEOMETRY: Record<NonNullable<ComponentRole>, string> = {
+  entity: REGION_ROLE_GEOMETRY.entity,
+  field: REGION_ROLE_GEOMETRY.field,
+  unrelated: REGION_ROLE_GEOMETRY.unrelated,
 };
 
 const ROLE_LABEL: Record<NonNullable<ComponentRole>, string> = {
@@ -57,11 +67,25 @@ interface LayersTreeRowProps {
 /**
  * LayersTreeRow — one 36px tree row (D-06/D-12, 09-UI-SPEC §LAYERS Panel).
  *
- * ENTITY: chevron + violet chip + label + page badge → click selects + arms
- * active-parent. FIELD (pl-8): amber chip + property + ":" + candidate value +
- * inline ✓/✗ (confirmed rows show bg-success/10, no controls). UNCLASSIFIED:
- * dashed-square icon + muted label. Inline ✓/✗ here are TEXT-row buttons (the
- * canvas overlay gets the floating controls).
+ * ENTITY: chevron + role chip + label + page badge → click selects + arms
+ * active-parent. FIELD (pl-8): role chip + property + ":" + candidate value +
+ * inline ✓/✗ (a confirmed row wears the confirmed wash and drops the controls).
+ * UNCLASSIFIED: dashed-square icon + detected label. Inline ✓/✗ here are
+ * TEXT-row buttons (the canvas overlay gets the floating controls).
+ *
+ * LAW 1/2/3 ON THIS ROW (60-05-PLAN.md Task 2):
+ *   - TIER is the only thing carrying colour, and it resolves through `tierOf`
+ *     alone (T-60-08) — never re-derived locally.
+ *   - ROLE is structure, never hue (see ROLE_CHIP_BASE above).
+ *   - Text the DOCUMENT wrote (a candidate value, a detected snippet) is
+ *     EVIDENCE: serif, marked `data-evidence`. Text polytoken wrote (a property
+ *     label, an entity-type name, a status word) is chrome: sans. The
+ *     unclassified row's three-way label fallback is discriminated by
+ *     `regionLabelFor`, which exists precisely so that fallback can obey law 2
+ *     instead of collapsing three provenances into one string.
+ *   - The ✗ DENY control KEEPS madder (§D): it performs an irreversible action
+ *     (soft-reject / clear value), which is exactly what law 1 earns madder
+ *     for. The ✓ confirm states a tier, so it wears the confirmed token.
  */
 export function LayersTreeRow({
   component,
@@ -73,8 +97,8 @@ export function LayersTreeRow({
   onConfirm,
   onDeny,
 }: LayersTreeRowProps) {
-  const role = component.role;
-  const isConfirmed = component.extractionStatus === "confirmed";
+  const tier = tierOf(component.extractionStatus);
+  const isConfirmed = tier === "confirmed";
   const showConfirmDeny =
     kind === "field" && !isConfirmed && component.candidateValue !== null;
 
@@ -108,14 +132,15 @@ export function LayersTreeRow({
           )}
         </button>
         <span
-          className={`shrink-0 text-xs px-2 py-1 rounded-sm font-semibold ${ROLE_CHIP.entity}`}
+          data-role="entity"
+          className={`shrink-0 text-xs px-2 py-1 rounded-sm font-semibold ${ROLE_CHIP_BASE} ${ROLE_LABEL_GEOMETRY.entity}`}
         >
           {ROLE_LABEL.entity}
         </span>
         <span className="flex-1 text-sm font-semibold truncate">
           {component.entityTypeLabel ?? "Untitled entity"}
         </span>
-        <span className="shrink-0 text-xs text-muted-foreground">
+        <span className="shrink-0 text-xs text-pencil tabular">
           p{component.pageNumber}
         </span>
       </div>
@@ -128,21 +153,29 @@ export function LayersTreeRow({
         role="treeitem"
         aria-selected={isSelected}
         className={`flex items-center gap-2 py-2 pl-8 pr-3 hover:bg-muted cursor-pointer ${
-          isConfirmed ? "bg-success/10" : ""
+          isConfirmed ? "bg-conf-wash" : ""
         } ${selectedClass}`}
         style={{ height: 36 }}
         onClick={onSelect}
       >
         <span
-          className={`shrink-0 text-xs px-2 py-1 rounded-sm font-semibold ${ROLE_CHIP.field}`}
+          data-role="field"
+          className={`shrink-0 text-xs px-2 py-1 rounded-sm font-semibold ${ROLE_CHIP_BASE} ${ROLE_LABEL_GEOMETRY.field}`}
         >
           {ROLE_LABEL.field}
         </span>
-        <span className="text-sm font-semibold truncate min-w-0 max-w-[140px]">
+        {/* polytoken's word for the slot — chrome, so sans. */}
+        <span className="text-xs text-pencil truncate min-w-0 max-w-[140px]">
           {component.propertyLabel ?? "field"}
         </span>
-        <span className="text-muted-foreground">:</span>
-        <span className="flex-1 text-sm font-normal text-muted-foreground truncate">
+        <span className="text-pencil">:</span>
+        {/* The document's own words — evidence, so serif + the tier's own mark. */}
+        <span
+          data-field="value"
+          data-tier={tier}
+          data-evidence
+          className={`flex-1 min-w-0 truncate text-sm ${REGION_TIER[tier].chip} font-serif`}
+        >
           {component.candidateValue ?? ""}
         </span>
         {showConfirmDeny && (
@@ -154,7 +187,7 @@ export function LayersTreeRow({
             <button
               type="button"
               aria-label="Confirm field value"
-              className="h-4 w-4 rounded-full bg-success hover:bg-success/90 active:bg-success/80 text-success-foreground flex items-center justify-center text-[10px] font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+              className="h-4 w-4 rounded-full bg-conf hover:bg-conf/90 active:bg-conf/80 text-on-fill flex items-center justify-center text-[10px] font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
               onClick={(e) => {
                 e.stopPropagation();
                 onConfirm?.();
@@ -182,10 +215,15 @@ export function LayersTreeRow({
   // UNCLASSIFIED (role === null). B1: the primary label is the detected text
   // (entity-type label if one exists, else a content snippet), NOT the raw
   // extraction_status — status is demoted to a small trailing chip.
-  const unclassifiedLabel =
-    component.entityTypeLabel ??
-    contentSnippet(component.contentText) ??
-    "Unlabeled region";
+  //
+  // `regionLabelFor` preserves B1's precedence EXACTLY while telling us which
+  // of the three provenances won, which is what law 2 needs: only the
+  // content-snippet case is the document's own words, so only it earns the
+  // serif. The pre-60 `??` chain collapsed all three into one string and so
+  // could not obey law 2 even in principle.
+  const label = regionLabelFor(component);
+  const isDetectedText = label.kind === "text";
+  const unclassifiedLabel = label.kind === "status" ? "Unlabeled region" : label.text;
   return (
     <div
       role="treeitem"
@@ -194,17 +232,21 @@ export function LayersTreeRow({
       style={{ height: 36 }}
       onClick={onSelect}
     >
-      <Square
-        className="h-3 w-3 text-muted-foreground/60 shrink-0"
-        aria-hidden="true"
-      />
-      <span className="flex-1 text-sm text-foreground truncate">
+      <Square className="h-3 w-3 text-pencil shrink-0" aria-hidden="true" />
+      <span
+        {...(isDetectedText ? { "data-field": "value", "data-evidence": true } : {})}
+        className={`flex-1 truncate text-sm ${isDetectedText ? "font-serif text-ink" : "text-pencil"}`}
+      >
         {unclassifiedLabel}
       </span>
-      <span className="shrink-0 text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded-sm bg-muted text-muted-foreground">
+      <span
+        data-field="tier-badge"
+        data-tier={tier}
+        className={`shrink-0 text-[10px] font-medium uppercase tracking-wide px-1.5 py-0.5 rounded-sm ${REGION_TIER[tier].badge}`}
+      >
         {component.extractionStatus}
       </span>
-      <span className="shrink-0 text-xs text-muted-foreground">
+      <span className="shrink-0 text-xs text-pencil tabular">
         p{component.pageNumber}
       </span>
     </div>
