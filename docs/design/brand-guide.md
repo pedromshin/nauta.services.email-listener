@@ -220,6 +220,147 @@ Nothing else checks these — they are the guide's job alone, and the reason thi
 Finish this section knowing which rules CI will catch for you, and which ones are yours alone to
 hold the line on.
 
+### Realized surface patterns (Phase 60)
+
+Everything above this line is the token SET. This subsection is the first realized surface
+PATTERNS built on it — inbox (`/`) and email-detail (`/emails/[id]`), by Phase 60. **Phases 61-63
+inherit these rather than re-deriving them from the static sketch**, which is how two surfaces end
+up disagreeing about the same fact. Each pattern names the file that owns it; read that file, do
+not re-implement it.
+
+#### The provenance chip
+
+One mark language on inbox chips, region label chips, entity rails, and extraction values. Shape:
+**the value first (serif + `tabular` + `data-evidence`), then a subordinate `· type` word in
+sans**, coloured *only* by tier.
+
+**Canonical implementation: `apps/web/src/app/_components/entity-chips.tsx`.** Reuse it; do not
+rebuild a chip.
+
+```tsx
+<Link data-field="chip" data-tier={entity.tier}
+      className={`pmark ${tierClass} inline-flex items-baseline gap-1 px-chip-x py-chip-y font-sans`}>
+  <span data-evidence className="truncate font-serif tabular">{primaryText}</span>
+  <span className="shrink-0 text-2xs opacity-75">· {entity.typeLabel}</span>
+</Link>
+```
+
+**The trap that shape exists to dodge — `pmark` IMPLIES serif** (it sets
+`font-family: var(--font-serif)`). So the container carries `font-sans` to *cancel* that default,
+and the value span re-applies `font-serif` explicitly. Skip the `font-sans` and the
+product-generated type word silently inherits the serif and breaks law 2 — and **no
+className-reading gate can see it**, because the violation is an inherited property, not a class.
+This is 60-05's finding, re-confirmed by 60-06.
+
+**The resulting export discipline** on `REGION_TIER` (below) — get this wrong and you smuggle serif
+onto chrome:
+
+| Reach for | When | Because |
+|---|---|---|
+| `.chip` (= `pmark`) | The **document's own words** — a value, a content snippet | Evidence. Serif is correct here. |
+| `.badge` + `.swatch` | **Chrome that names a tier** — the words "Confirmed"/"Suggested" | polytoken's vocabulary, not the document's. Law 2 gives it sans. |
+
+`.chip` looks like the obvious "tier colour" export. It is not. It is the *evidence* export.
+
+#### The tier/role orthogonality rule
+
+**Owner: `apps/web/src/app/emails/[id]/_components/region-vocabulary.ts`.** This is the single most
+reusable decision Phase 60 made, and Phases 61-63 need it for canvas nodes and edges.
+
+> **Tier owns colour and solid-vs-dashed. Role owns weight, style, and opacity — never hue.**
+> The two axes are orthogonal: a box reads "entity, suggested" as *thick and amber-dashed*, and
+> neither reading interferes with the other.
+
+- **`tierOf(status)`** — `confirmed` → confirmed; `candidate`/`pending` → suggested;
+  `rejected`/`superseded` → terminal (a ghost: no tier claim, so no colour at all).
+  **Any unrecognized status defaults to `suggested`, NEVER `confirmed`** (T-60-08). Tier is a claim
+  that *a human confirmed this*, so a new status value must never silently inherit a confirmation
+  the user never gave. The product's stance is suggest-only; this default is that stance in code.
+- **`REGION_TIER`** — tier's colour + solid/dashed, plus `.chip`/`.badge`/`.swatch`/`.ring`.
+  `.ring` is **ink on every tier** by design: tier owns fill and border, it never owns selection
+  (law 1 — selected states carry no hue).
+- **`REGION_ROLE_GEOMETRY`** — role's structure only. **`unrelated` is DOTTED, not dashed, because
+  tier already owns dashed.** `field` carries `opacity-80` beyond a bare `border` so it cannot
+  collapse into `none`'s plain `border` and become structurally indistinguishable at a fixed tier.
+- **`REGION_ROLE_LABEL`** — polytoken's word per role, in one place (it replaced two divergent
+  copies in `role-picker.tsx` and `inspector-panel.tsx`). Sans; never behind `chip`/`pmark`.
+- **`REGION_ROLE_SWATCH`** — law 3 applied to chrome: chrome that must *show* a role renders a
+  **miniature of the real box geometry**, composed from `REGION_ROLE_GEOMETRY` at module load so it
+  cannot drift. Base is `border-ink` — a swatch has no tier to claim. This is why the role picker
+  teaches the document's own vocabulary instead of a colour key that dies in greyscale.
+
+**One mapping, not two.** Do not re-derive tier locally next to a component that already has it —
+two maps of one fact drift, and the drift reads to the user as two panels disagreeing.
+
+#### Law 2 in practice — the `data-evidence` convention
+
+**`font-serif` and `data-evidence` mutually imply each other.** The gates enforce the pair, so
+marking one without the other is a test failure, not a style nit. `regionLabelFor` exists to make
+this decidable: it discriminates a label by PROVENANCE (`type` / `text` / `status`) instead of
+collapsing three different origins into one string — which is what made the pre-60 code
+structurally unable to obey law 2.
+
+| Evidence — serif + `data-evidence` | Chrome — sans, no `data-evidence` |
+|---|---|
+| Subjects, bodies, snippets | Type names, property labels |
+| Extracted values (**even inside an `<Input>`** — provenance is about where the text came from, not which element holds it) | Status words, counts |
+| Content-derived labels (`regionLabelFor` → `kind: "text"`) | Addresses-as-metadata; `kind: "type"` / `kind: "status"` |
+
+#### The madder rule in practice
+
+**`variant="destructive"` / `bg-destructive` on an irreversible CONTROL is correct.
+`text-destructive` / `border-destructive` on a STATE is banned.** An error is ink on a rule; a
+warning is ink weight; an uncertain read is `--pencil`.
+
+Gate: **`apps/web/src/app/__tests__/role-hue-ban.test.ts`**, with an exported **`SCOPED_DIRS`**
+ratchet (today: `_components`, `emails/[id]`). **Each of Phases 61-63 appends its own surface root
+as it sweeps.** The scope only ever grows; a pinning test makes *narrowing* it break a test instead
+of passing as a one-word diff nobody reviews. `graph-*` is still legitimately in use across
+`knowledge/`, `entities/`, and `chat/`, which is why the ban is scoped rather than global — a gate
+that is red on arrival gets allowlisted into meaninglessness within a week.
+
+**The gate is a floor, not a ceiling — its blind spot is real, not theoretical.** The
+fill-vs-text rule is a *proxy* for intent, and it cannot read intent. `pdf-preview-pane.tsx`
+shipped `<Badge variant="destructive">Preview failed</Badge>` — a *status* talking through the
+`variant` door the gate deliberately leaves open for genuine reject/deny buttons. It **passed the
+gate** and still violated law 1. A human found it by reading; grep could not. Two traps that each
+cost a rework in 60-06:
+
+1. **The gate reads LINES, not prose** — a comment citing a banned literal turns the gate red on
+   its own documentation. Describe retired tokens ("the retired entity node-TYPE hue"); never name
+   them.
+2. **The pattern must require the colour-utility PREFIX, not the bare family name** — the walk
+   covers `__tests__` dirs inside the scoped roots, where sibling gates legitimately assert on the
+   banned family by name. Widen it to a bare match and the gate executes its own siblings.
+
+#### The density steps in practice
+
+Reach for the named step, not a fresh number:
+
+| Step | Landed on | Example |
+|---|---|---|
+| `px-row-x` / `py-row-y` | List rows and header bars | `inbox-row.tsx`, `email-detail.tsx`'s header |
+| `px-chip-x` / `py-chip-y` | Chips (and the `+N` overflow chip) | `entity-chips.tsx` |
+| `p-panel` | Rails, panels, framed error/empty states | `inbox-entities-rail.tsx`, `email-detail.tsx` |
+
+#### Documented deviations from the sketch — and why
+
+These are deliberate. Do not "restore" them from `direction-final.html` without reading the reason.
+
+- **No `tshape` on inbox or detail.** The reference's own placement rule (law 3): type shapes
+  belong only where there is no room for a word. Both surfaces state the type in words already.
+- **No unread dot, no attachment row** on the inbox list row — there is **no read-state model and
+  no attachment metadata on the row**. The sketch drew data the product does not have.
+- **No Confirm/Dismiss in the inbox entities rail** — the canonical control lives on the detail
+  view. Two controls for one action is how the two surfaces drift apart.
+- **The entities rail hides below `xl` (1280px)**, not the reference's 1120px — Tailwind's own
+  breakpoint, rather than a bespoke number nothing else in the app shares.
+- **`parseStatus` is NOT routed through `REGION_TIER`.** Different domain: `tierOf("parsed")`
+  returns `suggested` (its unknown-status default), so routing would paint a *succeeded* parse
+  amber; and verdigris means precisely "a human verified this", while a parse succeeding is a
+  machine fact nobody confirmed. Spending the confirmed hue on it would make verdigris mean two
+  things — the one thing law 1 cannot survive. **That both are called "status" is the trap.**
+
 ## 4. Mark usage
 
 The mark is the `BrandMark` component

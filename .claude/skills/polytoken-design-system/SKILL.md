@@ -31,8 +31,10 @@ description: Polytoken web design system — token source, @polytoken/ui convent
 - Components: `packages/ui/src/*.tsx` — FLAT, one file per component
   (no `components/ui/` nesting). Includes vendored clones from Magic UI
   (border-beam, marquee, confetti, number-ticker, …) and Kibo UI (code-block,
-  dropzone, dialog-stack, tags, …) — already adapted to Tailwind v3; their
-  keyframes live in `packages/tailwind-config/web.ts`.
+  dropzone, dialog-stack, tags, …) — already adapted to this repo's conventions; their
+  keyframes live in `packages/tailwind-config/web.ts`. These were vendored **before** the
+  Phase 55 Tailwind **v4** migration — the stack pin above is authoritative; never re-adapt a
+  payload down to v3.
 - `cn` util: exported from the `@polytoken/ui` root (`packages/ui/src/index.ts`).
 - Tokens: `apps/web/src/app/globals.css` — full-color-function CSS variables
   (`oklch(...)`), shadcn v4 `@theme inline` convention. **The visual identity
@@ -84,6 +86,33 @@ summary below exists only so this file stops being wrong, not to replace it.
   family has a `@theme` mapping), `palette-ban.test.ts` (no raw Tailwind palette classes in app
   source). Run `cd apps/web && npx vitest run src/app/__tests__/` before/after any `globals.css`
   edit.
+
+## Realized surface patterns (Phase 60) — pointer, not a duplicate
+
+Phase 59 shipped the token SET; Phase 60 shipped the first realized surface PATTERNS (inbox +
+email-detail). **Full reference: [`docs/design/brand-guide.md`](../../../docs/design/brand-guide.md)
+§3 "Realized surface patterns".** Inherit these — do not re-derive them from the sketch.
+
+- **Tier/role orthogonality** — `apps/web/src/app/emails/[id]/_components/region-vocabulary.ts`.
+  **Tier owns colour + solid-vs-dashed; role owns weight/style/opacity, never hue.** `tierOf`
+  defaults an unknown status to `suggested`, **never** `confirmed` (suggest-only stance).
+  `unrelated` is DOTTED because tier already owns dashed. Reuse `REGION_TIER` /
+  `REGION_ROLE_GEOMETRY` / `REGION_ROLE_LABEL` / `REGION_ROLE_SWATCH` for canvas nodes and edges —
+  a fifth local role map is how this debt accumulated.
+- **The provenance chip** — canonical: `apps/web/src/app/_components/entity-chips.tsx`. Value
+  (serif + `tabular` + `data-evidence`), then a subordinate `· type` in sans; coloured only by tier.
+- **⚠ `pmark` IMPLIES serif.** `REGION_TIER[...].chip` is `pmark`, which sets `font-family:
+  var(--font-serif)`. Use `.chip` **only** for the document's own words; use `.badge` + `.swatch`
+  to state a tier in CHROME. Get this wrong and serif lands on chrome where **no className-reading
+  gate can see it** — it is an inherited property, not a class.
+- **`font-serif` ⇔ `data-evidence`** mutually imply each other; the gates enforce the pair.
+- **Madder** — `variant="destructive"`/`bg-destructive` on an irreversible CONTROL is fine;
+  `text-destructive`/`border-destructive` on a STATE is banned. Gate: `role-hue-ban.test.ts`, whose
+  exported `SCOPED_DIRS` is a **ratchet — append your surface root as you sweep**. It reads LINES,
+  not prose: never name a banned literal in a comment. Its madder rule is a proxy that cannot read
+  intent — a `variant="destructive"` status badge passed it and still violated law 1.
+- **Density** — reach for the named step: `px-row-x`/`py-row-y` (list rows), `px-chip-x`/`py-chip-y`
+  (chips), `p-panel` (rails/panels).
 
 ## Component discovery — read the catalog, don't search
 
@@ -161,6 +190,17 @@ from `packages/ui/`.
   `--name.` or `NOT --name` without the trailing colon). Before committing a `globals.css` change
   with new comment text, scan it yourself for `*/` and `--[\w-]+:` patterns that aren't real
   declarations.
+- **`npm run build:local` (i.e. `next build`) while `npm run dev` is running CORRUPTS the dev
+  server — root-caused 2026-07-15, cost a whole verification leg.** Both share `apps/web/.next`.
+  The build overwrites the dev server's server chunks with production output; the dev server keeps
+  its old module graph and starts throwing `Cannot find module './N.js'`, serving SSR HTML whose
+  client JS never executes — skeletons that never resolve, theme toggles stuck on their pre-mount
+  placeholder, inert tab clicks. **It fails silently**: the build reports success, and the damage
+  only surfaces the next time someone opens the app. Tell-tale: production artifacts
+  (`.next/BUILD_ID`, `prerender-manifest.json`, `server/pages/_document.js` — a Pages-Router file
+  in this App-Router app) sitting next to `.next/static/development`. **Stop the dev server before
+  building, or give the build its own `distDir`.** Recovery: stop the server, `rm -rf
+  apps/web/.next`, restart `npm run web:dev`.
 - Edits to `packages/tailwind-config/web.ts` (keyframes/animations) do NOT
   reach a dev server whose `apps/web/.next/cache` predates the edit — the
   transpiled preset is cached. Fix: stop the server, delete
@@ -183,8 +223,22 @@ from `packages/ui/`.
 
 - The `frontend-design` plugin skill (user scope) sets the aesthetic floor —
   follow it for any new surface.
-- Verify UI work visually: run the app and screenshot via the existing
-  playwright-core loop before declaring it done.
+- Verify UI work visually before declaring it done — a green gate is not a look. (Phase 55 shipped
+  a half-width sidebar through 4/4 verification and 730 green tests; 60-06 found a status badge
+  talking in madder that the role-hue gate structurally could not see.)
+- **The capture harness: `cd apps/web && npm run screenshot:review`** — 6 surfaces × {390, 1440},
+  plus a seeded `/emails/[id]` against a local stack, into a gitignored
+  `.planning/ui-reviews/{timestamp}/`. **Only ever invoke it via that script.** It uses
+  `playwright.screenshot.config.ts`, whose webServer has `reuseExistingServer: true` on port 3000.
+  A bare `npx playwright test` uses the DEFAULT config, which spawns a **second `next dev` sharing
+  `apps/web/.next`** — two compilers on one build directory corrupts it, and the app then serves
+  SSR HTML whose client JS never executes (skeletons that never resolve, `Cannot find module
+  './N.js'`). Recovery: stop the dev server, `rm -rf apps/web/.next`, restart `npm run web:dev`.
+- **The harness photographs a crash and still reports `1 passed`** — it is a camera, not a gate.
+  Read the PNGs; check the app actually hydrated (skeletons everywhere = it did not).
+- **It has NO theme axis** — it varies surface × viewport only, so **dark mode has never once been
+  captured** despite `globals.css` shipping a full `.dark` block. Don't claim "verified in both
+  themes" off this harness.
 - GSD integration: this file is auto-read by `gsd-ui-researcher` during
   `/gsd:ui-phase` and by `gsd-ui-auditor` during `/gsd:ui-review`. Keep it
   current when tokens or conventions change.
