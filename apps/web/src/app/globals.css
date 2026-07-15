@@ -36,6 +36,27 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  /* IDENTITY LADDER FAMILIES (D-58-01, 59-01-PLAN.md Task 1) -- registered
+     so bg-conf / text-sugg-wash / border-hair / etc. utilities exist for
+     Phases 60-62 (guarded by token-registration.test.ts's identity-family
+     assertion, added Task 3). */
+  --color-conf: var(--conf);
+  --color-conf-wash: var(--conf-wash);
+  --color-conf-line: var(--conf-line);
+  --color-sugg: var(--sugg);
+  --color-sugg-wash: var(--sugg-wash);
+  --color-sugg-line: var(--sugg-line);
+  --color-bad: var(--bad);
+  --color-ink: var(--ink);
+  --color-faded: var(--faded);
+  --color-pencil: var(--pencil);
+  --color-shelf: var(--shelf);
+  --color-leaf: var(--leaf);
+  --color-bright: var(--bright);
+  --color-shade: var(--shade);
+  --color-rule: var(--rule);
+  --color-hair: var(--hair);
+  --color-on-fill: var(--on-fill);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -314,34 +335,95 @@
   }
 
   :root {
-    /* 55-02: ported from bare HSL triplets to full oklch(...) color
-       functions (shadcn v4 canonical shape, 55-RESEARCH.md Pattern 1).
-       Every value below is a faithful, WCAG-AA-verified conversion of the
-       PRE-migration HSL value (same perceived color) — see
-       55-02-SUMMARY.md for the precompute script + before/after contrast
-       ratios per gated pair. */
-    --background: oklch(100% 0 0);
-    --foreground: oklch(14.5% 0 0);
-    --card: oklch(100% 0 0);
-    --card-foreground: oklch(14.5% 0 0);
-    --popover: oklch(100% 0 0);
-    --popover-foreground: oklch(14.5% 0 0);
-    --primary: oklch(38.9% 0.053 173.7);
-    --primary-foreground: oklch(98.5% 0 0);
-    --secondary: oklch(95.2% 0.003 178.7);
-    --secondary-foreground: oklch(22.9% 0.004 178.3);
-    --muted: oklch(96.5% 0.002 178.7);
-    --muted-foreground: oklch(53.2% 0.014 178);
-    --accent: oklch(95.8% 0.003 178.7);
-    --accent-foreground: oklch(24.1% 0.006 178.1);
-    --destructive: oklch(63.7% 0.208 25.3);
-    --destructive-foreground: oklch(98.5% 0 0);
-    /* D-48-02: success pair — matches polytoken-teal pack's success pair (Task 1) */
-    --success: oklch(52.3% 0.136 149.9);
-    --success-foreground: oklch(98.5% 0 0);
-    --border: oklch(92.2% 0 0);
-    --input: oklch(92.2% 0 0);
-    --ring: oklch(14.5% 0 0);
+    /* ══════════════════════════════════════════════════════════════════
+       IDENTITY LADDER — D-58-01 (LOCKED 2026-07-15), ported verbatim by
+       59-01-PLAN.md Task 1 from 58-IDENTITY.md's 12-token oklch ladder +
+       direction-final.html's derived tokens (lines 66-131). These are the
+       CANONICAL values — --sugg 50.5% and --pencil 51.0% are ALREADY the
+       WCAG-AA-corrected numbers (Direction A's originals, 54.7%/62.9%,
+       failed AA). Do not "improve" any lightness here: the light
+       tier-on-wash pair has only ~0.02 of headroom over the 4.5 floor
+       (token-contrast.test.ts's WASH_PAIRS, added Task 2). Semantic hues
+       hold hue+chroma CONSTANT between :root and .dark below — only
+       lightness moves.
+       ══════════════════════════════════════════════════════════════════ */
+    /* earned colour — LAW 1: hue is spent ONLY on these three. */
+    --conf: oklch(49% 0.068 176.3); /* verdigris — CONFIRMED: a human verified this */
+    --conf-wash: oklch(49% 0.068 176.3 / 0.1);
+    --conf-line: oklch(49% 0.068 176.3 / 0.38);
+    --sugg: oklch(50.5% 0.08 78.7); /* pencil-amber — SUGGESTED: machine-inferred, unconfirmed */
+    --sugg-wash: oklch(50.5% 0.08 78.7 / 0.1);
+    --sugg-line: oklch(50.5% 0.08 78.7 / 0.5);
+    --bad: oklch(49.4% 0.126 32.4); /* madder — IRREVERSIBLE only, never errors/warnings */
+    --bad-hi: oklch(43% 0.126 32.4);
+    /* ink ladder — text, and (LAW 1) every action/selection/focus-ring:
+       chrome carries no hue, ever. */
+    --ink: oklch(26.7% 0.015 124.2);
+    --faded: oklch(46.6% 0.021 124.4);
+    --pencil: oklch(51% 0.022 119.2);
+    --ink-05: oklch(26.7% 0.015 124.2 / 0.05);
+    --ink-08: oklch(26.7% 0.015 124.2 / 0.08);
+    --ink-14: oklch(26.7% 0.015 124.2 / 0.14);
+    --edge: oklch(26.7% 0.015 124.2 / 0.38);
+    --grid: oklch(26.7% 0.015 124.2 / 0.1);
+    --fill-hi: oklch(20% 0.015 124.2);
+    --on-fill: oklch(98.2% 0.007 97.4);
+    --shimmer: oklch(92.8% 0.012 97.4);
+    /* ground ladder — warm archival paper (hue ~97, NOT cream). */
+    --shelf: oklch(92.4% 0.014 97.5);
+    --leaf: oklch(95.1% 0.011 95.2);
+    --bright: oklch(98.2% 0.007 97.4);
+    --shade: oklch(89.9% 0.016 99);
+    --rule: oklch(82.1% 0.021 100.6);
+    --rule-hi: oklch(74% 0.022 100.6);
+    --hair: oklch(88.3% 0.018 99.6);
+
+    /* ══════════════════════════════════════════════════════════════════
+       SHADCN SEMANTIC MAPPING — D-58-01 interfaces §B / 59-01-PLAN.md
+       Task 1. Every existing shadcn token below is now a var() reference
+       onto the ladder above (never a literal oklch) — this is what lets
+       ~50 existing components (bg-background / text-muted-foreground /
+       bg-primary / ...) inherit the new identity with zero
+       component-level edits.
+       ══════════════════════════════════════════════════════════════════ */
+    --background: var(--shelf); /* page ground */
+    --foreground: var(--ink);
+    --card: var(--leaf); /* panel — one step above the page */
+    --card-foreground: var(--ink);
+    --popover: var(--bright); /* elevated sheet */
+    --popover-foreground: var(--ink);
+    /* LAW 1 — colour is earned, never decorative: a branded action colour
+       is now forbidden. Primary/ring carry ink, not a hue. */
+    --primary: var(--ink);
+    --primary-foreground: var(--on-fill);
+    --secondary: var(--shade);
+    --secondary-foreground: var(--ink);
+    --muted: var(--shade);
+    /* --muted-foreground is --faded, NOT --pencil. --shade plus --pencil
+       computes to 4.23 light / 4.02 dark, BELOW the 4.5 AA floor
+       (58-IDENTITY.md "Measured contrast"). --pencil remains a legal
+       first-class token — just never paired with --shade — see
+       token-contrast.test.ts's GROUND_TEXT_PAIRS (Task 2). */
+    --muted-foreground: var(--faded);
+    --accent: var(--shade); /* hover well */
+    --accent-foreground: var(--ink);
+    --destructive: var(--bad); /* madder — irreversible actions only */
+    --destructive-foreground: var(--on-fill);
+    /* --success == "a human confirmed this" in every consumer
+       (confirm-deny-controls, confirmed: "bg-success", isConfirmed ?
+       "bg-success/10") — so success is law-abiding: it IS verdigris. */
+    --success: var(--conf);
+    --success-foreground: var(--on-fill);
+    --border: var(--rule);
+    --input: var(--rule);
+    --ring: var(--ink); /* LAW 1 — focus ring is ink, never a hue */
+    /* --chart-1..5 — OUT OF SCOPE (not in 58-IDENTITY.md's ladder; the
+       only consumer is packages/ui's spreadsheet-grid
+       conditional-formatting-dialog, USER-ASSIGNED cell colours, not
+       product chrome — same category as packages/genui/src/theme/packs.ts,
+       which is also out of scope for this phase). LEFT BYTE-IDENTICAL.
+       Flagged in 59-03 as the one bounded exemption pending a user
+       decision. */
     --chart-1: oklch(38.9% 0.053 173.7);
     --chart-2: oklch(58.4% 0.088 177.5);
     --chart-3: oklch(65.6% 0.086 198.4);
@@ -354,22 +436,22 @@
     --radius-pill: 9999px;
     /* D-48-03: monospace code family for code blocks / inline code */
     --font-code: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-    /* D-48-04: tier-ladder — EXTRACTED (confirmed, solid cyan-teal) vs
-       INFERRED (provisional, pale indigo) — matches polytoken-teal pack's
-       tier pair (Task 1). Never overloads --accent/--muted. */
-    --tier-extracted: oklch(51.8% 0.078 191.8);
-    --tier-extracted-foreground: oklch(98.5% 0 0);
-    --tier-inferred: oklch(90.5% 0.023 276.9);
-    --tier-inferred-foreground: oklch(33.9% 0.094 272);
-    /* D-48-05: closed graph node-type palette — matches polytoken-teal
-       pack's graph values (Task 2). CLOSED set — a new node type requires a
-       new alias, never a repurposed one. */
-    --graph-entity: oklch(54.2% 0.245 293);
-    --graph-entity-foreground: oklch(100% 0 0);
-    --graph-email-component: oklch(77% 0.165 70.6);
-    --graph-email-component-foreground: oklch(21.5% 0.009 48.3);
-    --graph-email: oklch(71% 0.035 256.8);
-    --graph-email-foreground: oklch(26% 0.024 256.8);
+    /* tier ladder — EXTRACTED (confirmed) / INFERRED (suggested). Shape
+       change from the stock palette: INFERRED is now a solid amber fill +
+       on-fill (was pale-indigo bg + dark fg) — the tier IS the earned
+       colour, not a decorative pastel. */
+    --tier-extracted: var(--conf);
+    --tier-extracted-foreground: var(--on-fill);
+    --tier-inferred: var(--sugg);
+    --tier-inferred-foreground: var(--on-fill);
+    /* LAW 3 — entity type is shape, never hue: type surrenders its five
+       hues to ink/faded/pencil so tier owns colour outright. */
+    --graph-entity: var(--ink);
+    --graph-entity-foreground: var(--on-fill);
+    --graph-email-component: var(--faded);
+    --graph-email-component-foreground: var(--on-fill);
+    --graph-email: var(--pencil);
+    --graph-email-foreground: var(--on-fill);
     --sidebar-background: var(--background);
     --sidebar-foreground: var(--foreground);
     --sidebar-primary: var(--primary);
@@ -378,44 +460,68 @@
     --sidebar-accent-foreground: var(--accent-foreground);
     --sidebar-border: var(--border);
     --sidebar-ring: var(--primary);
-    /* 55-02: the old hsl()-wrapped border alpha -> color-mix() (var already
-       holds a full oklch() function; wrapping it in hsl() again would be
-       invalid CSS); the literal `164 25% 15% / a` shadow tint -> its own
-       precomputed oklch(... / a) literal (see 55-02-SUMMARY.md for the
-       conversion). */
-    --elevation-1: 0 0 0 1px color-mix(in srgb, var(--border) 60%, transparent),
-      0 1px 2px 0 oklch(29% 0.027 175.8 / 0.06);
-    --elevation-2: 0 0 0 1px color-mix(in srgb, var(--border) 60%, transparent),
-      0 2px 4px 0 oklch(29% 0.027 175.8 / 0.08),
-      0 1px 2px -1px oklch(29% 0.027 175.8 / 0.04);
-    --elevation-3: 0 0 0 1px color-mix(in srgb, var(--border) 60%, transparent),
-      0 4px 8px 0 oklch(29% 0.027 175.8 / 0.1),
-      0 2px 4px -2px oklch(29% 0.027 175.8 / 0.06);
+    /* elevation — D-58-01's base is "calm registry rhythm: flat surfaces,
+       hairline rules, zero shadow anywhere". Keep the three names
+       (consumers + the registration gate depend on them) but flatten the
+       values to a hairline ring only — no drop shadow, no color-mix'd
+       tint. Elevation here is carried by the ground ladder
+       (shelf -> leaf -> bright), not by shadow. */
+    --elevation-1: 0 0 0 1px var(--hair);
+    --elevation-2: 0 0 0 1px var(--rule);
+    --elevation-3: 0 0 0 1px var(--rule-hi);
   }
   .dark {
-    --background: oklch(14.5% 0 0);
-    --foreground: oklch(98.5% 0 0);
-    --card: oklch(14.5% 0 0);
-    --card-foreground: oklch(98.5% 0 0);
-    --popover: oklch(14.5% 0 0);
-    --popover-foreground: oklch(98.5% 0 0);
-    --primary: oklch(38.9% 0.053 173.7);
-    --primary-foreground: oklch(98.5% 0 0);
-    --secondary: oklch(30.5% 0.011 177.8);
-    --secondary-foreground: oklch(97.8% 0.002 178.7);
-    --muted: oklch(27.4% 0.007 178);
-    --muted-foreground: oklch(73.2% 0.013 178.3);
-    --accent: oklch(30.6% 0.015 177.2);
-    --accent-foreground: oklch(97.8% 0.001 178.7);
-    --destructive: oklch(39.6% 0.133 25.7);
-    --destructive-foreground: oklch(98.5% 0 0);
-    /* D-48-02: success pair, darkened for the dark surface (mirrors --destructive's
-       light->dark deepening pattern above) */
-    --success: oklch(44.7% 0.11 150.8);
-    --success-foreground: oklch(98.5% 0 0);
-    --border: oklch(26.9% 0 0);
-    --input: oklch(26.9% 0 0);
-    --ring: oklch(87% 0 0);
+    /* IDENTITY LADDER — dark column (D-58-01). Same hue/chroma as :root
+       above; only lightness moves per token. */
+    --conf: oklch(78% 0.068 176.3);
+    --conf-wash: oklch(78% 0.068 176.3 / 0.14);
+    --conf-line: oklch(78% 0.068 176.3 / 0.45);
+    --sugg: oklch(78.5% 0.08 78.7);
+    --sugg-wash: oklch(78.5% 0.08 78.7 / 0.14);
+    --sugg-line: oklch(78.5% 0.08 78.7 / 0.55);
+    --bad: oklch(70% 0.126 32.4);
+    --bad-hi: oklch(76% 0.126 32.4);
+    --ink: oklch(92.4% 0.019 83.1);
+    --faded: oklch(75.2% 0.024 78.2);
+    --pencil: oklch(65% 0.025 78.1);
+    --ink-05: oklch(92.4% 0.019 83.1 / 0.05);
+    --ink-08: oklch(92.4% 0.019 83.1 / 0.08);
+    --ink-14: oklch(92.4% 0.019 83.1 / 0.16);
+    --edge: oklch(92.4% 0.019 83.1 / 0.32);
+    --grid: oklch(92.4% 0.019 83.1 / 0.08);
+    --fill-hi: oklch(98% 0.019 83.1);
+    --on-fill: oklch(19.9% 0.009 59.1);
+    --shimmer: oklch(36% 0.016 75);
+    --shelf: oklch(19.9% 0.009 59.1);
+    --leaf: oklch(22.2% 0.011 60.9);
+    --bright: oklch(26.5% 0.015 76.2);
+    --shade: oklch(31.3% 0.016 75);
+    --rule: oklch(38.8% 0.026 78.8);
+    --rule-hi: oklch(46% 0.026 78.8);
+    --hair: oklch(32.6% 0.017 70.9);
+
+    /* SHADCN SEMANTIC MAPPING — dark. Same rules as :root above. */
+    --background: var(--shelf);
+    --foreground: var(--ink);
+    --card: var(--leaf);
+    --card-foreground: var(--ink);
+    --popover: var(--bright);
+    --popover-foreground: var(--ink);
+    --primary: var(--ink);
+    --primary-foreground: var(--on-fill);
+    --secondary: var(--shade);
+    --secondary-foreground: var(--ink);
+    --muted: var(--shade);
+    --muted-foreground: var(--faded);
+    --accent: var(--shade);
+    --accent-foreground: var(--ink);
+    --destructive: var(--bad);
+    --destructive-foreground: var(--on-fill);
+    --success: var(--conf);
+    --success-foreground: var(--on-fill);
+    --border: var(--rule);
+    --input: var(--rule);
+    --ring: var(--ink);
     --chart-1: oklch(72.2% 0.11 172.7);
     --chart-2: oklch(80.9% 0.088 179.7);
     --chart-3: oklch(83.6% 0.057 198.8);
@@ -424,23 +530,16 @@
     /* D-48-01/D-48-03: breakpoint-static — identical to :root, mirrored per D-48-07 */
     --radius-pill: 9999px;
     --font-code: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
-    /* D-48-04: tier-ladder, darkened/inverted for the dark surface (mirrors
-       --success's light->dark deepening pattern above) */
-    --tier-extracted: oklch(47.8% 0.074 191.7);
-    --tier-extracted-foreground: oklch(98.5% 0 0);
-    --tier-inferred: oklch(27.5% 0.036 275.1);
-    --tier-inferred-foreground: oklch(88.6% 0.028 276.8);
-    /* D-48-05: graph node-type palette — entity/email-component stay
-       identical to :root (vivid solid badges read fine on dark, mirrors
-       --primary staying unchanged between themes); email darkens since its
-       light-mode value is a pale neutral (mirrors --muted's light->dark
-       inversion). */
-    --graph-entity: oklch(54.2% 0.245 293);
-    --graph-entity-foreground: oklch(100% 0 0);
-    --graph-email-component: oklch(77% 0.165 70.6);
-    --graph-email-component-foreground: oklch(21.5% 0.009 48.3);
-    --graph-email: oklch(40.5% 0.034 256.8);
-    --graph-email-foreground: oklch(93.6% 0.006 256.7);
+    --tier-extracted: var(--conf);
+    --tier-extracted-foreground: var(--on-fill);
+    --tier-inferred: var(--sugg);
+    --tier-inferred-foreground: var(--on-fill);
+    --graph-entity: var(--ink);
+    --graph-entity-foreground: var(--on-fill);
+    --graph-email-component: var(--faded);
+    --graph-email-component-foreground: var(--on-fill);
+    --graph-email: var(--pencil);
+    --graph-email-foreground: var(--on-fill);
     --sidebar-background: var(--background);
     --sidebar-foreground: var(--foreground);
     --sidebar-primary: var(--primary);
@@ -449,13 +548,9 @@
     --sidebar-accent-foreground: var(--accent-foreground);
     --sidebar-border: var(--border);
     --sidebar-ring: var(--primary);
-    /* 55-02: the old hsl()-wrapped border (no alpha) -> bare var(--border);
-       the literal `0 0% 0% / a` black tint -> oklch(0% 0 0 / a). */
-    --elevation-1: 0 0 0 1px var(--border), 0 1px 2px 0 oklch(0% 0 0 / 0.24);
-    --elevation-2: 0 0 0 1px var(--border), 0 2px 4px 0 oklch(0% 0 0 / 0.32),
-      0 1px 2px -1px oklch(0% 0 0 / 0.2);
-    --elevation-3: 0 0 0 1px var(--border), 0 4px 8px 0 oklch(0% 0 0 / 0.4),
-      0 2px 4px -2px oklch(0% 0 0 / 0.24);
+    --elevation-1: 0 0 0 1px var(--hair);
+    --elevation-2: 0 0 0 1px var(--rule);
+    --elevation-3: 0 0 0 1px var(--rule-hi);
   }
 }
 
