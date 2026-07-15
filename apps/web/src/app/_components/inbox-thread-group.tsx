@@ -10,10 +10,8 @@ import * as React from "react";
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 
-import { Badge } from "@polytoken/ui/badge";
-
 import type { EntityChipEntry } from "./entity-chips";
-import { InboxRow, type InboxEmail } from "./inbox-row";
+import { InboxRow, toInboxSnippet, type InboxEmail } from "./inbox-row";
 
 interface InboxThreadGroupProps {
   /** Latest member's subject (server-computed by emails.listThreads). */
@@ -37,17 +35,22 @@ const formatDate = (value: Date | string | null): string =>
   value ? new Date(value).toLocaleDateString() : "—";
 
 /**
- * InboxThreadGroup (THRD-03, 45-UI-SPEC) — one thread entry in the inbox's
- * middle pane.
+ * InboxThreadGroup (THRD-03, 45-UI-SPEC, D-58-01) — one thread entry in the
+ * inbox's middle pane, restructured (60-02 Task 2) into the reference's
+ * `.row`/`.members` registry shape: a thread and a message read as the same
+ * species, and a thread's members read as a ruled sub-list, not an
+ * indented slab.
  *
  * Count-1 threads (including pre-backfill singleton orphans) render as a
  * flat `InboxRow`, identical to the pre-thread-grouping inbox — no
  * disclosure chrome (per the UI-SPEC's "no visual noise for the common
- * case"). Count>1 threads render a summary row (subject + count Badge +
- * latest snippet/date) that expands, via a local `useState` toggle (zero new
- * dependency, T-45-04-SC), to reveal its member emails through the EXISTING
- * `InboxRow` component — unmodified, so selecting a member still drives the
- * reading preview / "Open editor →" exactly as it does today.
+ * case"). Count>1 threads render a summary row mirroring `InboxRow`'s own
+ * band structure (chevron + sender + count marker + tabular time / serif
+ * subject / serif bounded snippet) that expands, via a local `useState`
+ * toggle (zero new dependency, T-45-04-SC), to reveal its member emails
+ * through the EXISTING `InboxRow` component — unmodified, so selecting a
+ * member still drives the reading preview / "Open editor →" exactly as it
+ * does today.
  */
 export function InboxThreadGroup({
   subject,
@@ -78,39 +81,65 @@ export function InboxThreadGroup({
     );
   }
 
+  const snippet = toInboxSnippet(latestSnippet);
+  // Band 1's identity slot mirrors InboxRow's "sender" — the LATEST member's
+  // sender (members is most-recent-first), not the subject. The subject gets
+  // its own serif evidence band below, same as a singleton row.
+  const latestMember = members[0];
+  const latestSender = latestMember
+    ? (latestMember.senderName ?? latestMember.senderAddress)
+    : (subject ?? "(no subject)");
+
   return (
-    <div className="border-b border-border/50">
+    <div className="border-b border-hair">
       <button
         type="button"
         aria-expanded={expanded}
         onClick={() => setExpanded((prev) => !prev)}
-        className="flex min-h-16 w-full flex-col gap-1 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+        className="flex w-full flex-col gap-0.5 px-row-x py-row-y text-left transition-colors hover:bg-shade focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-1"
       >
         <div className="flex items-center gap-2">
           <ChevronRight
             aria-hidden
-            className={`size-4 shrink-0 text-muted-foreground transition-transform ${
+            className={`size-3.5 shrink-0 text-pencil transition-transform ${
               expanded ? "rotate-90" : ""
             }`}
           />
-          <span className="flex-1 truncate text-sm font-semibold">
-            {subject ?? "(no subject)"}
+          <span data-field="sender" className="flex-1 truncate text-sm font-semibold">
+            {latestSender}
           </span>
-          <Badge variant="secondary">{messageCount}</Badge>
-          <span className="shrink-0 text-xs text-muted-foreground">
+          <span
+            data-field="message-count"
+            className="tabular shrink-0 rounded-sm bg-shade px-1.5 py-0.5 text-2xs font-semibold text-faded"
+          >
+            {messageCount}
+          </span>
+          <time data-field="time" className="tabular shrink-0 text-2xs text-pencil">
             {formatDate(latestReceivedAt)}
-          </span>
+          </time>
         </div>
 
-        {latestSnippet && (
-          <span className="truncate pl-6 text-sm text-muted-foreground">
-            {latestSnippet}
+        <span
+          data-field="subject"
+          data-evidence
+          className="truncate font-serif text-base text-ink"
+        >
+          {subject ?? "(no subject)"}
+        </span>
+
+        {snippet !== null && (
+          <span
+            data-field="snippet"
+            data-evidence
+            className="truncate font-serif text-xs text-faded"
+          >
+            {snippet}
           </span>
         )}
       </button>
 
       {expanded && (
-        <div className="border-t border-border/30 pl-4">
+        <div data-field="members" className="mt-1 ml-1.5 border-l border-rule pl-3">
           {members.map((member) => (
             <InboxRow
               key={member.id}
