@@ -2,15 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Product Design & Research Canvas
-status: blocked-human-gate
-last_updated: "2026-07-15T08:13:49.134Z"
-last_activity: 2026-07-15 -- Phases 55/56/57 executed+verified; Phase 58 sketches built and reviewed. BLOCKED on the human visual-direction pick (58-PICK-THIS.md).
+status: in-progress
+last_updated: "2026-07-15T17:52:46Z"
 progress:
   total_phases: 9
-  completed_phases: 0
-  total_plans: 14
-  completed_plans: 8
-  percent: 0
+  completed_phases: 3
+  total_plans: 17
+  completed_plans: 17
+  percent: 33
 ---
 
 # State
@@ -22,8 +21,7 @@ See: .planning/PROJECT.md (updated 2026-07-14 after v1.9 milestone close)
 **Core value:** Reliably receive every inbound email and make it observable — now as a *designed*
 product the user actually lives in: a research canvas that collects sources without ceremony, lets
 the user select a personal canon, and treats canvas edges as context.
-**Current focus:** Phase 55 — Platform Migration — Tailwind v4 + React 19
-Phase 55. Run `/gsd:plan-phase 55`.
+**Current focus:** Phase 59 — Visual Identity — Designed Token Set & Brand Guide (1/3 plans done: 59-01 executed, 59-02/59-03 remain). Execute `59-02-PLAN.md` next.
 
 **Two things carry into execution, both user-raised at v1.9 close and still live:**
 
@@ -45,24 +43,24 @@ work, never deferrable-by-default.
 
 ## Current Position
 
-**⏸ BLOCKED ON A HUMAN GATE — Phase 58: pick a visual direction.**
+**Phase 58's human gate is RESOLVED — D-58-01 LOCKED 2026-07-15.** The user picked "Provenance ×
+Meaningful Colour" (`.planning/phases/58-visual-identity-sketch-pick-human-gate/58-IDENTITY.md`).
+Phase 59 (Designed Token Set & Brand Guide) is now executing against that locked contract.
 
-Read `.planning/phases/58-visual-identity-sketch-pick-human-gate/58-PICK-THIS.md` (~15 min).
-Open the three self-contained sketches in a browser and say which one — e.g. "go with B", or
-"B but the dark ground from C". Hybrids expected. Nothing else in v1.10 proceeds until this closes:
-Phases 59-63 (identity tokens -> inbox -> chat/canvas -> knowledge -> research-canvas UI) all
-cascade from the locked choice.
+**Phase 59 progress: 1/3 plans done.** 59-01 (oklch ladder port + shadcn semantic mapping + WCAG-AA
++ token-registration gate rewrites) EXECUTED — see the Plan 01 History entry below and
+`59-01-SUMMARY.md`. Next: 59-02 (type scale + serif role + density scale + provenance-mark/
+entity-type-shape utilities + a new law-1 chroma-ceiling gate), then 59-03 (brand guide's
+visual-identity section + SKILL.md update). Run `/gsd:plan-phase 59` continuation or execute
+`59-02-PLAN.md` directly.
 
-This gate is deliberate, not an obstacle: backlog 999.18's scope item (d) requires a design-review
-loop with the user on real screens BEFORE cascading, because autonomous runs cannot make taste
-decisions. Picking it autonomously is exactly how v1.9 shipped a UI the user called
-"ugly/experimental".
+**Done so far in v1.10:**
 
-**Done and waiting on the gate:**
 - Phase 55 Platform Migration — VERIFIED passed 4/4 (Tailwind v4 + oklch + React 19; gates rewritten oklch-aware and proven able to fail; Radix-stays decided; @kibo-ui registry install proven)
 - Phase 56 Research Canvas backend — 5/5 plans, VERIFIED human_needed (3/3 criteria at code level; live legs need migration 0037 applied + Bedrock)
 - Phase 57 Email Learning Loop — 3/3 plans, VERIFIED human_needed (3/3 criteria at code level; live legs need migrations 0038/0039 applied)
-- Phase 58 sketches — 3 directions built on real screens, adversarially reviewed w/ screenshots, A's 1024 layout bug found and fixed
+- Phase 58 — D-58-01 LOCKED (Provenance × Meaningful Colour, both themes, three laws, 12-token oklch ladder)
+- Phase 59 Plan 01 — EXECUTED (identity ladder ported, shadcn mapping complete, both gates rewritten + re-proven able to fail)
 
 Migrations 0037 (chat_source_ledger + chat_context_edges), 0038 (entity_type_corrections),
 0039 (entity-resolution dismiss filter) are AUTHORED + journal-coherent, APPLIED NOWHERE.
@@ -379,6 +377,46 @@ CLUS-07 (§H) — `phases/49-live-loop-gate-deploy-oauth-real-email/MORNING-CHEC
   assume it. Suggest-only invariant preserved and tested: `update_entity_type`
   fires unconditionally in every scenario; `extraction_status` is never
   touched. See `57-01-SUMMARY.md` for full detail.
+
+## Phase 59 -- Visual Identity — Designed Token Set & Brand Guide -- Plan 01 History -- oklch ladder port + shadcn mapping + gate rewrites
+
+- **59-01 EXECUTED** (`d82dd06` feat, `771248c` feat, `247b487` feat):
+  Ported D-58-01's LOCKED 12-token oklch identity ladder (conf/sugg/bad/
+  ink/faded/pencil/shelf/leaf/bright/shade/rule/hair + 14 derived tokens)
+  into `apps/web/src/app/globals.css` for both `:root` and `.dark`, then
+  rewrote every existing shadcn semantic token as a `var()` reference onto
+  the ladder per the contract's §B mapping (Task 1): `--primary`/`--ring`
+  now carry `--ink` (Law 1 — no brand hue in chrome), `--graph-*` now carry
+  `--ink`/`--faded`/`--pencil` (Law 3 — type surrenders hue to shape),
+  `--muted-foreground` maps to `--faded` not `--pencil` (name-match trap —
+  `--shade`+`--pencil` fails AA at 4.23/4.02). `--elevation-1/2/3` flattened
+  to hairline-ring-only values, no shadow. 17 identity families registered
+  in `@theme inline`. `--chart-1..5` and `packages/genui/src/theme/packs.ts`
+  left byte-identical (out of D-58-01's ladder contract). Task 2 rewrote
+  the WCAG-AA gate (`token-contrast.test.ts`): added `resolveTokenValue`
+  (fail-loud var()-chain resolver), extended `parseOklch` to return alpha,
+  added `compositeOver` (gamma-encoded sRGB source-over compositing) —
+  replaced `NEUTRAL_PAIRS` with `SEMANTIC_PAIRS` (14 pairs), `GROUND_TEXT_PAIRS`
+  (pencil/faded usage rule), and `WASH_PAIRS` (tier-on-wash honest worst
+  case). The gate's computed light-theme wash ratios (4.59 conf / 4.52
+  sugg) match 58-IDENTITY.md's published numbers exactly. Task 3 added
+  identity-family coverage to `token-registration.test.ts`. Both gates
+  were re-proven able to fail (negative proof, not just proven able to
+  pass): reverting `--sugg` to its pre-correction 54.7% drops the wash
+  pair to 3.78 (correctly red); deleting `--color-conf` from `@theme
+  inline` correctly fails with the "declared token family with no @theme
+  mapping line" error. One self-caught Rule-1 fix: a mapping comment
+  containing the literal substring `--pencil:` collided with
+  `readTokenBlock`'s comment-unaware regex parser (which Task 2 explicitly
+  keeps unchanged), silently swallowing the real `--muted-foreground`
+  declaration — reworded the comment, confirmed no other collisions exist
+  across all four gate-parsed blocks. Full token gate suite green (95/95:
+  44 contrast + 49 registration + 2 palette-ban). `npx tsc --noEmit` clean;
+  `npm run build -w @polytoken/web` exits 0 (root `.env.local` temporarily
+  copied into `apps/web/` to isolate a pre-existing, unrelated
+  missing-env-var build failure — confirmed not caused by this plan,
+  removed after verification). See `59-01-SUMMARY.md` for full detail,
+  including verbatim negative-proof output.
 
 ## Phase 54 -- Email-Cluster Workflow (E3) -- Plan 07 History -- section:H CLUS-07 Live-Acceptance Runsheet
 

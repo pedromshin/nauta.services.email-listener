@@ -34,7 +34,7 @@ IDNT-02 is locked.
 
 - [ ] **IDNT-01**: 2–3 distinct visual directions are sketched on real polytoken screens (throwaway HTML, real content — inbox, chat, one canvas surface) so the user can compare actual looks, not swatches
 - [ ] **IDNT-02**: The user selects one direction; the choice is recorded as the locked visual identity. **This is the gate — no SURF-* or canvas-visual work begins before it.**
-- [ ] **IDNT-03**: The locked direction is realized as a designed token set — palette (oklch), type scale, spacing/density system, and a signature element — that *replaces* the stock-shadcn defaults rather than recoloring them
+- [x] **IDNT-03**: The locked direction is realized as a designed token set — palette (oklch), type scale, spacing/density system, and a signature element — that *replaces* the stock-shadcn defaults rather than recoloring them
 - [ ] **IDNT-04**: The brand guide gains a visual-identity section (today it defines only voice/tone) documenting the designed palette/type/spacing/signature with usage rules
 
 ### Surface Redesign (SURF — Band 3; depends on IDNT-02)
@@ -97,7 +97,7 @@ Which phases cover which requirements. Filled by the roadmapper.
 | LEARN-02 | Phase 57 — Email Learning Loop | Complete |
 | IDNT-01 | Phase 58 — Visual Identity: Sketch & Pick (HUMAN GATE) | Pending |
 | IDNT-02 | Phase 58 — Visual Identity: Sketch & Pick (HUMAN GATE) | Pending |
-| IDNT-03 | Phase 59 — Visual Identity: Designed Token Set & Brand Guide | Pending |
+| IDNT-03 | Phase 59 — Visual Identity: Designed Token Set & Brand Guide | Complete |
 | IDNT-04 | Phase 59 — Visual Identity: Designed Token Set & Brand Guide | Pending |
 | SURF-01 | Phase 60 — Surface Redesign: Inbox & Email Detail | Pending |
 | SURF-04 | Phase 60 — Surface Redesign: Inbox & Email Detail | Pending |

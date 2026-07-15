@@ -341,7 +341,7 @@ section it has never had (today it defines only voice/tone).
 **Plans**: 3 plans
 
 Plans:
-- [ ] 59-01-PLAN.md — Port the locked oklch ladder (both themes) + map every shadcn semantic token onto it; rewrite the WCAG-AA + token-registration gates to gate the new system
+- [x] 59-01-PLAN.md — Port the locked oklch ladder (both themes) + map every shadcn semantic token onto it; rewrite the WCAG-AA + token-registration gates to gate the new system
 - [ ] 59-02-PLAN.md — Type scale + serif role + density scale + the provenance-mark and entity-type-shape utilities; new law-1 chroma-ceiling gate
 - [ ] 59-03-PLAN.md — Brand guide gains its visual-identity section; SKILL.md updated to the designed system
 **UI hint**: yes
