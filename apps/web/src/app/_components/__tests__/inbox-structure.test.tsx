@@ -10,7 +10,9 @@
  * would invalidate the comparison, since the baseline was captured WITH
  * chips present.
  *
- * Four legs:
+ * Eight legs (Legs 1-4 committed by 60-02-PLAN.md Task 3; Legs 5-8 added by
+ * 60-03-PLAN.md Task 3 — the pane-level half of criterion 1, which could not
+ * be asserted until the four-pane shell + entities rail existed):
  *   1. LAYOUT + HIERARCHY (the anti-re-token assertion) — `shape` differs
  *      from the frozen baseline, and `elementCount` grew.
  *   2. INFORMATION DENSITY — `leafTextCount` grew (the honest, jsdom-provable
@@ -18,20 +20,39 @@
  *      metric needs the screenshot harness, Plan 05's job).
  *   3. NAMED HIERARCHY — the bands exist with the right `data-field` roles,
  *      law 2 holds structurally (font-serif <=> data-evidence, both
- *      directions), time is tabular, every chip declares a valid tier.
- *   4. XSS (T-60-02) — no inbox component uses `dangerouslySetInnerHTML`.
+ *      directions — this already scans the WHOLE container, so it covers
+ *      the reading pane + entities rail too now that they exist), time is
+ *      tabular, every chip declares a valid tier.
+ *   4. XSS (T-60-02) — no inbox component uses `dangerouslySetInnerHTML`,
+ *      now including `inbox-entities-rail.tsx`.
+ *   5. FOUR NAMED PANES — the desktop tree carries exactly the SET
+ *      {filters, threads, reading, entities} via `[data-pane]`, scoped to
+ *      `[data-tree="desktop"]` so the mobile tree's simultaneous jsdom
+ *      render never double-counts.
+ *   6. THE ENTITIES RAIL'S TIER CONTRACT — every fact carries a valid
+ *      `data-tier`, mounted directly (no InboxThreePane fixture needed).
+ *   7. EMPTY ENTITIES RENDER NOTHING — `InboxEntitiesRail` with an empty
+ *      list renders no `[data-pane="entities"]` at all (anti-bloat: no
+ *      empty rail with a heading over nothing).
+ *   8. READING BODY MEASURE — `[data-field="body"]` carries `font-serif`
+ *      and the reference's `max-w-[56ch]` bound.
  *
  * THE NEGATIVE PROOF (required — see "Negative Proof" below and
- * 60-02-SUMMARY.md for the verbatim RED output): this gate was proven able
- * to fail by temporarily restoring the pre-Phase-60 versions of
- * inbox-row.tsx/inbox-thread-group.tsx/entity-chips.tsx (Phase 59's ENTIRE
- * colour system left untouched) via `git checkout <pre-60-commit> -- <files>`
- * — NOT `git stash`, since by the time this task runs, Tasks 1/2 (and Plan
- * 01's entity-chips.tsx) are already committed, so there is no uncommitted
- * diff for `git stash` to capture; a checkout-of-an-old-commit-then-restore
- * is the equivalent, safe mechanic for an already-committed change (see
- * `<destructive_git_prohibition>` — `git checkout -- <path>` is the
- * sanctioned way to discard a change to a specific file).
+ * 60-02-SUMMARY.md/60-03-SUMMARY.md for the verbatim RED output): this gate
+ * was proven able to fail by temporarily restoring the pre-Phase-60
+ * versions of inbox-row.tsx/inbox-thread-group.tsx/entity-chips.tsx/
+ * inbox-three-pane.tsx (Phase 59's ENTIRE colour system left untouched) via
+ * `git checkout <pre-60-commit> -- <files>` — NOT `git stash`, since by the
+ * time this task runs, every file involved is already committed, so there
+ * is no uncommitted diff for `git stash` to capture; a
+ * checkout-of-an-old-commit-then-restore is the equivalent, safe mechanic
+ * for an already-committed change (see `<destructive_git_prohibition>` —
+ * `git checkout -- <path>` is the sanctioned way to discard a change to a
+ * specific file). `inbox-entities-rail.tsx` did not exist pre-Phase-60 at
+ * all (it is a wholly new pane, not a restyled one) — the negative proof
+ * removes it outright rather than checking out a nonexistent path, then
+ * restores it the same way as the other four files:
+ * `git checkout HEAD -- <path>`.
  */
 
 import { readFileSync } from "node:fs";
@@ -44,6 +65,9 @@ import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 
 import { fingerprintTree } from "../../__tests__/support/structural-fingerprint";
+import { InboxEntitiesRail } from "../inbox-entities-rail";
+
+import type { EntityChipEntry } from "../entity-chips";
 
 const EMAIL_1_ID = "11111111-1111-1111-1111-111111111111";
 const EMAIL_2_ID = "22222222-2222-2222-2222-222222222222";
@@ -315,6 +339,7 @@ describe("inbox-structure (ROADMAP criterion 1, the anti-re-token gate)", () => 
       "../inbox-thread-group.tsx",
       "../inbox-three-pane.tsx",
       "../entity-chips.tsx",
+      "../inbox-entities-rail.tsx",
     ];
 
     for (const relPath of inboxComponentFiles) {
@@ -329,5 +354,78 @@ describe("inbox-structure (ROADMAP criterion 1, the anti-re-token gate)", () => 
         .join("\n");
       expect(codeOnly).not.toContain("dangerouslySetInnerHTML");
     }
+  });
+
+  it("Leg 5: the desktop tree names all four panes — filters, threads, reading, entities (the set, not just the count)", async () => {
+    const container = await mount(
+      <InboxThreePane data={FAKE_DATA} isLoading={false} isError={false} />,
+    );
+
+    const desktopRoot = findByExactClassName(container, "hidden h-full md:block");
+    const paneNames = new Set(
+      Array.from(desktopRoot.querySelectorAll<HTMLElement>("[data-pane]")).map((el) =>
+        el.getAttribute("data-pane"),
+      ),
+    );
+
+    // A rename (e.g. "reading" -> "preview") would change the SET, not just
+    // shrink a count — asserting set equality is what a rename cannot
+    // silently pass. The fixture's default-selected email (EMAIL_1) carries
+    // entities, so the entities pane is present under this fixture.
+    expect(paneNames).toEqual(new Set(["filters", "threads", "reading", "entities"]));
+  });
+
+  it("Leg 6: the entities rail — every fact carries a valid data-tier", async () => {
+    const FACTS: ReadonlyArray<EntityChipEntry> = [
+      {
+        componentId: "aaaaaaaa-0000-0000-0000-000000000001",
+        entityTypeId: "bbbbbbbb-0000-0000-0000-000000000001",
+        typeLabel: "Supplier",
+        value: "Acme Freight",
+        tier: "confirmed",
+      },
+      {
+        componentId: "aaaaaaaa-0000-0000-0000-000000000002",
+        entityTypeId: "bbbbbbbb-0000-0000-0000-000000000002",
+        typeLabel: "Amount",
+        value: "R$ 100,00",
+        tier: "suggested",
+      },
+    ];
+
+    const container = await mount(
+      <InboxEntitiesRail entities={FACTS} emailId={EMAIL_1_ID} />,
+    );
+
+    expect(container.querySelector('[data-pane="entities"]')).not.toBeNull();
+
+    const tierEls = Array.from(container.querySelectorAll<HTMLElement>("[data-tier]"));
+    expect(tierEls.length).toBe(FACTS.length);
+    for (const el of tierEls) {
+      expect(["confirmed", "suggested"]).toContain(el.getAttribute("data-tier"));
+    }
+  });
+
+  it("Leg 7: the entities rail renders nothing when the selected email has no entities", async () => {
+    const container = await mount(<InboxEntitiesRail entities={[]} emailId={EMAIL_1_ID} />);
+
+    // Anti-bloat (60-03-PLAN.md Task 2): no empty rail with a heading over
+    // nothing — the reference has no empty-rail state.
+    expect(container.querySelector('[data-pane="entities"]')).toBeNull();
+    expect(container.textContent).toBe("");
+  });
+
+  it("Leg 8: the reading body carries font-serif and the 56ch bounded measure", async () => {
+    const container = await mount(
+      <InboxThreePane data={FAKE_DATA} isLoading={false} isError={false} />,
+    );
+
+    const desktopRoot = findByExactClassName(container, "hidden h-full md:block");
+    const bodyEl = desktopRoot.querySelector<HTMLElement>('[data-field="body"]');
+
+    expect(bodyEl).not.toBeNull();
+    expect(bodyEl?.className).toContain("font-serif");
+    expect(bodyEl?.className).toContain("max-w-[56ch]");
+    expect(bodyEl?.hasAttribute("data-evidence")).toBe(true);
   });
 });
