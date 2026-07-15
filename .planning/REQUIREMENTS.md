@@ -39,7 +39,7 @@ IDNT-02 is locked.
 
 ### Surface Redesign (SURF — Band 3; depends on IDNT-02)
 
-- [ ] **SURF-01**: The inbox (three-pane, thread groups, mobile feed) is redesigned on the new identity — layout, hierarchy, information density, interactions — not merely re-tokened
+- [x] **SURF-01**: The inbox (three-pane, thread groups, mobile feed) is redesigned on the new identity — layout, hierarchy, information density, interactions — not merely re-tokened
 - [ ] **SURF-02**: `/chat` + its canvas is redesigned on the new identity (composer, message stream, tool-round rows, panels, canvas chrome)
 - [ ] **SURF-03**: The `/knowledge` canvas is redesigned on the new identity
 - [ ] **SURF-04**: The email-detail view (`/emails/[id]`, region overlays) is redesigned on the new identity
@@ -99,7 +99,7 @@ Which phases cover which requirements. Filled by the roadmapper.
 | IDNT-02 | Phase 58 — Visual Identity: Sketch & Pick (HUMAN GATE) | Complete |
 | IDNT-03 | Phase 59 — Visual Identity: Designed Token Set & Brand Guide | Complete |
 | IDNT-04 | Phase 59 — Visual Identity: Designed Token Set & Brand Guide | Complete |
-| SURF-01 | Phase 60 — Surface Redesign: Inbox & Email Detail | Pending |
+| SURF-01 | Phase 60 — Surface Redesign: Inbox & Email Detail | Complete |
 | SURF-04 | Phase 60 — Surface Redesign: Inbox & Email Detail | Pending |
 | SURF-02 | Phase 61 — Surface Redesign: Chat, Canvas & Mobile Panel Chrome | Pending |
 | SURF-07 | Phase 61 — Surface Redesign: Chat, Canvas & Mobile Panel Chrome | Pending |

@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Product Design & Research Canvas
 status: in-progress
-last_updated: "2026-07-15T21:00:00.000Z"
+last_updated: "2026-07-15T20:51:47.028Z"
 progress:
   total_phases: 9
-  completed_phases: 5
-  total_plans: 19
+  completed_phases: 4
+  total_plans: 24
   completed_plans: 21
-  percent: 49
+  percent: 44
 ---
 
 # State
@@ -48,7 +48,9 @@ Meaningful Colour" (`.planning/phases/58-visual-identity-sketch-pick-human-gate/
 Phase 59 (Designed Token Set & Brand Guide) is now executing against that locked contract.
 
 **Phase 59: 3/3 plans done — PHASE COMPLETE.** 59-01 (oklch ladder port + shadcn semantic mapping
+
 + WCAG-AA + token-registration gate rewrites) EXECUTED — see the Plan 01 History entry below and
+
 `59-01-SUMMARY.md`. 59-02 (type scale + serif role + density scale + the provenance mark +
 entity-type-shape utilities + a new law-1 structural-enforcement gate, `colour-law.test.ts`)
 EXECUTED — see the Plan 02 History entry below and `59-02-SUMMARY.md`. 59-03 (brand guide's
@@ -60,8 +62,12 @@ and `59-03-SUMMARY.md`. Two open flags remain deliberately unresolved and are re
 baseline + per-fact provenance chip) EXECUTED — see the Plan 01 History entry below and
 `60-01-SUMMARY.md`. Plan 02 (row/thread-group restructure + the anti-re-token gate) EXECUTED — see
 the Plan 02 History entry below and `60-02-SUMMARY.md`; the gate was proven able to fail (negative
-proof verbatim in the summary).** Next: Phase 60 Plan 03 (four-pane inbox: filters/list chrome +
-states, serif reading pane, entities rail, mobile feed; 5 plans remain in this 7-plan phase).
+proof verbatim in the summary). Plan 03 (four-pane inbox: filters/list chrome + law-clean states,
+serif reading pane, the new entities rail, mobile feed) EXECUTED — see the Plan 03 History entry
+below and `60-03-SUMMARY.md`; criterion 1's gate grew to 8 legs and was re-proven able to fail over
+the complete inbox component set (a module-resolution RED, since the new rail has no pre-Phase-60
+analogue).** Next: Phase 60 Plan 04 (region-vocabulary.ts; region overlays re-encoded tier=colour/
+role=structure; the 20-case role x status matrix gate; 4 plans remain in this 7-plan phase).
 
 **Done so far in v1.10:**
 
@@ -74,6 +80,7 @@ states, serif reading pane, entities rail, mobile feed; 5 plans remain in this 7
 - Phase 59 Plan 03 — EXECUTED (brand guide gained §3 "Visual identity"; SKILL.md's stale stock-teal claim fixed + D-58-01 pointer + comment-collision gotcha documented; design-data.json regenerated) — **Phase 59 COMPLETE, IDNT-03 + IDNT-04 both marked complete**
 - Phase 60 Plan 01 — EXECUTED (colour-blind `fingerprintTree` + frozen `inbox-pre-60.json` baseline for the anti-re-token gate; `entitySummary` rewritten to a per-FACT contract with `totalCount`; `EntityChips` now a tier-only provenance mark, zero entity-type hue)
 - Phase 60 Plan 02 — EXECUTED (inbox row restructured to a four-band registry entry with a NEW serif snippet; thread group restructured to a ruled sub-list, stock Badge replaced; `inbox-structure.test.tsx` makes ROADMAP criterion 1 executable and was proven able to fail via a real pre-60 component restore — 2/4 legs genuinely RED)
+- Phase 60 Plan 03 — EXECUTED (four-pane desktop inbox: reading pane rebuilt as a serif document, new `InboxEntitiesRail` fourth pane, law-1-clean error/empty/loading states on both trees, mobile chrome restyled; `inbox-structure.test.tsx` grew to 8 legs and was re-proven able to fail over the full component set — SURF-01 marked complete)
 
 Migrations 0037 (chat_source_ledger + chat_context_edges), 0038 (entity_type_corrections),
 0039 (entity-resolution dismiss filter) are AUTHORED + journal-coherent, APPLIED NOWHERE.
@@ -126,6 +133,36 @@ CLUS-07 (§H) — `phases/49-live-loop-gate-deploy-oauth-real-email/MORNING-CHEC
   fixture-enrichment reasoning (the honest, unenriched baseline fixture showed `elementCount`
   *shrinking* 81->77 due to the entity-chip redesign legitimately removing more DOM than the row
   gained — a real, documented finding, not a gate weakening).
+
+## Phase 60 -- Surface Redesign: Inbox & Email Detail -- Plan 03 History -- four-pane inbox chrome + reading pane + entities rail
+
+- **60-03 EXECUTED** (`dc9008a` feat, `9f8606c` feat, `e053d57` test): Task 1 rebuilt `FiltersRail`
+  (a `.paneh` section head, an ink-well active state replacing `bg-primary/10 text-primary`, a
+  `.fhint` footnote linking to the real `/settings/forwarding` page), the list header (sticky,
+  designed tabular count marker replacing the stock `Badge`), and fixed all three states on BOTH
+  the desktop and mobile trees — `text-destructive` (madder on a non-irreversible state, a direct
+  law-1 violation) is gone, replaced with `text-ink`/`text-faded` framed in `border-rule`; ground
+  vocabulary (`bg-background/95`/`border-border/50`/`bg-muted`) swapped file-wide to `bg-leaf`/
+  `border-hair`/`bg-shade`. Task 2 rebuilt `ReadingPreview` as a document — serif `h2` subject,
+  ruled sans meta line, serif `text-lg` body at the reference's `max-w-[56ch]` measure (the
+  pre-60-03 body was `text-sm text-muted-foreground`, law 2 inverted) — and added
+  `inbox-entities-rail.tsx`'s `InboxEntitiesRail`, the fourth pane ("What I found in this email"):
+  each fact renders the same `pmark`/`pmark-confirmed`/`pmark-suggested` mark the row chips use, a
+  tier badge (the one thing law 3 lets earn colour), and a hue-free type word with no
+  entity-type-shape glyph. No new query — reads straight from the existing single batched
+  `entitySummary` map. Wired as a flex sibling inside the reading `ResizablePanel` (not a fourth
+  `ResizablePanel`), hidden below `xl`. Confirm/Dismiss buttons deliberately NOT built in the rail
+  (scope call — that capability lives on `/emails/[id]`, a suggested fact links there instead).
+  Task 3 extended `inbox-structure.test.tsx` from 4 to 8 legs (four named panes as a SET scoped to
+  `[data-tree="desktop"]`; the rail's tier contract; empty-rail-renders-nothing; the reading body's
+  serif+56ch+data-evidence) and re-ran the negative proof over the COMPLETE inbox component set —
+  RED via a module-resolution failure (the new rail has no pre-Phase-60 file to check out, so it was
+  removed outright), restored clean, `git diff --stat` empty. Baseline-vs-current fingerprint
+  deltas: elementCount 81->105, leafTextCount 32->52. One connectivity fix: `inbox-mobile-stack.
+  test.tsx`'s literal whole-tag source assertion broke the instant `data-tree` was added (any extra
+  attribute breaks a single-substring match) — rewritten as two independent substring checks.
+  `apps/web`: tsc clean, 67/67 files 739/739+1skipped green, `build:local` succeeds. SURF-01 marked
+  complete. See `60-03-SUMMARY.md` for the full negative-proof output and deviation detail.
 
 ## Phase 55 -- Platform Migration — Tailwind v4 + React 19 -- Plan 04 History -- React 18->19 core bump + six low-risk dependency bumps
 
@@ -4455,6 +4492,10 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 
 ## Decisions Log
 
+- 2026-07-15 (60-03): Confirm/Dismiss buttons from the reference's `.ent-actions` are NOT built in `InboxEntitiesRail` — confirm/deny is an existing, canonical capability (`ConfirmDenyControls`, `components/{id}/confirm`) that lives on `/emails/[id]`, the surface designed for it. Adding a second mutation path in the inbox would be new product behaviour, not a redesign; a suggested fact instead links onward ("Review in email →") to the detail view where the real control lives.
+- 2026-07-15 (60-03): The reference's 1120px four-pane crush guard is realized as `hidden xl:flex` (1280px), not a custom 1120px breakpoint — 1280 is the nearest registered Tailwind step; a one-off custom breakpoint for a single rail was judged not worth the vocabulary sprawl.
+- 2026-07-15 (60-03): [Rule 3] `inbox-mobile-stack.test.tsx`'s literal whole-tag source-string assertion (`SOURCE.toContain('<div className="hidden h-full md:block">')`) broke the instant the plan's required `data-tree` marker was added to that div — any additional JSX attribute breaks a single-literal-substring match regardless of placement. Rewritten to check the class-gating and the `data-tree` marker as two independent substrings.
+- 2026-07-15 (60-03): Negative-proof mechanic again adapted from `git stash push` (as the plan's Task 3 text names it) to `git checkout <pre-60-commit> -- <files>` + `git checkout HEAD -- <files>` — same no-op-on-committed-files issue 60-02 already documented and resolved. `inbox-entities-rail.tsx` additionally never existed pre-Phase-60 (a wholly new pane) — removed via plain `rm` rather than a nonexistent-pathspec checkout, restored via `git checkout HEAD -- <path>`. The resulting RED was a module-resolution failure, not an assertion failure — explicitly acceptable per the plan's own "render/prop-shape error" language.
 - 2026-07-15 (60-02): The negative proof used `git checkout <pre-60-commit> -- <files>` + `git checkout HEAD -- <files>`, NOT `git stash` — by the time Task 3 (the gate) runs, Tasks 1/2's component rewrites are already committed, so there is no uncommitted working-tree diff for `git stash` to capture (a `git stash push` against fully-committed files is a silent no-op). This is the correct, sanctioned equivalent per `<destructive_git_prohibition>` for discarding/restoring an already-committed file.
 - 2026-07-15 (60-02): `inbox-structure.test.tsx`'s fixture is deliberately richer than `capture-inbox-baseline.test.tsx`'s frozen fixture (both emails carry bodyText + >=1 entity, vs only email 1 in the baseline) — the honest, unenriched fixture showed `elementCount` SHRINKING (81->77): Plan 01's entity-chip redesign legitimately removed more DOM (Badge wrapper, colour dot, conditional count span) than this plan's row-level additions gained. The plan's stated fixture-fairness bar is scoped to chip PRESENCE, not bodyText/entity-count parity, so enrichment was within discretion. Side effect: the enrichment makes Leg 1 (shape) pass even under the negative proof's restored pre-60 components (extra chip content alone differs from baseline); Legs 2/3 are unaffected and fail for directly meaningful reasons, satisfying the "either/or" RED bar the plan itself states.
 - 2026-07-15 (60-02): [Rule 1] `entity-chips.tsx`'s chip value span was missing `data-evidence` (Plan 01 predates the convention Plan 02's gate introduces) — found by the gate's own reverse law-2 check (every font-serif element must carry data-evidence), fixed forward in the same commit as the gate that found it.
