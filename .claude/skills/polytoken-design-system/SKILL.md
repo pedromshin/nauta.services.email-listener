@@ -35,15 +35,55 @@ description: Polytoken web design system — token source, @polytoken/ui convent
   keyframes live in `packages/tailwind-config/web.ts`.
 - `cn` util: exported from the `@polytoken/ui` root (`packages/ui/src/index.ts`).
 - Tokens: `apps/web/src/app/globals.css` — full-color-function CSS variables
-  (`oklch(...)`), shadcn v4 `@theme inline` convention. Brand primary
-  `oklch(38.9% 0.053 173.7)`. Sidebar tokens extended in
-  `packages/ui/tailwind.config.ts` (IntelliSense-only file). Call sites read
-  the var directly (`var(--primary)`), never re-wrapped in `hsl(...)`.
+  (`oklch(...)`), shadcn v4 `@theme inline` convention. **The visual identity
+  is D-58-01's 12-token oklch ladder** (locked
+  [`58-IDENTITY.md`](../../../.planning/phases/58-visual-identity-sketch-pick-human-gate/58-IDENTITY.md),
+  realized by Phase 59) — every shadcn semantic name (`--primary`,
+  `--background`, `--muted`, `--accent`, ...) is a `var()` reference onto
+  that ladder now, never a literal colour. **Under law 1 there is no brand
+  primary colour any more** — `--primary`/`--ring` resolve to `--ink` (no
+  hue at all); the old stock-derived teal that used to live there is
+  deleted from this product entirely (see `59-01-SUMMARY.md`). See
+  [`docs/design/brand-guide.md`](../../../docs/design/brand-guide.md) §3
+  "Visual identity" for the full palette/type-scale/spacing/signature
+  reference — do not duplicate it here, see the pointer below instead.
+  Sidebar tokens extended in `packages/ui/tailwind.config.ts`
+  (IntelliSense-only file). Call sites read the var directly
+  (`var(--primary)`), never re-wrapped in `hsl(...)`.
 - Tailwind preset: `@polytoken/tailwind-config/web`.
 - Import convention: `import { Button } from "@polytoken/ui/button"`,
   `import { cn } from "@polytoken/ui"`.
 - This is an **npm workspaces** monorepo (NOT pnpm).
   Typecheck: `npm run typecheck -w @polytoken/ui`.
+
+## Visual identity (D-58-01) — pointer, not a duplicate
+
+The realized system is documented in
+[`docs/design/brand-guide.md`](../../../docs/design/brand-guide.md) §3 "Visual identity"
+(palette, type scale, spacing, signature-element usage rules) and locked by
+[`58-IDENTITY.md`](../../../.planning/phases/58-visual-identity-sketch-pick-human-gate/58-IDENTITY.md)
+(D-58-01) — read those as the authority. Do not build a surface without reading §3 first; the
+summary below exists only so this file stops being wrong, not to replace it.
+
+- **Law 1** — colour is earned, never decorative: chrome is monochrome, only
+  `--conf`/`--sugg`/`--bad` carry hue, and every action/selection/focus-ring is ink.
+- **Law 2** — chrome speaks sans, evidence speaks serif: `font-serif` is reserved for the user's
+  own material (mail, saved sources, values pulled out of them) — no exceptions, ever.
+- **Law 3** — entity type is shape, never hue: use the `tshape`/`tshape-supplier`/`tshape-person`/
+  `tshape-amount`/`tshape-document`/`tshape-email` utilities, never a per-type colour. Type shapes
+  only belong where there's no room for a word (filter rails, canvas nodes).
+- **Signature (THE provenance mark):** `pmark pmark-confirmed` (solid border/wash) /
+  `pmark pmark-suggested` (dashed border/wash) — the one mark language for entity chips, cited
+  spans inside chat answers, and knowledge entity labels. Reuse it; do not rebuild a chip.
+- **Type scale:** `text-2xs`/`text-xs`/`text-sm`/`text-base`/`text-lg`/`text-xl` — this REPLACES
+  stock Tailwind sizing app-wide, anchored on a 14px/1.55 body, not Tailwind's 16px default. Use
+  `tabular` for amounts/dates/counts.
+- **Gates (all committed under `apps/web/src/app/__tests__/`):** `token-contrast.test.ts`
+  (WCAG-AA on every semantic pair), `colour-law.test.ts` (law 1 — chrome ceiling, earned-hue
+  floor, cross-theme hue/chroma invariance), `token-registration.test.ts` (every declared token
+  family has a `@theme` mapping), `palette-ban.test.ts` (no raw Tailwind palette classes in app
+  source). Run `cd apps/web && npx vitest run src/app/__tests__/` before/after any `globals.css`
+  edit.
 
 ## Component discovery — read the catalog, don't search
 
@@ -95,7 +135,7 @@ from `packages/ui/`.
 | `@kibo-ui` | complex app components (Gantt, Kanban, AI chat, dropzone) | v4-leaning payloads |
 | `@coss` (ex-Origin UI) | input/button/dialog variants | Base UI-based now |
 | `@magicui` | animated effects, polish | v4 + Motion; v3 legacy docs at v3.magicui.design |
-| `@tweakcn` | theme presets | generate, then hand-port variables into globals.css `:root` |
+| `@tweakcn` | theme presets | **do not hand-port a generated preset wholesale** — it would violate law 1 (chrome must stay monochrome, D-58-01) and fail `colour-law.test.ts`; the identity ladder in §3 of `docs/design/brand-guide.md` is this repo's only source for token values now |
 
 - 21st.dev Magic MCP: do not use (abandoned early 2026).
 - shadcn MCP server: intentionally not wired — the skills + CLI path is
@@ -104,6 +144,23 @@ from `packages/ui/`.
 
 ## Gotchas
 
+- **CSS comment text colliding with the token gates — bitten 3x this milestone (Phase 59), real
+  hazard, not theoretical.** `globals.css`'s gates (`token-contrast.test.ts`,
+  `token-registration.test.ts`) parse the `:root`/`.dark`/`@theme` blocks with a
+  comment-UNAWARE regex (`/--([\w-]+):\s*([^;]+);/g`) by design — it does not strip `/* ... */`
+  first. Two distinct failure modes, both hit for real during 59-01/59-02:
+  1. A literal `*/` inside comment PROSE (e.g. describing `"p-*/gap-*/m-*"` utilities) closes the
+     CSS block comment early, leaving the remaining comment text parsed as raw CSS — webpack
+     rejects it as an "Unknown word" syntax error.
+  2. A comment containing a colon-terminated `--token-name:` substring (e.g. explaining
+     `"NOT --pencil: --shade + --pencil computes to..."`) matches the gate's token-parsing regex
+     and silently swallows the NEXT real declaration into a bogus captured value, corrupting that
+     token's gated value with no build error.
+  **The rule:** never write a literal `*/` inside comment prose (reword around it — "p-, gap-,
+  m-" not "p-*/gap-*"), and never write a literal `--name:` inside a comment (reword to
+  `--name.` or `NOT --name` without the trailing colon). Before committing a `globals.css` change
+  with new comment text, scan it yourself for `*/` and `--[\w-]+:` patterns that aren't real
+  declarations.
 - Edits to `packages/tailwind-config/web.ts` (keyframes/animations) do NOT
   reach a dev server whose `apps/web/.next/cache` predates the edit — the
   transpiled preset is cached. Fix: stop the server, delete

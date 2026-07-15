@@ -2,129 +2,285 @@
   "generated": "2026-07-15",
   "tokens": [
     {
+      "name": "conf",
+      "light": "oklch(49% 0.068 176.3)",
+      "dark": "oklch(78% 0.068 176.3)",
+      "group": "other"
+    },
+    {
+      "name": "conf-wash",
+      "light": "oklch(49% 0.068 176.3 / 0.1)",
+      "dark": "oklch(78% 0.068 176.3 / 0.14)",
+      "group": "other"
+    },
+    {
+      "name": "conf-line",
+      "light": "oklch(49% 0.068 176.3 / 0.38)",
+      "dark": "oklch(78% 0.068 176.3 / 0.45)",
+      "group": "other"
+    },
+    {
+      "name": "sugg",
+      "light": "oklch(50.5% 0.08 78.7)",
+      "dark": "oklch(78.5% 0.08 78.7)",
+      "group": "other"
+    },
+    {
+      "name": "sugg-wash",
+      "light": "oklch(50.5% 0.08 78.7 / 0.1)",
+      "dark": "oklch(78.5% 0.08 78.7 / 0.14)",
+      "group": "other"
+    },
+    {
+      "name": "sugg-line",
+      "light": "oklch(50.5% 0.08 78.7 / 0.5)",
+      "dark": "oklch(78.5% 0.08 78.7 / 0.55)",
+      "group": "other"
+    },
+    {
+      "name": "bad",
+      "light": "oklch(49.4% 0.126 32.4)",
+      "dark": "oklch(70% 0.126 32.4)",
+      "group": "other"
+    },
+    {
+      "name": "bad-hi",
+      "light": "oklch(43% 0.126 32.4)",
+      "dark": "oklch(76% 0.126 32.4)",
+      "group": "other"
+    },
+    {
+      "name": "ink",
+      "light": "oklch(26.7% 0.015 124.2)",
+      "dark": "oklch(92.4% 0.019 83.1)",
+      "group": "other"
+    },
+    {
+      "name": "faded",
+      "light": "oklch(46.6% 0.021 124.4)",
+      "dark": "oklch(75.2% 0.024 78.2)",
+      "group": "other"
+    },
+    {
+      "name": "pencil",
+      "light": "oklch(51% 0.022 119.2)",
+      "dark": "oklch(65% 0.025 78.1)",
+      "group": "other"
+    },
+    {
+      "name": "ink-05",
+      "light": "oklch(26.7% 0.015 124.2 / 0.05)",
+      "dark": "oklch(92.4% 0.019 83.1 / 0.05)",
+      "group": "other"
+    },
+    {
+      "name": "ink-08",
+      "light": "oklch(26.7% 0.015 124.2 / 0.08)",
+      "dark": "oklch(92.4% 0.019 83.1 / 0.08)",
+      "group": "other"
+    },
+    {
+      "name": "ink-14",
+      "light": "oklch(26.7% 0.015 124.2 / 0.14)",
+      "dark": "oklch(92.4% 0.019 83.1 / 0.16)",
+      "group": "other"
+    },
+    {
+      "name": "edge",
+      "light": "oklch(26.7% 0.015 124.2 / 0.38)",
+      "dark": "oklch(92.4% 0.019 83.1 / 0.32)",
+      "group": "other"
+    },
+    {
+      "name": "grid",
+      "light": "oklch(26.7% 0.015 124.2 / 0.1)",
+      "dark": "oklch(92.4% 0.019 83.1 / 0.08)",
+      "group": "other"
+    },
+    {
+      "name": "fill-hi",
+      "light": "oklch(20% 0.015 124.2)",
+      "dark": "oklch(98% 0.019 83.1)",
+      "group": "other"
+    },
+    {
+      "name": "on-fill",
+      "light": "oklch(98.2% 0.007 97.4)",
+      "dark": "oklch(19.9% 0.009 59.1)",
+      "group": "other"
+    },
+    {
+      "name": "shimmer",
+      "light": "oklch(92.8% 0.012 97.4)",
+      "dark": "oklch(36% 0.016 75)",
+      "group": "other"
+    },
+    {
+      "name": "shelf",
+      "light": "oklch(92.4% 0.014 97.5)",
+      "dark": "oklch(19.9% 0.009 59.1)",
+      "group": "other"
+    },
+    {
+      "name": "leaf",
+      "light": "oklch(95.1% 0.011 95.2)",
+      "dark": "oklch(22.2% 0.011 60.9)",
+      "group": "other"
+    },
+    {
+      "name": "bright",
+      "light": "oklch(98.2% 0.007 97.4)",
+      "dark": "oklch(26.5% 0.015 76.2)",
+      "group": "other"
+    },
+    {
+      "name": "shade",
+      "light": "oklch(89.9% 0.016 99)",
+      "dark": "oklch(31.3% 0.016 75)",
+      "group": "other"
+    },
+    {
+      "name": "rule",
+      "light": "oklch(82.1% 0.021 100.6)",
+      "dark": "oklch(38.8% 0.026 78.8)",
+      "group": "other"
+    },
+    {
+      "name": "rule-hi",
+      "light": "oklch(74% 0.022 100.6)",
+      "dark": "oklch(46% 0.026 78.8)",
+      "group": "other"
+    },
+    {
+      "name": "hair",
+      "light": "oklch(88.3% 0.018 99.6)",
+      "dark": "oklch(32.6% 0.017 70.9)",
+      "group": "other"
+    },
+    {
       "name": "background",
-      "light": "oklch(100% 0 0)",
-      "dark": "oklch(14.5% 0 0)",
+      "light": "var(--shelf)",
+      "dark": "var(--shelf)",
       "group": "surface"
     },
     {
       "name": "foreground",
-      "light": "oklch(14.5% 0 0)",
-      "dark": "oklch(98.5% 0 0)",
+      "light": "var(--ink)",
+      "dark": "var(--ink)",
       "group": "surface"
     },
     {
       "name": "card",
-      "light": "oklch(100% 0 0)",
-      "dark": "oklch(14.5% 0 0)",
+      "light": "var(--leaf)",
+      "dark": "var(--leaf)",
       "group": "surface"
     },
     {
       "name": "card-foreground",
-      "light": "oklch(14.5% 0 0)",
-      "dark": "oklch(98.5% 0 0)",
+      "light": "var(--ink)",
+      "dark": "var(--ink)",
       "group": "surface"
     },
     {
       "name": "popover",
-      "light": "oklch(100% 0 0)",
-      "dark": "oklch(14.5% 0 0)",
+      "light": "var(--bright)",
+      "dark": "var(--bright)",
       "group": "surface"
     },
     {
       "name": "popover-foreground",
-      "light": "oklch(14.5% 0 0)",
-      "dark": "oklch(98.5% 0 0)",
+      "light": "var(--ink)",
+      "dark": "var(--ink)",
       "group": "surface"
     },
     {
       "name": "primary",
-      "light": "oklch(38.9% 0.053 173.7)",
-      "dark": "oklch(38.9% 0.053 173.7)",
+      "light": "var(--ink)",
+      "dark": "var(--ink)",
       "group": "semantic"
     },
     {
       "name": "primary-foreground",
-      "light": "oklch(98.5% 0 0)",
-      "dark": "oklch(98.5% 0 0)",
+      "light": "var(--on-fill)",
+      "dark": "var(--on-fill)",
       "group": "semantic"
     },
     {
       "name": "secondary",
-      "light": "oklch(95.2% 0.003 178.7)",
-      "dark": "oklch(30.5% 0.011 177.8)",
+      "light": "var(--shade)",
+      "dark": "var(--shade)",
       "group": "semantic"
     },
     {
       "name": "secondary-foreground",
-      "light": "oklch(22.9% 0.004 178.3)",
-      "dark": "oklch(97.8% 0.002 178.7)",
+      "light": "var(--ink)",
+      "dark": "var(--ink)",
       "group": "semantic"
     },
     {
       "name": "muted",
-      "light": "oklch(96.5% 0.002 178.7)",
-      "dark": "oklch(27.4% 0.007 178)",
+      "light": "var(--shade)",
+      "dark": "var(--shade)",
       "group": "semantic"
     },
     {
       "name": "muted-foreground",
-      "light": "oklch(53.2% 0.014 178)",
-      "dark": "oklch(73.2% 0.013 178.3)",
+      "light": "var(--faded)",
+      "dark": "var(--faded)",
       "group": "semantic"
     },
     {
       "name": "accent",
-      "light": "oklch(95.8% 0.003 178.7)",
-      "dark": "oklch(30.6% 0.015 177.2)",
+      "light": "var(--shade)",
+      "dark": "var(--shade)",
       "group": "semantic"
     },
     {
       "name": "accent-foreground",
-      "light": "oklch(24.1% 0.006 178.1)",
-      "dark": "oklch(97.8% 0.001 178.7)",
+      "light": "var(--ink)",
+      "dark": "var(--ink)",
       "group": "semantic"
     },
     {
       "name": "destructive",
-      "light": "oklch(63.7% 0.208 25.3)",
-      "dark": "oklch(39.6% 0.133 25.7)",
+      "light": "var(--bad)",
+      "dark": "var(--bad)",
       "group": "semantic"
     },
     {
       "name": "destructive-foreground",
-      "light": "oklch(98.5% 0 0)",
-      "dark": "oklch(98.5% 0 0)",
+      "light": "var(--on-fill)",
+      "dark": "var(--on-fill)",
       "group": "semantic"
     },
     {
       "name": "success",
-      "light": "oklch(52.3% 0.136 149.9)",
-      "dark": "oklch(44.7% 0.11 150.8)",
+      "light": "var(--conf)",
+      "dark": "var(--conf)",
       "group": "other"
     },
     {
       "name": "success-foreground",
-      "light": "oklch(98.5% 0 0)",
-      "dark": "oklch(98.5% 0 0)",
+      "light": "var(--on-fill)",
+      "dark": "var(--on-fill)",
       "group": "other"
     },
     {
       "name": "border",
-      "light": "oklch(92.2% 0 0)",
-      "dark": "oklch(26.9% 0 0)",
+      "light": "var(--rule)",
+      "dark": "var(--rule)",
       "group": "surface"
     },
     {
       "name": "input",
-      "light": "oklch(92.2% 0 0)",
-      "dark": "oklch(26.9% 0 0)",
+      "light": "var(--rule)",
+      "dark": "var(--rule)",
       "group": "surface"
     },
     {
       "name": "ring",
-      "light": "oklch(14.5% 0 0)",
-      "dark": "oklch(87% 0 0)",
+      "light": "var(--ink)",
+      "dark": "var(--ink)",
       "group": "surface"
     },
     {
@@ -189,62 +345,62 @@
     },
     {
       "name": "tier-extracted",
-      "light": "oklch(51.8% 0.078 191.8)",
-      "dark": "oklch(47.8% 0.074 191.7)",
+      "light": "var(--conf)",
+      "dark": "var(--conf)",
       "group": "other"
     },
     {
       "name": "tier-extracted-foreground",
-      "light": "oklch(98.5% 0 0)",
-      "dark": "oklch(98.5% 0 0)",
+      "light": "var(--on-fill)",
+      "dark": "var(--on-fill)",
       "group": "other"
     },
     {
       "name": "tier-inferred",
-      "light": "oklch(90.5% 0.023 276.9)",
-      "dark": "oklch(27.5% 0.036 275.1)",
+      "light": "var(--sugg)",
+      "dark": "var(--sugg)",
       "group": "other"
     },
     {
       "name": "tier-inferred-foreground",
-      "light": "oklch(33.9% 0.094 272)",
-      "dark": "oklch(88.6% 0.028 276.8)",
+      "light": "var(--on-fill)",
+      "dark": "var(--on-fill)",
       "group": "other"
     },
     {
       "name": "graph-entity",
-      "light": "oklch(54.2% 0.245 293)",
-      "dark": "oklch(54.2% 0.245 293)",
+      "light": "var(--ink)",
+      "dark": "var(--ink)",
       "group": "other"
     },
     {
       "name": "graph-entity-foreground",
-      "light": "oklch(100% 0 0)",
-      "dark": "oklch(100% 0 0)",
+      "light": "var(--on-fill)",
+      "dark": "var(--on-fill)",
       "group": "other"
     },
     {
       "name": "graph-email-component",
-      "light": "oklch(77% 0.165 70.6)",
-      "dark": "oklch(77% 0.165 70.6)",
+      "light": "var(--faded)",
+      "dark": "var(--faded)",
       "group": "other"
     },
     {
       "name": "graph-email-component-foreground",
-      "light": "oklch(21.5% 0.009 48.3)",
-      "dark": "oklch(21.5% 0.009 48.3)",
+      "light": "var(--on-fill)",
+      "dark": "var(--on-fill)",
       "group": "other"
     },
     {
       "name": "graph-email",
-      "light": "oklch(71% 0.035 256.8)",
-      "dark": "oklch(40.5% 0.034 256.8)",
+      "light": "var(--pencil)",
+      "dark": "var(--pencil)",
       "group": "other"
     },
     {
       "name": "graph-email-foreground",
-      "light": "oklch(26% 0.024 256.8)",
-      "dark": "oklch(93.6% 0.006 256.7)",
+      "light": "var(--on-fill)",
+      "dark": "var(--on-fill)",
       "group": "other"
     },
     {
@@ -297,20 +453,20 @@
     },
     {
       "name": "elevation-1",
-      "light": "0 0 0 1px color-mix(in srgb, var(--border) 60%, transparent),\n      0 1px 2px 0 oklch(29% 0.027 175.8 / 0.06)",
-      "dark": "0 0 0 1px var(--border), 0 1px 2px 0 oklch(0% 0 0 / 0.24)",
+      "light": "0 0 0 1px var(--hair)",
+      "dark": "0 0 0 1px var(--hair)",
       "group": "other"
     },
     {
       "name": "elevation-2",
-      "light": "0 0 0 1px color-mix(in srgb, var(--border) 60%, transparent),\n      0 2px 4px 0 oklch(29% 0.027 175.8 / 0.08),\n      0 1px 2px -1px oklch(29% 0.027 175.8 / 0.04)",
-      "dark": "0 0 0 1px var(--border), 0 2px 4px 0 oklch(0% 0 0 / 0.32),\n      0 1px 2px -1px oklch(0% 0 0 / 0.2)",
+      "light": "0 0 0 1px var(--rule)",
+      "dark": "0 0 0 1px var(--rule)",
       "group": "other"
     },
     {
       "name": "elevation-3",
-      "light": "0 0 0 1px color-mix(in srgb, var(--border) 60%, transparent),\n      0 4px 8px 0 oklch(29% 0.027 175.8 / 0.1),\n      0 2px 4px -2px oklch(29% 0.027 175.8 / 0.06)",
-      "dark": "0 0 0 1px var(--border), 0 4px 8px 0 oklch(0% 0 0 / 0.4),\n      0 2px 4px -2px oklch(0% 0 0 / 0.24)",
+      "light": "0 0 0 1px var(--rule-hi)",
+      "dark": "0 0 0 1px var(--rule-hi)",
       "group": "other"
     }
   ],
