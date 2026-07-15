@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Product Design & Research Canvas
-status: executing
+status: blocked-human-gate
 last_updated: "2026-07-15T08:13:49.134Z"
-last_activity: "2026-07-15 -- 55-03 EXECUTED: both STCK-01 gates rewritten for v4/oklch"
+last_activity: 2026-07-15 -- Phases 55/56/57 executed+verified; Phase 58 sketches built and reviewed. BLOCKED on the human visual-direction pick (58-PICK-THIS.md).
 progress:
   total_phases: 9
   completed_phases: 0
@@ -45,15 +45,31 @@ work, never deferrable-by-default.
 
 ## Current Position
 
-Phase: 55 (Platform Migration — Tailwind v4 + React 19) — EXECUTING
-Plan: 5 of 6
-Status: Executing Phase 55
-Last activity: 2026-07-15 -- 55-03 EXECUTED: both STCK-01 gates rewritten for v4/oklch
-(token-contrast off HSL onto oklch, token-registration off resolveConfig onto @theme
-string-parsing), both proven to still fail on an injected regression then reverted,
-full web vitest suite green (64/64, 464/464). STCK-01 now complete.
+**⏸ BLOCKED ON A HUMAN GATE — Phase 58: pick a visual direction.**
 
-Progress: [██████░░░░] 57%
+Read `.planning/phases/58-visual-identity-sketch-pick-human-gate/58-PICK-THIS.md` (~15 min).
+Open the three self-contained sketches in a browser and say which one — e.g. "go with B", or
+"B but the dark ground from C". Hybrids expected. Nothing else in v1.10 proceeds until this closes:
+Phases 59-63 (identity tokens -> inbox -> chat/canvas -> knowledge -> research-canvas UI) all
+cascade from the locked choice.
+
+This gate is deliberate, not an obstacle: backlog 999.18's scope item (d) requires a design-review
+loop with the user on real screens BEFORE cascading, because autonomous runs cannot make taste
+decisions. Picking it autonomously is exactly how v1.9 shipped a UI the user called
+"ugly/experimental".
+
+**Done and waiting on the gate:**
+- Phase 55 Platform Migration — VERIFIED passed 4/4 (Tailwind v4 + oklch + React 19; gates rewritten oklch-aware and proven able to fail; Radix-stays decided; @kibo-ui registry install proven)
+- Phase 56 Research Canvas backend — 5/5 plans, VERIFIED human_needed (3/3 criteria at code level; live legs need migration 0037 applied + Bedrock)
+- Phase 57 Email Learning Loop — 3/3 plans, VERIFIED human_needed (3/3 criteria at code level; live legs need migrations 0038/0039 applied)
+- Phase 58 sketches — 3 directions built on real screens, adversarially reviewed w/ screenshots, A's 1024 layout bug found and fixed
+
+Migrations 0037 (chat_source_ledger + chat_context_edges), 0038 (entity_type_corrections),
+0039 (entity-resolution dismiss filter) are AUTHORED + journal-coherent, APPLIED NOWHERE.
+
+**Still owed from v1.9 (user declined twice):** LIVE-03 (§A OAuth), LIVE-04 (§B.3-6 real email),
+CLUS-07 (§H) — `phases/49-live-loop-gate-deploy-oauth-real-email/MORNING-CHECKLIST.md`.
+
 
 ## Phase 55 -- Platform Migration — Tailwind v4 + React 19 -- Plan 04 History -- React 18->19 core bump + six low-risk dependency bumps
 
