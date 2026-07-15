@@ -79,7 +79,37 @@ EXECUTED — see the Plan 06 History entry below and `60-06-SUMMARY.md`; all thr
 run (two RED, one deliberately GREEN, proving the gate distinguishes an irreversible ACTION from a
 STATE rather than crudely banning a token), all reverted with zero residue. Phase 60's two surfaces
 are now fully swept AND enforced by a scoped, ratcheting source gate whose `SCOPED_DIRS` Phases
-61-63 extend as they sweep.** Next: Phase 60 Plan 07 (1 plan remains in this 7-plan phase).
+61-63 extend as they sweep. Plan 07 (the harness capture + the 61-63 handoff) EXECUTED — see the
+Plan 07 History entry below and `60-07-SUMMARY.md`. **PHASE 60 IS COMPLETE (7/7).**
+
+⚠️ **Criterion 4 is PARTIALLY PROVEN and needs one authorized re-run — the only thing Phase 60
+still owes.** The capture RAN (×4, real stack, real seeded session, `1 passed` each), so this is
+NOT the blocked-environment gap 51-07/55-01 recorded. **Proven on real pixels:** both redesigned
+frames under the Phase 59 identity (warm paper/ink, no shadcn blue), the inbox's four-pane frame,
+the sidebar at full 256px (`db8da42` confirmed live), and NO layout/hierarchy regression on the
+five untouched surfaces (their palette/type/density shifts are Phase 59 landing — both baselines
+predate 59's `globals.css` rewrite, so the plan's "any difference is a regression" instruction was
+wrong on the facts and was corrected). **UNPROVEN:** the inbox's rows (serif subjects, tier chips,
+tabular times), `/emails/[id]` entirely, and dark mode.
+
+**Root cause found — and it is a trap in our own plans (999.22, HIGH):** `next build` and `next
+dev` share `apps/web/.next`, so **`npm run build:local` run against a live dev server silently
+overwrites its chunks**; the app then serves SSR HTML whose client JS never executes (skeletons
+that never resolve, `Cannot find module './383.js'`). Proven by mtime forensics (production-only
+`BUILD_ID`/`prerender-manifest`/`required-server-files` + a Pages-Router `_document.js` in this
+App-Router app, all 19:40, beside `static/development`) and by a warm zero-touch re-run producing
+BYTE-IDENTICAL captures — which rules out a timing race. **`build:local` is a standing line in
+every Phase 59-63 plan's `<verification>` block, so each plan that follows it destroys the running
+dev server and the damage only surfaces when a human next opens the app.** Fix 999.22 before
+Phases 61-63 run. Also filed: 999.23 (the harness has no theme axis — **dark mode has never once
+been captured** — and asserts nothing, so it reports `1 passed` on a crashed app).
+
+**To close criterion 4** (a human must authorize the kill — the permission system denied it twice
+and it was correctly not routed around): stop the dev server → `rm -rf apps/web/.next` →
+`npm run web:dev` → `cd apps/web && npm run screenshot:review`. Then answer two questions: do the
+inbox rows show serif subjects/tier chips/tabular times, and does `/emails/[id]` render at all?**
+
+Next: Phase 61 (total UI re-skin part 2) — but fix 999.22 first.
 
 **Done so far in v1.10:**
 
@@ -95,6 +125,7 @@ are now fully swept AND enforced by a scoped, ratcheting source gate whose `SCOP
 - Phase 60 Plan 03 — EXECUTED (four-pane desktop inbox: reading pane rebuilt as a serif document, new `InboxEntitiesRail` fourth pane, law-1-clean error/empty/loading states on both trees, mobile chrome restyled; `inbox-structure.test.tsx` grew to 8 legs and was re-proven able to fail over the full component set — SURF-01 marked complete)
 - Phase 60 Plan 04 — EXECUTED (`region-vocabulary.ts` — tier is the ONLY colour, role is pure structure; `region-overlay-box.tsx` re-encoded so tier+role ALWAYS compose (fixing the pre-60-04 role-replaces-tier inversion); 20-case role x status matrix gate proven able to fail on both possible regressions — SURF-04 marked complete)
 - Phase 60 Plan 05 — EXECUTED (extraction surface on the tier vocabulary: the CONTEXT-flagged `candidate: node-type-hue` violation killed; law 2 inverted back so the extracted VALUE reads as serif evidence and the property label recedes to chrome; tier is now a visible WORD + swatch, not a dot with an `sr-only` whisper; `status-badge.ts`/`confirm-deny-controls.tsx`/`layers-tree-row.tsx` moved onto one `tierOf`; shape gate proven RED against the exact violation — elements 64→67, leafText 22→24)
+- Phase 60 Plan 07 — EXECUTED (**PHASE 60 COMPLETE, 7/7**; the leg that looks: capture ran ×4 on a real stack + seeded session; criterion 4 PARTIALLY PROVEN — frames + no-regression proven on real pixels, inbox rows + `/emails/[id]` + dark mode UNPROVEN; **root-caused the `.next` corruption to `npm run build:local` run against a live dev server — a standing line in every Phase 59-63 plan's own verification block → 999.22 HIGH**; 999.23 filed (harness has no theme axis, reports `ok` on a crashed app); brand-guide §3 "Realized surface patterns" + SKILL.md now carry the 61-63 handoff)
 
 Migrations 0037 (chat_source_ledger + chat_context_edges), 0038 (entity_type_corrections),
 0039 (entity-resolution dismiss filter) are AUTHORED + journal-coherent, APPLIED NOWHERE.
@@ -291,6 +322,67 @@ CLUS-07 (§H) — `phases/49-live-loop-gate-deploy-oauth-real-email/MORNING-CHEC
   execute its own sibling gates, which assert on the banned family by name. `apps/web`: tsc clean,
   72/72 files, 806 passed/2 skipped, `build:local` succeeds. SURF-04 already complete (shared with
   60-04). See `60-06-SUMMARY.md`.
+
+## Phase 60 -- Surface Redesign: Inbox & Email Detail -- Plan 07 History -- the leg that looks: criterion 4, the root cause, and the 61-63 handoff (PHASE COMPLETE)
+
+- **60-07 EXECUTED** (`21310e7` docs, `a0caa2a` docs): **PHASE 60 COMPLETE (7/7).** The capture RAN
+  — 4 times, against the healthy local Supabase stack with a real GoTrue-minted session, `1 passed`
+  each, 14 PNGs across 7 surfaces × 2 viewports, all `captured`. So §D's blocked-environment
+  precedent (51-07, 55-01) does NOT apply and claiming it would have been false. **CRITERION 4 IS
+  PARTIALLY PROVEN, split at exactly the line the evidence supports.** PROVEN on real pixels: both
+  redesigned frames under the Phase 59 identity (warm paper/ink, no shadcn blue, new type/density);
+  the inbox's four-pane frame at 1440 (sidebar │ FILTERS │ threads │ reading) collapsing correctly
+  at 390; the sidebar at full ~256px (`db8da42` confirmed live); and NO layout/hierarchy regression
+  on the five untouched surfaces. UNPROVEN and named rather than waved through: the inbox's ROWS
+  (serif subjects, snippets, tier chips, tabular times, ink selection), `/emails/[id]` ENTIRELY,
+  and DARK MODE. Honest read recorded in the artifact: *"the inbox is 90% its rows and I did not
+  see a single row"* — anyone calling that surface visually verified from this run is overreading
+  it. **THE ROOT CAUSE, FOUND BY MTIME FORENSICS AND FILED AS 999.22 (HIGH): `next build` and
+  `next dev` share `apps/web/.next`, so `npm run build:local` run against a live dev server
+  silently overwrites its server chunks** — the dev server keeps its in-memory module graph, throws
+  `Cannot find module './383.js'`, and serves SSR HTML whose CLIENT JS NEVER EXECUTES. Proof:
+  production-only `BUILD_ID`/`required-server-files.json`/`prerender-manifest.json` + a
+  *Pages-Router* `server/pages/_document.js` (in this App-Router app — and the exact file in the
+  error's require stack), all written 19:40, sitting beside `.next/static/development`. **The trap
+  is in our own instructions:** `build:local` is a standing line in every Phase 59-63 plan's
+  `<verification>` block, it fails SILENTLY (the build reports success), and the damage surfaces
+  only when a human next opens the app — which is this plan. 60-06 ran it and reported green; it
+  was green, and it also corrupted the server. FIX 999.22 BEFORE PHASES 61-63 RUN. **The
+  discriminator that turned suspicion into fact:** a warm, zero-touch re-run produced
+  BYTE-IDENTICAL captures (inbox 39833→39833, knowledge 21938→21938, emails 111711→111711) — a
+  cold-compile race jitters, a broken build is deterministic. Four symptoms converged on it: the
+  `layout.css` 404 (which made the FIRST run pure unstyled browser defaults — reviewing those PNGs
+  would have reported a catastrophic regression that does not exist; recovered non-destructively
+  via `touch globals.css` → HMR → 200/152KB carrying the real Phase-59 ladder), the theme icon
+  absent because `app-sidebar.tsx:98`'s `<Sun className="opacity-0">` is the PRE-MOUNT placeholder
+  (`mounted === false` ⇒ React never mounted), the skeletons that never resolve, and studio's
+  silently-skipped `linear-clean` alternates (the harness feature-detects the pack switcher, and
+  pre-hydration the Sandbox click is inert). **FOUR DELIBERATE REFUSALS, each recorded:** (1) did
+  NOT run `build:local` — running it causes the failure under investigation, and this markdown-only
+  plan cannot change 60-06's green result; (2) did NOT force-kill the dev server after the
+  permission system denied it TWICE, and did NOT route around the denial by starting a second dev
+  server on another port (forbidden by the brief, and a corruption mechanism in its own right) —
+  recorded as a permission gap with exact commands for a human; (3) corrected the plan's §B
+  regression rule instead of following it (both baselines PREDATE Phase 59's `globals.css` rewrite,
+  so following §B literally would have reported FIVE FALSE REGRESSIONS — verdicts split into
+  EXPECTED palette/type/density vs REGRESSION layout/hierarchy); (4) verified the plan's SKILL.md
+  premise before acting and found it ALREADY FIXED by `2a19444` (59-03), so fixed what was actually
+  stale — a "Tailwind v3" claim contradicting the v4 stack pin 24 lines above. Also filed **999.23**
+  (the harness has NO theme axis, so dark mode has never once been captured despite `globals.css`
+  shipping a full `.dark` block Phase 59 re-tokened; and it asserts nothing, so it reports
+  `1 passed` while photographing a crashed app). **The 61-63 handoff is written down:**
+  `brand-guide.md` §3 "Realized surface patterns" — the tier/role orthogonality rule
+  (tier owns colour + solid/dashed; role owns weight/style/opacity, never hue; `tierOf` never
+  defaults to confirmed; `unrelated` is DOTTED because tier owns dashed), the provenance chip and
+  the `pmark`-implies-serif trap (`.chip` = evidence, `.badge`/`.swatch` = chrome; no
+  className-reading gate can see an inherited `font-family`), law 2's `data-evidence` mutual
+  implication, the madder rule + `SCOPED_DIRS` ratchet with the gate's blind spot recorded
+  honestly, the density steps, and every sketch deviation with its reasoning. `apps/web`: tsc
+  clean, 72/72 files, 806 passed/2 skipped (unmoved — docs-only). T-60-11 held: artifact is prose,
+  secret-scanned to 0, PNGs left gitignored. **To close criterion 4** (needs a human — the kill was
+  denied): stop the dev server → `rm -rf apps/web/.next` → `npm run web:dev` → `cd apps/web && npm
+  run screenshot:review`. See `60-07-SUMMARY.md` and
+  `artifacts/60-SCREENSHOT-REVIEW.md`.
 
 ## Phase 55 -- Platform Migration — Tailwind v4 + React 19 -- Plan 04 History -- React 18->19 core bump + six low-risk dependency bumps
 
