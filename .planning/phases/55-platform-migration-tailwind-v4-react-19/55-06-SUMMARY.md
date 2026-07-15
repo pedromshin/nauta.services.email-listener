@@ -135,6 +135,19 @@ None beyond what the plan's own `<threat_model>` anticipated. `T-55-SC` (registr
 
 None blocking. The `shadcn@latest info` command failed with an unrelated CLI bug (`ENOTDIR` scanning the `ui`/`utils`/`lib`/`hooks` aliases, which all point at the same `src/index.ts` file rather than a directory) — not used for any acceptance criterion, so not investigated further (out of scope, pre-existing CLI behavior unrelated to this plan's changes).
 
+**Concurrent-execution git note (non-blocking, disclosed for transparency):** the final metadata
+commit (`eeb9848`) was made with `git commit -m "..."` and no pathspec, which commits the entire
+staged index, not just the paths explicitly `git add`-ed beforehand. A concurrent executor
+working on Phase 57 Plan 01 (`apps/email-listener`, LEARN-01) had independently staged its own
+`.planning/phases/57-email-learning-loop/57-01-SUMMARY.md` and its own additive STATE.md section
+at the same moment; both landed inside `eeb9848` alongside this plan's own 4 intended files. No
+content was lost, corrupted, or overwritten — both plans' STATE.md sections are cleanly appended
+at their correct locations (verified via `git show eeb9848 -- .planning/STATE.md`), and
+57-01-SUMMARY.md's content is intact and unmodified. This is purely a commit-message
+attribution artifact of shared-working-directory concurrent execution, not a data-integrity
+issue; flagging here so the Phase 57 executor (or the orchestrator) is aware its own final
+`git commit` step will find nothing left to commit for those two files.
+
 ## User Setup Required
 
 None — no external service configuration required.
