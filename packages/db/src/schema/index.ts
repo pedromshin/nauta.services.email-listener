@@ -32,5 +32,7 @@ export * from "./chat-run-events";
 export * from "./chat-cost-ledger";
 export * from "./chat-canvas-layouts";
 export * from "./chat-widget-interactions";
+export * from "./chat-source-ledger";
+export * from "./chat-context-edges";
 export * from "./autofill-retrieval-events";
 export * from "./forwarding-addresses";
