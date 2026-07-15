@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Product Design & Research Canvas
 status: in-progress
-last_updated: "2026-07-15T22:16:39.230Z"
+last_updated: "2026-07-15T22:44:51.954Z"
 progress:
   total_phases: 9
   completed_phases: 4
-  total_plans: 24
-  completed_plans: 23
+  total_plans: 25
+  completed_plans: 24
   percent: 44
 ---
 
@@ -73,8 +73,13 @@ both reverted clean. Plan 05 (extraction surface onto the tier vocabulary; law 2
 the extraction shape gate) EXECUTED — see the Plan 05 History entry below and `60-05-SUMMARY.md`;
 the pre-60 baseline was frozen and committed BEFORE the component was touched (order verified in
 git), and the negative proof drove the candidate-tier leg RED against the exact
-node-type-hue-as-tier violation 60-CONTEXT named, then reverted clean.** Next: Phase 60 Plan 06
-(2 plans remain in this 7-plan phase).
+node-type-hue-as-tier violation 60-CONTEXT named, then reverted clean. Plan 06 (the last four
+role-coding panels onto the vocabulary; the detail frame on the identity; `role-hue-ban.test.ts`)
+EXECUTED — see the Plan 06 History entry below and `60-06-SUMMARY.md`; all three negative proofs
+run (two RED, one deliberately GREEN, proving the gate distinguishes an irreversible ACTION from a
+STATE rather than crudely banning a token), all reverted with zero residue. Phase 60's two surfaces
+are now fully swept AND enforced by a scoped, ratcheting source gate whose `SCOPED_DIRS` Phases
+61-63 extend as they sweep.** Next: Phase 60 Plan 07 (1 plan remains in this 7-plan phase).
 
 **Done so far in v1.10:**
 
@@ -240,6 +245,52 @@ CLUS-07 (§H) — `phases/49-live-loop-gate-deploy-oauth-real-email/MORNING-CHEC
   gate; resolved per Task 2's sanctioned rule by growing `REGION_TIER` with `badge`/`swatch` (sans
   chrome) beside `chip` (serif evidence). `apps/web`: tsc clean, 71/71 files, 801 passed/2 skipped,
   `build:local` succeeds. SURF-04 already complete (shared with 60-04). See `60-05-SUMMARY.md`.
+
+## Phase 60 -- Surface Redesign: Inbox & Email Detail -- Plan 06 History -- the last panels + the detail frame + the sweep becomes permanent
+
+- **60-06 EXECUTED** (`7417a59` feat, `a4997d1` feat, `e9ddf76` fix, `53afd82` test): Task 1 moved
+  the last four role-coding panels onto the vocabulary. `role-picker.tsx` was the most literal
+  role-as-hue on the surface — a coloured swatch per role, i.e. a colour key existing NOWHERE on
+  the document, dead in greyscale (law 3), spending hue on chrome (law 1); each option now shows a
+  MINIATURE of the real box geometry, so the picker teaches the document's own vocabulary rather
+  than a parallel one. `active-parent-banner.tsx` became an ink MODE indicator; `inspector-panel.tsx`
+  takes role from geometry + tier from `tierOf` and renders document-derived values as serif
+  evidence (even inside `<Input>` — provenance is about where text came FROM, not which element it
+  lives in); `fields-panel.tsx` verified consuming `getStatusBadge`'s new shape with no local tier
+  re-derivation (T-60-08). Task 2 put the detail frame on the identity: `parseStatusVariant` DELETED
+  (its `"failed" → destructive` is §D's named violation — a failed parse is a STATUS and the same
+  header renders the Reprocess button that undoes it), the h1 is now `font-serif text-xl
+  data-evidence` with `h1Ref`/`tabIndex={-1}`/mount-focus intact, error+not-found are ink on a rule
+  with `role="alert"` and generic un-enriched copy (T-60-10), skeletons reshaped to predict the real
+  frame. §C honoured and VERIFIED AGAINST THE DIFF, not asserted: no hook, derivation, or handler
+  above the return appears in it. NOTE — the plan's first-choice instruction was declined on the
+  facts: `parseStatus` does NOT map onto `REGION_TIER`, because `tierOf("parsed")` returns
+  "suggested" (its unknown-status default, so a SUCCEEDED parse would render pencil-amber) and
+  verdigris means precisely "a human verified this fact" while a parse succeeding is a MACHINE fact
+  — spending the confirmed hue there would make verdigris mean two things, the one thing law 1
+  cannot survive; took the plan's own escape hatch (a plain `text-faded` marker). Task 3a swept four
+  §D violations the plan's §B survey MISSED (4 listed, 12 found): failed-load and fetch-error
+  messages in madder, a `<Badge variant="destructive">Preview failed</Badge>`, and — in UNREFERENCED
+  dead code — `metadata-card.tsx` still carrying the exact killed `parseStatusVariant` signature (a
+  dead file is where a killed bug waits to be resurrected; type narrowed, file not deleted). Task 3b
+  committed `role-hue-ban.test.ts`: SCOPED, not global, and a RATCHET — `SCOPED_DIRS` is exported,
+  documented, and PINNED BY A TEST so the scope cannot be silently narrowed to make a future
+  violation pass; `graph-*` stays legitimately in use across `knowledge/`/`entities/`/`chat/` (62
+  occurrences, 10 files) which Phases 61-63 own and each APPENDS its root as it sweeps. The banned
+  area only ever grows. ALL THREE NEGATIVE PROOFS RUN: a reintroduced role hue → RED naming
+  file:line; reintroduced madder text → RED; a `variant="destructive"` button → **GREEN on purpose**,
+  proving the gate distinguishes an irreversible ACTION from a STATE rather than crudely banning a
+  token (had it gone red it would have forced the deny/reject buttons — the one place law 1 EARNS
+  madder — into an allowlist, which is how a gate teaches people to ignore it). All reverted, `git
+  diff --stat` empty vs `a4997d1` for every proof target. THE GATE'S BLIND SPOT IS REAL AND
+  DOCUMENTED IN ITS OWN SOURCE: the "Preview failed" badge passed it while violating law 1, having
+  talked through the `variant` door the gate deliberately leaves open — found by reading, not grep;
+  the madder rule is a PROXY, not a proof. Two traps for 61-63, both of which cost a rework here: a
+  comment citing a banned literal turns the gate RED on its own documentation (it reads LINES, not
+  prose — fired 4x), and the pattern MUST keep requiring a colour-utility PREFIX or the gate will
+  execute its own sibling gates, which assert on the banned family by name. `apps/web`: tsc clean,
+  72/72 files, 806 passed/2 skipped, `build:local` succeeds. SURF-04 already complete (shared with
+  60-04). See `60-06-SUMMARY.md`.
 
 ## Phase 55 -- Platform Migration — Tailwind v4 + React 19 -- Plan 04 History -- React 18->19 core bump + six low-risk dependency bumps
 
