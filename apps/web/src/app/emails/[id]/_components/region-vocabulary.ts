@@ -40,8 +40,30 @@ export function tierOf(status: string): RegionTier {
 interface TierClasses {
   /** Border + fill — the ONLY place tier's colour lives. */
   readonly box: string;
-  /** The label-chip colouring — the pmark provenance-mark language. */
+  /**
+   * The label-chip colouring — the pmark provenance-mark language. `pmark`
+   * sets `font-family: var(--font-serif)`, so this is the EVIDENCE treatment:
+   * it belongs on the document's own words (a value, a content snippet) and
+   * nowhere else. For chrome that merely NAMES a tier, use `badge`.
+   */
   readonly chip: string;
+  /**
+   * The tier BADGE — direction-final.html's `.badge.c`/`.badge.s` (sketch
+   * lines 235-245): a swatch plus the tier word, for stating a tier in
+   * chrome. Deliberately NOT `chip`: the words "Confirmed"/"Suggested" are
+   * polytoken's own vocabulary, not the document's, so law 2 gives them the
+   * sans — and `chip`'s `pmark` would force the serif onto them. The sketch
+   * draws the same distinction itself (`.pm` is serif, `.badge` is not).
+   * Carries border+fill+text colour; pair with `swatch`.
+   */
+  readonly badge: string;
+  /**
+   * The small square inside a `badge` — solid for confirmed, hollow+dashed
+   * for suggested, mirroring the same solid-vs-dashed language `box` uses,
+   * so the swatch restates the tier in shape as well as hue rather than
+   * relying on colour alone (the accessibility half of law 1).
+   */
+  readonly swatch: string;
   /**
    * Selection/active ring. INK under law 1 ("selected states ... carry NO
    * hue") — identical across every tier by design. Tier owns fill and
@@ -57,12 +79,16 @@ export const REGION_TIER: Record<RegionTier, TierClasses> = {
   confirmed: {
     box: "border-conf-line bg-conf-wash",
     chip: "pmark pmark-confirmed",
+    badge: "border border-conf-line bg-conf-wash text-conf",
+    swatch: "bg-conf",
     ring: SELECTION_RING,
   },
   // Dashed mark = suggested.
   suggested: {
     box: "border-sugg-line bg-sugg-wash border-dashed",
     chip: "pmark pmark-suggested",
+    badge: "border border-dashed border-sugg-line bg-sugg-wash text-sugg",
+    swatch: "border border-dashed border-sugg",
     ring: SELECTION_RING,
   },
   // A rejected/superseded region makes NO tier claim, so it earns no
@@ -70,6 +96,8 @@ export const REGION_TIER: Record<RegionTier, TierClasses> = {
   terminal: {
     box: "border-rule border-dashed bg-shade opacity-40",
     chip: "pmark text-pencil",
+    badge: "border border-rule bg-shade text-pencil",
+    swatch: "bg-pencil opacity-40",
     ring: SELECTION_RING,
   },
 };
