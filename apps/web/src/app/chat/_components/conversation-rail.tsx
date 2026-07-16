@@ -204,7 +204,42 @@ export function ConversationRail({
           New chat
         </Button>
 
-        <ScrollArea className="-mx-2.5 min-h-0 flex-1">
+        <ScrollArea
+          className={cn(
+            "-mx-2.5 min-h-0 flex-1",
+            // ─────────────────────────────────────────────────────────────
+            // THIS IS A BUG FIX, NOT A STYLE. Do not remove it without
+            // re-measuring — see 61-03-SUMMARY.md for the probe output.
+            //
+            // Radix's ScrollArea Viewport wraps its children in a div it
+            // styles INLINE with `{min-width:100%; display:table}`. `display:
+            // table` SHRINK-WRAPS TO CONTENT, so that div grows to the widest
+            // row's natural width instead of the viewport's — measured here at
+            // 406px inside a 208px viewport. Every row then lays out against
+            // 406px: the title's `flex-1 min-w-0 truncate` never binds (its
+            // `text-overflow:ellipsis` computes, but nothing constrains it),
+            // and the 44px overflow-menu button lands at x=608 against a rail
+            // whose right edge is x=464 — 144px outside, clipped away by
+            // `overflow-hidden`.
+            //
+            // So the rail's ONLY route to Rename and Delete has been
+            // off-screen. This PREDATES 61-03 (61-01's own 280px capture shows
+            // the same missing button) — the narrowing to 208px did not cause
+            // it, it just made it obvious. It is invisible to every gate we
+            // have: jsdom computes no layout, and `test:geometry` measures
+            // VERTICAL document/scroller geometry, so a horizontal overflow
+            // inside a correctly-bounded rail is exactly its blind spot.
+            //
+            // `!` is required and is not laziness: the offending `display` is
+            // an inline style, which no class can outrank without it. `block`
+            // is the right value here — `table` exists so Radix can measure
+            // content width for a HORIZONTAL scrollbar, which this rail does
+            // not have and must not grow; with `block`, the div's own
+            // `min-width:100%` then sizes it to the viewport exactly.
+            // ─────────────────────────────────────────────────────────────
+            "[&>[data-radix-scroll-area-viewport]>div]:block!",
+          )}
+        >
           {/* `-mx-2.5` above + `px-2.5` here: the scrollbar rides the rail's
               true edge while the rows keep the rail's own 10px gutter, so a
               scrolling list does not sit visibly inboard of a non-scrolling
