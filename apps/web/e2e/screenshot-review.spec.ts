@@ -1,16 +1,52 @@
 /**
  * screenshot-review.spec.ts — visual review capture harness (D-47-05, VRFY-02;
- * extended Phase 50 Plan 01 for LIVE-06 / todo W-1).
+ * extended Phase 50 Plan 01 for LIVE-06 / todo W-1; theme axis + settle added 61-01 Task 2).
  *
  * Boots the dev server (via playwright.screenshot.config.ts's webServer, reused from the base
- * config per D-47-04) and walks the app's main surfaces across two viewports, capturing a
- * full-page PNG for each combination plus a reviewable index.md — all under a single timestamped
- * run directory at `.planning/ui-reviews/{ISO-timestamp}/` (repo root, resolved via
+ * config per D-47-04) and walks the app's main surfaces across two viewports AND both themes,
+ * capturing a full-page PNG for each combination plus a reviewable index.md — all under a single
+ * timestamped run directory at `.planning/ui-reviews/{ISO-timestamp}/` (repo root, resolved via
  * `import.meta.url` so the output lands there regardless of the invoking cwd).
  *
  * Surfaces: /login (public), / (inbox), /chat, /knowledge, /studio, /settings/forwarding, and
  * (local target only) /emails/[id] built from a seeded fixture — see below.
  * Viewports: mobile 390px, desktop 1440px.
+ * Themes: light + dark.
+ *
+ * THE THEME AXIS (999.23, added 61-01). The user's locked identity pick explicitly requires
+ * light AND dark, globals.css has shipped a full `.dark` block since Phase 59, and **dark mode
+ * had never once been captured** — every review in this project's history looked at half of the
+ * identity and called it the whole thing. COST, stated honestly: this doubles the run (14 -> 28
+ * default frames, plus studio's alternate pack 2 -> 4, so 16 -> 32 PNGs and roughly twice the
+ * wall time). That is the correct trade — half of this design had never been looked at.
+ *
+ * Theme is the OUTERMOST loop and each theme gets its OWN page, because the deterministic lever
+ * is `addInitScript` (registered per page, never removable) — it must run BEFORE next-themes'
+ * pre-mount script on first paint. Writing localStorage after `goto` needs a reload to take
+ * effect and is a race. The applied theme is then ASSERTED, never trusted (see
+ * `assertThemeApplied`).
+ *
+ * THE SETTLE (999.24, added 61-01). This harness previously did `goto({ waitUntil: "load" })` +
+ * a fixed `waitForTimeout(400)`, which fires BEFORE async data lands: entity chips were missing
+ * from every capture ever taken. That nearly produced a false "the redesign has no tier chips"
+ * verdict, and made inbox-mobile.png look like three grey skeleton rows when the real mobile feed
+ * renders correctly. The 400ms looked deliberate, which is exactly why the defect survived so
+ * long. It is replaced by a real settle: a bounded `networkidle` wait plus a bounded wait for
+ * every skeleton to leave the DOM.
+ *
+ * ON `networkidle`, RE-CHECKED (61-01) rather than inherited: this file's previous header
+ * asserted networkidle was "deliberately avoided" because Next dev's HMR websocket keeps its
+ * connection open indefinitely. That claim does NOT hold against the current stack — Playwright's
+ * networkidle ignores long-lived websocket connections, and the 61-01 geometry gate reaches it on
+ * /chat in ~2-3s per navigation. So it is used here, but BOUNDED and non-fatal: whether it was
+ * actually reached is RECORDED per capture in index.md rather than assumed, which re-checks the
+ * claim continuously instead of trusting this comment.
+ *
+ * THE SETTLE DEGRADES, THE THEME DOES NOT. A timed-out settle still captures and records "NOT
+ * settled" — this is a camera, and a picture of a still-loading surface is still information,
+ * whereas a hard failure would lose the other 31 frames. A MISLABELLED theme throws: a harness
+ * that photographs light twice and calls one of them "dark" is worse than one with no theme axis,
+ * because it reads as evidence.
  *
  * Auth (T-47-11, SUPERSEDED for the local case by T-50-01): the original harness had no
  * signed-in session and never faked one. This is still true against a NON-local target — no
@@ -26,7 +62,11 @@
  * Studio pack switcher (D-47-05): studio is the only surface with a style-pack switcher (the
  * Sandbox tab's "Select visual theme" dropdown, see generation-sandbox-island.tsx). When studio
  * actually renders (not redirected), the harness also selects one alternate pack and captures
- * that state. Every other surface captures its single default render — no switcher exists there.
+ * that state.
+ *
+ * ARTIFACTS ARE NEVER COMMITTED (T-61-02): RUN_DIR's PNGs are gitignored. They contain a signed-in
+ * session's rendered pixels — never `git add -f` one, and never paste a rendered forwarding
+ * address / token / signed URL out of one.
  *
  * Kept in a dedicated config (playwright.screenshot.config.ts) with a scoped testMatch so
  * `npm run test:e2e` (the assertion specs) never runs this capture spec, and vice versa.
@@ -36,7 +76,7 @@ import { fileURLToPath } from "node:url";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import { test, type Page } from "@playwright/test";
+import { test, type BrowserContext, type Page } from "@playwright/test";
 
 import { seedAuthenticatedContext } from "./helpers/seed-session";
 import { seedEmailFixture } from "./helpers/screenshot-fixtures";
@@ -91,17 +131,64 @@ const VIEWPORTS: readonly Viewport[] = [
   { name: "desktop", width: 1440, height: 900 },
 ];
 
+/** Both halves of the locked identity (999.23). */
+const THEMES = ["light", "dark"] as const;
+type Theme = (typeof THEMES)[number];
+
+/** next-themes' default storage key (layout.tsx passes no `storageKey` override). */
+const THEME_STORAGE_KEY = "theme";
+
 /** The one alternate style pack captured on studio when the switcher is reachable. */
 const ALT_PACK_LABEL = "Linear Clean";
 const ALT_PACK_ID = "linear-clean";
 
+// ---------------------------------------------------------------------------
+// Settle budget (999.24)
+// ---------------------------------------------------------------------------
+
+/** Bounded so one slow surface cannot stall a 32-frame run; non-fatal on expiry. */
+const NETWORK_IDLE_TIMEOUT_MS = 8_000;
+const CONTENT_SETTLE_TIMEOUT_MS = 8_000;
+const SETTLE_POLL_INTERVAL_MS = 100;
+
+/**
+ * Every skeleton this app can render, by the two markers actually used in src/ — verified by
+ * reading the call sites, not assumed:
+ *
+ *   - `[aria-busy="true"]` — conversation-rail, entities-gallery, studio history, email-detail.
+ *   - `[class*="animate-pulse"]` — the `Skeleton` primitive (packages/ui/src/skeleton.tsx:11)
+ *     and the hand-rolled skeletons in studio/knowledge/canvas.
+ *
+ * BOTH are required, and the substring match is not laziness. The INBOX's loading block — the
+ * very surface whose "three grey skeleton rows" capture motivated 999.24 — is
+ * `<div aria-hidden>` wrapping `<Skeleton>`s (inbox-three-pane.tsx:384): it carries NO
+ * `aria-busy` at all, so waiting on aria-busy alone would have "fixed" 999.24 everywhere except
+ * the place it was found. And `Skeleton` applies `motion-safe:animate-pulse`, which Tailwind v4
+ * emits into the DOM as the literal class `motion-safe:animate-pulse` — a `.animate-pulse`
+ * selector matches NOTHING. `[class*="animate-pulse"]` catches both forms, and is already this
+ * codebase's own idiom for exactly this (genui-part-boundary.test.tsx:80).
+ *
+ * The remaining `animate-pulse` call sites (message-turn's streaming caret, genui-panel-node's
+ * streaming glyph, region-overlay-box's in-flight mutation) are only present DURING streaming or
+ * a mutation, neither of which a static capture triggers. If one ever did, the settle degrades to
+ * "NOT settled" and still captures — it never fails a run.
+ */
+const SKELETON_SELECTOR = '[aria-busy="true"], [class*="animate-pulse"]';
+
 type AuthStatus = "captured" | "redirected to /login (no session)";
+
+interface SettleResult {
+  readonly networkIdle: boolean;
+  readonly contentReady: boolean;
+}
 
 interface CaptureRecord {
   readonly surface: string;
   readonly viewport: string;
+  readonly theme: Theme;
   readonly pack: string;
   readonly authStatus: AuthStatus;
+  readonly settle: string;
   readonly filename: string;
 }
 
@@ -131,27 +218,136 @@ function resolveAuthStatus(currentUrl: string, requestedPath: string): AuthStatu
   return "captured";
 }
 
-function buildFilename(surfaceName: string, viewportName: string, packId: string): string {
+/** `light` stays EXPLICIT in the filename rather than implicit — no reader should have to know
+ * which theme the bare name used to mean. The pack suffix stays composable after it:
+ * `studio-desktop-dark-linear-clean.png`. */
+function buildFilename(
+  surfaceName: string,
+  viewportName: string,
+  theme: Theme,
+  packId: string,
+): string {
   const suffix = packId === "default" ? "" : `-${packId}`;
-  return `${surfaceName}-${viewportName}${suffix}.png`;
+  return `${surfaceName}-${viewportName}-${theme}${suffix}.png`;
+}
+
+/**
+ * openThemedPage — a page pinned to one theme, by both levers next-themes reads (§G):
+ *   - `emulateMedia({ colorScheme })` drives `defaultTheme="system"` + `enableSystem`.
+ *   - `localStorage.theme`, seeded via addInitScript so it lands BEFORE next-themes' pre-mount
+ *     script runs on first paint. emulateMedia alone would work only while no stored preference
+ *     exists; the storage write makes it deterministic instead of dependent on the absence of
+ *     prior state (and localStorage is shared per-origin across a context's pages, so a previous
+ *     theme's value WOULD otherwise leak into this one).
+ *
+ * A fresh page per theme is required because addInitScript is per-page and cannot be unregistered.
+ */
+async function openThemedPage(context: BrowserContext, theme: Theme): Promise<Page> {
+  const page = await context.newPage();
+  await page.addInitScript(
+    ({ key, value }: { key: string; value: string }) => {
+      window.localStorage.setItem(key, value);
+    },
+    { key: THEME_STORAGE_KEY, value: theme },
+  );
+  await page.emulateMedia({ colorScheme: theme });
+  return page;
+}
+
+/**
+ * assertThemeApplied — ASSERT the resulting state rather than trust either lever. next-themes
+ * toggles `.dark` on <html> (`attribute="class"`, layout.tsx:65). Throws, deliberately: see the
+ * file header's "THE SETTLE DEGRADES, THE THEME DOES NOT".
+ */
+async function assertThemeApplied(page: Page, theme: Theme, label: string): Promise<void> {
+  const htmlClass = await page.evaluate(() => document.documentElement.className);
+  const isDark = await page.evaluate(() =>
+    document.documentElement.classList.contains("dark"),
+  );
+  if (isDark !== (theme === "dark")) {
+    throw new Error(
+      `${label}: theme axis mislabelled — requested "${theme}", but <html> ${
+        isDark ? "HAS" : "does NOT have"
+      } the .dark class (class="${htmlClass}"). Refusing to save a PNG labelled "${theme}" that ` +
+        "shows the other theme: a mislabelled capture reads as evidence and is worse than no " +
+        "theme axis at all (999.23). Check next-themes' storageKey/attribute in layout.tsx " +
+        "against openThemedPage's levers.",
+    );
+  }
+}
+
+/** Bounded poll for every skeleton to leave the DOM. Returns whether it cleared; never throws —
+ * the caller records the outcome and captures regardless (999.24). */
+async function waitForSkeletonsToClear(page: Page): Promise<boolean> {
+  const deadline = Date.now() + CONTENT_SETTLE_TIMEOUT_MS;
+  for (;;) {
+    if ((await page.locator(SKELETON_SELECTOR).count()) === 0) {
+      return true;
+    }
+    if (Date.now() >= deadline) {
+      return false;
+    }
+    await page.waitForTimeout(SETTLE_POLL_INTERVAL_MS);
+  }
+}
+
+/** The real settle that replaced the fixed 400ms (999.24). Both halves are bounded and
+ * non-fatal — a still-loading picture is information; losing the run is not. */
+async function settle(page: Page): Promise<SettleResult> {
+  let networkIdle = true;
+  try {
+    await page.waitForLoadState("networkidle", { timeout: NETWORK_IDLE_TIMEOUT_MS });
+  } catch {
+    networkIdle = false;
+  }
+  const contentReady = await waitForSkeletonsToClear(page);
+  return { networkIdle, contentReady };
+}
+
+/**
+ * The reviewer-facing distinction that IS the whole defect: "this surface has no chips" must be
+ * readable apart from "this surface's chips had not arrived yet".
+ */
+function describeSettle(result: SettleResult): string {
+  if (result.networkIdle && result.contentReady) {
+    return "settled";
+  }
+  const reasons: string[] = [];
+  if (!result.networkIdle) {
+    reasons.push(`network still busy after ${NETWORK_IDLE_TIMEOUT_MS}ms`);
+  }
+  if (!result.contentReady) {
+    reasons.push(`skeleton still on screen after ${CONTENT_SETTLE_TIMEOUT_MS}ms`);
+  }
+  return `NOT settled (captured anyway) — ${reasons.join("; ")}`;
 }
 
 async function captureSurface(
   page: Page,
   surface: Surface,
   viewport: Viewport,
+  theme: Theme,
   records: CaptureRecord[],
 ): Promise<AuthStatus> {
+  const label = `${surface.name} @ ${viewport.name}/${theme}`;
   await page.setViewportSize({ width: viewport.width, height: viewport.height });
   await page.goto(surface.path, { waitUntil: "load" });
-  // Let hydration / fonts settle before the shot — Next dev's HMR websocket keeps its
-  // connection open indefinitely, so "networkidle" is deliberately avoided here.
-  await page.waitForTimeout(400);
+  const settleResult = await settle(page);
 
   const authStatus = resolveAuthStatus(page.url(), surface.path);
-  const filename = buildFilename(surface.name, viewport.name, "default");
+  await assertThemeApplied(page, theme, label);
+
+  const filename = buildFilename(surface.name, viewport.name, theme, "default");
   await page.screenshot({ path: path.join(RUN_DIR, filename), fullPage: true });
-  records.push({ surface: surface.name, viewport: viewport.name, pack: "default", authStatus, filename });
+  records.push({
+    surface: surface.name,
+    viewport: viewport.name,
+    theme,
+    pack: "default",
+    authStatus,
+    settle: describeSettle(settleResult),
+    filename,
+  });
   return authStatus;
 }
 
@@ -165,6 +361,7 @@ async function captureAlternatePackIfPresent(
   page: Page,
   surface: Surface,
   viewport: Viewport,
+  theme: Theme,
   authStatus: AuthStatus,
   records: CaptureRecord[],
 ): Promise<void> {
@@ -189,15 +386,17 @@ async function captureAlternatePackIfPresent(
     return;
   }
   await altOption.click();
-  await page.waitForTimeout(200);
+  const settleResult = await settle(page);
 
-  const filename = buildFilename(surface.name, viewport.name, ALT_PACK_ID);
+  const filename = buildFilename(surface.name, viewport.name, theme, ALT_PACK_ID);
   await page.screenshot({ path: path.join(RUN_DIR, filename), fullPage: true });
   records.push({
     surface: surface.name,
     viewport: viewport.name,
+    theme,
     pack: ALT_PACK_ID,
     authStatus,
+    settle: describeSettle(settleResult),
     filename,
   });
 }
@@ -218,12 +417,34 @@ async function writeIndex(records: readonly CaptureRecord[], authSeeded: boolean
         "failure. Re-run against a local target to capture the authenticated surfaces.",
       ];
 
-  const header = [`# Screenshot review — ${RUN_TIMESTAMP}`, "", ...authNote, "", "| Surface | Viewport | Pack | Auth Status | File |", "| --- | --- | --- | --- | --- |"].join(
-    "\n",
-  );
+  const settleNote = [
+    "**Settle (999.24):** every capture waits for network idle AND for all skeletons to leave the",
+    'DOM before the shutter. A row reading "settled" means what you see is the surface with its',
+    'async data landed — so a missing chip is a REAL missing chip. A row reading "NOT settled"',
+    "means the shot was taken while content was still arriving: read that frame as incomplete, not",
+    "as evidence of absence. Captures are never dropped on a slow settle — a picture of a",
+    "still-loading surface is still information.",
+    "",
+    "**Themes (999.23):** each surface is captured in BOTH light and dark. The applied theme is",
+    "asserted against `<html>.dark` before every shot, so a frame labelled `dark` is dark.",
+  ];
+
+  const header = [
+    `# Screenshot review — ${RUN_TIMESTAMP}`,
+    "",
+    ...authNote,
+    "",
+    ...settleNote,
+    "",
+    "| Surface | Viewport | Theme | Pack | Auth Status | Settle | File |",
+    "| --- | --- | --- | --- | --- | --- | --- |",
+  ].join("\n");
 
   const rows = records
-    .map((r) => `| ${r.surface} | ${r.viewport} | ${r.pack} | ${r.authStatus} | ${r.filename} |`)
+    .map(
+      (r) =>
+        `| ${r.surface} | ${r.viewport} | ${r.theme} | ${r.pack} | ${r.authStatus} | ${r.settle} | ${r.filename} |`,
+    )
     .join("\n");
 
   await writeFile(path.join(RUN_DIR, "index.md"), `${header}\n${rows}\n`, "utf-8");
@@ -235,12 +456,12 @@ async function writeIndex(records: readonly CaptureRecord[], authSeeded: boolean
 // ---------------------------------------------------------------------------
 
 test.describe("screenshot review capture", () => {
-  test("captures all surfaces across mobile (390) and desktop (1440) viewports", async ({
-    page,
+  test("captures all surfaces across mobile (390) and desktop (1440) viewports, light + dark", async ({
     context,
     baseURL,
   }) => {
-    test.setTimeout(300_000);
+    // Doubled by the theme axis (999.23) — 32 full-page captures, each with a bounded settle.
+    test.setTimeout(600_000);
     await mkdir(RUN_DIR, { recursive: true });
 
     // Local-only seeded session (T-50-01): the seeded session mints a service_role admin
@@ -260,10 +481,26 @@ test.describe("screenshot review capture", () => {
 
     const records: CaptureRecord[] = [];
 
-    for (const surface of surfaces) {
-      for (const viewport of VIEWPORTS) {
-        const authStatus = await captureSurface(page, surface, viewport, records);
-        await captureAlternatePackIfPresent(page, surface, viewport, authStatus, records);
+    // Theme is the OUTERMOST axis: addInitScript is per-page and cannot be unregistered, so each
+    // theme runs on its own page (the context — and its seeded auth cookies — is shared).
+    for (const theme of THEMES) {
+      const page = await openThemedPage(context, theme);
+      try {
+        for (const surface of surfaces) {
+          for (const viewport of VIEWPORTS) {
+            const authStatus = await captureSurface(page, surface, viewport, theme, records);
+            await captureAlternatePackIfPresent(
+              page,
+              surface,
+              viewport,
+              theme,
+              authStatus,
+              records,
+            );
+          }
+        }
+      } finally {
+        await page.close();
       }
     }
 
