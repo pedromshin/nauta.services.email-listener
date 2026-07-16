@@ -218,7 +218,16 @@ export default function ChatPage(): React.ReactElement {
     null;
 
   return (
-    <div className="flex h-svh flex-col">
+    // Height budget (found by the 61-01 rendered-geometry gate, which measured
+    // documentElement.scrollHeight 888 against an 844px mobile viewport): below `md` the app
+    // shell renders a 44px (`h-11`) header ABOVE this page inside SidebarInset
+    // (layout.tsx:74, `md:hidden`), so a bare `h-svh` here claims a viewport this route does
+    // not own — the whole page was pushed 44px past the fold and the document scrolled. At
+    // `md`+ that header is hidden and `h-svh` is exactly right, hence the responsive pair.
+    // (Tailwind v4 normalizes the `-` inside calc() to a spaced operator itself, so the
+    // underscore form is not needed here — verified by the geometry gate measuring 844, not by
+    // assumption: bare `calc(100svh-2.75rem)` would be invalid CSS a browser drops SILENTLY.)
+    <div className="flex h-[calc(100svh-2.75rem)] flex-col md:h-svh">
       <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border/50 px-2">
         <Button
           type="button"
