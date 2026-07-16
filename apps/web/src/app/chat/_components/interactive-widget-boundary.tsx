@@ -127,10 +127,14 @@ function ErrorRow({ message }: { readonly message: string }): React.ReactElement
   // Unboxed (Design Decision 3) — icon + text only, no border/background of
   // its own; it already lives inside one bordering layer (GenuiCard or the
   // bare node shell).
+  //
+  // LAW 1 (61-08): ink, not the irreversible colour. A failed widget submit is a
+  // state, and this row is the least "irreversible" thing on the surface — the
+  // widget is still sitting there, still submittable. The glyph carries it.
   return (
     <div role="alert" className="mb-2 flex items-center gap-2">
-      <AlertTriangle className="size-4 shrink-0 text-destructive" aria-hidden />
-      <span className="text-sm text-destructive">{message}</span>
+      <AlertTriangle className="size-4 shrink-0 text-ink" aria-hidden />
+      <span className="text-sm text-ink">{message}</span>
     </div>
   );
 }

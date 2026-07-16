@@ -93,7 +93,14 @@ export function ThreadClusterIndicator({
           aria-label={`Linked thread: ${subject}`}
           className="flex max-w-[160px] items-center gap-1 rounded-sm px-1 text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
         >
-          <Mail className="size-3 shrink-0 text-graph-email" aria-hidden />
+          {/* LAW 3 (61-08): the MAIL GLYPH says "email" — shape, which survives
+              greyscale. It used to also say it in the retired node-type hue,
+              which by Phase 59 resolved to `--pencil` anyway: the same colour
+              this now names directly, so this swap changes no pixel. It removes
+              a colour KEY that had stopped distinguishing anything (all three of
+              that family had collapsed to within 4.4% lightness of each other)
+              while still teaching the user that colour meant type. */}
+          <Mail className="size-3 shrink-0 text-pencil" aria-hidden />
           <span className="min-w-0 truncate max-w-[72px] sm:max-w-[140px]">{subject}</span>
         </button>
       </PopoverTrigger>

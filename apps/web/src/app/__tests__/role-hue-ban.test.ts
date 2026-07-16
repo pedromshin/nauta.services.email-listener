@@ -12,13 +12,13 @@ import { describe, expect, it } from "vitest";
  * THIS GATE IS SCOPED, NOT GLOBAL. THE SCOPE IS THE POINT.
  * ────────────────────────────────────────────────────────────────────────
  *
- * Phase 60 swept role-as-hue out of the inbox and the email-detail view. The
- * banned tokens are NOT dead: they are still registered in `globals.css`,
- * they still autocomplete, and they are still legitimately in use on the
- * canvas and knowledge surfaces (`knowledge/`, `entities/`, `chat/`), which
- * Phases 61-63 own and have not swept yet. A global ban would be red on
- * arrival and would be deleted or allowlisted into meaninglessness within a
- * week.
+ * Phase 60 swept role-as-hue out of the inbox and the email-detail view;
+ * Phase 61 swept the chat surface and its canvas. The banned tokens are NOT
+ * dead: they are still registered in `globals.css`, they still autocomplete,
+ * and they are still legitimately in use on the knowledge surfaces
+ * (`knowledge/`, `entities/`), which Phase 62 owns and has not swept yet. A
+ * global ban would be red on arrival and would be deleted or allowlisted into
+ * meaninglessness within a week.
  *
  * So the ban is scoped to the roots that ARE swept, and it is a RATCHET:
  * **each of Phases 61-63 ADDS its own root to `SCOPED_DIRS` as it sweeps.**
@@ -66,14 +66,34 @@ const APP_DIR = path.resolve(__dirname, "..");
  *
  *   - `_components`  — the inbox surface        (Phase 60, swept)
  *   - `emails/[id]`  — the email-detail surface (Phase 60, swept)
+ *   - `chat`         — the chat surface AND its canvas (Phase 61, swept:
+ *                      61-06 cleared `_canvas/`, 61-08 cleared `_components/`)
+ *   - `_vocabulary`  — the shared tier vocabulary (Phase 61, born clean)
  *
  * Resolved as exact paths under APP_DIR, so `_components` here means the
  * INBOX's `_components` only — `knowledge/_components` and its siblings are
- * untouched by this gate until their own phase adds them.
+ * untouched by this gate until their own phase adds them. `chat`, by contrast,
+ * is the whole subtree: `chat/_components`, `chat/_canvas`, `chat/_hooks` and
+ * every `__tests__` inside them.
  *
- * PHASES 61-63: append your root here as you sweep it. Do not remove one.
+ * WHAT IT COST TO ADD `chat` (61-08), because "just append it" was never the
+ * job: the root was RED ON ARRIVAL with 11 violations — 10 madder-on-a-state
+ * across five files (both inline error cards, the widget error row, the WebGPU
+ * warning) and one retired role hue. Every one was a state talking, not an
+ * irreversible action, so every one was swept rather than allowlisted. A root
+ * appended while red is how a ratchet gets "allowlisted into meaninglessness
+ * within a week" — this file's own header names that failure mode, and the
+ * append is the LAST step of a sweep, never the first.
+ *
+ * PHASE 62: `knowledge/` and `entities/` are yours. Append them here as you
+ * sweep them. Do not remove one.
  */
-export const SCOPED_DIRS: readonly string[] = ["_components", "emails/[id]"];
+export const SCOPED_DIRS: readonly string[] = [
+  "_components",
+  "emails/[id]",
+  "chat",
+  "_vocabulary",
+];
 
 /** Structurally excluded from the walk (§E, same set as palette-ban.test.ts). */
 const EXCLUDED_DIR_SEGMENTS = new Set(["dev", "node_modules", ".next"]);
@@ -244,12 +264,33 @@ function report(violations: readonly Violation[]): string {
 
 describe("role-hue-ban (SURF-04 — law 1 + law 3 on Phase 60's surfaces)", () => {
   describe("the scope is the contract", () => {
-    it("covers BOTH Phase-60 roots — the inbox and the email-detail view", () => {
+    it("covers every root swept so far — Phase 60's two, and Phase 61's two", () => {
       // Pinned so the scope cannot be silently narrowed to make a future
-      // violation pass. Widening (Phases 61-63) is welcome; removing a root
+      // violation pass. Widening (Phases 62-63) is welcome; removing a root
       // must break this test and force the conversation.
+      //
+      // Phase 60 — the inbox and the email-detail view.
       expect(SCOPED_DIRS).toContain("_components");
       expect(SCOPED_DIRS).toContain("emails/[id]");
+      // Phase 61 — the chat surface and its canvas (61-06 cleared `_canvas/`,
+      // 61-08 cleared `_components/`), plus the shared tier vocabulary.
+      expect(SCOPED_DIRS).toContain("chat");
+      expect(SCOPED_DIRS).toContain("_vocabulary");
+    });
+
+    it("only ever GROWS — a later phase's append never drops an earlier one", () => {
+      // The ratchet stated as an invariant rather than left implicit in the
+      // test above. Every root any phase has ever swept must still be in scope:
+      // a narrowing is the one edit this file exists to make expensive, and it
+      // would otherwise read as a plausible one-word diff in review.
+      const SWEPT_SO_FAR = ["_components", "emails/[id]", "chat", "_vocabulary"] as const;
+      for (const root of SWEPT_SO_FAR) {
+        expect(
+          SCOPED_DIRS,
+          `a swept root was removed from the ratchet: ${root}. The scope only ever ` +
+            `grows — if this root's surface regressed, fix the surface, not the scope.`,
+        ).toContain(root);
+      }
     });
 
     it("every scoped root exists and actually yields files — the gate cannot be made vacuous", () => {
@@ -270,29 +311,30 @@ describe("role-hue-ban (SURF-04 — law 1 + law 3 on Phase 60's surfaces)", () =
     });
   });
 
-  it("bans role-as-hue: no retired node-type colour utility on either Phase-60 surface (law 3)", () => {
+  it("bans role-as-hue: no retired node-type colour utility on any swept surface (law 3)", () => {
     const violations = findAllViolations(ROLE_HUE_PATTERN);
 
     if (violations.length > 0) {
       throw new Error(
-        `Found ${violations.length} role-as-hue violation(s) on a swept Phase-60 surface:\n` +
+        `Found ${violations.length} role-as-hue violation(s) on a swept surface:\n` +
           `${report(violations)}\n\n` +
           `Law 3: entity type and region role are carried by SHAPE, never by hue — they must ` +
           `survive greyscale. Take role from REGION_ROLE_GEOMETRY/REGION_ROLE_SWATCH and tier ` +
-          `from REGION_TIER via tierOf (region-vocabulary.ts). These tokens remain valid on the ` +
-          `canvas/knowledge surfaces, which Phases 61-63 have not swept yet — but not here.`,
+          `from REGION_TIER via tierOf (region-vocabulary.ts); on the canvas, take a node's kind ` +
+          `from CANVAS_NODE_KIND_GEOMETRY (canvas-vocabulary.ts). These tokens remain valid on ` +
+          `the knowledge surfaces, which Phase 62 has not swept yet — but not here.`,
       );
     }
 
     expect(violations).toHaveLength(0);
   });
 
-  it("bans madder on a state: no madder text or border on either Phase-60 surface (law 1)", () => {
+  it("bans madder on a state: no madder text or border on any swept surface (law 1)", () => {
     const violations = findAllViolations(STATE_MADDER_PATTERN);
 
     if (violations.length > 0) {
       throw new Error(
-        `Found ${violations.length} madder-on-a-state violation(s) on a swept Phase-60 surface:\n` +
+        `Found ${violations.length} madder-on-a-state violation(s) on a swept surface:\n` +
           `${report(violations)}\n\n` +
           `Law 1: madder means "irreversible — this cannot be undone". Never errors, never ` +
           `warnings, never statuses. An error is ink on a rule; a warning is ink weight; an ` +

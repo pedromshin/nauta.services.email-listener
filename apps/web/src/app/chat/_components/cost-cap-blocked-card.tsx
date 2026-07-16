@@ -16,16 +16,25 @@ import { AlertTriangle } from "lucide-react";
  * ever streamed). Same visual family as InlineErrorCard, but deliberately
  * has NO retry action — raising the cap is a config change, not something
  * the user can resolve by trying again (22-UI-SPEC.md Copywriting Contract).
+ *
+ * LAW 1 (61-08, D-58-01): swept off the irreversible colour, exactly as its
+ * sibling `InlineErrorCard` was — see that file's header for the reasoning. The
+ * temptation is sharper here, because this card genuinely CANNOT be retried and
+ * "irreversible" feels apt. It still is not: the identity's colour means "this
+ * ACTION cannot be undone", and this card is not an action at all — it is a
+ * blocked state, and the user's route out (ask an admin to raise the cap) exists.
+ * A card that cannot be dismissed is not the same claim as a button that cannot
+ * be taken back.
  */
 export function CostCapBlockedCard(): React.ReactElement {
   return (
     <div
       role="alert"
-      className="my-2 flex flex-col gap-1 rounded-lg border border-destructive/30 bg-destructive/5 p-4"
+      className="my-2 flex flex-col gap-1 rounded-card border border-rule p-panel"
     >
       <div className="flex items-center gap-2">
-        <AlertTriangle className="size-4 shrink-0 text-destructive" aria-hidden />
-        <span className="text-sm font-semibold text-destructive">
+        <AlertTriangle className="size-4 shrink-0 text-ink" aria-hidden />
+        <span className="text-sm font-semibold text-ink">
           This turn would exceed today&apos;s cost limit.
         </span>
       </div>

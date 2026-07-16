@@ -110,7 +110,12 @@ export function ModelPickerEntry({
         {formatCapabilityRow(model.capabilities)}
       </span>
       {webllmUnsupported ? (
-        <span className="text-xs text-destructive">
+        // LAW 1 (61-08): a capability WARNING, so ink — 58-IDENTITY reserves the
+        // irreversible colour for destructive controls, "never errors, never
+        // warnings". Nothing here is even going wrong: the row is telling the
+        // user this option is unavailable and to pick another. `font-semibold`
+        // is law 1's own answer for a warning ("a warning is ink weight").
+        <span className="text-xs font-semibold text-ink">
           Your browser doesn&apos;t support WebGPU — choose another model.
         </span>
       ) : webllmLoading && webllm ? (
