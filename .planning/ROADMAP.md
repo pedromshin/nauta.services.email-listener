@@ -216,7 +216,7 @@ WCAG-AA contrast + token-registration gates, and the 32/32 E2E suite.
  (completed 2026-07-15)
 - [x] Phase 60: Surface Redesign — Inbox & Email Detail
  (completed 2026-07-15)
-- [ ] Phase 61: Surface Redesign — Chat, Canvas & Mobile Panel Chrome
+- [x] Phase 61: Surface Redesign — Chat, Canvas & Mobile Panel Chrome (completed 2026-07-16)
 - [ ] Phase 62: Surface Redesign — Knowledge, Studio & Production States
 - [ ] Phase 63: Research Canvas — Visual Surfaces
 
@@ -402,7 +402,7 @@ Plans:
 - [x] 61-05-PLAN.md — The React Flow chrome finished incl. the never-styled handles + the sketch's board; the stock-ban gate parses the library's own stylesheet (criterion 2) [SURF-02]
 - [x] 61-06-PLAN.md — Five node shells + the edge on the vocabulary; three live law violations cleared; the rendered node/edge law gate [SURF-02]
 - [x] 61-07-PLAN.md — TranscriptPanelHost + overlays cross to the transcript (criterion 4 / 999.17 read half); the layout-destruction regression test (T-61-21) [SURF-07]
-- [ ] 61-08-PLAN.md — The editing toolbar reaches the phone (criterion 3 / 999.17 write half); the role-hue ratchet advances over chat/; both-theme screenshot review (HUMAN GATE) [SURF-07, SURF-02]
+- [x] 61-08-PLAN.md — The editing toolbar reaches the phone (criterion 3 / 999.17 write half); the role-hue ratchet advances over chat/; both-theme screenshot review (HUMAN GATE) [SURF-07, SURF-02]
 **UI hint**: yes
 
 ### Phase 62: Surface Redesign — Knowledge, Studio & Production States

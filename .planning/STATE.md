@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Product Design & Research Canvas
 status: in-progress
-last_updated: "2026-07-16T04:30:00.000Z"
+last_updated: "2026-07-16T08:05:00.000Z"
 progress:
   total_phases: 9
-  completed_phases: 5
+  completed_phases: 7
   total_plans: 32
-  completed_plans: 30
-  percent: 58
+  completed_plans: 34
+  percent: 78
 ---
 
 # State
@@ -21,7 +21,20 @@ See: .planning/PROJECT.md (updated 2026-07-14 after v1.9 milestone close)
 **Core value:** Reliably receive every inbound email and make it observable — now as a *designed*
 product the user actually lives in: a research canvas that collects sources without ceremony, lets
 the user select a personal canon, and treats canvas edges as context.
-**Current focus:** Phase 59 — Visual Identity — Designed Token Set & Brand Guide is COMPLETE (3/3 plans executed: 59-01, 59-02, 59-03). IDNT-03 and IDNT-04 both marked complete. Next: Phase 60 (per-surface redesign, first of the SURF-* phases the Phase 58 gate unblocked).
+**Current focus:** Phase 61 — Surface Redesign: Chat, Canvas & Mobile Panel Chrome — all 8 plans
+executed (61-01..61-08). **SURF-02 and SURF-07 both marked complete; backlog 999.17 closed** (both
+its halves: a panel re-themed on the canvas renders re-themed in the docked/mobile transcript — 61-07
+— and the editable-panel toolbar is now reachable AND operable on a phone — 61-08, measured at ≥44px
+on a real touch pointer, red-proven at 24×24px). The role-hue ban is permanent over `chat/`.
+
+**AWAITING THE HUMAN GATE (61-08 Task 3, blocking):** Phase 61 is code-complete and reviewed in both
+themes (`61-SCREENSHOT-REVIEW.md`, PROVEN/UNPROVEN per claim), but the user has not yet looked at the
+pixels. The one thing no artifact can settle is whether the redesign is *good* — Phase 51 already
+re-tokened this surface and the verdict was still "ugly/experimental", which is this phase's failure
+mode and it looks exactly like green tests. Next: user approval, then Phase 62 (`/knowledge`,
+`/studio`, `/settings/*`, `/login`), which must append `knowledge/` + `entities/` to
+`role-hue-ban`'s `SCOPED_DIRS` as it sweeps — they are the last unswept roots and the only reason the
+ban is still scoped rather than global.
 
 **Two things carry into execution, both user-raised at v1.9 close and still live:**
 
@@ -238,17 +251,20 @@ warns about ("widen the pattern and this gate will execute its own siblings"). N
 class TOKEN, with the trap pinned by an assertion.
 
 **Filed (`deferred-items.md`):**
+
 - **D-61-04-A — the committed capture harness CANNOT SEE the message stream.**
   `screenshot-review.spec.ts` never selects a conversation, so all 4 chat PNGs show the EMPTY STATE
   only. **The surface this plan redesigned has zero coverage in the committed visual review** — every
   visual claim rests on a throwaway probe. Recipe is in the summary; the fix is ~30 lines but it is a
   harness decision (it changes what "the chat surface" means for Phases 62-63 too).
+
 - **D-61-04-B — `chat/` still cannot join `role-hue-ban`'s `SCOPED_DIRS`, MEASURED.** 61-03 assigned
   it to "61-04/61-05". **It cannot be 61-04**: 24 madder-on-a-state occurrences across 12 files (13
   `_canvas/`, 11 `_components/`) + 3 `text-graph-email`. Adding it now = **red on arrival**, the
   failure that gate's own header names. 61-04's two tool rows are **pre-cleared**. Two `_components/`
   offenders (`cost-cap-blocked-card`, `inline-error-card`) carry a madder BORDER on a state — a real
   law-1 question, not a chore. **The append belongs to the LAST plan that sweeps `chat/`, as a task.**
+
 - **D-61-04-C — the prose measure is ~120 chars. Fix the paragraph, not the column.**
 
 **Also found:** D-19's retry card and D-21's cost-cap card had **zero unit coverage** — mounting them
@@ -4962,6 +4978,13 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 
 ## Decisions Log
 
+- 2026-07-16 (61-08): **D-48-07's 44px touch floor had NEVER applied to anything, for three milestones** — and criterion 3 depended on it. `touch-target` was declared `@layer utilities { .touch-target { … } }`: plain CSS Tailwind copies through WITHOUT learning the name, so it cannot compose a variant onto it — and all four consumers reach it exclusively as `pointer-coarse:touch-target`, which matched no utility and emitted NOTHING. Measured in the running sheet: the app's only two `@media (pointer: coarse)` blocks carried `height`/`width` (from the `h-11`/`size-11` half of Phase 53's sweep, which DID work); there was no `min-height` rule in 158KB of CSS. Fixed at the root with `@utility` (one line, four call sites). Red-proven in a browser against the shipped state: `'Edit parameters' renders 24x24px on a touch device`. `touch-target-pointer-coarse.test.tsx` was green throughout and says in its own header that a class string is "the correct, and only testable, contract at this layer" — honest about its layer, wrong about its sufficiency. **A class-string gate cannot see EMISSION; pair it with the thing that makes the string real.** Verified in a PRODUCTION build too, not just dev.
+- 2026-07-16 (61-08): The panel toolbar mounts on 61-07's MARKER (`useIsTranscriptPanelHost`), not store presence, not a viewport check — and the naive version fails TWICE, red-proven: (a) `expected [ <div role="toolbar"> ] to have a length of +0 but got 1` — the canvas's own ChatNode grows a SECOND toolbar beside the real GenuiPanelNode's, editing one overlay on one board; (b) `usePanelOverlay must be used inside a CanvasPersistenceProvider` ×7 — the first-paint crash, and it is 61-07's own one-tree fix that makes it certain: the host ALWAYS provides a store (a placeholder pre-restore), so store-presence is true while persistence is still `null`, and the controls mount before they can work. Not a viewport gate because criterion 3 says "can reach" on mobile, not "only on mobile" — the desktop docked view gets editing free from the same seam.
+- 2026-07-16 (61-08): Chrome must sit OUTSIDE `PanelThemeScope`, mirroring `GenuiPanelNode`. The scope injects the PACK's `--card`/`--border`/`--background` as inline vars and packs have no dark variants (D-61-07-A), so anything inside it is light in both themes. A toolbar inside it would be a light strip on a dark app — the exact inversion of law 2's `pmark` trap, one axis over. Visible in `chat-thread-desktop-dark.png`: a graphite toolbar around a white pack card. This also removed a pre-existing defect — the transcript's panel was wrapped by `GenuiCard` INSIDE the scope, so its border was the pack's light `--border`: a light rectangle floating on the dark app.
+- 2026-07-16 (61-08): Criterion 3 is measured with `hasTouch`/`isMobile`, NOT a 390px viewport, and that distinction is load-bearing. `pointer-coarse:` keys on pointer CAPABILITY — correctly: a mouse-driven 390px window can hit a 24px button fine and SHOULD get the compact chrome. A width-only test would measure 24px, be right to, and prove nothing about a phone. The suite asserts the coarse media feature actually matches before measuring, so it cannot pass vacuously. **A touch target is a rendered box; jsdom does no layout, so this belongs in `test:geometry`, not a unit suite.**
+- 2026-07-16 (61-08): `SCOPED_DIRS` gained `chat` + `_vocabulary` — but only AFTER clearing 11 real violations (10 madder-on-a-state across five files, one of them a COMMENT citing the literal; 1 retired role hue). Every one was a STATE talking (errors, a failed widget submit, a WebGPU warning), so every one was swept rather than allowlisted; `ALLOWLIST` stays empty. **The append is the LAST step of a sweep, never the first** — a root appended while red is how a ratchet gets "allowlisted into meaninglessness within a week", which the gate's own header names as its failure mode. The vacuity test was VERIFIED to cover the new roots (red-proven both ways: a missing root, and an existing root walking to zero files), not assumed. The madder READ found 1 of 1 genuine: `delete-conversation-dialog`'s Delete button, in a dialog whose copy says "This can't be undone" — exactly what the colour is for.
+- 2026-07-16 (61-08): D-61-07-C declined WITH A MEASUREMENT rather than shrugged at. 61-07 handed 61-08 the clipped canvas panel node expecting it to want the node in frame. The node's `min-height` is 272px and the free board at the tuned viewport (`{x:380,y:360,zoom:1}`) is ~238px, so framing it means re-tuning positions 61-05/61-06 measured painfully and whose own comment records that a bad one "reads as a node-layout bug". The panel node's toolbar is legible at the clip in both themes and the same toolbar is fully visible in the transcript. Marginal frame, real risk to a working capture.
+- 2026-07-16 (61-08): D-61-08-A filed — 60-07's `.next`-corruption tell-tale is OVER-BROAD and following it literally would have destroyed a healthy dev server mid-plan. It names `BUILD_ID`, `prerender-manifest.json` and `server/pages/_document.js`; **two of those three are normal `next dev` output** (`prerender-manifest.json` carries the dev server's own startup stamp, to the second, matching `.next/package.json` and `.next/static/development`; Next compiles a default Pages-Router `_document` even in an App-Router app). **`BUILD_ID` inside `.next/` is the real discriminator** — `build:local` has targeted `.next-verify` since `7df5ad2`. The strongest liveness proof is not artifact archaeology anyway: `curl` the linked stylesheet and confirm it contains something you just changed.
 - 2026-07-16 (61-02): The tier truth was PROMOTED to `app/_vocabulary/tier.ts` and RE-EXPORTED from `region-vocabulary.ts`, rather than copied or cross-imported. `region-vocabulary.ts` lives inside `emails/[id]/_components/`, so `/chat` (61) and `/knowledge` (62) asking "is this confirmed?" would have meant reaching into another surface's internals — the import people avoid by copying the map instead, and two maps of one fact drift into two panels disagreeing. Verified invisible to Phase 60: one file changed under `emails/[id]`, non-`region-vocabulary` change count literally 0, its two committed gates + `role-hue-ban` green unmodified, and `expect(regionTierOf).toBe(tierOf)` (reference equality — a clone passes a behaviour test, only a real re-export passes this).
 - 2026-07-16 (61-02): The shared module holds FACTS (`TIER_HUE_FAMILY`/`TIER_IS_DASHED`), NOT class strings, and the file header says why at length so the next reader does not "finish the job". Tailwind v4 scans source for LITERAL classes; a shared `` `border-${family}-line` `` is invisible to the scanner and dropped at build with NO error — unstyled element, green suite, user finds it. So each surface keeps literal classes and its gate asserts them against the facts. The idiom split proves the design: the email box says `border-dashed` (a CSS box), a canvas edge says `[stroke-dasharray:4_4]` (an SVG path) — the class could never have travelled between them, the boolean does. Confirmed against built CSS: every literal emits, including ones no component consumes yet.
 - 2026-07-16 (61-02): Canvas edges are NEUTRAL by default and earn no hue. The only edge on `/chat` today is a `DataEdge` wiring `sourcePath -> targetKey` — plumbing, not provenance — so it makes no tier claim and law 1 gives it no colour. `confirmed`/`suggested` were built anyway despite having no Phase-61 consumer (the YAGNI charge is answered in the file header): the LOCKED sketch declares all three, `/knowledge` already renders tier edges today, and Phase 63's provenance edges need them. The alternative is a fourth local map next term — the exact debt the rule exists to prevent.
@@ -5275,6 +5298,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 
 | Phase | Plan | Duration | Notes |
 |-------|------|----------|-------|
+| Phase 61 P08 | ~185m | 3 tasks | 17 files — criterion 3 (toolbar on mobile, measured ≥44px on a touch pointer, red-proven at 24px) + the role-hue ratchet over chat/ (11 violations swept first); SURF-02+SURF-07 complete, 999.17 closed |
 | Phase 61 P06 | ~185m | 3 tasks | 15 files — canvas node shells + the neutral wire + 4 law violations; 49-test rendered gate |
 | Phase 03 P02 | 3h | 5 tasks | 2 files |
 | Phase 04 P10 | 15m | 1 task | 1 file |
