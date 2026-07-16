@@ -257,12 +257,23 @@ test.describe("UAT 48: token-surface burn-down (seeded session, DOM/CSS-verified
       await expect(citationLink).toBeVisible({ timeout: 10_000 });
       await expect(citationLink).toHaveAttribute("href", `/emails/${FIXTURE_EMAIL_ID}`);
 
+      // 61-04 RE-BASELINED THIS, AND THE INTENT IS UNCHANGED. Phase 48 asserted
+      // 9999px here to prove the chip's radius token RESOLVED rather than
+      // rendering unstyled — the pill value itself was never the claim, it was
+      // just what the token happened to be. 61-04 restyled this chip to the
+      // sketch's `.srcchip` (direction-final.html:423, `border-radius:4px`),
+      // because a pill reads as a BUTTON and this is a link to a document.
+      // `rounded-sm` resolves to `--radius-sm` = `calc(var(--radius) - 4px)` =
+      // 8px - 4px = 4px. The spec still proves exactly what it always proved:
+      // a real token resolved to a real number.
       const chipBorderRadius = await citationLink.evaluate((el) => getComputedStyle(el).borderRadius);
       const chipRadiusPx = Number.parseFloat(chipBorderRadius);
       expect(
         chipRadiusPx,
-        `expected the resolved pill token (9999px), got computed border-radius "${chipBorderRadius}"`,
-      ).toBe(9999);
+        `expected the resolved --radius-sm token (4px, the sketch's .srcchip), got computed ` +
+          `border-radius "${chipBorderRadius}". A 0 here means the token did not resolve at all; ` +
+          `9999 means the pre-61-04 pill is back and the chip is reading as a button again.`,
+      ).toBe(4);
 
       // ---- 48.1b: confirm (success) vs deny (destructive) on /emails/[id] ----
       await page.goto(`/emails/${FIXTURE_EMAIL_ID}`);
