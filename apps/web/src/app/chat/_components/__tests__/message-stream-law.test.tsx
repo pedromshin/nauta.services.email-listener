@@ -205,14 +205,14 @@ describe("message-stream-law (D-58-01 laws 1 and 2 on the chat stream)", () => {
         { type: "text", text: ASSISTANT_PROSE },
       ];
       const container = await mount(
-        <MessageTurn role="assistant" parts={parts} status="completed" />,
+        <MessageTurn messageId="msg-1" role="assistant" parts={parts} status="completed" />,
       );
       await assertPairHolds(container, "assistant turn (prose + round + chips)");
     });
 
     it("holds on a user turn", async () => {
       const container = await mount(
-        <MessageTurn role="user" parts={[{ type: "text", text: USER_PROSE }]} />,
+        <MessageTurn messageId="msg-2" role="user" parts={[{ type: "text", text: USER_PROSE }]} />,
       );
       await assertPairHolds(container, "user turn");
     });
@@ -295,7 +295,7 @@ describe("message-stream-law (D-58-01 laws 1 and 2 on the chat stream)", () => {
      */
     it("an assistant text turn's prose carries neither font-serif nor data-evidence", async () => {
       const container = await mount(
-        <MessageTurn
+        <MessageTurn messageId="msg-3"
           role="assistant"
           parts={[{ type: "text", text: ASSISTANT_PROSE }]}
           status="completed"
@@ -315,7 +315,7 @@ describe("message-stream-law (D-58-01 laws 1 and 2 on the chat stream)", () => {
 
     it("a user turn's typed message carries neither either", async () => {
       const container = await mount(
-        <MessageTurn role="user" parts={[{ type: "text", text: USER_PROSE }]} />,
+        <MessageTurn messageId="msg-4" role="user" parts={[{ type: "text", text: USER_PROSE }]} />,
       );
       expect(container.textContent).toContain("Acme Freight quote");
       for (const el of allElements(container)) {
@@ -333,7 +333,7 @@ describe("message-stream-law (D-58-01 laws 1 and 2 on the chat stream)", () => {
       // merely because nothing in this suite can ever be serif.
       const container = await mount(
         <div>
-          <MessageTurn
+          <MessageTurn messageId="msg-5"
             role="assistant"
             parts={[{ type: "text", text: ASSISTANT_PROSE }]}
             status="completed"
@@ -477,7 +477,7 @@ describe("message-stream-law (D-58-01 laws 1 and 2 on the chat stream)", () => {
       ["chip[chrome]", <ProvenanceLink key="b" kind="email" id={EMAIL_ID} />],
       [
         "assistant turn + round + chips",
-        <MessageTurn
+        <MessageTurn messageId="msg-6"
           key="c"
           role="assistant"
           status="completed"
@@ -496,7 +496,7 @@ describe("message-stream-law (D-58-01 laws 1 and 2 on the chat stream)", () => {
           ]}
         />,
       ],
-      ["user turn", <MessageTurn key="d" role="user" parts={[{ type: "text", text: USER_PROSE }]} />],
+      ["user turn", <MessageTurn messageId="msg-7" key="d" role="user" parts={[{ type: "text", text: USER_PROSE }]} />],
     ];
 
     for (const [label, element] of SMUGGLING_SURFACES) {
@@ -543,7 +543,7 @@ describe("message-stream-law (D-58-01 laws 1 and 2 on the chat stream)", () => {
      */
     it("tool_invocation renders NOTHING — the paired result row narrates the round (DO-NOT 7)", async () => {
       const container = await mount(
-        <MessageTurn
+        <MessageTurn messageId="msg-8"
           role="assistant"
           status="completed"
           parts={[
@@ -556,7 +556,7 @@ describe("message-stream-law (D-58-01 laws 1 and 2 on the chat stream)", () => {
 
     it("a failed turn's content is FULLY replaced by the retry card (D-19)", async () => {
       const container = await mount(
-        <MessageTurn
+        <MessageTurn messageId="msg-9"
           role="assistant"
           status="failed"
           parts={[{ type: "text", text: ASSISTANT_PROSE }]}
@@ -568,7 +568,7 @@ describe("message-stream-law (D-58-01 laws 1 and 2 on the chat stream)", () => {
 
     it("a cost-capped-pre-turn's content is FULLY replaced by its own card (D-21)", async () => {
       const container = await mount(
-        <MessageTurn
+        <MessageTurn messageId="msg-10"
           role="assistant"
           status="cost_capped_pre_turn"
           parts={[{ type: "text", text: ASSISTANT_PROSE }]}
@@ -579,10 +579,10 @@ describe("message-stream-law (D-58-01 laws 1 and 2 on the chat stream)", () => {
 
     it("the user's bubble is the only bordered/filled thing in the stream — the assistant has no rail", async () => {
       const user = await mount(
-        <MessageTurn role="user" parts={[{ type: "text", text: USER_PROSE }]} />,
+        <MessageTurn messageId="msg-11" role="user" parts={[{ type: "text", text: USER_PROSE }]} />,
       );
       const assistant = await mount(
-        <MessageTurn
+        <MessageTurn messageId="msg-12"
           role="assistant"
           status="completed"
           parts={[{ type: "text", text: ASSISTANT_PROSE }]}

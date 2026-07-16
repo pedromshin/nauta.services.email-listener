@@ -152,6 +152,12 @@ export function MessageList({
           {turns.map((turn) => (
             <MessageTurn
               key={turn.id}
+              // An EXPLICIT prop, not a re-read of `key` (61-07). A key is not
+              // a prop and cannot be read back from inside the component; the
+              // turn's message id is half of every genui part's panel identity
+              // (`genuiPanelNodeId(messageId, partIndex)`), so it has to travel
+              // as data.
+              messageId={turn.id}
               role={turn.role}
               parts={turn.parts}
               isStreamingTurn={turn.id === streamingTurnId}

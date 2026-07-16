@@ -4,6 +4,10 @@ import * as React from "react";
 
 import type { MessagePart } from "../_hooks/use-chat-stream";
 import { GeneratingRing } from "~/components/generating-ring";
+import { resolveActivePanel } from "../_canvas/panel-overlay";
+import { useOptionalPanelOverlay } from "../_canvas/panel-overlay-context";
+import { PanelThemeScope } from "../_canvas/panel-theme-scope";
+import { genuiPanelNodeId } from "../_canvas/use-canvas-persistence";
 import { CompactInteractionEntry } from "./compact-interaction-entry";
 import { CostCapBlockedCard } from "./cost-cap-blocked-card";
 import { GenuiPartBoundary } from "./genui-part-boundary";
@@ -35,6 +39,53 @@ export interface MessageTurnWidgets {
   readonly onSubmitResult: (interactionId: string, result: Readonly<Record<string, unknown>>) => void;
 }
 
+/**
+ * TranscriptGenuiPanel — ONE genui part, rendered as the panel the user
+ * actually has rather than the one the model first emitted (61-07, SURF-07,
+ * criterion 4 — backlog 999.17's read half).
+ *
+ * WHY THIS IS ITS OWN COMPONENT AND NOT THREE LINES IN THE BRANCH: the genui
+ * branches live inside `parts.map(...)`, and `useOptionalPanelOverlay` is a
+ * hook. A hook called inside a map is a conditional hook call — a runtime
+ * error, not a lint opinion. One child component per genui part gives each its
+ * own render, so each may hold its own subscription.
+ *
+ * It mirrors `genui-panel-node.tsx`'s chain EXACTLY (overlay ->
+ * `resolveActivePanel` -> `PanelThemeScope` -> `GenuiPartBoundary`), and that
+ * is the whole point: if the canvas and the transcript resolved a panel
+ * differently, the bug shipped would be the bug this was written to fix. Do not
+ * grow a second resolution path here — grow the shared one.
+ *
+ * `isStreaming` is THREADED, never assumed (T-61-24). `resolveActivePanel`
+ * forces the base spec verbatim while a part is still streaming, which is a
+ * safety property and not only a correctness one: it stops a stored overlay
+ * from swapping a turn's content out from under a generation still in flight.
+ * The resolver is told the truth and decides; this component does not decide
+ * for it.
+ */
+function TranscriptGenuiPanel({
+  panelId,
+  specJson,
+  isStreaming,
+}: {
+  readonly panelId: string;
+  readonly specJson: string;
+  readonly isStreaming: boolean;
+}): React.ReactElement {
+  // Non-throwing by contract — this same component renders inside
+  // TranscriptPanelHost (docked), inside the canvas's own providers (a ChatNode
+  // on the board), and bare with no providers at all (tests). See
+  // useOptionalPanelOverlay's doc for the three trees.
+  const overlay = useOptionalPanelOverlay(panelId);
+  const resolved = resolveActivePanel(overlay, specJson, isStreaming);
+
+  return (
+    <PanelThemeScope packId={resolved.packId} tokenOverrides={resolved.tokenOverrides}>
+      <GenuiPartBoundary specJson={resolved.specJson} isStreaming={isStreaming} />
+    </PanelThemeScope>
+  );
+}
+
 /** Terminal turn status (mirrors chat_messages.status, D-15/D-19/D-21/D-25)
  * plus a client-only sentinel: 'cost_capped_pre_turn' marks the LIVE
  * streaming pseudo-turn when the pre-turn fail-closed gate blocked the turn
@@ -51,6 +102,20 @@ export type TurnStatus =
   | "interrupted";
 
 export interface MessageTurnProps {
+  /**
+   * This turn's chat_messages id (`MessageListItem.id`). REQUIRED, and
+   * deliberately not optional (61-07): it is half of a genui part's panel
+   * identity — `genuiPanelNodeId(messageId, partIndex)` is the SAME pure
+   * function `reconcileNodesFromHistory` uses to build the canvas node's id, so
+   * the two surfaces agree on which panel is which by CONSTRUCTION rather than
+   * by a matching convention someone has to remember.
+   *
+   * Optional would have been cheaper here and wrong: a caller that forgot to
+   * pass it would silently stop resolving overlays — criterion 4 regressing
+   * with every test green, which is the exact failure class this phase keeps
+   * finding. Required makes that a compile error instead.
+   */
+  readonly messageId: string;
   readonly role: "user" | "assistant" | "system";
   readonly parts: readonly MessagePart[];
   /** True only for the single, currently-streaming turn (drives the
@@ -118,6 +183,7 @@ export interface MessageTurnProps {
  * them.
  */
 export function MessageTurn({
+  messageId,
   role,
   parts,
   isStreamingTurn = false,
@@ -172,10 +238,19 @@ export function MessageTurn({
           {parts.map((part, index) => {
             const isLastPart = index === lastIndex;
 
+            // CRITERION 4 (61-07): a settled genui panel renders through its
+            // OVERLAY — the version the user regenerated, under the pack they
+            // re-themed it to — resolved against the same persisted store the
+            // canvas writes. It used to render `JSON.stringify(part.spec)`
+            // straight into the boundary: the raw base spec, no panel identity,
+            // no overlay, no theme scope. That was the whole of 999.17's read
+            // half. `index` IS the `partIndex` the canvas's own node id is
+            // built from.
             if (part.type === "genui_spec") {
               return (
-                <GenuiPartBoundary
+                <TranscriptGenuiPanel
                   key={index}
+                  panelId={genuiPanelNodeId(messageId, index)}
                   specJson={JSON.stringify(part.spec)}
                   isStreaming={false}
                 />
@@ -185,7 +260,16 @@ export function MessageTurn({
             if (part.type === "genui_spec_streaming") {
               return (
                 <GeneratingRing key={index} active className="rounded-lg">
-                  <GenuiPartBoundary
+                  {/* Routed through the SAME resolver with `isStreaming` told
+                      truthfully (T-61-24) rather than skipped because a
+                      streaming part "cannot have an overlay". It can: a
+                      regenerate targets a panel id that may already carry one.
+                      `resolveActivePanel` forces the base spec verbatim while
+                      streaming, so a stored overlay can never swap this turn's
+                      content mid-generation — and that guarantee only holds if
+                      the flag actually reaches the resolver. */}
+                  <TranscriptGenuiPanel
+                    panelId={genuiPanelNodeId(messageId, index)}
                     specJson={part.partialJson}
                     isStreaming={true}
                   />

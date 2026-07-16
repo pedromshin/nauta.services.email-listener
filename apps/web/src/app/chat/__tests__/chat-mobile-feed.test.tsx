@@ -123,6 +123,23 @@ vi.mock("~/trpc/react", () => ({
       clusterSummary: {
         useQuery: () => ({ data: undefined }),
       },
+      // 61-07: the DOCKED branch is now wrapped in `TranscriptPanelHost`, so
+      // it genuinely reads `chat.getCanvasLayout` — that is criterion 4's whole
+      // point (the transcript resolves the overlays the canvas persists), and
+      // it is why these two appear in a MOBILE feed suite: below `md` the
+      // canvas cannot be reached at all, so the docked transcript is the ONLY
+      // surface a panel overlay can reach a phone through.
+      //
+      // `data: null` = this conversation has no canvas row (the common case).
+      // The host then provides no store at all and the transcript renders
+      // exactly as it did before — which is what the rest of this suite
+      // asserts, and why those assertions still hold.
+      getCanvasLayout: {
+        useQuery: () => ({ data: null, isPending: false }),
+      },
+      saveCanvasLayout: {
+        useMutation: () => ({ mutate: () => undefined }),
+      },
     },
     emails: {
       threadCard: {

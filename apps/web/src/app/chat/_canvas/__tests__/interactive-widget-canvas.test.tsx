@@ -84,7 +84,7 @@ function DualSurface({ widgets }: { readonly widgets: MessageTurnWidgets }): Rea
   return (
     <>
       <div data-testid="transcript">
-        <MessageTurn role="assistant" parts={[WIDGET_PART]} widgets={widgets} />
+        <MessageTurn messageId="msg-1" role="assistant" parts={[WIDGET_PART]} widgets={widgets} />
       </div>
       <div data-testid="canvas">
         <CanvasSpecProvider specsByProvenance={new Map()} partsByProvenance={PARTS_MAP}>

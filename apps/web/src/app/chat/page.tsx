@@ -27,6 +27,7 @@ import {
   type ChatCanvasViewMode,
 } from "./_canvas/chat-canvas-view-toggle";
 import { SaveStatusIndicator } from "./_canvas/save-status-indicator";
+import { TranscriptPanelHost } from "./_canvas/transcript-panel-host";
 import type { SaveStatus } from "./_canvas/use-canvas-persistence";
 import { useConversationController } from "./_hooks/use-conversation-controller";
 import { useWebllmEngine, type UseWebllmEngineResult } from "./_hooks/use-webllm-engine";
@@ -191,22 +192,41 @@ function ConversationView({
           // it deliberately declares NO background of its own (61-03 Task 2) —
           // it is part of this surface, divided from the transcript by a
           // hairline rule, exactly as `.composer` is.
-          <div className="flex h-full min-h-0 flex-col bg-bright">
-            <MessageList
-              turns={controller.turns}
-              streamingTurnId={controller.streamingTurnId}
-              regenerateDisabled={controller.regenerateDisabled}
-              onNavigateSibling={controller.handleNavigateSibling}
-              onRegenerate={controller.onRegenerateTurn}
-              widgets={controller.widgets}
-            />
-            <GeneratingIndicator state={controller.activeStreamState} />
-            <Composer
-              isStreaming={controller.activeStreamState === "streaming"}
-              onSubmit={controller.handleSubmit}
-              onStop={controller.handleStop}
-            />
-          </div>
+          // TranscriptPanelHost (61-07, criterion 4 / backlog 999.17's read
+          // half) — the provider seam that lets THIS transcript's genui panels
+          // see the overlays the canvas writes, so a panel re-themed or
+          // regenerated on the board renders that way here too. It mounts no
+          // React Flow and renders its children unwrapped until the layout
+          // restores, so a conversation that has never been opened on the
+          // canvas (the common case) is not delayed by a query for a row that
+          // does not exist.
+          //
+          // IT WRAPS THIS BRANCH ONLY, AND THAT IS THE INVARIANT THE WHOLE
+          // DESIGN RESTS ON. The `effectiveViewMode === "canvas"` branch above
+          // already has the real host's providers, so wrapping both would put
+          // TWO stores on one conversation — the drift criterion 4 exists to
+          // end. The two branches are MUTUALLY EXCLUSIVE, which makes "never
+          // two hosts" true BY CONSTRUCTION rather than by discipline. Do not
+          // hoist this wrapper out of the ternary to "simplify" it, and do not
+          // reach for it to fix a hydration hiccup.
+          <TranscriptPanelHost conversationId={conversationId}>
+            <div className="flex h-full min-h-0 flex-col bg-bright">
+              <MessageList
+                turns={controller.turns}
+                streamingTurnId={controller.streamingTurnId}
+                regenerateDisabled={controller.regenerateDisabled}
+                onNavigateSibling={controller.handleNavigateSibling}
+                onRegenerate={controller.onRegenerateTurn}
+                widgets={controller.widgets}
+              />
+              <GeneratingIndicator state={controller.activeStreamState} />
+              <Composer
+                isStreaming={controller.activeStreamState === "streaming"}
+                onSubmit={controller.handleSubmit}
+                onStop={controller.handleStop}
+              />
+            </div>
+          </TranscriptPanelHost>
         )}
       </div>
     </div>
