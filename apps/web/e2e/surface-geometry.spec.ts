@@ -170,6 +170,8 @@ async function assertScrollsInternally(
     scrollHeight: el.scrollHeight,
     rectHeight: el.getBoundingClientRect().height,
     innerHeight: window.innerHeight,
+    clientWidth: el.clientWidth,
+    scrollWidth: el.scrollWidth,
   }));
 
   expect(
@@ -187,6 +189,24 @@ async function assertScrollsInternally(
       `${measured.scrollHeight}). This is the shape of a broken height chain even when an ` +
       "ancestor happens to clip it out of the document's own scrollHeight.",
   ).toBeLessThanOrEqual(budget);
+
+  // D-61-06 — the HORIZONTAL half. This gate was green through a real, shipped bug: the
+  // conversation rail's overflow menu sat at x=608 against a rail edge of x=464, so Rename
+  // and Delete were UNREACHABLE. Radix's ScrollArea Viewport wraps its children in an
+  // inline-styled `display:table` div that shrink-wraps to CONTENT, not to the viewport — so
+  // a correctly-bounded rail silently grows sideways and pushes its controls off-screen.
+  // Every ScrollArea in the app carries that wrapper, so this is systemic, not a chat quirk.
+  // Vertical containment cannot see it, jsdom does no layout, and the surface still screenshots
+  // plausibly (the overflow is clipped). Only this measurement finds it.
+  expect(
+    measured.scrollWidth,
+    `${label}: the ScrollArea viewport scrolls HORIZONTALLY — its content is wider than it is, ` +
+      `so controls at the content's right edge are pushed out of reach. Expected scrollWidth <= ` +
+      `${measured.clientWidth + SCROLL_EPSILON_PX} (clientWidth ${measured.clientWidth} + ` +
+      `${SCROLL_EPSILON_PX}px epsilon), got ${measured.scrollWidth}. Radix's Viewport child is ` +
+      "`display:table` and shrink-wraps to content — give the inner content `w-full`/`min-w-0` " +
+      "rather than widening the rail. See D-61-06 (61-03-SUMMARY.md).",
+  ).toBeLessThanOrEqual(measured.clientWidth + SCROLL_EPSILON_PX);
 }
 
 interface PreparedChat {
