@@ -956,13 +956,32 @@
    Material — 44px is the common floor). Breakpoint-static: this is NOT a
    per-breakpoint dimension — pack tokens stay breakpoint-static by decision
    (rejected: a per-breakpoint token dimension). Applied by consumers starting
-   Phase 50 (mobile-responsive answer); declared here now so the primitive
-   exists ahead of its first consumer. */
-@layer utilities {
-  .touch-target {
-    min-height: 44px;
-    min-width: 44px;
-  }
+   Phase 50 (mobile-responsive answer).
+
+   `@utility`, NOT `@layer utilities` — AND THE DIFFERENCE WAS LOAD-BEARING FOR
+   THREE MILESTONES (61-08, found by measuring the built sheet).
+
+   A rule hand-written into `@layer utilities` is plain CSS that Tailwind copies
+   through: the class works BARE, but Tailwind never learns the NAME, so it
+   cannot compose a variant onto it. Every consumer of this guard reaches it as
+   `pointer-coarse:touch-target` — i.e. exclusively through a variant — and that
+   string matched no known utility and **emitted nothing at all**. Measured in
+   the running sheet: the only two `@media (pointer: coarse)` blocks in the whole
+   app carried `height`/`width` (from `pointer-coarse:h-11`/`size-11`); there was
+   no `min-height` rule anywhere. So Phase 53's touch sweep half-applied — the
+   `h-11` half worked, this half was a DEAD STRING on all four call sites,
+   including the panel toolbar's four icon buttons, which 61-08 makes reachable
+   on a phone for the first time (criterion 3: reachable means OPERABLE).
+
+   `touch-target-pointer-coarse.test.tsx` was green throughout, because a
+   class-string gate asserts the string is PRESENT and can never see whether it
+   RENDERS. That suite now also pins this `@utility` declaration — see its header.
+
+   Declared with `@utility` the name is Tailwind's, so `pointer-coarse:` (and any
+   other variant) composes and actually emits. */
+@utility touch-target {
+  min-height: 44px;
+  min-width: 44px;
 }
 
 /* Breakpoint convention (D-48-07): the Tailwind `md` breakpoint (768px) is
