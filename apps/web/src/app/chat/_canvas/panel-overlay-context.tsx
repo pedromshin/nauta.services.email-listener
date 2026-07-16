@@ -85,7 +85,27 @@ const CanvasPersistenceContext = createContext<CanvasPersistenceContextValue | n
 
 export interface CanvasPersistenceProviderProps {
   readonly children: ReactNode;
-  readonly value: CanvasPersistenceContextValue;
+  /**
+   * `null` = "no persistence is wired here YET" — indistinguishable, to every
+   * consumer, from no provider at all: `useCanvasPersistenceContext` already
+   * null-checks and throws, because that is what the context has always been
+   * typed as (`createContext<CanvasPersistenceContextValue | null>(null)`).
+   *
+   * Widened for `TranscriptPanelHost` (61-07), and the reason is not
+   * convenience. That host must not provide persistence until it holds a real
+   * restored snapshot (T-61-21), but it also must not CHANGE ELEMENT TYPE when
+   * it becomes ready: React reconciles by type, so a host that renders a
+   * Fragment before and a Provider after UNMOUNTS AND REMOUNTS the entire
+   * transcript underneath it the moment the layout query resolves — throwing
+   * away the user's composer draft and scroll position mid-conversation. Found
+   * live by `npm run test:geometry` (which measured the viewport at 0px
+   * mid-remount while the height chain itself was perfectly healthy).
+   *
+   * Passing `null` lets a host keep ONE stable tree and say "not yet" through
+   * the VALUE instead of through the SHAPE. Every existing caller passes a real
+   * value and is unaffected.
+   */
+  readonly value: CanvasPersistenceContextValue | null;
 }
 
 export function CanvasPersistenceProvider({

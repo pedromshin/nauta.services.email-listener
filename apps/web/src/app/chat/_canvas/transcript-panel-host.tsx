@@ -57,11 +57,12 @@
  *
  * AND THE WINDOW IS CLOSED STRUCTURALLY, not with an `isRestoring` check: an
  * overlay written before the layout has restored is the same bug wearing a
- * race. This host provides NO persistence context until the restored layout is
- * already the live state it hands the hook — `canvasStore === null` until then,
- * and `useCanvasStoreInstance`'s own `ready` gate (which exists for the exact
- * same reason: an eagerly-created store would permanently bake in an empty
- * seed) is the discipline being mirrored, not a second one being invented.
+ * race. This host provides NO persistence context (a `null` value, which every
+ * consumer already treats exactly as "no provider") until the restored layout
+ * is already the live state it hands the hook, and
+ * `useCanvasStoreInstance`'s own `ready` gate (which exists for the exact same
+ * reason: an eagerly-created store would permanently bake in an empty seed) is
+ * the discipline being mirrored, not a second one being invented.
  * ────────────────────────────────────────────────────────────────────────────
  *
  * WHAT IT DELIBERATELY DOES NOT PROVIDE:
@@ -83,9 +84,10 @@
 // scope for any suite that mounts this file directly (the documented gotcha
 // every provider module in this directory carries; see canvas-store-context.tsx).
 import * as React from "react";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Edge as FlowEdge, Node as FlowNode, Viewport } from "@xyflow/react";
 
+import { createCanvasStore, type CanvasStore } from "./canvas-store";
 import {
   CanvasStoreProvider,
   toCanvasStoreSeed,
@@ -112,8 +114,8 @@ import {
 // exactly this, found 2026-07-06).
 //
 // They are the LIVE state only in the window before the restore resolves — and
-// in that window this host provides no persistence context at all, so nothing
-// can schedule a save against them. See the T-61-21 block in the header.
+// in that window this host's persistence context is null, so nothing can
+// schedule a save against them. See the T-61-21 block in the header.
 // ---------------------------------------------------------------------------
 
 const PRE_RESTORE_NODES: readonly FlowNode[] = [];
@@ -276,27 +278,56 @@ export function TranscriptPanelHost({
   // (§F). Mirrors `chat-canvas.tsx`'s `canvasPersistenceValue` exactly, down to
   // threading `onError` into the SAME real `chat.saveCanvasLayout` failure
   // signal rather than a parallel one (52-UI-REVIEW.md finding #1).
-  const persistenceValue = useMemo<CanvasPersistenceContextValue>(
-    () => ({
-      scheduleSave: (onError) => scheduleSave(canvasStore, onError),
-      conversationId,
-    }),
+  //
+  // `null` until the restore is the live state — the T-61-21 gate, expressed as
+  // a VALUE rather than as a missing provider (see the render below for why
+  // that distinction is load-bearing). A consumer cannot tell the difference:
+  // `useCanvasPersistenceContext` throws on null exactly as it does on no
+  // provider at all, so `usePanelOverlay` still refuses to write before there
+  // is a real snapshot to write alongside.
+  const persistenceValue = useMemo<CanvasPersistenceContextValue | null>(
+    () =>
+      canvasStore === null
+        ? null
+        : {
+            scheduleSave: (onError) => scheduleSave(canvasStore, onError),
+            conversationId,
+          },
     [scheduleSave, canvasStore, conversationId],
   );
 
-  // Not ready — the transcript renders anyway, with no overlays. This is the
-  // no-canvas-row case (the common one) as well as the pre-restore instant.
-  if (canvasStore === null) {
-    return <>{children}</>;
-  }
+  // A placeholder store for the pre-restore window, so the tree below can keep
+  // ONE shape (see the render). Per-host and never shared, so it cannot leak
+  // state between two transcripts; nothing can write to it anyway, because the
+  // persistence context beside it is null until the real store arrives.
+  const placeholderStoreRef = useRef<CanvasStore | null>(null);
+  placeholderStoreRef.current ??= createCanvasStore();
 
-  // The marker is provided INSIDE the ready branch and nowhere else, so
-  // `useIsTranscriptPanelHost()` is true exactly when a write is safe: store
-  // present, persistence present, both already holding the real snapshot.
+  // ────────────────────────────────────────────────────────────────────────
+  // ONE TREE, ALWAYS. NEVER `ready ? <Providers/> : <>{children}</>`.
+  //
+  // React reconciles by ELEMENT TYPE. A host that renders a Fragment before
+  // the layout query resolves and a Provider after it does changes the type at
+  // this position — so React unmounts the ENTIRE transcript and mounts a fresh
+  // one, mid-conversation, the instant a background query settles. That throws
+  // away the composer's draft, the scroll position, and every effect's state,
+  // for a query whose whole purpose is to be invisible.
+  //
+  // It was NOT hypothetical and no unit test saw it: `npm run test:geometry`
+  // caught it as a ScrollArea viewport measuring 0px while its height chain was
+  // perfectly healthy (783px) — the gate was measuring a node React had just
+  // detached. jsdom does no layout, so the 15 assertions in
+  // transcript-overlay.test.tsx were green through it.
+  //
+  // Readiness therefore travels in the VALUES — a placeholder store, a null
+  // persistence context, a false marker — and never in the SHAPE. The
+  // semantics are identical to the two-branch version (no overlay resolves, no
+  // write is possible, no toolbar mounts); only the remount is gone.
+  // ────────────────────────────────────────────────────────────────────────
   return (
-    <CanvasStoreProvider store={canvasStore}>
+    <CanvasStoreProvider store={canvasStore ?? placeholderStoreRef.current}>
       <CanvasPersistenceProvider value={persistenceValue}>
-        <TranscriptPanelHostContext.Provider value={true}>
+        <TranscriptPanelHostContext.Provider value={canvasStore !== null}>
           {children}
         </TranscriptPanelHostContext.Provider>
       </CanvasPersistenceProvider>
