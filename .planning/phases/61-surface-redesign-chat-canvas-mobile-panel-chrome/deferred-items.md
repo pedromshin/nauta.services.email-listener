@@ -46,6 +46,43 @@ commit.
 files — right now every `build:local` dirties the tree and every `next dev` un-dirties it, which
 makes `git status` noisy for every future plan in this phase.
 
+## D-61-04 — `/knowledge`'s "tier" is a DIFFERENT AXIS from `_vocabulary/tier.ts`'s (Phase 62 HAZARD)
+
+**Found:** 61-02 Task 2, while reading the canvas's existing edge treatments.
+
+61-02-PLAN says Phase 62 "moves `/knowledge`'s tier edges onto this map". **They are not the same
+axis, and the map does not fit as written.**
+
+- `_vocabulary/tier.ts` -> `confirmed` / `suggested` / `terminal`, keyed on a component's
+  **`extractionStatus`**, on the `--conf` / `--sugg` identity ladder.
+- `knowledge/_components/tier-edge-style.ts` -> `EXTRACTED` / `INFERRED` / `AMBIGUOUS`, keyed on a
+  knowledge-node-edge's **trust tier**, on the `--tier-extracted` / `--tier-inferred` ladder
+  (D-48-04). Applies to `kne-*` edges only; structural FK edges get no override.
+
+Two unions called "tier" sharing **not one value**. This is the same shape as the
+`parseStatus` != `extractionStatus` trap 60-06 came one line from shipping — both are `string`, so
+routing one through the other's map compiles, type-checks, and paints a confident lie.
+
+`CANVAS_EDGE_TIER` deliberately does **not** claim to cover trust tiers. Note that
+`chat/_canvas/knowledge-preview-mini-graph.tsx` already imports `tierEdgeStyle`, so the chat canvas
+hosts BOTH vocabularies today (its own edges + the mini-graph's).
+
+**Phase 62 must decide, not rename:** does trust tier map onto the confirmed/suggested language
+(is an `INFERRED` edge "suggested"? is `AMBIGUOUS` a third thing?), or does it stay a separate axis
+with its own token ladder? Either is defensible; silently merging them is not. If they merge, the
+`--tier-*` ladder and `tier-edge-style.ts` retire; if they don't, say so in the brand guide so the
+next reader stops re-deriving this question.
+
+## D-61-05 — `build:local` has no root-level script
+
+**Found:** 61-02, running the plan's verification block verbatim.
+
+61-02-PLAN's verification says `cd apps/web && npm run build:local`, but 61-CONTEXT and several
+plans quote `npm run build:local` bare. From the repo ROOT that fails with
+`npm error Missing script: "build:local"` — the script exists only in `apps/web/package.json`
+(`dotenv -e ../../.env.local -v NEXT_DIST_DIR=.next-verify -- next build`). Always run it from
+`apps/web/`. Cheap fix for a later plan: add a root passthrough script.
+
 ## D-61-03 — 999.25 remains open (explicitly out of scope, per 61-01-PLAN)
 
 The screenshot fixture seeds zero entities/extractions, so pencil-amber `--sugg` has still never

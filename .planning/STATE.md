@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.10
 milestone_name: Product Design & Research Canvas
 status: in-progress
-last_updated: "2026-07-16T01:55:00.000Z"
+last_updated: "2026-07-16T02:25:00.000Z"
 progress:
   total_phases: 9
   completed_phases: 5
   total_plans: 32
-  completed_plans: 27
+  completed_plans: 28
   percent: 56
 ---
 
@@ -137,6 +137,19 @@ is hidden and `h-svh` is exactly right, which is why every desktop check missed 
 green tests were green before AND after the fix**. Fixed (`733db3e`) as a responsive pair,
 `md`+ path byte-identical. This is the second layout bug in one night that no unit test could see.
 
+**Plan 02 (the shared tier truth + the canvas's vocabulary) EXECUTED** — see the Plan 02 History
+entry below and `61-02-SUMMARY.md`. There is now exactly ONE `tierOf` in this app: it was promoted
+to `app/_vocabulary/tier.ts` and RE-EXPORTED from `region-vocabulary.ts`, so Phase 60's swept
+surface compiles byte-unchanged (only that one file changed under `emails/[id]`; its two committed
+gates + `role-hue-ban` pass unmodified; `expect(regionTierOf).toBe(tierOf)` proves it is a
+re-export, not a clone). The shared module holds FACTS (`TIER_HUE_FAMILY`/`TIER_IS_DASHED`), never
+class strings — Tailwind v4 purges a composed `` `border-${family}-line` `` silently, so each
+surface keeps LITERAL classes and a gate asserts they agree. `canvas-vocabulary.ts` grows that rule
+onto the canvas (edges carry tier, nodes carry kind as ink geometry) behind a 53-test edge-tier ×
+node-kind matrix gate; all three negative proofs went RED and were reverted clean. **No component
+was touched — 61-04/61-05 wire six of them onto these maps.** 74 files / 874 tests green (was
+72/806; +68 all new).
+
 **Done so far in v1.10:**
 
 - Phase 55 Platform Migration — VERIFIED passed 4/4 (Tailwind v4 + oklch + React 19; gates rewritten oklch-aware and proven able to fail; Radix-stays decided; @kibo-ui registry install proven)
@@ -153,11 +166,78 @@ green tests were green before AND after the fix**. Fixed (`733db3e`) as a respon
 - Phase 60 Plan 05 — EXECUTED (extraction surface on the tier vocabulary: the CONTEXT-flagged `candidate: node-type-hue` violation killed; law 2 inverted back so the extracted VALUE reads as serif evidence and the property label recedes to chrome; tier is now a visible WORD + swatch, not a dot with an `sr-only` whisper; `status-badge.ts`/`confirm-deny-controls.tsx`/`layers-tree-row.tsx` moved onto one `tierOf`; shape gate proven RED against the exact violation — elements 64→67, leafText 22→24)
 - Phase 60 Plan 07 — EXECUTED (**PHASE 60 COMPLETE, 7/7**; the leg that looks: capture ran ×4 on a real stack + seeded session; criterion 4 PARTIALLY PROVEN — frames + no-regression proven on real pixels, inbox rows + `/emails/[id]` + dark mode UNPROVEN; **root-caused the `.next` corruption to `npm run build:local` run against a live dev server — a standing line in every Phase 59-63 plan's own verification block → 999.22 HIGH**; 999.23 filed (harness has no theme axis, reports `ok` on a crashed app); brand-guide §3 "Realized surface patterns" + SKILL.md now carry the 61-63 handoff)
 
+- Phase 61 Plan 01 — EXECUTED (rendered-geometry gate + no-webServer config: 999.22 closed by construction, 999.23 + 999.24 CLOSED; gate found a REAL mobile bug on first run and fixed it, 806 green before AND after)
+- Phase 61 Plan 02 — EXECUTED (ONE `tierOf`: promoted to `_vocabulary/tier.ts`, re-exported so Phase 60's surface compiles byte-unchanged; shared module holds FACTS not classes — the Tailwind-purge constraint made executable by a drift test; `canvas-vocabulary.ts` grown from it — tier on edges, kind as ink geometry on nodes; 53-test matrix gate, all 3 negative proofs RED then reverted clean; **no component touched — 61-04/05 wire them**; **D-61-04 filed: `/knowledge`'s "tier" is EXTRACTED/INFERRED/AMBIGUOUS, a DIFFERENT axis from confirmed/suggested/terminal — Phase 62 must decide, not rename**)
+
 Migrations 0037 (chat_source_ledger + chat_context_edges), 0038 (entity_type_corrections),
 0039 (entity-resolution dismiss filter) are AUTHORED + journal-coherent, APPLIED NOWHERE.
 
 **Still owed from v1.9 (user declined twice):** LIVE-03 (§A OAuth), LIVE-04 (§B.3-6 real email),
 CLUS-07 (§H) — `phases/49-live-loop-gate-deploy-oauth-real-email/MORNING-CHECKLIST.md`.
+
+## Phase 61 -- Surface Redesign: Chat, Canvas & Mobile Panel Chrome -- Plan 02 History -- the shared tier truth + the canvas's vocabulary
+
+**Commits:** `6e1ad9e` (promote), `79b5ea6` (canvas vocabulary), `1a81b32` (matrix gate).
+**Files:** `_vocabulary/tier.ts` + its gate (NEW), `chat/_canvas/canvas-vocabulary.ts` + its gate
+(NEW), `emails/[id]/_components/region-vocabulary.ts` (MODIFIED, +26/-17 — the only file touched on
+Phase 60's surface). No component touched.
+
+**THE PROMOTION IS INVISIBLE TO PHASE 60, PROVEN THREE WAYS:** `git diff --stat -- "src/app/emails/[id]"`
+lists one file; the non-`region-vocabulary` change count is literally `0`; and
+`expect(regionTierOf).toBe(tierOf)` — reference equality, which a behavioural clone would pass a
+behaviour test but never pass. `region-vocabulary.ts` keeps its own literals (`REGION_TIER`,
+`REGION_ROLE_*`, `regionLabelFor`) and re-exports only the tier primitives; `RegionTier` is now an
+alias of `Tier`.
+
+**THE FACT/LITERAL SPLIT, AND WHY IT IS NOT TIDINESS:** Tailwind v4 scans SOURCE for LITERAL class
+strings, so a shared `` `border-${family}-line` `` is dropped at build time with NO error — the
+element renders unstyled through a green suite. So the shared module owns `TIER_HUE_FAMILY` /
+`TIER_IS_DASHED` (facts) and each surface owns its literals, with a gate asserting agreement. The
+idiom split is the proof the design is right: the email box spells dashed as `border-dashed` (CSS),
+a canvas edge as `[stroke-dasharray:4_4]` (SVG). The class could never have travelled; the boolean
+does. **Empirically confirmed against the built CSS** — every literal emits
+(`.\[stroke-dasharray\:4_4\]{stroke-dasharray:4 4}`), including classes no component consumes yet,
+which proves `@source` scans a plain `.ts` file with no JSX.
+
+**THE CANVAS'S NODE-KIND AXIS (D-61-02-C), stated so it is extended rather than guessed at:**
+left-rule WEIGHT = how much of the user's OWN material the node carries (chat 4 = the conversation
+itself; email-thread 2 = received mail, real evidence; genui-panel 1 = polytoken's rendering, no
+words of its own). DOTTED = "a view or a guess, not an artifact" (knowledge-preview = real material
+but a bounded glance at another surface; unknown = claims nothing). All ink — the old
+`border-l-primary` indirection is what let a hue live there for three milestones. Dotted never
+dashed: tier owns solid-vs-dashed, the same concession `region-vocabulary.ts` makes with
+`unrelated`.
+
+**Negative proofs (all 3 RED, verbatim in the summary, all reverted — `git diff` vs `79b5ea6`
+empty):** a hue on kind → 8 failures across three independent assertions; kind collapsing
+(`expected 4 to be 5` — the exact Phase 59 regression, on the other surface); the two surfaces
+drifting (`confirmed.path must carry the conf family`). The AGREEMENT test compares the two
+surfaces' literals DIRECTLY rather than each against the facts separately — a surface agreeing with
+the facts in a divergent idiom would slip past the weaker form.
+
+**Deviations:** [Rule 2] `canvasNodeKindOf` uses a null-prototype frozen lookup — a plain object
+literal answers `canvasNodeKindOf("__proto__"/"constructor"/"toString")` from the prototype chain
+instead of missing, defeating T-61-06 on a user-writable `node.type` from `chat_canvas_layouts`.
+[Rule 2] a test pins that the kind set equals `NODE_TYPE_REGISTRY`'s keys — register a 5th node
+type without growing the vocabulary and it silently renders as a degraded placeholder forever.
+
+**Flagged for 61-04, NOT pre-solved:** the `!` specificity override is deliberately NOT baked into
+`CANVAS_EDGE_TIER`. `chat-canvas.tsx:51` still imports `@xyflow/react/dist/style.css`, which is why
+today's `DataEdge` needs `!stroke-primary`; but `!` belongs to the consumer's context (wrong on a
+legend swatch) and 61-04 owns the "zero stock React Flow styling" decision. The hazard is documented
+in the module header where 61-04's author will be reading. **Wire an edge and LOOK at it — a lost
+specificity fight renders a stock grey wire through a green suite.**
+
+**Filed:** D-61-04 (`/knowledge`'s "tier" is a DIFFERENT axis — `EXTRACTED`/`INFERRED`/`AMBIGUOUS`
+trust tiers on the `--tier-*` ladder, sharing not one value with `confirmed`/`suggested`/`terminal`
+extraction statuses; the `parseStatus` != `extractionStatus` trap wearing a new hat. Phase 62 must
+DECIDE, not rename). D-61-05 (`build:local` has no root script — run it from `apps/web`).
+
+**SURF-02 deliberately NOT marked complete** — same call 61-01 made, reached independently. 7 of
+Phase 61's 8 plans claim it and it reads "`/chat` + its canvas is redesigned". This plan shipped two
+pure modules and touched zero components. `requirements.mark-complete SURF-02` was run per the
+executor's standard state step, marked it `[x] Complete`, and was REVERTED (`git checkout`) — the
+traceability table is back to `Pending`. It belongs to whichever plan closes the redesign.
 
 ## Phase 61 -- Surface Redesign: Chat, Canvas & Mobile Panel Chrome -- Plan 01 History -- the rendered-geometry gate + the harness's two new senses (999.23, 999.24)
 
@@ -4797,6 +4877,14 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 
 ## Decisions Log
 
+- 2026-07-16 (61-02): The tier truth was PROMOTED to `app/_vocabulary/tier.ts` and RE-EXPORTED from `region-vocabulary.ts`, rather than copied or cross-imported. `region-vocabulary.ts` lives inside `emails/[id]/_components/`, so `/chat` (61) and `/knowledge` (62) asking "is this confirmed?" would have meant reaching into another surface's internals — the import people avoid by copying the map instead, and two maps of one fact drift into two panels disagreeing. Verified invisible to Phase 60: one file changed under `emails/[id]`, non-`region-vocabulary` change count literally 0, its two committed gates + `role-hue-ban` green unmodified, and `expect(regionTierOf).toBe(tierOf)` (reference equality — a clone passes a behaviour test, only a real re-export passes this).
+- 2026-07-16 (61-02): The shared module holds FACTS (`TIER_HUE_FAMILY`/`TIER_IS_DASHED`), NOT class strings, and the file header says why at length so the next reader does not "finish the job". Tailwind v4 scans source for LITERAL classes; a shared `` `border-${family}-line` `` is invisible to the scanner and dropped at build with NO error — unstyled element, green suite, user finds it. So each surface keeps literal classes and its gate asserts them against the facts. The idiom split proves the design: the email box says `border-dashed` (a CSS box), a canvas edge says `[stroke-dasharray:4_4]` (an SVG path) — the class could never have travelled between them, the boolean does. Confirmed against built CSS: every literal emits, including ones no component consumes yet.
+- 2026-07-16 (61-02): Canvas edges are NEUTRAL by default and earn no hue. The only edge on `/chat` today is a `DataEdge` wiring `sourcePath -> targetKey` — plumbing, not provenance — so it makes no tier claim and law 1 gives it no colour. `confirmed`/`suggested` were built anyway despite having no Phase-61 consumer (the YAGNI charge is answered in the file header): the LOCKED sketch declares all three, `/knowledge` already renders tier edges today, and Phase 63's provenance edges need them. The alternative is a fourth local map next term — the exact debt the rule exists to prevent.
+- 2026-07-16 (61-02): Node kind = left-rule WEIGHT (how much of the user's OWN material the node carries: chat 4 / email-thread 2 / genui-panel 1) + DOTTED for "a view or a guess, not an artifact" (knowledge-preview, unknown). All ink, said out loud rather than routed through `primary` — that indirection is what let a hue live on the chat stripe for three milestones. Dotted never dashed, because tier owns solid-vs-dashed on every surface (the same concession `region-vocabulary.ts` makes with `unrelated`). Note Tailwind has no per-side border STYLE utility, so `border-dotted` is necessarily whole-frame — which is why dotted had to mean something frame-wide rather than being a fourth rule variant.
+- 2026-07-16 (61-02): [Rule 2] `canvasNodeKindOf` resolves against a null-prototype frozen map. `node.type` comes from `chat_canvas_layouts`, a user-writable row; a plain object literal answers `canvasNodeKindOf("__proto__")`, `("constructor")` and `("toString")` from the prototype chain rather than missing, returning a function instead of `"unknown"` and defeating T-61-06 exactly where it matters. The hostile-input test pins all three.
+- 2026-07-16 (61-02): The `!` specificity override is deliberately NOT baked into `CANVAS_EDGE_TIER`, and the hazard is documented in the module header instead. `chat-canvas.tsx:51` still imports `@xyflow/react/dist/style.css`, whose `.react-flow__edge-path` is why today's `DataEdge` needs `!stroke-primary` to render at all — so omitting `!` risks 61-04 shipping a stock grey wire through a green suite. But `!` is a property of the CONSUMER's specificity context, not of the design (it would be wrong on a legend swatch), and 61-04 owns the "zero stock React Flow styling" criterion that decides whether the stock import survives at all. Baking it in would make that call for them, permanently, in a shared vocabulary.
+- 2026-07-16 (61-02): D-61-04 filed — `/knowledge`'s "tier" is NOT this tier. `tier-edge-style.ts` keys on `EXTRACTED`/`INFERRED`/`AMBIGUOUS` (knowledge-node-edge TRUST tiers, `--tier-*` ladder, D-48-04); `_vocabulary/tier.ts` keys on `confirmed`/`suggested`/`terminal` (extraction STATUS, `--conf`/`--sugg` ladder). Two unions called "tier" sharing not one value — the same shape as the `parseStatus` != `extractionStatus` trap 60-06 came one line from shipping (both are `string`, so routing one through the other compiles, type-checks, and paints a confident lie). 61-02-PLAN says Phase 62 "moves /knowledge's tier edges onto this map"; it does not fit as written, and `chat/_canvas/knowledge-preview-mini-graph.tsx` already hosts BOTH vocabularies on the canvas today. Phase 62 must DECIDE (does `INFERRED` mean "suggested"? is `AMBIGUOUS` a third thing?), not rename.
+- 2026-07-16 (61-02): SURF-02 NOT marked complete — the same call 61-01 made, reached independently before finding 61-01's note. 7 of Phase 61's 8 plans claim it and it reads "`/chat` + its canvas is redesigned on the new identity"; this plan shipped two pure modules and touched zero components. The executor's standard state step ran `requirements.mark-complete SURF-02`, which flipped it to `[x] Complete` (`already_complete: []` — it was this run that did it); REVERTED via `git checkout`. A requirements table that claims a redesign nobody has done is the same failure as a UI claiming a confirmation nobody gave — which is the exact thing this plan's `tierOf` default exists to prevent.
 - 2026-07-16 (61-01): [Rule 1] `/chat`'s mobile height bug — found by the geometry gate on its FIRST run, before any negative proof — was FIXED (`733db3e`), not deferred to a later plan. `documentElement.scrollHeight` measured 888 at an 844px viewport: `SidebarInset` renders a 44px `md:hidden` shell header above `{children}` (`layout.tsx:74`) while `ChatPage`'s root claimed the whole viewport with a bare `h-svh` (44 + 844 = 888), so the page sat 44px past the fold below `md`. Fixed as a responsive pair (`h-[calc(100svh-2.75rem)] md:h-svh`) leaving the `md`+ path byte-identical. Fixed rather than deferred because the plan requires `test:geometry` green at both viewports and Plans 61-03..07 all run it: a gate that ships RED on a known bug teaches its readers to ignore it, and weakening the assertion to dodge a TRUE red is precisely the anti-pattern the plan forbids ("fix the gate, do not weaken the proof"). A shell-wide fix in `layout.tsx` would touch every route and is Rule 4 (architectural) — not taken unasked. 806 tests were green before AND after, which is the whole thesis of this plan.
 - 2026-07-16 (61-01): `playwright.geometry.config.ts` is kept LITERALLY free of the `webServer` token — in code AND comments — so the plan's zero-occurrence check is total rather than needing "it's only in a comment" reasoning (it also then catches a commented-out block being uncommented later). The plan's action text ("say why in the file header, naming 999.22") and its verify (`grep -c webServer` == 0) are mutually exclusive as literally written; the verify was honored and the header explains the absence in full prose without spelling the option's name. Intent — no server-spawning block, reasoning documented — is fully preserved.
 - 2026-07-16 (61-01): [Rule 1] The capture settle waits on BOTH `[aria-busy="true"]` AND `[class*="animate-pulse"]`, not the plan's worked example of `aria-busy` alone. The INBOX's loading block — the surface whose "three grey skeleton rows" capture MOTIVATED 999.24 — is `<div aria-hidden>` (`inbox-three-pane.tsx:384`) carrying no `aria-busy` at all, and `Skeleton` applies `motion-safe:animate-pulse`, which Tailwind v4 emits as that literal class so a `.animate-pulse` selector matches nothing. Waiting on `aria-busy` alone would have "fixed" 999.24 everywhere except the place it was found. The substring form is already this codebase's own idiom (`genui-part-boundary.test.tsx:80`).
@@ -5237,6 +5325,7 @@ confirm; the autofill→confirm→embed→index flywheel is verified working liv
 | Phase 59 P03 | ~25min | 2 tasks | 3 files — brand guide §3 "Visual identity" (palette/type-scale/spacing/signature + gate citations + both open flags) + SKILL.md stale-teal fix/D-58-01 pointer/comment-collision gotcha + regenerated design-data.json — PHASE 59 COMPLETE, IDNT-03/IDNT-04 both marked complete |
 | Phase 60 P01 | ~90min | 3 tasks | 9 files — colour-blind fingerprintTree + frozen inbox-pre-60.json baseline (elementCount=81/leafText=32/depth=10) + entitySummary per-fact rewrite (MAX_ENTITIES_PER_EMAIL=8, totalCount) + EntityChips provenance-mark rewrite (zero graph-entity, zero rounded-pill) |
 | Phase 60 P02 | ~75min | 3 tasks | 4 files — inbox row -> four-band registry entry (serif snippet, toInboxSnippet 200-char bound) + thread group -> ruled sub-list (Badge removed) + inbox-structure.test.tsx anti-re-token gate, proven able to fail (2/4 legs RED under restored pre-60 components via git checkout, not stash) |
+| Phase 61 P02 | ~35min | 3 tasks | 5 files — ONE `tierOf` promoted to `_vocabulary/tier.ts` + re-exported (Phase 60's surface byte-unchanged, proven by reference equality); shared module holds FACTS not classes (Tailwind-purge constraint, confirmed against built CSS — every literal emits, incl. unconsumed ones); `canvas-vocabulary.ts` grown from it (tier on edges, kind as ink geometry on nodes); 53-test edge-tier × node-kind matrix gate, all 3 negative proofs RED then reverted clean (diff vs `79b5ea6` empty); **no component touched**; 74 files / 874 tests (was 72/806, +68 all new); D-61-04 filed (`/knowledge`'s tier is a different axis — Phase 62 must decide, not rename); SURF-02 marked complete by the standard state step and REVERTED |
 | Phase 61 P01 | ~50min | 2 tasks | 6 files — rendered-geometry gate (`npm run test:geometry`) + no-webServer config (999.22 closed by construction) + testIgnore widened; negative proof RED at the exact 11296px; **gate found a REAL mobile bug on first run (888 vs 844, 44px shell header vs bare h-svh) — fixed 733db3e, 806 tests green before AND after it**; harness gained theme axis (999.23 — 16 dark frames, first ever) + real settle (999.24 — 32/32 settled, inbox-mobile now shows its real feed); networkidle's "deliberately avoided" claim re-checked and DISPROVEN (32/32 reached) |
 
 ## Operator Next Steps
