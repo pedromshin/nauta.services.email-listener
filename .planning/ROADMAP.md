@@ -214,7 +214,8 @@ WCAG-AA contrast + token-registration gates, and the 32/32 E2E suite.
 - [ ] Phase 58: Visual Identity — Sketch & Pick (HUMAN GATE)
 - [x] Phase 59: Visual Identity — Designed Token Set & Brand Guide
  (completed 2026-07-15)
-- [x] Phase 60: Surface Redesign — Inbox & Email Detail (completed 2026-07-15)
+- [x] Phase 60: Surface Redesign — Inbox & Email Detail
+ (completed 2026-07-15)
 - [ ] Phase 61: Surface Redesign — Chat, Canvas & Mobile Panel Chrome
 - [ ] Phase 62: Surface Redesign — Knowledge, Studio & Production States
 - [ ] Phase 63: Research Canvas — Visual Surfaces
@@ -391,7 +392,17 @@ the docked/mobile transcript honoring panel overlays — closing backlog 999.17.
      param edit, regenerate, re-theme) that were previously canvas-desktop-only.
   4. The docked/mobile transcript view of a conversation reflects panel overlays/rethemes made on
      the canvas side of the same conversation, closing the 999.17 gap.
-**Plans**: TBD
+**Plans**: 8 plans (4 waves)
+
+Plans:
+- [ ] 61-01-PLAN.md — The rendered-geometry gate (no-webServer config; the 11,296px bug 363 green tests missed) + the harness grows a theme axis (999.23) and learns to settle (999.24) [SURF-02]
+- [ ] 61-02-PLAN.md — The tier truth promoted to one shared home; canvas-vocabulary.ts grown from it (tier on edges, kind as geometry); the edge-tier x node-kind matrix gate [SURF-02]
+- [ ] 61-03-PLAN.md — The chat frame, conversation rail and composer redesigned (one header rule, registry rail, ink send); the frame structure gate [SURF-02]
+- [ ] 61-04-PLAN.md — The message stream, tool rounds and citation chip; law 2's hardest case (a real subject is serif, polytoken's fallback is not) [SURF-02]
+- [ ] 61-05-PLAN.md — The React Flow chrome finished incl. the never-styled handles + the sketch's board; the stock-ban gate parses the library's own stylesheet (criterion 2) [SURF-02]
+- [ ] 61-06-PLAN.md — Five node shells + the edge on the vocabulary; three live law violations cleared; the rendered node/edge law gate [SURF-02]
+- [ ] 61-07-PLAN.md — TranscriptPanelHost + overlays cross to the transcript (criterion 4 / 999.17 read half); the layout-destruction regression test (T-61-21) [SURF-07]
+- [ ] 61-08-PLAN.md — The editing toolbar reaches the phone (criterion 3 / 999.17 write half); the role-hue ratchet advances over chat/; both-theme screenshot review (HUMAN GATE) [SURF-07, SURF-02]
 **UI hint**: yes
 
 ### Phase 62: Surface Redesign — Knowledge, Studio & Production States
