@@ -13,29 +13,38 @@
  * LOOKUP from a closed map keyed by a narrowed union — never a string built
  * by concatenating anything derived from attacker-influenced component
  * data (`contentText`, `entityTypeLabel`). Consumers must keep it that way.
+ *
+ * ────────────────────────────────────────────────────────────────────────
+ * THE TIER TRUTH NOW LIVES IN `app/_vocabulary/tier.ts` (61-02-PLAN.md).
+ * ────────────────────────────────────────────────────────────────────────
+ *
+ * `tierOf` and the `Tier` union were derived here and were promoted out
+ * UNCHANGED once `/chat`'s canvas and `/knowledge` needed the same answer to
+ * "is this confirmed?". They are re-exported below so this surface's call
+ * sites and its two committed gates keep compiling byte-for-byte — the
+ * promotion is deliberately invisible here.
+ *
+ * What STAYS is this surface's own LITERAL class maps (`REGION_TIER`,
+ * `REGION_ROLE_*`) and its labels. That split is not tidiness: Tailwind v4
+ * scans source for literal class strings, so a shared `` `border-${family}-line` ``
+ * would be purged at build time with no error. The shared module holds the
+ * FACTS (`TIER_HUE_FAMILY`, `TIER_IS_DASHED`); `REGION_TIER`'s literals are
+ * asserted to AGREE with them in `_vocabulary/__tests__/tier.test.ts`. One
+ * truth, literal classes, drift caught by a test.
  */
+
+import { tierOf, type Tier } from "../../../_vocabulary/tier";
 
 import { contentSnippet } from "./region-label";
 
-export type RegionTier = "confirmed" | "suggested" | "terminal";
-
 /**
- * tierOf — maps a component's raw `extractionStatus` to the tier truth
- * (§C, consistent with Plan 01's server-side mapping):
- *   "confirmed"               -> confirmed
- *   "candidate" | "pending"   -> suggested
- *   "rejected" | "superseded" -> terminal (no tier claim at all — a ghost)
- *
- * Any UNRECOGNIZED status defaults to "suggested", NEVER "confirmed"
- * (T-60-08, Repudiation): tier is a claim about whether a human confirmed a
- * fact, so a new/unknown status value must never silently inherit a
- * confirmation the user never gave. The product's stance is suggest-only.
+ * RegionTier — this surface's name for the shared `Tier`. An ALIAS, not a
+ * second union: the two are mutually assignable and a gate pins it, so a tier
+ * added to the truth can never fail to reach this surface.
  */
-export function tierOf(status: string): RegionTier {
-  if (status === "confirmed") return "confirmed";
-  if (status === "rejected" || status === "superseded") return "terminal";
-  return "suggested";
-}
+export type RegionTier = Tier;
+
+export { tierOf };
 
 interface TierClasses {
   /** Border + fill — the ONLY place tier's colour lives. */
