@@ -204,3 +204,76 @@ it to `max-w-2xl` only reaches ~103 chars while squeezing every table, code fenc
 column carries. The right instrument is a prose-level cap on the paragraph in `markdown-renderer.tsx`
 (which 61-04's plan explicitly scopes out), leaving panels at full column width. **Whoever picks this
 up: change the prose, not the column.**
+
+## D-61-05-A — the CANVAS still has zero coverage in any committed capture
+
+61-01 added the theme axis and a `chat-thread` surface that selects a conversation, which finally
+made 61-04's message stream reviewable. **The canvas is still invisible**: `chat-thread` captures
+the surface with the header toggle on **Chat**, and the canvas only mounts on **Canvas**. So every
+committed PNG of `/chat` shows either the empty state or the transcript — never the board.
+
+This is not academic. 61-05 found FOUR pieces of stock chrome on the canvas (white controls, white
+minimap, navy handles, a stock-grey arrowhead), **every one invisible in light and glaring in dark**,
+by driving a throwaway probe. **61-06 owns `data-edge.tsx` and all four node components** — i.e. it
+redesigns a surface no committed capture can see, exactly as 61-04 did.
+
+**The recipe is ~30 lines and 61-05 ran it working.** Add a `chat-canvas` surface alongside
+`chat-thread`:
+
+1. Seed a `chat_canvas_layouts` row for the fixture conversation (`screenshot-fixtures.ts`):
+   `nodes` = a `chat` node (`data.conversationId`) + an `email-thread` node
+   (`data.threadId` = the existing `FIXTURE_THREAD_ID`); `edges` = one
+   `{ id, source, target, data: { sourcePath, targetKey } }` (restored as a `data-edge` by
+   `toFlowEdge`); `viewport` = `{ x, y, zoom: 1 }` — **zoom 1 matters**: at 0.75 the grid is
+   sub-pixel and unjudgeable. `node_registry_version` must be `NODE_REGISTRY_VERSION` (imported from
+   `_canvas/node-registry-version`) or the nodes degrade to the inert placeholder.
+2. After selecting the conversation, click `getByRole("tab", { name: "Canvas view" })`.
+3. Optionally click `getByRole("button", { name: "Toggle minimap" })` — the minimap is session-only
+   and off by default, and it is where the worst of the stock chrome lived.
+
+**Do NOT go near `saveCanvasLayout`** (T-61-21) — this is a direct fixture seed, not the app's save
+path. Note the fixture conversation gets an auto-seeded `chat:<conversationId>` node too
+(`withDefaultChatNode`), so the board shows one extra chat node; give the seeded chat node the same
+id or expect two.
+
+## D-61-05-B — `canvas-keyboard-hint.tsx` is still an opacity trick
+
+`border-t border-border/50 bg-background/95` — the last `bg-background/95` on the canvas after 61-05
+turned the top-right Panel cluster into a real card. Same defect class (a 95%-opaque page ground
+floated over the board instead of a designed surface), same fix (`border-hair` + a real ground). It
+spans the board's full width and overlaps both the Controls card and the minimap.
+
+**Left to 61-06**, which is already sweeping `chat/_canvas/`. 61-05 scoped Task 2 to `chat-canvas.tsx`
+and had already extended into three sibling files (the two Add-* popovers + the save-status
+indicator) to keep the Panel cluster from shipping as three controls that disagree; a fourth
+component with its own dismissal behaviour was a step too far for a plan that does not own it.
+
+## D-61-05-C — the plan's own §F comment-hazard check is RED ON ARRIVAL, and over-broad
+
+61-05-PLAN Task 1's `<automated>` block scans **every** comment in `globals.css` for a
+token-name-plus-colon. It fails on two **pre-existing** comments, neither of them 61-05's:
+
+- Phase 59's law-3 shape-vocabulary block — *"drawn in `--faded`, not `--ink`: per the sketch's own
+  finding…"*
+- Phase 27's ADOPT-05 block — *"…its own documented duration tokens: `--duration-quick: 150ms`…"*
+
+Measured: **2 matches at HEAD before 61-05, 2 after** — the plan's command could never have passed.
+
+It is also over-broad. The real §F hazard is a comment inside one of the FOUR blocks
+`readTokenBlock` actually parses (`:root` / `.dark` / `@theme inline` / `@theme`), because only there
+can a comment's `--name:` substring swallow the next real declaration. Both offenders sit at top
+level, outside every parsed block, so they are inert. 61-05 verified the **scoped** version instead
+and it is clean (0 token-colon, 0 stray-close across all four blocks).
+
+**Not actioned:** both comments belong to other phases and neither can harm anything. If the check is
+ever promoted to a committed gate, scope it to the parsed blocks — a file-wide version is red on
+arrival and will be deleted rather than obeyed.
+
+## D-61-05-D — 61-03/61-04's `(--custom-property)` call sites can now become utilities
+
+61-05 registered all nine unregistered palette tokens, so `hover:bg-(--fill-hi)` (composer send),
+`hover:border-(--rule-hi)` (rail New-chat) and friends can now be spelled `hover:bg-fill-hi` /
+`hover:border-rule-hi`. Both spellings emit identical CSS — **verified in the built sheet** — so this
+is tidying, not a fix, and it was left alone: those are 61-03's files and a cosmetic sweep of a
+committed plan's call sites is not worth a merge conflict. `bg-ink/5` stays legal too (D-61-03-B):
+`bg-ink/5` and `bg-ink-05` are the same colour by construction.
