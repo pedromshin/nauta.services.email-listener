@@ -64,6 +64,34 @@ vi.mock("~/trpc/react", () => ({
       listConversations: {
         useQuery: () => ({ data: [{ id: CONVERSATION_ID, title: "Fixture chat" }] }),
       },
+      // 61-08: `RegenerateControl` reads the turn's history row to rebuild its
+      // prompt. Reached because the docked host now mounts the REAL
+      // `PanelActionsToolbar` — see the note on `genui` below.
+      getHistory: { useQuery: () => ({ data: [] }) },
+    },
+    // ────────────────────────────────────────────────────────────────────
+    // 61-08 — THIS BLOCK IS EVIDENCE, NOT A CHORE.
+    //
+    // 61-07's mock needed only `chat.*`, because the docked transcript
+    // rendered a panel and nothing that could EDIT one. These four procedures
+    // are here because `TranscriptGenuiPanel` now mounts the real toolbar on
+    // this host's marker, so the real `EditParamsControl` /
+    // `RegenerateControl` / `RethemeControl` really call them. Without them the
+    // suite dies on `Cannot read properties of undefined (reading
+    // 'applyPanelEdit')` — which is the mount proving itself: the same shape as
+    // 61-07's own `chat-mobile-feed.test.tsx` mock having to learn
+    // `getCanvasLayout` when the host first genuinely queried it.
+    //
+    // Mirrors `_canvas/__tests__/genui-panel-node-toolbar.test.tsx`'s mock
+    // verbatim rather than inventing a second convention — it is the same
+    // toolbar, and the two suites should fail the same way when it changes.
+    // ────────────────────────────────────────────────────────────────────
+    genui: {
+      applyPanelEdit: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+      generate: { useQuery: () => ({ refetch: () => Promise.resolve({ data: undefined }) }) },
+      resolveRetheme: {
+        useQuery: () => ({ refetch: () => Promise.resolve({ data: undefined }) }),
+      },
     },
   },
 }));

@@ -21,6 +21,31 @@
  * (including the pack switcher) — a stale edit must never race a live
  * regenerate-in-progress stream (mirrors `resolveActivePanel`'s own
  * streaming-always-wins posture).
+ *
+ * ────────────────────────────────────────────────────────────────────────
+ * TWO HOSTS AS OF 61-08 — AND IT IS THE SAME TOOLBAR, NOT A SECOND ONE
+ * ────────────────────────────────────────────────────────────────────────
+ *
+ * This mounts in `GenuiPanelNode` (a React Flow node) AND in
+ * `TranscriptGenuiPanel` (the docked/mobile transcript, gated on
+ * `useIsTranscriptPanelHost()`). The canvas never mounts below `md`, so until
+ * 61-08 these four controls did not exist on a phone at all — 999.17's write
+ * half. Zero controls were added to close it; the only thing that was ever
+ * wrong is where they lived.
+ *
+ * Both hosts hand it the same props derived the same way, and both keep it
+ * OUTSIDE `PanelThemeScope`: this row is polytoken's chrome, so law 1 puts it on
+ * the app's ink. Inside the scope it would inherit the PACK's palette, which has
+ * no dark variant (D-61-07-A) — a light toolbar on a dark app.
+ *
+ * CHROME (61-08, on 58-IDENTITY.md's locked laws): the row is the sketch's `.ch`
+ * — a `--hair` rule under it, on the card's OWN ground. It previously carried
+ * `border-border/60 bg-background`, written in Phase 52 before the identity
+ * existed: `--background` resolves to `--shelf`, the PAGE ground, so the row
+ * painted the page's tone across the middle of a `--bright` card on both
+ * surfaces. The header row directly above it on the canvas (`GenuiPanelNode`'s
+ * `.ch`) has said `border-hair` and no fill since 61-06; this now agrees with
+ * it instead of sitting a shade off it.
  */
 
 import * as React from "react";
@@ -83,7 +108,7 @@ export function PanelActionsToolbar({
     <div
       role="toolbar"
       aria-label="Panel actions"
-      className="flex h-8 shrink-0 items-center justify-between gap-1 border-b border-border/60 bg-background px-2 pointer-coarse:h-11"
+      className="flex h-8 shrink-0 items-center justify-between gap-1 border-b border-hair px-2 pointer-coarse:h-11"
     >
       <PackSwitcher
         panelId={panelId}

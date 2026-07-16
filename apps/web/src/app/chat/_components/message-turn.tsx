@@ -1,12 +1,15 @@
 "use client";
 
 import * as React from "react";
+import { useMemo, useState } from "react";
 
 import type { MessagePart } from "../_hooks/use-chat-stream";
 import { GeneratingRing } from "~/components/generating-ring";
+import { PanelActionsToolbar } from "../_canvas/panel-actions-toolbar";
 import { resolveActivePanel } from "../_canvas/panel-overlay";
 import { useOptionalPanelOverlay } from "../_canvas/panel-overlay-context";
 import { PanelThemeScope } from "../_canvas/panel-theme-scope";
+import { useIsTranscriptPanelHost } from "../_canvas/transcript-panel-host";
 import { genuiPanelNodeId } from "../_canvas/use-canvas-persistence";
 import { CompactInteractionEntry } from "./compact-interaction-entry";
 import { CostCapBlockedCard } from "./cost-cap-blocked-card";
@@ -42,7 +45,8 @@ export interface MessageTurnWidgets {
 /**
  * TranscriptGenuiPanel — ONE genui part, rendered as the panel the user
  * actually has rather than the one the model first emitted (61-07, SURF-07,
- * criterion 4 — backlog 999.17's read half).
+ * criterion 4 — backlog 999.17's read half), and EDITABLE wherever it is
+ * docked (61-08, criterion 3 — 999.17's write half).
  *
  * WHY THIS IS ITS OWN COMPONENT AND NOT THREE LINES IN THE BRANCH: the genui
  * branches live inside `parts.map(...)`, and `useOptionalPanelOverlay` is a
@@ -51,8 +55,8 @@ export interface MessageTurnWidgets {
  * own render, so each may hold its own subscription.
  *
  * It mirrors `genui-panel-node.tsx`'s chain EXACTLY (overlay ->
- * `resolveActivePanel` -> `PanelThemeScope` -> `GenuiPartBoundary`), and that
- * is the whole point: if the canvas and the transcript resolved a panel
+ * `resolveActivePanel` -> toolbar -> `PanelThemeScope` -> `GenuiPartBoundary`),
+ * and that is the whole point: if the canvas and the transcript resolved a panel
  * differently, the bug shipped would be the bug this was written to fix. Do not
  * grow a second resolution path here — grow the shared one.
  *
@@ -62,16 +66,79 @@ export interface MessageTurnWidgets {
  * from swapping a turn's content out from under a generation still in flight.
  * The resolver is told the truth and decides; this component does not decide
  * for it.
+ *
+ * ────────────────────────────────────────────────────────────────────────
+ * 61-08 — THE TOOLBAR MOUNTS ON A MARKER. NOT ON STORE PRESENCE. NOT ON A
+ * VIEWPORT CHECK. THIS IS THE WHOLE DESIGN DECISION.
+ * ────────────────────────────────────────────────────────────────────────
+ *
+ * `PANL-01..04` shipped four real editing controls and mounted every one of
+ * them inside `GenuiPanelNode` — a React Flow node. `page.tsx`'s
+ * `effectiveViewMode = isMobile ? "chat" : viewMode` means the canvas NEVER
+ * mounts below `md`, so on a phone those four controls did not exist at all.
+ * That is 999.17's write half. 61-07 built the seam; this renders into it.
+ *
+ * THE THREE TREES this component renders in (61-07 §D), and what each gets:
+ *   1. DOCKED, inside `TranscriptPanelHost`   -> toolbar. This is criterion 3.
+ *   2. ON CANVAS, inside a `ChatNode`         -> NO toolbar: the real
+ *      `GenuiPanelNode` beside it on the same board already has one, and two
+ *      toolbars editing one overlay is a bug, not a feature.
+ *   3. BARE (tests), no providers             -> NO toolbar, and no throw.
+ *
+ * **Store presence cannot tell tree 1 from tree 2** — the canvas's own ChatNode
+ * transcript sits inside `chat-canvas.tsx`'s providers, so it has the store AND
+ * the persistence context, and `useOptionalPanelOverlay` resolves happily there.
+ * A naive `if (overlay !== undefined)` grows a second toolbar on the board.
+ * `useIsTranscriptPanelHost()` is provided by that host and nothing else, so it
+ * is false on the canvas BY CONSTRUCTION.
+ *
+ * It is NOT `useIsMobileViewport()` either: criterion 3 says the user "can
+ * reach" the controls on a mobile viewport — not "only on mobile". The marker
+ * satisfies mobile AND hands the desktop docked view the same editing at zero
+ * extra cost, out of one seam.
+ *
+ * AND IT PREVENTS A REAL CRASH, which is why the gate is a conditional RENDER
+ * and the hooks live in the child: `TranscriptPanelHost` renders its children
+ * before its providers exist (the transcript must never block on a canvas-layout
+ * query), and the controls write through the THROWING `usePanelOverlay` — a
+ * write with no persistence wired IS a wiring bug and should throw. Since
+ * `layoutQuery.isPending` starts true on EVERY mount, an ungated control dies on
+ * every first render. 61-07 found this by writing the T-61-21 test. The marker
+ * is false until the store and the persistence context are both real, so the
+ * controls simply do not exist until they would work.
+ *
+ * ONE SHAPE, ALWAYS — 61-07's D-61-07-2, one level down. The card, the toolbar
+ * SLOT and the themed content render in the same positions in every tree and in
+ * both marker states; only the toolbar's own presence flips. `{cond && <X/>}`
+ * keeps its slot when falsy, so `PanelThemeScope` never changes position or
+ * type and the rendered spec is NEVER remounted when the layout query settles.
+ * That matters here for the same reason it mattered there: a remount would
+ * discard whatever the user had typed into a genui form mid-edit, on every
+ * mount, for a query whose whole purpose is to be invisible.
+ *
+ * THE TOOLBAR IS OUTSIDE `PanelThemeScope`, DELIBERATELY, and this mirrors
+ * `GenuiPanelNode` exactly. The scope injects the PACK's `--card`/`--border`/
+ * `--background` as inline vars, and packs have no dark variants (D-61-07-A), so
+ * anything inside it is light in both themes. The toolbar is polytoken's own
+ * chrome, not the panel's content: law 1 puts it on the APP's ink. Putting it
+ * inside the scope would smuggle a pack's light palette onto chrome — the exact
+ * inversion of law 2's `pmark` trap, one axis over.
  */
 function TranscriptGenuiPanel({
-  panelId,
+  messageId,
+  partIndex,
   specJson,
   isStreaming,
 }: {
-  readonly panelId: string;
+  readonly messageId: string;
+  readonly partIndex: number;
   readonly specJson: string;
   readonly isStreaming: boolean;
 }): React.ReactElement {
+  // The SAME pure function `reconcileNodesFromHistory` builds the canvas node's
+  // id with, so both surfaces address one panel by construction (61-07).
+  const panelId = genuiPanelNodeId(messageId, partIndex);
+
   // Non-throwing by contract — this same component renders inside
   // TranscriptPanelHost (docked), inside the canvas's own providers (a ChatNode
   // on the board), and bare with no providers at all (tests). See
@@ -79,10 +146,62 @@ function TranscriptGenuiPanel({
   const overlay = useOptionalPanelOverlay(panelId);
   const resolved = resolveActivePanel(overlay, specJson, isStreaming);
 
+  const isDockedPanelHost = useIsTranscriptPanelHost();
+
+  // 52-UI-SPEC Judgment Call #5: the ring is driven by the toolbar's own signal
+  // and is NEVER the sole signal — each busy control keeps its own
+  // aria-label/spinner as the independent accessible one.
+  const [generating, setGenerating] = useState(false);
+
+  // The IDENTICAL shape `reconcileNodesFromHistory` puts in the canvas node's
+  // `data.provenance` (use-canvas-persistence.ts), `runId: null` included — so
+  // an edit made here and an edit made on the board address the same panel with
+  // the same ref. Memoized for the same reason the canvas's is stable: it is a
+  // prop on five controls.
+  const provenance = useMemo(
+    () => ({ messageId, partIndex, runId: null }),
+    [messageId, partIndex],
+  );
+
   return (
-    <PanelThemeScope packId={resolved.packId} tokenOverrides={resolved.tokenOverrides}>
-      <GenuiPartBoundary specJson={resolved.specJson} isStreaming={isStreaming} />
-    </PanelThemeScope>
+    <GeneratingRing active={isStreaming || generating} className="rounded-card">
+      {/* The sketch's `.card`, as every canvas node shell wears it — but spelled
+          out rather than reached for via `canvasNodeShellClass`, whose base
+          carries a hover rule and a kind's left rule. Neither belongs on a panel
+          sitting INSIDE a reading column: there is no board to lift off, and the
+          kind axis distinguishes nodes from each other on a canvas, which is not
+          a question this surface asks. `border-rule`/`bg-bright` are the app's
+          own ink — see the header for why chrome must not sit inside the pack. */}
+      <div className="overflow-hidden rounded-card border border-rule bg-bright">
+        {isDockedPanelHost && (
+          <PanelActionsToolbar
+            panelId={panelId}
+            provenance={provenance}
+            activeSpecJson={resolved.specJson}
+            resolvedPackId={resolved.packId}
+            isStreaming={isStreaming}
+            onGeneratingChange={setGenerating}
+          />
+        )}
+        {/* `p-row-y`, matching `GenuiPanelNode`'s body — 61-06 chose that step
+            over the `p-4` this call site inherited, and two surfaces rendering
+            one panel should not disagree about its padding. */}
+        <div className="p-row-y">
+          <PanelThemeScope packId={resolved.packId} tokenOverrides={resolved.tokenOverrides}>
+            {/* `variant="bare"`: the card above IS the panel's bordering layer
+                now, so `GenuiCard` would be a second border inside it — the
+                triple-nesting 23-UI-REVIEW Top Fix #1 removed on the canvas and
+                left standing here only because nothing had ever framed a docked
+                panel. */}
+            <GenuiPartBoundary
+              specJson={resolved.specJson}
+              isStreaming={isStreaming}
+              variant="bare"
+            />
+          </PanelThemeScope>
+        </div>
+      </div>
+    </GeneratingRing>
   );
 }
 
@@ -250,7 +369,8 @@ export function MessageTurn({
               return (
                 <TranscriptGenuiPanel
                   key={index}
-                  panelId={genuiPanelNodeId(messageId, index)}
+                  messageId={messageId}
+                  partIndex={index}
                   specJson={JSON.stringify(part.spec)}
                   isStreaming={false}
                 />
@@ -258,22 +378,28 @@ export function MessageTurn({
             }
 
             if (part.type === "genui_spec_streaming") {
+              // Routed through the SAME resolver with `isStreaming` told
+              // truthfully (T-61-24) rather than skipped because a streaming
+              // part "cannot have an overlay". It can: a regenerate targets a
+              // panel id that may already carry one. `resolveActivePanel` forces
+              // the base spec verbatim while streaming, so a stored overlay can
+              // never swap this turn's content mid-generation — and that
+              // guarantee only holds if the flag actually reaches the resolver.
+              //
+              // The `<GeneratingRing>` that used to wrap this call site now
+              // lives INSIDE the component (61-08), driven by
+              // `isStreaming || generating`: the panel is a card now, and the
+              // ring's CSS inherits its border-radius from the caller, so a ring
+              // out here would paint `rounded-lg` around a `rounded-card` edge.
+              // One ring, on the element that owns the radius.
               return (
-                <GeneratingRing key={index} active className="rounded-lg">
-                  {/* Routed through the SAME resolver with `isStreaming` told
-                      truthfully (T-61-24) rather than skipped because a
-                      streaming part "cannot have an overlay". It can: a
-                      regenerate targets a panel id that may already carry one.
-                      `resolveActivePanel` forces the base spec verbatim while
-                      streaming, so a stored overlay can never swap this turn's
-                      content mid-generation — and that guarantee only holds if
-                      the flag actually reaches the resolver. */}
-                  <TranscriptGenuiPanel
-                    panelId={genuiPanelNodeId(messageId, index)}
-                    specJson={part.partialJson}
-                    isStreaming={true}
-                  />
-                </GeneratingRing>
+                <TranscriptGenuiPanel
+                  key={index}
+                  messageId={messageId}
+                  partIndex={index}
+                  specJson={part.partialJson}
+                  isStreaming={true}
+                />
               );
             }
 
