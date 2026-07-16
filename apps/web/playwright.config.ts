@@ -18,10 +18,17 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./e2e",
   testMatch: /.*\.spec\.ts/,
-  // screenshot-review.spec.ts (D-47-05) is a capture harness, not an assertion spec — it has its
-  // own dedicated config (playwright.screenshot.config.ts) and must never ride along on
-  // `test:e2e`, nor should `screenshot:review` run the two assertion specs above.
-  testIgnore: /screenshot-review\.spec\.ts$/,
+  // Two specs own dedicated configs and must never ride along on `test:e2e` — testMatch above is
+  // /.*\.spec\.ts/, so a new e2e spec rides along BY DEFAULT unless it is ignored here:
+  //   - screenshot-review.spec.ts (D-47-05) — a capture harness, not an assertion spec
+  //     (playwright.screenshot.config.ts).
+  //   - surface-geometry.spec.ts (61-01) — the rendered-geometry gate
+  //     (playwright.geometry.config.ts). Its whole safety property is that its own config
+  //     declares NO webServer and therefore cannot spawn a second `next dev` over the live
+  //     server's `.next` (T-61-03 / 999.22). Letting it run under THIS config — which does
+  //     declare one — reintroduces exactly the hazard it exists to remove, so this ignore is
+  //     load-bearing, not tidiness.
+  testIgnore: /(screenshot-review|surface-geometry)\.spec\.ts$/,
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
