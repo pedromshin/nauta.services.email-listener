@@ -307,7 +307,17 @@ screenshots immediately and captures rows *before* their async entity data arriv
 
 Both themes resolve **exactly** to the locked ladder. The provenance chip renders as specified:
 serif value, subordinate `· type` word, verdigris `pmark-confirmed` wash. Evidence:
-`.planning/ui-reviews/dark-probe/inbox-{light,dark}-settled.png`.
+the throwaway probe (since deleted — see below).
+
+> **Superseded 2026-07-16.** Phase 61-01 folded a real theme axis into
+> `e2e/screenshot-review.spec.ts` (999.23) and a settle step (999.24). Every run now captures both
+> themes natively — 32 PNGs, 16 of them dark. The probe's evidence lives on properly in
+> `.planning/ui-reviews/2026-07-16T00-44-36-677Z/` (`*-dark.png` / `*-light.png`).
+>
+> The probe directory was **deleted** because it became a live trap (D-61-01): `dark-probe` sorts
+> AFTER every `2026-…` ISO timestamp (`"d" > "2"`), so any `.sort().pop()` "latest run" lookup
+> silently reviewed the probe's 2 frames instead of the real run's 32. It caught 61-01's own verify
+> command. Six downstream plans review captures; the trap is removed rather than documented.
 
 **Dark mode had never been captured before this run** despite the user's pick explicitly requiring
 it ("we will want light and dark theme") and Phase 59 porting a full `.dark` block. It works, and
