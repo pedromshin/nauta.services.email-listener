@@ -277,3 +277,69 @@ arrival and will be deleted rather than obeyed.
 is tidying, not a fix, and it was left alone: those are 61-03's files and a cosmetic sweep of a
 committed plan's call sites is not worth a merge conflict. `bg-ink/5` stays legal too (D-61-03-B):
 `bg-ink/5` and `bg-ink-05` are the same colour by construction.
+
+## D-61-06-A — the node SELECTION treatment is in no committed capture
+
+61-06 changed every node shell's selection from `ring-2 ring-primary ring-offset-1` to an ink
+OUTLINE (law 1 says it out loud instead of reaching through `--primary`; D-61-05-6/D-61-03-F say
+outline over ring, because `--tw-ring-offset-color` defaults to `#fff` and paints a white halo
+around every selected node in dark).
+
+**What was verified:** the classes EMIT (`outline-2` / `outline-offset-2` / `outline-ink`, matched
+by exact escaped selector in the built sheet — note `outline-2` emits as TWO rules, the minifier
+splits `outline-style` and `outline-width:2px`, and `@property --tw-outline-style` defaults to
+`solid`), and `canvas-node-law.test.tsx` asserts the selected-vs-unselected class difference is
+non-empty, names ink, and carries no tier hue.
+
+**What was NOT verified: how it looks.** The `chat-canvas` fixture seeds no selected node, so no
+committed PNG shows a selected card in either theme.
+
+**Not actioned because** seeding selection means either persisting a `selected` flag (not part of
+the persisted node schema — `toFlowNode` would drop it) or clicking a node in
+`screenshot-review.spec.ts` before the capture, which changes what "the canvas surface" means for
+every future run and risks a drag/misclick on the `x` control in a harness that currently passes
+`select:ok tab:ok` on both themes. That is a harness decision, not a restyle. **Cheap recipe for
+whoever owns it next:** click the thread card's header row (NOT the card body, and avoid the
+`x` at its right edge) after switching to Canvas view, then assert `.react-flow__node.selected`
+exists before shooting.
+
+## D-61-06-B — the canvas Controls card was covering the React Flow attribution (fixed as a side effect)
+
+Worth recording because T-61-16 makes it a contract, not a preference: the keyboard-hint bar's
+full-width `bg-background/95` strip spanned the bottom of the board and sat on top of the
+attribution as well as the Controls card. 61-05 restyled the attribution to stay visible and left
+`proOptions={{ hideAttribution: false }}` untouched — correctly — while a sibling component was
+quietly painting over it anyway. Turning the hint into a bottom-centre card (61-06) revealed the
+attribution in the committed capture for the first time. **No gate saw this**: 61-05's stock-ban
+gate reads the stylesheet and would report the attribution's own selectors as correctly themed,
+which they were. An element being OCCLUDED by an unrelated sibling is invisible to every gate this
+phase has.
+
+## D-61-06-C — two `_canvas/` components had never been mounted by any test
+
+`data-edge.tsx` and `unknown-node-type-placeholder.tsx` both lacked `import * as React`, so both
+threw `ReferenceError: React is not defined` the first time 61-06's gate mounted them (vitest's
+esbuild transform defaults to the CLASSIC JSX runtime; every sibling shell carries the import and
+a comment explaining it). Both are fixed at their sites.
+
+The point for later plans: **the missing import is not the finding — the reason it survived is.**
+Nothing had ever mounted either component, so `data-edge.tsx` shipped since Phase 23 and the
+placeholder since Phase 26 with zero component-level coverage. Both are CANVAS-03/T-23-05 surfaces
+(the placeholder IS the degrade-gracefully mitigation for an untrusted persisted `node.type`). If
+you add a component under `_canvas/`, check that something mounts it; the `React` import is a
+symptom that only shows up when something finally does.
+
+## D-61-06-D — `chat/_components/` still blocks the `role-hue-ban` ratchet (11 madder, 2 files + one more)
+
+61-06 cleared **all** of `chat/_canvas/` — the three violations its plan named, a fourth found by
+reading (the thread card's error icon), and six more measured in four sibling files the plan does
+not list (validation/server errors in `add-knowledge-preview-popover`, `edge-creation-picker`,
+`controls/edit-params-control`, `controls/retheme-control`). So the `_canvas/` half of D-61-04-B is
+done and 61-08's precondition holds for that subtree.
+
+**`chat/_components/` is untouched and still red.** D-61-04-B's count stands there: ~11 madder
+text/border, concentrated in `cost-cap-blocked-card.tsx` / `inline-error-card.tsx` (D-19/D-21's
+cards — a *state* wearing a madder border, so a real law-1 question and not just a ratchet chore)
+plus `thread-cluster-indicator.tsx`'s retired role-as-hue (Phase 45's). **61-08 must clear those
+before appending `chat/` to `SCOPED_DIRS`**, or the gate is red on arrival — the exact failure its
+own header names as how a ratchet gets "allowlisted into meaninglessness within a week".
