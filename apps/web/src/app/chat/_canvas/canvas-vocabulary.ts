@@ -1,0 +1,224 @@
+/**
+ * canvas-vocabulary.ts — the tier/kind vocabulary the whole chat canvas
+ * resolves against (61-02-PLAN.md Task 2).
+ *
+ * GROWN from `emails/[id]/_components/region-vocabulary.ts`, not improvised
+ * beside it. It applies that module's rule — the single most reusable decision
+ * Phase 60 made — to the surface it was explicitly written to serve next
+ * (brand-guide.md §3: "Phases 61-63 need it for canvas nodes and edges"):
+ *
+ *   > Tier owns colour and solid-vs-dashed. Role owns weight, style, and
+ *   > opacity — never hue. The two axes are orthogonal.
+ *
+ * On the canvas, "role" is a node's KIND. Before this module the canvas
+ * answered the same questions with five improvised local class maps and a
+ * retired node-type hue family whose three tokens had collapsed to within 4.4%
+ * lightness of each other — a colour key that had stopped distinguishing
+ * anything while still teaching the user that colour meant type. That is how
+ * the debt accumulated in the first place, and it is what this file exists to
+ * stop happening a fourth time.
+ *
+ * The tier TRUTH is NOT here — it lives in `app/_vocabulary/tier.ts`, shared
+ * with `/emails/[id]` and (Phase 62) `/knowledge`. This module holds the
+ * canvas's own LITERAL classes, and `__tests__/canvas-vocabulary.test.ts`
+ * asserts they AGREE with that shared truth. The literals must stay literal:
+ * Tailwind v4 scans source for literal class strings, so a class composed from
+ * a shared token name is silently purged at build time with no error. See
+ * `_vocabulary/tier.ts`'s header for the full reasoning.
+ *
+ * ────────────────────────────────────────────────────────────────────────
+ * THREAT MODEL (T-61-04, Tampering/XSS)
+ * ────────────────────────────────────────────────────────────────────────
+ *
+ * `node.type` and `edge.data` come from `chat_canvas_layouts`, a user-writable
+ * row. Every class below is a LOOKUP from a closed map keyed by a narrowed
+ * union — never a string built by concatenating anything derived from that
+ * data. This is `region-vocabulary.ts`'s T-60-02 obligation restated for the
+ * canvas, and consumers (61-04/61-05) inherit it.
+ *
+ * ────────────────────────────────────────────────────────────────────────
+ * WIRING HAZARD FOR 61-04: STOCK REACT FLOW CSS WILL FIGHT THESE CLASSES
+ * ────────────────────────────────────────────────────────────────────────
+ *
+ * `chat-canvas.tsx` still imports `@xyflow/react/dist/style.css`, whose
+ * `.react-flow__edge-path` rule sets its own stroke at single-class
+ * specificity. That is why today's `DataEdge` needs `!stroke-primary` rather
+ * than `stroke-primary` to render at all. The `!` is deliberately NOT baked in
+ * below: it is a property of the CONSUMER's specificity context, not of the
+ * design, and it would be wrong on a non-React-Flow consumer such as a legend
+ * swatch. 61-04 owns "zero stock React Flow default styling remaining" — if it
+ * drops the stock import the plain classes win; if it keeps it, the consumer
+ * must force them. Wire an edge and LOOK at it; a lost specificity fight here
+ * renders a stock grey wire through a green suite.
+ */
+
+import { type Tier } from "../../_vocabulary/tier";
+
+/**
+ * The tier an edge states.
+ *
+ * `neutral` is NOT a `Tier` — it is the ABSENCE of a tier claim, which is why
+ * this union is not simply `Tier`. A structural wire is plumbing, not
+ * provenance, and law 1 says colour is earned.
+ */
+export type CanvasEdgeTier = "neutral" | "confirmed" | "suggested";
+
+interface EdgeClasses {
+  /** The `<path>`/`<line>` itself — the ONLY place an edge's tier colour lives. */
+  readonly path: string;
+  /** The endpoint dot (the sketch's `.e-joint`), matching its path's colour. */
+  readonly joint: string;
+}
+
+/**
+ * CANVAS_EDGE_TIER — the sketch's `.e-neutral` / `.e-conf` / `.e-sugg`
+ * (direction-final.html lines 459-462), realized as literal classes.
+ *
+ * ON THE YAGNI CHARGE, because someone will raise it: only `neutral` has a
+ * consumer in Phase 61. `confirmed`/`suggested` are built now because
+ *   (a) the LOCKED sketch declares all three;
+ *   (b) `/knowledge` ALREADY renders tier-encoded edges today, and Phase 62
+ *       moves them onto this map;
+ *   (c) Phase 63's provenance edges need them.
+ * Building them now is "grow the vocabulary". The alternative is a fourth
+ * local map next term — the exact debt this rule exists to prevent.
+ *
+ * THE ONE COLLISION, respected as `region-vocabulary.ts` respects it with
+ * `unrelated`: tier owns solid-vs-dashed, so NO other axis on this surface may
+ * use dashed to mean anything. A node kind that wants a broken rule takes
+ * DOTTED (see `CANVAS_NODE_KIND_GEOMETRY`).
+ *
+ * `--edge` is declared in both themes but is deliberately NOT registered in
+ * `@theme`, so no `stroke-edge` utility exists and this plan must not depend
+ * on one (61-04 decides whether to register it). The arbitrary-property form
+ * is a LITERAL string, so Tailwind's scanner sees it and emits the rule
+ * regardless of registration — which is exactly what makes it safe here.
+ */
+export const CANVAS_EDGE_TIER: Record<CanvasEdgeTier, EdgeClasses> = {
+  // The structural wire. A DataEdge wires sourcePath -> targetKey; that is
+  // plumbing, and plumbing states no tier, so it earns no hue.
+  neutral: {
+    path: "[stroke:var(--edge)] [stroke-width:1.5] fill-none",
+    joint: "[fill:var(--edge)]",
+  },
+  // Solid mark = confirmed (58-IDENTITY.md's signature-element language).
+  confirmed: {
+    path: "stroke-conf-line [stroke-width:1.5] fill-none",
+    joint: "fill-conf-line",
+  },
+  // Dashed mark = suggested. The email-detail surface spells this same fact as
+  // `border-dashed` on a CSS box; an edge is an SVG path, so it spells it as a
+  // dasharray. The FACT travels between the surfaces; the class never could.
+  suggested: {
+    path: "stroke-sugg-line [stroke-width:1.5] [stroke-dasharray:4_4] fill-none",
+    joint: "fill-sugg-line",
+  },
+};
+
+/**
+ * A canvas node's kind. Mirrors `NODE_TYPE_REGISTRY`'s four registered types
+ * plus the `unknown` marker `resolveNodeType` already returns for an
+ * unregistered/legacy type (CANVAS-03, T-23-05: the canvas "never breaks").
+ */
+export type CanvasNodeKind =
+  | "chat"
+  | "genui-panel"
+  | "email-thread"
+  | "knowledge-preview"
+  | "unknown";
+
+/**
+ * The closed lookup backing `canvasNodeKindOf`. `node.type` is an untrusted
+ * string from a persisted row, so this is a null-prototype map: a plain object
+ * literal would answer `canvasNodeKindOf("__proto__")` and
+ * `canvasNodeKindOf("toString")` with an inherited value rather than a miss
+ * (T-61-06).
+ */
+const NODE_KIND_BY_TYPE: Readonly<Record<string, CanvasNodeKind>> = Object.freeze(
+  Object.assign(Object.create(null), {
+    chat: "chat",
+    "genui-panel": "genui-panel",
+    "email-thread": "email-thread",
+    "knowledge-preview": "knowledge-preview",
+  }) as Record<string, CanvasNodeKind>,
+);
+
+/**
+ * canvasNodeKindOf — resolves a persisted `node.type` to its kind. NEVER
+ * throws and never falls through to another kind's geometry: an unrecognized
+ * type resolves to `"unknown"` by lookup MISS (T-61-06), the same
+ * degrade-gracefully posture `resolveNodeType` already takes.
+ */
+export function canvasNodeKindOf(type: string): CanvasNodeKind {
+  return NODE_KIND_BY_TYPE[type] ?? "unknown";
+}
+
+/**
+ * CANVAS_NODE_KIND_GEOMETRY — kind carries STRUCTURE and nothing else (law 3:
+ * "Entity type is shape, never hue ... This is what makes law 1 possible").
+ *
+ * Post-59 the chat node's `border-l-primary` stripe already resolved to ink,
+ * so the job here was never a colour removal — it is NAMING the geometry axis,
+ * so a future edit cannot reach for a hue to separate two node kinds. Routing
+ * the stripe through `primary` is the indirection that let a hue live there
+ * for three milestones; below it is ink, said out loud.
+ *
+ * Composed against the sketch's `.card` (a single flat `--bright` card, a
+ * `--rule` border, `--r-card` radius, ZERO shadow anywhere — the base belongs
+ * to the shell in 61-05, not here). Kinds differentiate by RULE and WEIGHT,
+ * never by fill.
+ *
+ * THE AXIS, stated so it can be extended rather than guessed at:
+ *
+ *   LEFT-RULE WEIGHT = how much of the user's OWN material this node carries.
+ *     chat (4)          the conversation itself — the anchor the canvas is about
+ *     email-thread (2)  mail the user received — real evidence, in full
+ *     genui-panel (1)   polytoken's rendering — it has no words of its own
+ *
+ *   DOTTED FRAME = "this is a VIEW or a guess, not an artifact in its own right".
+ *     knowledge-preview  real material (rule 2) but a bounded, non-interactive
+ *                        glance at another surface — a view of the thing
+ *     unknown            claims nothing at all: no rule, provisional frame
+ *
+ * DOTTED, never DASHED: tier owns solid-vs-dashed on every surface, and
+ * `region-vocabulary.ts` makes the identical concession with `unrelated`.
+ */
+export const CANVAS_NODE_KIND_GEOMETRY: Record<CanvasNodeKind, string> = {
+  chat: "border-l-4 border-l-ink",
+  "email-thread": "border-l-2 border-l-ink",
+  "genui-panel": "border-l border-l-ink",
+  "knowledge-preview": "border-l-2 border-l-ink border-dotted",
+  unknown: "border-dotted",
+};
+
+/**
+ * CANVAS_NODE_KIND_LABEL — polytoken's word for each kind, in ONE place,
+ * mirroring `REGION_ROLE_LABEL`'s rationale: two maps of one fact drift, and
+ * the drift reads to the user as two panels disagreeing.
+ *
+ * THESE ARE POLYTOKEN'S WORDS, NOT THE DOCUMENT'S, SO LAW 2 GIVES THEM THE
+ * SANS. A consumer must NEVER put them behind `chip`/`pmark`: `pmark` sets
+ * `font-family: var(--font-serif)`, and no className-reading gate can see the
+ * resulting law-2 violation because the serif arrives by INHERITANCE, not by a
+ * class anyone can grep (brand-guide §3; 60-05's finding, re-confirmed by
+ * 60-06). Use `badge`/`swatch` for chrome that names a thing; `chip`/`pmark`
+ * is for the document's own words only.
+ *
+ * "unknown" reads "Unrecognized" — the honest word for a node whose type this
+ * session's registry does not know, mirroring `REGION_ROLE_LABEL`'s
+ * "Unclassified".
+ */
+export const CANVAS_NODE_KIND_LABEL: Record<CanvasNodeKind, string> = {
+  chat: "Chat",
+  "genui-panel": "Panel",
+  "email-thread": "Email thread",
+  "knowledge-preview": "Knowledge",
+  unknown: "Unrecognized",
+};
+
+/**
+ * Re-exported so a consumer resolving an edge's tier reads the SHARED truth
+ * rather than reaching for `emails/[id]/_components`. Kept as a type-only
+ * re-export: this module owns classes, never the truth behind them.
+ */
+export type { Tier };
