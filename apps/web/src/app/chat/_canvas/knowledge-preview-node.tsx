@@ -24,6 +24,20 @@
  * `useReactFlow().deleteElements` to remove this node from React Flow's own
  * `nodes` array; the actual debounced-save trigger on removal is wired in
  * `chat-canvas.tsx`'s `handleNodesChange` (Plan 41-02 Task 3), not here.
+ *
+ * CHROME (61-06): the shared card recipe (`canvasNodeShellClass`) plus
+ * `CANVAS_NODE_KIND_GEOMETRY["knowledge-preview"]` — a left rule AND a dotted
+ * frame, because this card is a bounded, non-interactive GLANCE at another
+ * surface rather than an artifact in its own right (61-02's kind axis; law 3:
+ * shape, never hue).
+ *
+ * LAW 2 — the header label stays SANS, and the reasoning is the same test
+ * `email-thread-node.tsx` applies to reach the opposite answer. A knowledge
+ * node's label is polytoken's own canonical name for a resolved entity — its
+ * index term, deduped and normalized across every mail it ever appeared in —
+ * not a sentence the mail contains. The `?? "Knowledge preview"` fallback is
+ * polytoken's word outright. Serif is a claim that has to be earned; this
+ * label does not earn it.
  */
 
 import * as React from "react";
@@ -36,13 +50,13 @@ import Link from "next/link";
 import { api } from "~/trpc/react";
 import { hrefFor } from "~/components/provenance-link";
 
+import { canvasNodeShellClass } from "./canvas-node-shell-class";
+import { CANVAS_NODE_KIND_GEOMETRY } from "./canvas-vocabulary";
 import { KnowledgePreviewMiniGraph } from "./knowledge-preview-mini-graph";
 import { MAX_PREVIEW_NODES } from "./knowledge-preview-layout";
 import type { KnowledgePreviewNodeData } from "./node-data-schemas";
 
 export type KnowledgePreviewNodeType = Node<KnowledgePreviewNodeData, "knowledge-preview">;
-
-const SELECTED_RING = "ring-2 ring-primary ring-offset-1";
 
 /**
  * KNOWLEDGE_PREVIEW_STALE_TIME_MS — TanStack's own default staleTime is 0
@@ -101,20 +115,25 @@ export const KnowledgePreviewNode = memo(function KnowledgePreviewNode({
 
   return (
     <div
-      className={`flex h-[240px] w-[320px] flex-col overflow-hidden rounded-lg border border-border/60 bg-background transition-shadow duration-150 animate-in fade-in-0 zoom-in-95 [animation-duration:250ms] motion-reduce:animate-none ${selected ? `${SELECTED_RING} shadow-elevation-2` : "shadow-elevation-1"}`}
+      className={`h-[240px] w-[320px] animate-in fade-in-0 zoom-in-95 [animation-duration:250ms] motion-reduce:animate-none ${canvasNodeShellClass(CANVAS_NODE_KIND_GEOMETRY["knowledge-preview"], selected === true)}`}
     >
       <Handle type="target" position={Position.Left} />
-      <div className="node-drag-handle flex h-9 shrink-0 cursor-grab items-center justify-between gap-2 border-b border-border/60 bg-muted/40 px-3 active:cursor-grabbing">
+      <div className="node-drag-handle flex h-9 shrink-0 cursor-grab items-center justify-between gap-2 border-b border-hair px-3 active:cursor-grabbing">
         <span className="flex min-w-0 items-center gap-2">
-          <Share2 className="size-3 shrink-0 text-primary" aria-hidden />
-          <span className="truncate text-xs font-normal text-muted-foreground">
+          <Share2 className="size-3 shrink-0 text-faded" aria-hidden />
+          {/* SANS — polytoken's canonical name for an entity, not the mail's
+              own words. See the file header's law-2 note. */}
+          <span className="truncate text-xs font-semibold text-ink">
             {headerLabel}
           </span>
         </span>
+        {/* The sketch's `.xbtn` — INK. Removing this card from the board is not
+            irreversible (T-61-19): the knowledge node itself survives untouched
+            and the card re-adds from the same popover. */}
         <button
           type="button"
           aria-label="Remove knowledge preview"
-          className="flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-destructive focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 pointer-coarse:touch-target"
+          className="flex size-6 shrink-0 items-center justify-center rounded-sm text-pencil transition-colors hover:bg-ink-08 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 pointer-coarse:touch-target"
           onClick={(event) => {
             event.stopPropagation();
             void deleteElements({ nodes: [{ id }] });
@@ -131,9 +150,13 @@ export const KnowledgePreviewNode = memo(function KnowledgePreviewNode({
         isError={query.isError}
         onRetry={() => void query.refetch()}
       />
+      {/* The sketch's `.cf` rule + `.tbtn.quiet` register. This footer IS
+          interactive (unlike 61-04's tool row), so a hover is honest — it goes
+          on the sketch's own hover step (--ink-05) instead of the shadcn accent
+          well, and keeps its coarse-pointer touch-target floor. */}
       <Link
         href={hrefFor("knowledge", data.focusNodeId)}
-        className="flex h-7 w-full shrink-0 items-center justify-center gap-1 border-t border-border/60 px-3 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 pointer-coarse:h-11"
+        className="flex h-7 w-full shrink-0 items-center justify-center gap-1 border-t border-hair px-3 text-xs text-faded transition-colors hover:bg-ink-05 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 pointer-coarse:h-11"
       >
         {footerCopy}
       </Link>

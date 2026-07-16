@@ -116,6 +116,65 @@ export const CANVAS_EDGE_TIER: Record<CanvasEdgeTier, EdgeClasses> = {
 };
 
 /**
+ * The tier facts again — as CSS VALUES this time, for a consumer that CANNOT
+ * use a class. Added by 61-06, after measuring why the class map alone could
+ * not reach the screen.
+ *
+ * ────────────────────────────────────────────────────────────────────────
+ * WHY A SECOND PROJECTION EXISTS, and why it is not "two maps of one fact"
+ * ────────────────────────────────────────────────────────────────────────
+ *
+ * The header above tells 61-04 that today's `DataEdge` needs `!stroke-primary`
+ * "rather than `stroke-primary` to render at all", and attributes it to
+ * SPECIFICITY. **That diagnosis is wrong, and 61-05 measured the real one.**
+ * `@xyflow/react/dist/style.css` is imported from a client component, so Next
+ * emits it UNLAYERED — and an unlayered normal declaration beats ANY declaration
+ * inside a Tailwind cascade layer, before specificity is ever consulted. The
+ * shipped rule is:
+ *
+ *   .react-flow__edge-path {                       <- UNLAYERED
+ *     stroke:       var(--xy-edge-stroke,       var(--xy-edge-stroke-default));
+ *     stroke-width: var(--xy-edge-stroke-width, var(--xy-edge-stroke-width-default));
+ *     fill: none;
+ *   }
+ *
+ * So `CANVAS_EDGE_TIER.neutral.path` applied to a React Flow edge is a DEAD
+ * class string: `[stroke:var(--edge)]` loses to the stock rule — which, since
+ * 61-05 set `--xy-edge-stroke: var(--edge)`, happens to resolve to the SAME
+ * colour, so the deadness is invisible — while `[stroke-width:1.5]` loses to a
+ * stock default of `1` and is simply wrong on screen. A class that agrees by
+ * accident is exactly the failure 61-05 found in the controls-svg `fill` rule,
+ * which passed a green gate for two milestones without ever applying.
+ *
+ * The header's instruction — "the consumer must force them" — is also not
+ * mechanically available: Tailwind v4 scans source for LITERAL class strings, so
+ * a `!` composed at runtime (`` `!${tier.path}` ``) emits nothing at all.
+ *
+ * So the FACT travels and the CLASS cannot — which is precisely the concession
+ * `CANVAS_EDGE_TIER.suggested` already documents in the other direction
+ * ("the email-detail surface spells this same fact as `border-dashed` on a CSS
+ * box; an edge is an SVG path, so it spells it as a dasharray"). This map is
+ * that same fact in a third spelling, for a third kind of consumer.
+ *
+ * `__tests__/canvas-node-law.test.tsx` asserts the two projections AGREE —
+ * same token, same width, same dashedness — so they cannot drift apart.
+ * Extend both or neither.
+ */
+export interface EdgeStyle {
+  /** A CSS colour value — always a `var(--token)`, never a literal. */
+  readonly stroke: string;
+  readonly strokeWidth: number;
+  /** Present only where tier claims a dash; tier owns solid-vs-dashed. */
+  readonly strokeDasharray?: string;
+}
+
+export const CANVAS_EDGE_TIER_STYLE: Record<CanvasEdgeTier, EdgeStyle> = {
+  neutral: { stroke: "var(--edge)", strokeWidth: 1.5 },
+  confirmed: { stroke: "var(--conf-line)", strokeWidth: 1.5 },
+  suggested: { stroke: "var(--sugg-line)", strokeWidth: 1.5, strokeDasharray: "4 4" },
+};
+
+/**
  * A canvas node's kind. Mirrors `NODE_TYPE_REGISTRY`'s four registered types
  * plus the `unknown` marker `resolveNodeType` already returns for an
  * unregistered/legacy type (CANVAS-03, T-23-05: the canvas "never breaks").

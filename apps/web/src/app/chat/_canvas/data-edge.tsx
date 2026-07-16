@@ -2,14 +2,60 @@
 
 /**
  * data-edge.tsx — DataEdge: the custom React Flow edge for a data-carrying
- * edge (STATE-02, D-09). `smoothstep` base path (matches `/knowledge`'s
- * default edge styling), `stroke-primary` + the edge's own `markerEnd`
+ * edge (STATE-02, D-09). `smoothstep` base path, the edge's own `markerEnd`
  * (`MarkerType.ArrowClosed`, set at construction time in `chat-canvas.tsx`),
  * and an ALWAYS-VISIBLE midpoint label pill `{sourcePath} → {targetKey}`
  * (never hidden behind a hover state — 23-UI-SPEC.md: "makes wiring legible
  * without opening the picker"). `animated` is never set true anywhere this
  * edge is constructed (reduced-motion posture, 23-UI-SPEC.md Accessibility)
  * — no flowing-dashed-edge styling.
+ *
+ * ────────────────────────────────────────────────────────────────────────
+ * THE WIRE IS NEUTRAL — the sentence that stops the next "improvement"
+ * ────────────────────────────────────────────────────────────────────────
+ *
+ * A `DataEdge` wires `sourcePath -> targetKey`. That is PLUMBING, not
+ * PROVENANCE: it carries a value from one panel to another and makes no claim
+ * about whether anything is confirmed, suggested, or true. Law 1 says colour is
+ * earned, so this edge earns none — it takes `CANVAS_EDGE_TIER.neutral`, the
+ * structural `--edge` wire, and no hue.
+ *
+ * Someone will eventually want to make it verdigris because "green means
+ * connected". That is the reading law 1 exists to prevent: verdigris means
+ * CONFIRMED, and a data wire confirms nothing. `CANVAS_EDGE_TIER`'s `confirmed`
+ * / `suggested` members exist for /knowledge's tier edges (Phase 62) and Phase
+ * 63's provenance edges. They are not for this edge.
+ *
+ * ────────────────────────────────────────────────────────────────────────
+ * WHY THE PATH IS STYLED THROUGH `style` AND NOT `className` — READ FIRST
+ * ────────────────────────────────────────────────────────────────────────
+ *
+ * This file used to force an ink stroke through a class carrying an important
+ * marker, and that marker was NOT a specificity hack — it was a CASCADE-LAYER
+ * workaround, which is why deleting it "to clean it up" would silently
+ * un-style the wire rather than tidy it.
+ *
+ * `@xyflow/react/dist/style.css` is imported from a client component, so Next
+ * emits it UNLAYERED, and an unlayered normal declaration beats anything in a
+ * Tailwind cascade layer *before specificity is consulted*. `.react-flow__
+ * edge-path` sets `stroke` AND `stroke-width` from `--xy-*` variables in that
+ * unlayered rule, so a layered utility — including every class in
+ * `CANVAS_EDGE_TIER.neutral.path` — can never win here. Applying that class
+ * string would look right and be dead: 61-05 set `--xy-edge-stroke: var(--edge)`,
+ * so the colour would AGREE by accident while the sketch's 1.5 width silently
+ * lost to a stock default of 1. And the `!` cannot be re-added programmatically
+ * — Tailwind v4 scans for literal strings, so a runtime `` `!${x}` `` emits
+ * nothing.
+ *
+ * So the tier's facts arrive as VALUES (`CANVAS_EDGE_TIER_STYLE`, the projection
+ * 61-06 added to the vocabulary for exactly this) applied inline, where nothing
+ * can outrank them. `canvas-node-law.test.tsx` asserts that projection agrees
+ * with `CANVAS_EDGE_TIER`'s class map, so the two spellings cannot drift.
+ *
+ * The ARROWHEAD is themed separately, at `chat-canvas.tsx`'s
+ * `DATA_EDGE_MARKER_END` — React Flow computes the marker's colour in JS and
+ * writes it as an inline style, so no stylesheet (and no gate that reads one)
+ * can reach it. That is the one place the wire's appearance is not decided here.
  *
  * Clicking the label pill re-opens `EdgeCreationPicker` pre-filled (the
  * "edit an existing edge" interaction). React Flow's custom edge components
@@ -23,6 +69,8 @@
 
 import { createContext, useContext, type ReactNode } from "react";
 import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from "@xyflow/react";
+
+import { CANVAS_EDGE_TIER_STYLE } from "./canvas-vocabulary";
 
 export interface DataEdgeClickPayload {
   readonly edgeId: string;
@@ -61,6 +109,14 @@ export interface DataEdgeData extends Record<string, unknown> {
   readonly sourcePath: string;
   readonly targetKey: string;
 }
+
+/**
+ * The wire's paint. A data edge states NO tier (see the file header), so this
+ * is `neutral` and can never be anything else without a reason law 1 would
+ * accept. Hoisted to module scope so it is one stable object rather than a new
+ * one per render.
+ */
+const NEUTRAL_WIRE = CANVAS_EDGE_TIER_STYLE.neutral;
 
 export function DataEdge({
   id,
@@ -108,15 +164,20 @@ export function DataEdge({
         id={id}
         path={edgePath}
         markerEnd={markerEnd}
-        className="!stroke-primary"
-        style={{ strokeWidth: 2 }}
+        style={NEUTRAL_WIRE}
         interactionWidth={20}
       />
       <EdgeLabelRenderer>
+        {/* The sketch's `.edgelabel`: --faded on a --leaf chip, micro step,
+            tiny radius, NO shadow (it wore `shadow-sm` and a 80%-opaque page
+            ground — the identity's line is "zero shadow anywhere", and a label
+            that lets the wire show through it is not a label, it is a smudge).
+            ALWAYS visible, never hover-gated — 23-UI-SPEC: it "makes wiring
+            legible without opening the picker". */}
         <button
           type="button"
           onClick={handleClick}
-          className="nodrag nopan absolute rounded-pill border border-border/60 bg-background/80 px-2 py-0.5 text-xs text-muted-foreground shadow-sm"
+          className="nodrag nopan absolute rounded-sm border border-hair bg-leaf px-chip-x py-px text-2xs text-faded"
           style={{
             transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
             pointerEvents: "all",

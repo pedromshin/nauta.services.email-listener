@@ -353,9 +353,17 @@ describe("EmailThreadNode", () => {
       (b) => b.textContent === "Retry",
     ) as HTMLButtonElement;
     expect(retryButton).not.toBeUndefined();
-    // Neutral-ghost recipe (hover:bg-accent), never the filled bg-primary
-    // `EmptyState`'s default-variant `ActionButton` would have rendered.
-    expect(retryButton.className).toContain("hover:bg-accent");
+    // Neutral-ghost recipe, never the filled bg-primary `EmptyState`'s
+    // default-variant `ActionButton` would have rendered.
+    //
+    // 61-06 re-spelled the hover, and this assertion moved with it rather than
+    // being deleted. The FACT it pins — "this Retry is a quiet ghost, not a
+    // filled CTA" — is unchanged; only the step it hovers to is. It was the
+    // shadcn accent well (`--accent`, which resolves to `--shade`); it is now
+    // the sketch's own `.tbtn:hover` step (`--ink-08`). Both are neutral inks,
+    // so this was a re-spelling of one fact, not a change of intent — and
+    // `not.toContain("bg-primary")` below is the half that actually guards it.
+    expect(retryButton.className).toContain("hover:bg-ink-08");
     expect(retryButton.className).toContain("focus-visible:ring-ring");
     expect(retryButton.className).not.toContain("bg-primary");
   });
