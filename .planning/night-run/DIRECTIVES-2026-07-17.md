@@ -140,3 +140,32 @@ Landed: taste layer (285 lines), 6 strategy reports (roadmap, vision corpus, cod
 tenancy ADRs, git safety, frontier), Lane C 3 plans + context, Lane E 1 plan + context, Lane D
 context only. **Missing: the negative-space v1.11 synthesis** (agent died mid-write) — re-run it.
 Resume insurance: Windows scheduled task `polytoken-night-resume` @ 07:50 + heartbeat guard.
+
+---
+
+## Correction log (orchestrator, verified before relaying)
+
+**Lane D's `dropzone.tsx` finding is OVERSTATED — do NOT queue a fix.** The planner reported
+`packages/ui/src/dropzone.tsx`'s `ring-1 ring-ring` drag-active state as "a stock accent (law 1)
+*and* the ring/white-halo trap, live on every surface using it today." Checked all three claims:
+
+| Claim | Verdict |
+|---|---|
+| `ring-1 ring-ring` exists (line 87) | **TRUE** |
+| "a stock accent — law 1 violation" | **FALSE.** `--ring: var(--ink)` in globals.css (both themes) — it resolves to ink and is law-1 compliant. |
+| "the white-halo trap" | **FALSE.** `--tw-ring-offset-color: #fff` only bites when ring-offset-width > 0; dropzone sets no ring-offset (0 occurrences). The trap cannot fire. |
+| "live on every surface using it today" | **FALSE.** Production importers: **0**. Only `apps/web/src/app/dev/design/previews-vendored.tsx`, a gate-excluded preview harness. |
+
+**The one real (minor) point:** `ring-ring` is compliant *by indirection* rather than by statement —
+which this codebase has a documented preference against (61-03: *"say the token where the sketch says
+it — never inherit ink through primary's indirection"*; `variant="ghost"` resolving correctly through
+`--accent`/`--ring` was called "the §E trap — compliant by accident of an indirection rather than by
+design"). So it is a style-consistency nit on dead code, not a live law-1 bug.
+
+**Lane D's DECISION is unaffected and stands** — hand-rolling the vault's drop handlers is right for
+its signature interaction (the sheet rises to accept), independent of dropzone's state.
+
+**Why this is logged:** I was one step from relaying "fix the live law-1 bug in dropzone" to Lane A
+on a subagent's say-so. The finding was confident, specific, and wrong in its severity and its blast
+radius. Same discipline as the rendered-geometry lesson, one level up: *verify the claim before
+acting on it, including — especially — a claim that flatters the finder.*
