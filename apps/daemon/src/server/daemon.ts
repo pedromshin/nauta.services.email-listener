@@ -21,6 +21,7 @@ import { isAuthorized } from "./auth.js";
 import { createClient, createClientRegistry, type ClientRegistry } from "./clients.js";
 import { createPendingAsks, createWsAsk } from "./ask.js";
 import { createRouter, type Router } from "./router.js";
+import { registerToolHandler } from "../tools/handler.js";
 import { startWatcher, type Watcher } from "../watch/watcher.js";
 import path from "node:path";
 
@@ -74,6 +75,9 @@ export const startDaemon = async (opts: {
     const decision = payload as { requestId: string; allow: boolean; remember: boolean };
     pending.resolve(decision.requestId, { allow: decision.allow, remember: decision.remember });
   });
+
+  // fs/terminal/git — resolved by registry id, every one routed through the broker (DMON-03).
+  registerToolHandler(router);
 
   const httpServer = http.createServer((_req, res) => {
     // This is a WebSocket door, not an HTTP API. Say so without leaking anything.
