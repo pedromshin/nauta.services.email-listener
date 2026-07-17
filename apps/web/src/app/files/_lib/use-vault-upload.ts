@@ -213,10 +213,22 @@ export function useVaultUpload({ path }: { path: readonly string[] }) {
     [path, uploadOne, utils],
   );
 
-  const retry = useCallback(
-    (id: string, file: File) => void uploadOne(id, file, path),
-    [uploadOne, path],
-  );
-
-  return { uploads, start, cancel, dismiss, retry };
+  /**
+   * NO `retry` HERE, DELIBERATELY — and this is the honest version of a gap.
+   *
+   * 66-04-PLAN specifies a per-file "Retry" on a failed tray row. Retrying
+   * needs the original `File` handle kept alive past the failure, and this
+   * queue does not retain one: `start()` takes the files, uploads them, and
+   * lets them go. Adding a `Map<id, File>` that outlives the batch is a real
+   * design decision about how long the vault pins a user's file in memory
+   * after it has already failed — not a line to tack on at the end of a plan.
+   *
+   * So the tray ships DISMISS, the failed row persists until dismissed with
+   * the reason named, and re-dropping the file is the path. An earlier draft
+   * of this hook exported a `retry` that no component called; a dead export
+   * that advertises a capability is worse than an admitted gap, because the
+   * next reader believes it. Removed, and recorded in 66-04-SUMMARY.md as
+   * backlog rather than quietly left half-built.
+   */
+  return { uploads, start, cancel, dismiss };
 }
