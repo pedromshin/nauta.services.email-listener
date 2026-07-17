@@ -39,6 +39,27 @@ sidebar/nav registration, tRPC `root.ts` router wiring, `package.json`/lockfile 
 deps in your SUMMARY's `deps:` list — A installs at merge), `drizzle` migrations (see queue),
 `globals.css`, README/CLAUDE.md.
 
+## Taste layer (user directive, added mid-run — binding on every UI-building lane)
+
+The user's parting instruction, verbatim: *"make good ui pls"* and *"minimize clicks … you
+typically make good generic uis … lets make it a little better by researching patterns and
+references. this is mostly a matter of taste."*
+
+1. **Before building any surface**, executors read `docs/design/taste-references.md` (being
+   produced by the ui-taste-sweep workflow from the user's own curated links.md + design case +
+   per-surface pattern research) AND invoke the `frontend-design` skill. If the taste doc has not
+   landed yet when an executor starts, the orchestrator injects its content at dispatch.
+2. **Click economy is a requirement, not a vibe:** the surface's primary action is reachable in
+   ≤1 click or 1 keystroke from arrival; inline edit beats a modal; hover/focus-reveal for
+   secondary actions; undo beats confirm EXCEPT the genuinely irreversible (madder rule); empty
+   states teach the next action instead of announcing emptiness.
+3. **References feed layout/density/hierarchy/interaction ONLY.** Palette and typography are
+   LOCKED (D-58-01). A borrowed pattern that fights the identity gets adapted or dropped, and the
+   summary says which.
+4. **Anti-generic bar:** no centered-card-with-shadow syndrome, no icon-button rows without
+   accessible labels, no modal-for-everything, no default-shadcn look wearing our tokens. The
+   taste doc's anti-generic checklist is part of post-merge screenshot review.
+
 ## Protocols
 
 1. **Commits:** scoped `git add <owned paths>` only. Never `-A`. Never `git checkout --` without a
