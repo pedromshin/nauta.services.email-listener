@@ -169,3 +169,36 @@ its signature interaction (the sheet rises to accept), independent of dropzone's
 on a subagent's say-so. The finding was confident, specific, and wrong in its severity and its blast
 radius. Same discipline as the rendered-geometry lesson, one level up: *verify the claim before
 acting on it, including — especially — a claim that flatters the finder.*
+
+---
+
+## INCIDENT — dual orchestrator, 07:50 (my design flaw; contained, nothing lost)
+
+**What happened:** the `polytoken-night-resume` scheduled task fired at 07:50 and a SECOND
+orchestrator took over this checkout headless with `--dangerously-skip-permissions`. It read the
+heartbeat as **38 minutes stale**, concluded the first orchestrator was dead, and correctly (by the
+rule as written) claimed the run. Two committers on one checkout is the precise pattern
+LANE-CONTRACTS bans — it is what swept staged files into siblings' commits earlier in this milestone.
+
+**The flaw was mine, and it was a definition error.** The heartbeat refreshed only when the
+orchestrator took a TURN. It had been waiting on Lane C's 39-minute daemon build — fully alive,
+entirely silent. **A turn-driven heartbeat measures ACTIVITY; the guard needs LIVENESS.** An agent
+waiting on a long subagent is alive. The guard worked exactly as specified and reached the wrong
+conclusion.
+
+**Contained:** the second session had made no commits — only an (accurate, preserved) edit to
+NIGHT-RUN's run-order. Killed PID 15152; disabled the one-shot task so it cannot re-fire;
+Remote Control (PID 29312) deliberately left alive.
+
+**Fixed structurally, not by care:** `heartbeat-daemon.ps1` now pulses every 60s in its own
+process for as long as an orchestrator lives, decoupled from turn-taking. Deliberate handover is
+explicit — create `HEARTBEAT-STOP` and the pulse ends within 60s, so the heartbeat then ages
+honestly and a resume may legitimately take over.
+
+**The lesson, and it generalizes past this repo:** a safety guard is only as good as the *proxy* it
+measures. "Recent write" was a proxy for "alive" that silently inverted under exactly the condition
+the system was designed to create — long autonomous background work. This is the same shape as
+tonight's other findings: the class-string gate that could not see `variant="destructive"` on a
+status, the eval that scored an identity function, the geometry gate that measured vertical overflow
+while the bug was horizontal. **The gate is never the thing; verify the proxy still tracks the
+property under the conditions you actually run in.**
