@@ -472,6 +472,31 @@ These are deliberate. Do not "restore" them from `direction-final.html` without 
   machine fact nobody confirmed. Spending the confirmed hue on it would make verdigris mean two
   things — the one thing law 1 cannot survive. **That both are called "status" is the trap.**
 
+### 3.9 Interaction taste — the level above the identity (D1, 2026-07-17)
+
+The identity above governs **palette, type, and the colour law**. It does not govern *interaction* —
+and interaction is where the user's remaining complaint lives. Their verdict, verbatim
+(2026-07-17): *"minimize clicks, you typically make good generic uis … lets try to make it a little
+better by researching patterns and references. this is mostly a matter of taste which you have a
+generic one."*
+
+**`docs/design/taste-references.md` is therefore a standing contract ranking with `58-IDENTITY.md`,
+binding on all future surfaces — not the phase it was written in.** Read it before building; do not
+restate it here. It carries: the 10-rule interaction-economy checklist (load-bearing rule — *the
+primary action of any surface is reachable in ≤1 click or 1 keystroke from arrival*; inline over
+modal; undo over confirm except the genuinely irreversible; empty states teach the next action),
+per-surface prescriptions mined from best-in-class sources, the component-pack shopping list, and
+the anti-generic checklist that screenshot review now runs.
+
+**Reference discipline:** mined references feed layout/density/hierarchy/interaction ONLY — palette
+and typography are locked by D-58-01. A pattern that fights the identity is adapted or dropped, and
+the summary says which. This is not theoretical: repo-root `links.md` (believed by the user to be
+curated design research) is an Instagram-caption scrape whose ColorFlow/ShaderGradient/liquid-glass
+entries are *active anti-patterns* against "colour is earned, never decorative", and
+`0 - nauta_design_case.pdf` is the Nauta business/architecture take-home with zero visual content.
+Neither is a design reference; §5 of the taste doc records the full provenance. **58-IDENTITY.md —
+the user's own pick — remains the only first-person taste artifact in the repo.**
+
 ## 4. Mark usage
 
 The mark is the `BrandMark` component

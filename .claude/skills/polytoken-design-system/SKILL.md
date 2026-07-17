@@ -245,10 +245,40 @@ from `packages/ui/`.
   token or component changes:
   `node .claude/skills/polytoken-design-system/scripts/build-design-data.mjs`
 
+## Interaction taste (D1, 2026-07-17) — pointer, not a duplicate
+
+**`docs/design/taste-references.md` is a STANDING CONTRACT, ranking with `58-IDENTITY.md`.** Read it
+before building ANY surface. 58-IDENTITY governs palette/type/colour-law; the taste layer governs
+the level above — interaction, layout, density, click economy.
+
+The user's verdict, verbatim (2026-07-17): *"minimize clicks, you typically make good generic uis …
+lets try to make it a little better by researching patterns and references. this is mostly a matter
+of taste which you have a generic one."* Their earlier instruction: *"make good ui pls."* This is
+standing, not a one-off — it applies to future work, not just the phase it was said in.
+
+What lives there (do not restate it — read it):
+1. **The interaction-economy checklist** — 10 testable rules. The load-bearing one: *the primary
+   action of any surface is reachable in ≤1 click or 1 keystroke from arrival.* Also: inline edit
+   over modal, hover/focus-reveal for secondary actions, undo over confirm EXCEPT the genuinely
+   irreversible (the madder rule), empty states TEACH the next action.
+2. **Per-surface prescriptions** with sources (Linear/Raycast/Superhuman click economy, HEY Screener
+   for suggest-only triage, Warp/Ghostty terminal, Finder for the vault, Perplexity/NotebookLM for
+   report reading).
+3. **Component-pack picks** — a shopping list against the approved-registry list below.
+4. **The anti-generic checklist** — screenshot-scannable tells (centered-card-with-shadow syndrome,
+   icon-button rows without labels, modal-for-everything). **Run it in screenshot review.**
+
+**Reference discipline:** mined references feed LAYOUT/DENSITY/HIERARCHY/INTERACTION only. Palette
+and typography are LOCKED by D-58-01. A borrowed pattern that fights the identity gets adapted or
+dropped — say which. (Half the links in repo-root `links.md` are shader/gradient toys that violate
+"colour is earned, never decorative"; they were rejected. `links.md` is an Instagram scrape, not a
+moodboard, and `0 - nauta_design_case.pdf` is a business take-home with zero visual content —
+neither is a design reference. §5 of the taste doc records this.)
+
 ## Design quality bar
 
 - The `frontend-design` plugin skill (user scope) sets the aesthetic floor —
-  follow it for any new surface.
+  **invoke it for any new surface**, alongside `docs/design/taste-references.md` above.
 - Verify UI work visually before declaring it done — a green gate is not a look. (Phase 55 shipped
   a half-width sidebar through 4/4 verification and 730 green tests; 60-06 found a status badge
   talking in madder that the role-hue gate structurally could not see.)
