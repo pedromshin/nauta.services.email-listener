@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "roots": ["C:\\Users\\pc\\Desktop"],
+  "watch": { "root": "C:\\Users\\pc\\Desktop" },
+  "port": 8787,
+  "permTimeoutMs": 30000,
+  "exec": { "defaultTimeoutMs": 30000, "maxOutputBytes": 1048576 },
+  "stateDir": ".state"
+}

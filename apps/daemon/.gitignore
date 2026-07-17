@@ -1,0 +1,7 @@
+# The real config names real local paths on this machine — only the example is committed.
+daemon.config.json
+
+# Runtime state: the allowlist (grants power) and the audit log.
+# No trailing slash: a dir-only pattern cannot match before the dir exists, and this must be
+# unstageable from the moment it appears.
+.state
