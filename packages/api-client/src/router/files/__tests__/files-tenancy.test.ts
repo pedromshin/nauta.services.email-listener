@@ -346,10 +346,13 @@ describe("a storage failure raises, and says nothing", () => {
   it("the client-facing message leaks no key or bucket name (T-66-07)", async () => {
     const { adapter } = createFakeAdapter({ throwOn: "listFolder" });
 
+    // `unknown` and narrowed, not typed as `Error` at the boundary — a thrown
+    // value genuinely can be anything, and asserting on `err.message` after a
+    // cast would be a claim about a shape nobody checked.
     await expect(
       callerFor(USER_A, adapter).files.list({ path: [] }),
-    ).rejects.toSatisfy((err: Error) => {
-      const message = err.message;
+    ).rejects.toSatisfy((err: unknown) => {
+      const message = err instanceof Error ? err.message : String(err);
       return (
         !message.includes("user-b/secret.pdf") &&
         !message.includes("user-files") &&
