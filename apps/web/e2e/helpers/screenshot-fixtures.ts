@@ -285,6 +285,64 @@ export async function seedChatThreadFixture(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Vault fixture — the populated /files surface (999.37)
+// ---------------------------------------------------------------------------
+
+/**
+ * Seeds a small real file tree into the `user-files` bucket for the seeded user.
+ *
+ * WHY: this is 999.24's shape for the fourth time. The harness photographs whatever state the
+ * fixture leaves, so an unseeded surface is invisible — the inbox needed a seeded email, the chat
+ * a seeded turn, the canvas a seeded layout, and Phase 66's vault shipped with EVERY capture
+ * showing its empty state. "The vault renders" meant "the vault's empty state renders": no row,
+ * no breadcrumb-at-depth, no file-kind geometry, no size/date column had ever been seen by anyone.
+ *
+ * Keys come from the production chokepoint (`vaultKey`) rather than hand-built strings, so the
+ * fixture cannot drift from the rule it is meant to exercise: every key is `{userId}/…`, derived
+ * server-side, never client-supplied. The folder placeholder likewise uses the module's own
+ * constant — `VaultSegmentSchema` deliberately REJECTS that name as a user segment, so a
+ * hand-written literal here would be seeding something the app forbids a user to create.
+ *
+ * Idempotent: removes this fixture's own objects before re-seeding, so re-runs do not stack.
+ */
+export async function seedVaultFixture(userId: string): Promise<{ readonly fileCount: number }> {
+  const url = requireEnv("SUPABASE_URL");
+  const serviceKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+  const { createClient } = await import("@supabase/supabase-js");
+  // Relative, not the package name: api-client's `exports` map publishes only ".", "./geometry",
+  // "./chat-canvas" and "./genui/panel-edit-schema" — there is no files subpath, so importing
+  // "@polytoken/api-client/router/files/vault-keys" resolves to nothing. vault-keys is pure (zod +
+  // string work, no DB client), so Playwright's runner loads the source directly.
+  const { vaultKey, emptyFolderPlaceholderKey } = await import(
+    "../../../../packages/api-client/src/router/files/vault-keys.js"
+  );
+  const sb = createClient(url, serviceKey);
+
+  const files: ReadonlyArray<{ readonly segments: readonly string[]; readonly body: string }> = [
+    { segments: ["Q3 renewal quote.txt"], body: "Total: $1,180.00\nFrom: Example Sender\n" },
+    { segments: ["Invoice INV-2024-10001.txt"], body: "Invoice INV-2024-10001 — $4,250.00\n" },
+    { segments: ["notes.md"], body: "# Vault notes\n\nThe row is the detail.\n" },
+    { segments: ["Receipts", "packing-list.txt"], body: "UAT-45 Fixture Vessel BF-80\n" },
+  ];
+
+  // Clean this fixture's own objects first (idempotent re-runs).
+  const keys = files.map((f) => vaultKey(userId, f.segments));
+  await sb.storage
+    .from("user-files")
+    .remove([...keys, emptyFolderPlaceholderKey(userId, ["Receipts"])]);
+
+  for (const f of files) {
+    const key = vaultKey(userId, f.segments);
+    const { error } = await sb.storage
+      .from("user-files")
+      .upload(key, new Blob([f.body], { type: "text/plain" }), { upsert: true });
+    if (error) throw new Error(`seedVaultFixture: upload ${key} failed — ${error.message}`);
+  }
+
+  return { fileCount: files.length };
+}
+
 /**
  * Seeds a canvas layout for the chat fixture: the conversation's chat node, an email-thread node
  * pointing at the existing seeded thread, and one data edge wiring them together.

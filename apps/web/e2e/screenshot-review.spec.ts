@@ -90,6 +90,7 @@ import {
   seedChatCanvasFixture,
   seedChatThreadFixture,
   seedEmailFixture,
+  seedVaultFixture,
 } from "./helpers/screenshot-fixtures";
 
 // ---------------------------------------------------------------------------
@@ -626,6 +627,8 @@ test.describe("screenshot review capture", () => {
       const fixture = await seedEmailFixture(seeded.userId);
       const chatFixture = await seedChatThreadFixture(seeded.userId);
       await seedChatCanvasFixture(NODE_REGISTRY_VERSION);
+      // 999.37 — without this the vault is photographed empty forever (999.24's shape again).
+      await seedVaultFixture(seeded.userId);
       surfaces = [
         ...BASE_SURFACES,
         { name: "emails", path: "/emails/" + fixture.emailId },

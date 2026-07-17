@@ -73,8 +73,46 @@ fixture work below.
 - **Nothing here proves upload works.** The procedures are unit-tested against a mocked storage
   client; the real bucket has never received a byte through the UI.
 
+## UPDATE — 999.37 done: the POPULATED vault, and a false alarm I raised myself
+
+`seedVaultFixture()` now seeds a real tree (3 files + a `Receipts/` folder with a nested file) into
+the bucket through the production chokepoint — `vaultKey`/`emptyFolderPlaceholderKey`, never
+hand-built strings, so the fixture cannot drift from the rule it exercises. Captured in both themes:
+`.planning/ui-reviews/2026-07-17T11-29-40-792Z/files-desktop-{light,dark}.png`.
+
+**What the populated surface actually shows, verified:** folder-first ordering, the folder row
+correctly carrying no size/date, file sizes and dates as `tabular` metadata in sans (law 2 — file
+names are metadata, not evidence), kind-by-geometry glyphs (never hue, law 3), and the whole thing
+inverting cleanly in dark.
+
+### The false alarm — worth recording, because I raised it
+
+Reading the PNGs, I reported "every row wears a heavy 2px ink border — the list reads as if
+everything is selected" and "a broken empty sliver column on the right edge", and I suspected the
+drag-accept state (`border-ink`) was stuck on. **All of that was wrong.** Measuring the live DOM:
+
+| Element | Reality |
+|---|---|
+| pane | `rounded-card border` — **1px**, `oklch(0.821 0.021 100.6)` = `--rule`, i.e. the IDLE state |
+| rows | `border-b border-hair` — `oklch(0.883 0.018 99.6)` = `--hair` |
+| geometry | pane `x=336 w=1024`, rows `x=337 w=1022` — correctly nested, 1px inset per side |
+
+No stuck drag, no overflow, no sliver. I was eyeballing a scaled-down PNG and reading 1px warm
+hairlines as heavy ink rules.
+
+**The nuance this adds to this milestone's own lesson.** Eleven bugs shipped through green suites
+because nobody looked at the rendered thing — that stands. But looking is not the terminus:
+*pixels catch what gates cannot see, and measurement catches what pixels make you imagine.* The
+same discipline that found the 11,296px scroll and the stock navy handles also produced this false
+positive, and only `getComputedStyle` settled it. Two failures in one night from trusting a
+confident read — this one, and Lane D's dropzone report (see DIRECTIVES → Correction log). Both
+were caught by measuring rather than by arguing.
+
 ## Recorded for the backlog
 
-- **999.37 — seed the vault fixture** so the populated surface, upload progress, drag-accept and
-  the delete dialog enter the capture record. Same pattern as `seedChatThreadFixture`.
-- **999.38 — route-name duplication across surfaces** (flaw 1). Phase 62 sweep candidate.
+- **999.37 — DONE** (this update). `seedVaultFixture` is wired into the harness.
+- **999.38 — route-name duplication across surfaces** (flaw 1, "Files / Files" at root). Phase 62
+  sweep candidate — it is an app-wide convention decision, not a one-file patch.
+- **Still unproven:** upload has never moved a byte through the UI; drag-accept, upload progress and
+  the delete dialog remain unseen (they need interaction, not a fixture). The seeded tree makes the
+  *listing* reviewable — it does not make the *writes* reviewed.
