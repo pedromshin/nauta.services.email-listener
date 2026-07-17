@@ -139,6 +139,34 @@ export function vaultKey(userId: string, segments: readonly string[]): string {
 }
 
 /**
+ * The key of the zero-byte object that makes `segments` exist as a folder.
+ *
+ * WHY THIS FUNCTION EXISTS RATHER THAN A THIRD ARGUMENT TO `vaultKey`:
+ * the placeholder is OUR bookkeeping, and `VaultSegmentSchema` REJECTS it as a
+ * name (`VAULT_NAME_RULES.RESERVED`) precisely so a user can never mint one
+ * and fabricate a phantom folder. So `vaultKey(userId, [...path, name,
+ * EMPTY_FOLDER_PLACEHOLDER])` cannot work — the chokepoint correctly refuses
+ * its own placeholder. The two rules are both right and they collide.
+ *
+ * The resolution: validate the user's segments through `vaultKey` exactly as
+ * always, THEN append the placeholder — a module-level constant that never
+ * touched the network — to the already-validated key. The append is safe
+ * because it happens after the guard and its value is not client-supplied.
+ *
+ * It lives HERE, next to the schema that bans it, so that `vault-keys.ts`
+ * remains the only module in the vault that constructs a storage key. The
+ * adapter does no interpolation at all, which is the property that makes
+ * "every key comes from the chokepoint" auditable by grep rather than by
+ * trust.
+ */
+export function emptyFolderPlaceholderKey(
+  userId: string,
+  segments: readonly string[],
+): string {
+  return `${vaultKey(userId, segments)}/${EMPTY_FOLDER_PLACEHOLDER}`;
+}
+
+/**
  * Decode `?path=a/b` from the URL (Plans 03/04's navigation).
  *
  * A hand-edited URL is the VAULT ROOT — never an error page, never a
