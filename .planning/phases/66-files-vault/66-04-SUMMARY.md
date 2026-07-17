@@ -84,7 +84,8 @@ present. They cannot prove this surface looks like anything at all.
 | Scan the whole vault with arrows alone; `Enter` acts; `Delete` asks | ✅ |
 | Upload by dropping anywhere on the pane — **0 clicks** | ✅ |
 | Upload from the picker — **1 click**, no intermediate modal | ✅ |
-| Per-file real progress, cancel mid-flight, per-file failure + retry | ✅ |
+| Per-file real progress, cancel mid-flight, per-file failure with the reason named | ✅ |
+| Retry a failed upload from the tray | ⚠️ **NO** — dismiss only; re-drop the file (see deviation 4) |
 | Create a folder inline — **1 click + type + Enter**, no modal | ✅ |
 | Download via 60s signed URL, attachment disposition, all types | ✅ |
 | Delete a file or a folder (recursive) behind one confirm | ✅ |
