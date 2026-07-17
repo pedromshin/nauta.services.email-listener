@@ -1,5 +1,35 @@
 # Remote Desktop MVP — status when you woke
 
+## ⚡ READ THIS FIRST — you can already develop from anywhere. It is LIVE right now.
+
+**Claude Code shipped "Remote Control" (v2.1.196, June 2026). I verified it against the docs,
+started it on this PC, and it is connected.** It needs **no admin, no Tailscale, no port
+forwarding, no install** — your PC only makes *outbound* calls, so NAT/firewall are irrelevant.
+
+**From your phone or any browser: open the Code tab in the Claude mobile app, or
+[claude.ai/code](https://claude.ai/code) — the session is named `polytoken-travel`** (green dot =
+online). Full Claude Code: edit, run tests, commit, push, all your MCP servers, subagents, slash
+commands. A keepalive wrapper relaunches it if the link ever drops
+(`.planning/night-run/remote-control-keepalive.ps1`; log is gitignored — it holds a live session URL).
+
+**This retires the biggest pain in your brief ("develop from anywhere") today, with zero setup
+from you.** It is why the section below is now the *fallback*, not the headline.
+
+**What Remote Control CANNOT do** — and this is exactly why the RDP section below still matters:
+install software, change system settings, run GUI apps, drive Docker Desktop, restart services, or
+**fix a broken dev environment**. That last one is not hypothetical: Docker Desktop died on this box
+tonight and took the whole stack with it. Remote Control could not have fixed that. RDP can.
+
+> Registered as backlog **999.36** by tonight's synthesis, independently: evaluate Remote Control
+> for 30 minutes *before funding v2.2 as a milestone* — a product you already pay for may have
+> retired the pain we were about to build a milestone around. Lane E's session-streaming slice
+> still stands (it's ours, and it composes with the capability registry), but the milestone's
+> justification just got weaker, and that is worth knowing before spending nights on it.
+
+---
+
+## The RDP tier — for what Remote Control can't do
+
 **You asked for: "100% done and flawless and tested when I wake."**
 **Honest status: ~90% staged, blocked on ONE thing I cannot do — admin rights.**
 

@@ -59,3 +59,7 @@ apps/web/playwright-report/
 # Claude Code personal overrides
 .claude/settings.local.json
 apps/email-listener/listener-*.log
+
+# Remote Control session log — contains a live session/environment URL
+.planning/night-run/remote-control.log
+.planning/night-run/resume-log.txt
