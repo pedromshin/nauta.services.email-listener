@@ -9,6 +9,16 @@ export {
   defineCapability,
 } from "./capability.js";
 
+export { vetCandidate, registerExternal } from "./vetting.js";
+
+export type {
+  ExternalTrust,
+  ExternalCapabilityCandidate,
+  ExternalCapability,
+  PromotionRecord,
+  VetResult,
+} from "./vetting.js";
+
 export type {
   Risk,
   CapabilityCost,
