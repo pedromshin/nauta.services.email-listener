@@ -27,6 +27,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { loadStoredDocument } from "../../../../documents/_lib/document-store";
 import { loadReportDocument } from "../../../../documents/_lib/report-document";
 import { createClient as createSupabaseServerClient } from "~/lib/supabase/server";
 
@@ -57,7 +58,10 @@ export async function GET(
   }
 
   // ── Fail-closed existence check (no oracle: same 404 as "not yours") ─────
-  const doc = await loadReportDocument(id);
+  // DOCS-02: prefer the owner-scoped DB store (ownership gated on the verified
+  // user above); the built-in sample registry is the floor-demo fallback.
+  const doc =
+    (await loadStoredDocument(id, user.id)) ?? (await loadReportDocument(id));
   if (!doc) {
     return NextResponse.json({ error: "Document not found" }, { status: 404 });
   }
