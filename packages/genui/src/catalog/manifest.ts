@@ -830,10 +830,12 @@ function AvatarStackComponent({
   return React.createElement(
     "div",
     { role: "group", "aria-label": ariaLabel },
-    React.createElement(
-      AvatarStack,
-      { size: AVATAR_STACK_SIZE_PX[size], animate },
-      ...items.map((item, i) =>
+    React.createElement(AvatarStack, {
+      size: AVATAR_STACK_SIZE_PX[size],
+      animate,
+      // children passed via props (not rest args) — AvatarStackProps.children is
+      // required, and the createElement overload only type-checks it in props.
+      children: items.map((item, i) =>
         React.createElement(
           Avatar,
           { key: `${item.alt}-${i}`, className: "size-full" },
@@ -845,7 +847,7 @@ function AvatarStackComponent({
           ),
         ),
       ),
-    ),
+    }),
   );
 }
 
@@ -854,11 +856,13 @@ function AnimatedListComponent({
   delay = 1000,
   children,
 }: AnimatedListProps): React.ReactElement {
-  return React.createElement(
-    AnimatedList,
-    { delay, "aria-label": ariaLabel, className: "w-full items-stretch" },
+  // children via props — AnimatedListProps.children is required (see AvatarStack note)
+  return React.createElement(AnimatedList, {
+    delay,
+    "aria-label": ariaLabel,
+    className: "w-full items-stretch",
     children,
-  );
+  });
 }
 
 function MarqueeComponent({
@@ -869,11 +873,15 @@ function MarqueeComponent({
   repeat,
   children,
 }: MarqueeProps): React.ReactElement {
-  return React.createElement(
-    Marquee,
-    { reverse, pauseOnHover, vertical, repeat, "aria-label": ariaLabel },
+  // children via props — MarqueeProps.children is required (see AvatarStack note)
+  return React.createElement(Marquee, {
+    reverse,
+    pauseOnHover,
+    vertical,
+    repeat,
+    "aria-label": ariaLabel,
     children,
-  );
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -882,8 +890,10 @@ function MarqueeComponent({
 // ---------------------------------------------------------------------------
 
 /**
- * The component catalog. 16 entries: 3 layout primitives + 8 @polytoken/ui-backed legacy leaves
- * + 5 Phase-18 domain components (avatar, input, nav, feed-item, tabs — CTLG-06).
+ * The component catalog. 22 entries: 3 layout primitives + 8 @polytoken/ui-backed legacy leaves
+ * + 5 Phase-18 domain components (avatar, input, nav, feed-item, tabs — CTLG-06)
+ * + 1 Phase-19 form + 5 vendored 999.13 components (number-ticker, spinner,
+ * avatar-stack, animated-list, marquee).
  *
  * Frozen as const; typed as ComponentRegistry for keyed lookup.
  *

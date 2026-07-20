@@ -23,6 +23,7 @@
     "@mlc-ai/web-llm": "^0.2.84",
     "@polytoken/api-client": "*",
     "playwright-core": "1.61.1",
+    "@polytoken/daemon-protocol": "*",
     "@polytoken/db": "*",
     "@polytoken/genui": "*",
     "@polytoken/ui": "*",
