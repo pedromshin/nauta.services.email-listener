@@ -12,8 +12,9 @@
 - ✅ **v1.7 — polytoken.ai Foundation: Rename, Auth & Tenancy** (Phases 42–46) — SHIPPED 2026-07-10. Atomic internal rename nauta → polytoken, Google OAuth + sessions (Supabase Auth), enforced per-user tenancy (app-boundary primary + RLS defense-in-depth, adversarially gated), email threads at ingest + personal-forwarding seam, hygiene folds + decision-ready v1.8 dossier. Archived: [milestones/v1.7-ROADMAP.md](milestones/v1.7-ROADMAP.md) · Audit: [milestones/v1.7-MILESTONE-AUDIT.md](milestones/v1.7-MILESTONE-AUDIT.md).
 - ✅ **v1.8 — Polytoken Re-skin — Brand & Design-System Foundation** (Phases 47–48; scope cut) — SHIPPED 2026-07-10. Polytoken brand identity (voice, logo, guide; naming USER-LOCKED to polytoken/polytoken.ai) + Playwright/screenshot verification toolchain, and token-system extensions on the EXTENDED v1.4 token system (pill radius, success color, code typography, tier-ladder + graph node/edge-type tokens, hover/active convention, breakpoint decision). Opened as Phases 47–51; user-directed scope cut ended it at Phase 48 with 12/12 in-scope requirements — RSKN/MOBL/PANL (11 requirements) moved to v1.9 per [research/two-epoch-endgame/ENDGAME-PLAN.md](research/two-epoch-endgame/ENDGAME-PLAN.md). Archived: [milestones/v1.8-ROADMAP.md](milestones/v1.8-ROADMAP.md) · Audit: [milestones/v1.8-MILESTONE-AUDIT.md](milestones/v1.8-MILESTONE-AUDIT.md).
 - ✅ **v1.9 — Cloud Workspace** (Phases 49–54) — SHIPPED 2026-07-14. The E3 email-cluster workflow (thread cards on the chat canvas, thread-bound chats, a real `web_search` executor, captured sources → INFERRED nodes → promote-to-global, accumulating cluster context) on a fully re-skinned, mobile-responsive, live-deployed product with editable genui panels. 24/27 requirements. **Caveat:** shipped with its three live-acceptance legs unexecuted — LIVE-03 (OAuth live), LIVE-04 (real email flowing), CLUS-07 (the six-leg scenario on the real inbox, *the declared acceptance bar*) — accepted as tech debt by explicit user decision at the gate, overriding the milestone's own standing rule. All three are user-only actions with code/infra/runsheets complete; see [phases/49-live-loop-gate-deploy-oauth-real-email/MORNING-CHECKLIST.md](phases/49-live-loop-gate-deploy-oauth-real-email/MORNING-CHECKLIST.md) §A → §B.3–6 → §H. Archived: [milestones/v1.9-ROADMAP.md](milestones/v1.9-ROADMAP.md) · Requirements: [milestones/v1.9-REQUIREMENTS.md](milestones/v1.9-REQUIREMENTS.md) · Audit: [milestones/v1.9-MILESTONE-AUDIT.md](milestones/v1.9-MILESTONE-AUDIT.md).
-- 🚧 **v1.10 — Product Design & Research Canvas** (Phases 55–63) — IN PROGRESS (roadmap opened 2026-07-15). A user-picked visual identity (not autonomous), per-surface UX redesign on that identity, a frictionless research canvas (auto-collected sources, user canon, edges-as-context), and an email learning loop — sequenced around a BLOCKING HUMAN GATE at the visual-identity pick (Phase 58) so nothing visual cascades before the user has chosen. See detail below. Requirements: [REQUIREMENTS.md](REQUIREMENTS.md).
-- 📋 **Next epoch** — **v2.0 Local Agent Platform** (E4+E5+E6 merged) follows v1.10. ENDGAME-PLAN.md §5 originally sequenced it right after v1.9, but two post-lock findings (999.18, 999.19) inserted v1.10 first — see PROJECT.md → Current Milestone "Why now (and why not v2.0)".
+- 🚧 **v1.10 — Product Design & Research Canvas** (Phases 55–63) — MOSTLY SHIPPED; Phases 62/63 carried (pixel-gated on the user). A user-picked visual identity (not autonomous), per-surface UX redesign on that identity, a frictionless research canvas (auto-collected sources, user canon, edges-as-context), and an email learning loop — sequenced around a BLOCKING HUMAN GATE at the visual-identity pick (Phase 58). See detail below.
+- 🚧 **v1.11 — Research Core & the Capability Spine** (Phases 64, 68–72) — IN PROGRESS (roadmap opened 2026-07-20 from the user's D1–D4 directives via `/gsd:new-milestone`). In-chat deep research that cites, exports, and composes — with every capability declared once in a registry the LLM, genui, the canvas, and the daemon all read (D2 "self-building product"). Opened in parallel with v1.10's carried pixel-gated phases, per the user's "up to 2.2" authorization. See detail below. Requirements: [REQUIREMENTS.md](REQUIREMENTS.md).
+- 📋 **Next epoch** — **v2.0 Local Agent Platform** (E4+E5+E6 merged) follows v1.11. Phase 65 (daemon) and 66 (files vault) already landed as advance slices (2026-07-17); v2.0 formalizes and completes them. ENDGAME-PLAN.md §5 originally sequenced v2.0 right after v1.9; two post-lock findings (999.18, 999.19) inserted v1.10, and D2 (999.37, the self-building directive) inserted v1.11 ahead of v2.0.
 
 ## Phases
 
@@ -447,6 +448,53 @@ canvas chrome to land the new node types on)
      canvas node styling.
 **Plans**: TBD
 **UI hint**: yes
+
+## v1.11 — Research Core & the Capability Spine (Phases 64, 68–72) — CURRENT
+
+**Goal:** Leave Claude web for research — in-chat deep research that cites, exports, and composes —
+with every capability declared once in a registry the LLM, genui, the canvas, and the daemon all
+read. Plan of record: `night-run/reports/negative-space.md` §3 (derived from the user's D1–D4).
+
+**The spine (D2):** every named feature is a *composition* over declared primitives, not a
+hand-wired surface. Build the registry (`packages/capabilities`) first; the features fall out of it.
+Kept deliberately cheap — a zod declaration + a lookup, not a platform.
+
+- [x] Phase 64: Research, Documents & Mail Rules — vertical slice (Lane B, built 2026-07-17; ABSORBED as v1.11's first phase, not re-planned)
+- [ ] Phase 68: The Capability Spine — `packages/capabilities`; chat loop + daemon + genui resolve by registry id (REG-01/02/03, MAIL-02; INV-1..5)
+- [ ] Phase 69: Research Depth & Citation Discipline (RSRCH-01 depth, RSRCH-02/03/04)
+- [ ] Phase 70: Documents as First-Class Objects (DOCS-01/02/03)
+- [ ] Phase 71: Genui × Registry Binding — the D2 proof (REG-04)
+- [ ] Phase 72: Research Evals & the Observability Seed (RSRCH-05)
+
+**Advance slices already landed (recorded under their own future milestones, not v1.11):**
+Phase 65 (daemon → v2.0), Phase 66 (files vault → v2.1), Phase 67 (session streaming → v2.2).
+
+### Phase 68: The Capability Spine
+
+**Goal**: One capability registry exists as `packages/capabilities` (a `Capability` type +
+`defineCapability()` + registry map, zod in/out, metadata incl. `cost`/`risk`/`source`/`trust`);
+the chat tool loop enumerates its tools FROM the registry (the hand-maintained list deleted, not
+shadowed); the daemon's ToolExecutor resolves by registry id and its allowlist keys on registry
+ids; and an unregistered capability is unreachable from every consumer (fails closed).
+**Depends on**: Phase 64 (the tools to register), Phase 65 (the daemon to reconcile — INV-2)
+**Requirements**: REG-01, REG-02, REG-03, MAIL-02
+**Success Criteria** (what must be TRUE):
+  1. `packages/capabilities` exports `Capability`, `defineCapability`, `createCapabilityRegistry`,
+     and the `cost`/`source`/`trust` metadata types; its own vitest suite is green.
+  2. `apps/daemon` imports the descriptor + registry machinery from `@polytoken/capabilities`
+     (registry.ts becomes a daemon-local `ExecCtx` specialization, not a private copy) — the daemon
+     test suite that passed pre-68 still passes, zero behavior change.
+  3. The chat tool loop reads its tool definitions from a single Python capability registry; the
+     prior parallel `tool_executors` + `server_tool_defs` drift is gone (one source of truth).
+  4. An adversarial test proves an unregistered capability id fails closed from every consumer.
+**Plans**: TBD (this session builds Task 1–3 directly)
+**UI hint**: no
+
+### Phases 69–72
+
+Detailed goals/criteria in `night-run/reports/negative-space.md` §3 (RSRCH depth + citations,
+Documents as first-class objects, the genui×registry D2 proof, research evals). Planned via
+`/gsd:plan-phase` as Phase 68 lands.
 
 ## Next Two Epochs — the endgame map (LOCKED 2026-07-10)
 

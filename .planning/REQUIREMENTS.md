@@ -1,4 +1,59 @@
-# Requirements: polytoken — v1.10 Product Design & Research Canvas
+# Requirements: polytoken — v1.11 Research Core & the Capability Spine
+
+**Defined:** 2026-07-20
+**Core Value:** Leave Claude web for research — in-chat deep research that cites, exports, and
+composes — with every capability declared once in a registry the LLM, genui, the canvas, and the
+daemon all read.
+
+**Sources (user's own words):** DIRECTIVES-2026-07-17.md D2 ("a self building product … the product
+emanated from this project, which is its infrastructure … we piece it together using our genui
+engine") + D1 (taste is permanent) + D4 (AI-engineering depth); NIGHT-RUN-2026-07-16.md
+authorization ("do as much as possible from the whole thing … up to 2.2"); derived draft
+`night-run/reports/negative-space.md` §3 (feeds this milestone, does not bypass it).
+
+**THE SPINE (D2, this milestone's defining move):** every feature the user named — deep research,
+PDF export, mail rules, files, sessions, the OSS ontology, the daemon — is a *composition* problem,
+not a *construction* problem. So the registry (`packages/capabilities`) is built first, and the
+named features fall out of it. The registry is deliberately kept CHEAP: a zod declaration + a
+lookup, landed inside this milestone (Phase 68), never a milestone-sized platform.
+
+**INV-2 (time-sensitive):** the daemon (Phase 65, shipped 2026-07-17) already carries a tool
+abstraction with the frozen registry field names. Phase 68 reconciles it to the shared package
+BEFORE the two diverge under load — an import change, not a rewrite (registry.ts is pre-seamed).
+
+**Carried from v1.10 (pixel-gated on the user, not blocking v1.11):** SURF-03/05/06 (Phase 62) and
+RCNV-02/03/05 (Phase 63) remain open; both phases need the user's on-screen review per the taste
+gate. v1.11 opens in parallel as an authorized advance ("up to 2.2").
+
+## v1.11 v1 Requirements
+
+### Capability Registry (REG — the D2 spine; INV-1..7)
+
+- [ ] **REG-01**: One capability registry — every tool/query/mutation/data-source declares itself once with zod input/output + metadata (`describe`, `cost`, `risk`, `source`, `trust`); readable by the LLM (as a tool), genui (as a composable block), the daemon (as an executable), and the canvas (as a node type)
+- [ ] **REG-02**: The chat tool loop enumerates its tools FROM the registry; the prior hand-maintained tool list no longer exists (grep-provable, not merely unused)
+- [ ] **REG-03**: The daemon's ToolExecutor + permission model resolve by registry id; the allowlist keys on registry ids; the permission prompt renders from the entry's `risk` field — one store, not two (INV-2, INV-4)
+- [ ] **REG-04**: A genui spec can BIND a registry capability — a generated panel performs a real query and a real mutation, bounded by the registry; an unregistered capability fails closed (INV-5 — D2's minimum viable proof)
+
+### In-Chat Deep Research (RSRCH)
+
+- [ ] **RSRCH-01**: A research request in chat runs a real multi-step agentic loop (plan → search rounds → fetch/read → adversarial verify → synthesize), streaming progress as tool rounds
+- [ ] **RSRCH-02**: Every claim in a report resolves to its source via 3-tier disclosure on the existing `pmark` (mark → hover popover → sources panel); no footnote-number system, no new citation component (taste §3)
+- [ ] **RSRCH-03**: Sources used auto-land in the RCNV-01 ledger and appear as canvas nodes (reusing Phase 63's RCNV-02 work) — zero capture ceremony
+- [ ] **RSRCH-04**: A running research job accepts mid-stream refinement without restart; its trace collapses to one line when done, one click to re-expand
+- [ ] **RSRCH-05**: Research quality is measured — a fixed question set + scored rubric, re-runnable, so a regression is detectable rather than felt
+
+### Documents (DOCS)
+
+- [ ] **DOCS-01**: Any report/message exports to a typeset PDF on the locked identity (serif evidence, 45–75ch measure, provenance marks preserved)
+- [ ] **DOCS-02**: Documents are first-class objects — stored, listed, re-openable, linkable as canvas nodes — not one-shot downloads
+- [ ] **DOCS-03**: A document is regenerable from its spec + ledger; provenance survives regeneration (INV-7)
+
+### Mail Rules (MAIL — frozen at the fixture slice; real-mail switch escrowed to v1.12)
+
+- [ ] **MAIL-01**: The rules matcher runs over the fixture corpus, suggest-only, reviewed in-context near the inbox (HEY Screener model, never a `/settings` Rules page — taste §3)
+- [ ] **MAIL-02**: Rules execute as registry capabilities, not a bespoke engine — the generality proof that REG isn't a one-consumer abstraction
+
+## v1.10 Requirements (prior milestone — carried items still open)
 
 **Defined:** 2026-07-14
 **Core Value:** Reliably receive every inbound email and make it observable — now as a *designed*
