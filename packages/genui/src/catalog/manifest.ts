@@ -778,7 +778,105 @@ function TabsComponent({
 }
 
 // ---------------------------------------------------------------------------
-// POLYTOKEN_CATALOG — 16 fully-real manifest entries (D-01, D-02, D-03)
+// 999.13 — vendored-component wrappers (adapt catalog props → vendored props)
+// ---------------------------------------------------------------------------
+
+function NumberTickerComponent({
+  value,
+  "aria-label": ariaLabel,
+  startValue,
+  decimalPlaces,
+}: NumberTickerProps): React.ReactElement {
+  return React.createElement(NumberTicker, {
+    value,
+    startValue,
+    decimalPlaces,
+    "aria-label": ariaLabel,
+    // Token-only styling (CTLG-09): override the vendored hardcoded black/white
+    // with the theme foreground token; size up for the stat-display use case.
+    className: "text-2xl font-semibold text-foreground dark:text-foreground",
+  });
+}
+
+/** Size → Tailwind className map for Spinner (CTLG-09: CSS-variable tokens only). */
+const SPINNER_SIZE_CLASS: Readonly<Record<"sm" | "md" | "lg", string>> = {
+  sm: "size-4",
+  md: "size-6",
+  lg: "size-8",
+} as const;
+
+function SpinnerComponent({ label, size = "md" }: SpinnerProps): React.ReactElement {
+  return React.createElement(Spinner, {
+    "aria-label": label,
+    className: `${SPINNER_SIZE_CLASS[size]} text-muted-foreground`,
+  });
+}
+
+/** Size → pixel map for AvatarStack (matches AVATAR_SIZE_CLASS: 32/40/56). */
+const AVATAR_STACK_SIZE_PX: Readonly<Record<"sm" | "md" | "lg", number>> = {
+  sm: 32,
+  md: 40,
+  lg: 56,
+} as const;
+
+function AvatarStackComponent({
+  "aria-label": ariaLabel,
+  items,
+  size = "md",
+  animate = false,
+}: AvatarStackProps): React.ReactElement {
+  return React.createElement(
+    "div",
+    { role: "group", "aria-label": ariaLabel },
+    React.createElement(
+      AvatarStack,
+      { size: AVATAR_STACK_SIZE_PX[size], animate },
+      ...items.map((item, i) =>
+        React.createElement(
+          Avatar,
+          { key: `${item.alt}-${i}`, className: "size-full" },
+          item.src ? React.createElement(AvatarImage, { src: item.src, alt: item.alt }) : null,
+          React.createElement(
+            AvatarFallback,
+            { className: "text-foreground bg-muted text-xs font-medium" },
+            item.alt.trim().slice(0, 2).toUpperCase(),
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
+function AnimatedListComponent({
+  "aria-label": ariaLabel,
+  delay = 1000,
+  children,
+}: AnimatedListProps): React.ReactElement {
+  return React.createElement(
+    AnimatedList,
+    { delay, "aria-label": ariaLabel, className: "w-full items-stretch" },
+    children,
+  );
+}
+
+function MarqueeComponent({
+  "aria-label": ariaLabel,
+  reverse = false,
+  pauseOnHover = false,
+  vertical = false,
+  repeat,
+  children,
+}: MarqueeProps): React.ReactElement {
+  return React.createElement(
+    Marquee,
+    { reverse, pauseOnHover, vertical, repeat, "aria-label": ariaLabel },
+    children,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// POLYTOKEN_CATALOG — fully-real manifest entries (D-01, D-02, D-03)
+// 17 legacy/domain entries + 5 vendored 999.13 entries = 22 total
 // ---------------------------------------------------------------------------
 
 /**
