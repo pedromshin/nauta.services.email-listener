@@ -25,11 +25,12 @@ VISION.md` (E0–E7), `research/two-epoch-endgame/ENDGAME-PLAN.md` (v2.0), `nigh
   - [x] Python chat capability registry (REG-02) — the two parallel dicts collapsed (f088904, 13 tests)
   - [x] Research evals harness (RSRCH-05 / Phase 72) (31220f5, 11 offline tests)
   - [x] PDF export floor (DOCS-01 / Phase 70) (d92f3b9)
-- [ ] **Wave 2 — v1.11 research + composition** (after Wave 1 lands; touches chat backend, must be serial to Wave 1's python-registry)
-  - [ ] Phase 69 — research depth loop (multi-round plan→search→verify→synthesize) + `pmark` 3-tier citations (RSRCH-01/02/03/04)
-  - [ ] Phase 70 rest — documents as first-class objects (list/reopen/canvas node, regenerate-from-spec) (DOCS-02/03)
-  - [ ] Phase 71 — genui × registry BINDING, the D2 proof: a generated panel runs a real query + mutation, unregistered fails closed (REG-04)
-  - [ ] MAIL-01/02 — rules matcher over fixtures, executed as registry capabilities
+- [x] **Wave 2 — v1.11 research + composition** (workflow `wdm3rmo9u`, DONE 2026-07-20)
+  - [x] Phase 69 — deep-research loop backend (plan→search→adversarial-verify→synthesize), rubric-aligned (3601c5e, 10 tests)
+  - [x] Phase 70 rest — documents as first-class objects: pages + canvas node + DB table 0040 + RLS (ffd2452, 346 canvas tests)
+  - [x] Phase 71 — genui × registry BINDING, the D2 proof, fails closed (6c0f4fa, 21 tests)
+  - [x] MAIL-01/02 — rules matcher + actions as registry capabilities, suggest-only (3601c5e, 14 tests)
+  - [ ] **Deferred wiring** (Wave 3 owns it): deep_research needs a ChatProvider added to the chat factory DI; mail-rule actions wire into the email path, not the chat registry. Modules are committed + tested; the buttons that call them land in Wave 3.
 - [ ] **Wave 3 — v1.10 carried visual (code-only, PIXEL-GATED on user)**
   - [ ] Phase 62 — `/knowledge`, `/studio`, `/settings/*`, `/login` redesign + production empty/loading/error states (SURF-03/05/06)
   - [ ] Phase 63 — research-canvas visual surfaces: source nodes, canon curation UX, source-grounded panels (RCNV-02/03/05)
