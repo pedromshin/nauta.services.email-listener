@@ -11,6 +11,7 @@ import { emailEntitySummaryProcedures } from "./entity-summary";
 import { resolveListScope } from "./list-scope";
 import { emailThreadListProcedures } from "./list-threads";
 import { componentMutationProcedures } from "./mutations";
+import { emailRuleSuggestionProcedures } from "./rule-suggestions";
 import { emailThreadCardProcedures } from "./thread-card";
 
 /**
@@ -42,6 +43,7 @@ export const emailsRouter = createTRPCRouter({
   ...emailEntitySummaryProcedures,
   ...emailThreadListProcedures,
   ...emailThreadCardProcedures,
+  ...emailRuleSuggestionProcedures,
   ...componentMutationProcedures,
   /**
    * List emails, newest first, scoped to the caller's owned importers.

@@ -21,6 +21,11 @@ import {
   type WidgetDisplayState,
 } from "./interactive-widget-boundary";
 import { MarkdownRenderer } from "./markdown-renderer";
+import {
+  DEEP_RESEARCH_TOOL_NAME,
+  ResearchTrace,
+  ResearchTraceActivityRow,
+} from "./research-trace";
 import { ToolInvocationResultRow } from "./tool-invocation-result-row";
 import { ToolRoundActivityRow } from "./tool-round-activity-row";
 import { TurnActionRow } from "./turn-action-row";
@@ -451,6 +456,12 @@ export function MessageTurn({
             // NOT wrapped in <GeneratingRing> — a bare status line, not
             // bounded panel content (39-UI-SPEC.md Component 1 rationale).
             if (part.type === "tool_invocation_streaming") {
+              // Phase 69 (RSRCH-04): a deep_research round in flight renders as
+              // the expanded live research trace, not the generic one-line
+              // spinner — it is a whole multi-phase loop, not a single lookup.
+              if (part.toolName === DEEP_RESEARCH_TOOL_NAME) {
+                return <ResearchTraceActivityRow key={index} />;
+              }
               return <ToolRoundActivityRow key={index} toolName={part.toolName} />;
             }
 
@@ -461,6 +472,20 @@ export function MessageTurn({
             }
 
             if (part.type === "tool_invocation_result") {
+              // Phase 69 (RSRCH-02/RSRCH-04): a settled deep_research round is
+              // rendered as the collapsible research artifact (report + verified
+              // findings + 3-tier pmark citations), NOT the generic result row —
+              // its envelope carries no `results`/`citations` array, so the
+              // generic row would mislabel it "no results found".
+              if (part.toolName === DEEP_RESEARCH_TOOL_NAME) {
+                return (
+                  <ResearchTrace
+                    key={index}
+                    content={part.content}
+                    isError={part.isError}
+                  />
+                );
+              }
               return (
                 <ToolInvocationResultRow
                   key={index}

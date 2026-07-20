@@ -63,6 +63,7 @@ from app.application.use_cases.promote_entity_on_confirm import PromoteEntityOnC
 from app.application.use_cases.propose_regions import ProposeRegionsUseCase
 from app.application.use_cases.receive_inbound_email import ReceiveInboundEmailUseCase
 from app.application.use_cases.reprocess_email import ReprocessEmailUseCase
+from app.application.use_cases.research.deep_research import define_research_capability
 from app.application.use_cases.resolve_entity_candidates import ResolveEntityCandidatesUseCase
 from app.application.use_cases.resolve_retheme import ResolveRethemeUseCase
 from app.application.use_cases.run_chat_turn import RunChatTurn
@@ -782,6 +783,7 @@ def _provide_run_chat_turn(
     runs: ChatRunRepository,
     conversations: ChatConversationRepository,
     router: ChatProviderRouter,
+    bedrock: BedrockChatAdapter,
     breaker: CostCircuitBreaker,
     ledger: CostLedgerRepository,
     widget_interactions: ChatWidgetInteractionRepository,
@@ -941,6 +943,30 @@ def _provide_run_chat_turn(
                     )
                 ]
                 if settings.WEB_SEARCH_TOOL_ENABLED
+                else []
+            ),
+            # Phase 69 (RSRCH-01/RSRCH-03): the deep_research capability follows
+            # the SAME exposure-gate discipline as web_search / search_knowledge
+            # above -- structurally OMITTED from the registry unless
+            # RESEARCH_TOOL_ENABLED is set true (immutable dict-literal
+            # construction via conditional `*[...]` unpacking, never mutation).
+            # `define_research_capability` packages the whole multi-round loop as
+            # ONE Capability (id="deep_research", risk="read", cost="expensive").
+            # It REUSES the already-built `web_search_executor` as its per-round
+            # search seam (no second executor), and takes the concrete Bedrock
+            # ChatProvider (`bedrock`, injected above -- structurally a
+            # ChatProvider) plus the curated chat model id from settings for its
+            # plan/draft/verify/synthesize LLM steps. The hard ResearchBudget
+            # (token + round ceiling) is left at its conservative default (Q5).
+            *(
+                [
+                    define_research_capability(
+                        chat_provider=bedrock,
+                        search_executor=web_search_executor,
+                        model_id=settings.bedrock_model_id,
+                    )
+                ]
+                if settings.RESEARCH_TOOL_ENABLED
                 else []
             ),
         ]

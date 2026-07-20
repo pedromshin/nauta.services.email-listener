@@ -33,6 +33,7 @@ const NODE_KINDS: readonly CanvasNodeKind[] = [
   "email-thread",
   "knowledge-preview",
   "document",
+  "source",
   "unknown",
 ];
 

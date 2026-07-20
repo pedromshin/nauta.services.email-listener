@@ -113,3 +113,25 @@ export const DocumentNodeDataSchema = z
   .strict();
 
 export type DocumentNodeData = z.infer<typeof DocumentNodeDataSchema>;
+
+// ---------------------------------------------------------------------------
+// SourceNodeDataSchema — source node.data (source-ledger ref + optional label
+// only, RSRCH-03/RCNV-02) — mirrors EmailThreadNodeDataSchema/
+// DocumentNodeDataSchema's exact provenance-ref-only discipline: node.data
+// carries ONLY a `sourceId` ref into `chat_source_ledger` (Phase 56, RCNV-01),
+// never the fetched url/title/excerpt/tier. The card content rehydrates by ref
+// through the canvas source seam (`useCanvasSource`, canvas-source-context.tsx)
+// — the same D-05/CANVAS-04 split GenuiPanelNode uses for its spec. Persisting
+// the url/title/excerpt into node.data would duplicate the ledger row into a
+// user-writable layout row and break the canonical snapshot shape (api-client
+// chat/canvas-schema.ts); `.strict()` refuses any such content riding along.
+// ---------------------------------------------------------------------------
+
+export const SourceNodeDataSchema = z
+  .object({
+    sourceId: z.string().uuid(),
+    label: z.string().max(200).optional(),
+  })
+  .strict();
+
+export type SourceNodeData = z.infer<typeof SourceNodeDataSchema>;

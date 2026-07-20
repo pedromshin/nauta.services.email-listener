@@ -185,6 +185,7 @@ export type CanvasNodeKind =
   | "email-thread"
   | "knowledge-preview"
   | "document"
+  | "source"
   | "unknown";
 
 /**
@@ -201,6 +202,7 @@ const NODE_KIND_BY_TYPE: Readonly<Record<string, CanvasNodeKind>> = Object.freez
     "email-thread": "email-thread",
     "knowledge-preview": "knowledge-preview",
     document: "document",
+    source: "source",
   }) as Record<string, CanvasNodeKind>,
 );
 
@@ -238,6 +240,10 @@ export function canvasNodeKindOf(type: string): CanvasNodeKind {
  *                       real material, provenance-marked back to it (rule 2, the
  *                       same evidence-carrying weight as a thread)
  *     genui-panel (1)   polytoken's rendering — it has no words of its own
+ *     source (1)        a research source the agent found on the WEB — real
+ *                       external words, but NONE of them the user's own
+ *                       material, so it is LIGHT on this axis (contrast the
+ *                       user's own knowledge graph at rule 2)
  *
  *   DOUBLE RULE = "a bound artifact, a synthesis composed into a standalone
  *   piece" — the one kind that is neither raw evidence nor a mere view:
@@ -248,10 +254,19 @@ export function canvasNodeKindOf(type: string): CanvasNodeKind {
  *   DOTTED FRAME = "this is a VIEW or a guess, not an artifact in its own right".
  *     knowledge-preview  real material (rule 2) but a bounded, non-interactive
  *                        glance at another surface — a view of the thing
+ *     source (rule 1)    a bounded glance OUTWARD at an external page — a
+ *                        citation, real evidence but living elsewhere; it takes
+ *                        the same dotted "view" mark as knowledge-preview and is
+ *                        told apart from it by the weight axis (external, so
+ *                        rule 1, vs the user's own graph at rule 2), never a hue
  *     unknown            claims nothing at all: no rule, provisional frame
  *
  * DOTTED/DOUBLE, never DASHED: tier owns solid-vs-dashed on every surface, and
- * `region-vocabulary.ts` makes the identical concession with `unrelated`.
+ * `region-vocabulary.ts` makes the identical concession with `unrelated`. A
+ * source DOES carry a tier (suggested by default, confirmed once promoted), but
+ * that tier is spent as COLOUR on the card's provenance pmark inside
+ * `source-node.tsx`, NEVER on this geometry — kind is shape, tier is colour, and
+ * the two axes stay orthogonal (the matrix gate proves it).
  */
 export const CANVAS_NODE_KIND_GEOMETRY: Record<CanvasNodeKind, string> = {
   chat: "border-l-4 border-l-ink",
@@ -259,6 +274,7 @@ export const CANVAS_NODE_KIND_GEOMETRY: Record<CanvasNodeKind, string> = {
   document: "border-l-2 border-l-ink border-double",
   "genui-panel": "border-l border-l-ink",
   "knowledge-preview": "border-l-2 border-l-ink border-dotted",
+  source: "border-l border-l-ink border-dotted",
   unknown: "border-dotted",
 };
 
@@ -285,6 +301,7 @@ export const CANVAS_NODE_KIND_LABEL: Record<CanvasNodeKind, string> = {
   "email-thread": "Email thread",
   "knowledge-preview": "Knowledge",
   document: "Document",
+  source: "Source",
   unknown: "Unrecognized",
 };
 

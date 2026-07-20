@@ -171,6 +171,22 @@ class BaseAppSettings(BaseSettings):
     # wrapper) -- mirrors SEARCH_KNOWLEDGE_TOOL_ENABLED's own convention.
     WEB_SEARCH_TOOL_ENABLED: bool = True
 
+    # --- deep_research exposure gate (Phase 69, RSRCH-01/RSRCH-03) ---
+    # SAME code-gated-exposure discipline as WEB_SEARCH_TOOL_ENABLED /
+    # SEARCH_KNOWLEDGE_TOOL_ENABLED above: the DeepResearch loop, its
+    # DeepResearchToolExecutor, and define_research_capability all exist
+    # regardless of this flag; only container.py's _provide_run_chat_turn
+    # production wiring reads it, structurally OMITTING the deep_research
+    # capability from the CapabilityRegistry unless this flag is set true.
+    # Defaults True so the v1.11 research backend is USABLE end-to-end from the
+    # chat UI (the wave's explicit priority), while remaining a real
+    # kill-switch: RESEARCH_TOOL_ENABLED=false still structurally removes the
+    # tool from every chat turn. `cost="expensive"` (Q5) is declared on the
+    # capability itself; the hard per-run ResearchBudget (token + round ceiling)
+    # is the enforced cost gate, so exposure here does not relax any cost cap.
+    # Plain bool field (no @property wrapper) — mirrors the two flags above.
+    RESEARCH_TOOL_ENABLED: bool = True
+
     # --- Chat turn agent (Phase 22-06, SEAM-04) ---
     # Hard cap on generated tokens for a single chat turn (always set, no implicit
     # default — required by the ChatProvider.stream contract).

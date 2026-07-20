@@ -26,6 +26,10 @@ import type { EntityChipEntry } from "./entity-chips";
 import { InboxEntitiesRail } from "./inbox-entities-rail";
 import { InboxThreadGroup } from "./inbox-thread-group";
 import type { InboxEmail } from "./inbox-row";
+import {
+  MailRuleReview,
+  type MatchedRuleSuggestion,
+} from "./mail-rule-review";
 
 /** The inbox-list projection of an email (a subset of the emails.list row). */
 export interface InboxEmailItem extends InboxEmail {
@@ -297,6 +301,32 @@ export function InboxThreePane({
     return map;
   }, [entitySummaryQuery.data]);
 
+  // Suggest-only mail-rule matches for the same visible page of emails — the
+  // MAIL-01 review affordance's data seam (batched, read-only, never a per-row
+  // fetch; keyed by the exact `emailIds` already resolved for entitySummary).
+  const ruleSuggestionsQuery = api.emails.ruleSuggestions.useQuery(
+    { emailIds },
+    { enabled: emailIds.length > 0 },
+  );
+
+  // Flatten to one row per (email, matched rule), resolving the matched email's
+  // subject from the already-loaded rows so the review reads in-context.
+  const matchedSuggestions = useMemo<ReadonlyArray<MatchedRuleSuggestion>>(() => {
+    const flat: MatchedRuleSuggestion[] = [];
+    for (const entry of ruleSuggestionsQuery.data ?? []) {
+      const subject = emailsById.get(entry.emailId)?.subject ?? null;
+      for (const suggestion of entry.suggestions) {
+        flat.push({
+          key: `${entry.emailId}:${suggestion.ruleId}`,
+          emailId: entry.emailId,
+          emailSubject: subject,
+          suggestion,
+        });
+      }
+    }
+    return flat;
+  }, [ruleSuggestionsQuery.data, emailsById]);
+
   // A thread entry is visible under "With entities" if ANY of its member
   // emails carry extracted entities (45-UI-SPEC "Filters / load-more").
   const withEntities = useMemo(
@@ -380,6 +410,14 @@ export function InboxThreePane({
           </div>
 
           <div className="flex-1 overflow-auto">
+            {!showLoading && !showError && (
+              <MailRuleReview
+                suggestions={matchedSuggestions}
+                isLoading={ruleSuggestionsQuery.isLoading}
+                onSelectEmail={setSelectedEmailId}
+              />
+            )}
+
             {showLoading && (
               <div aria-hidden>
                 {[0, 1, 2].map((i) => (
@@ -505,6 +543,14 @@ export function InboxThreePane({
 
         {mobileView === "list" ? (
           <div className="flex-1 overflow-auto">
+            {!showLoading && !showError && (
+              <MailRuleReview
+                suggestions={matchedSuggestions}
+                isLoading={ruleSuggestionsQuery.isLoading}
+                onSelectEmail={handleSelectMemberMobile}
+              />
+            )}
+
             {showLoading && (
               <div aria-hidden>
                 {[0, 1, 2].map((i) => (

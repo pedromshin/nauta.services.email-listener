@@ -26,7 +26,7 @@
 
 import * as React from "react";
 import { format } from "date-fns";
-import { Share2, X } from "lucide-react";
+import { MousePointerClick, X } from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "@polytoken/ui/badge";
@@ -35,6 +35,22 @@ import { ScrollArea } from "@polytoken/ui/scroll-area";
 import { Separator } from "@polytoken/ui/separator";
 
 import type { KnowledgeNode } from "~/app/entities/[id]/_components/entity-knowledge";
+
+import { nodeTypeIcon } from "./filter-rail";
+
+/**
+ * ── PHASE 62 REDESIGN (SURF-03, D-58-01) ──
+ * The detail pane is the /files select-updates-pane pattern: a node clicked on
+ * the canvas resolves here in place, never a navigate-away. Rebuilt on the
+ * identity — role hues stripped (law 3: the type is stated by its ink GLYPH and
+ * a neutral badge, never the retired `graph-*` colour), links carry ink + an
+ * underline (law 1: no branded action colour), chrome sits on the ground ladder
+ * (`leaf` panel, `hair`/`rule` boundaries). The one link colour left is ink.
+ */
+
+/** Shared link treatment — ink + underline, never a hue (law 1). */
+const DETAIL_LINK =
+  "text-sm font-semibold text-ink underline underline-offset-2 decoration-rule hover:decoration-ink";
 
 // ---------------------------------------------------------------------------
 // Type definitions for node data (mirrors GraphNode shapes from graph.ts)
@@ -120,8 +136,10 @@ function DetailRow({
 }): React.ReactElement {
   return (
     <div className="flex flex-col gap-0.5">
-      <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-sm">{children}</span>
+      <span className="text-2xs font-semibold uppercase tracking-[0.06em] text-pencil">
+        {label}
+      </span>
+      <span className="text-sm text-ink">{children}</span>
     </div>
   );
 }
@@ -153,10 +171,7 @@ function EntityTypeContent({ node }: { readonly node: SelectedNode }): React.Rea
       )}
 
       <div>
-        <Link
-          href={`/entities?type=${node.id}`}
-          className="text-sm text-primary hover:underline"
-        >
+        <Link href={`/entities?type=${node.id}`} className={DETAIL_LINK}>
           View {instanceCount} instances &rarr;
         </Link>
       </div>
@@ -185,7 +200,7 @@ function EntityTypeFieldContent({
         <DetailRow label="Belongs to">
           <button
             type="button"
-            className="text-primary hover:underline text-sm"
+            className={DETAIL_LINK}
             onClick={() => {
               if (data.entityTypeId != null) {
                 onSelectNode(data.entityTypeId);
@@ -205,22 +220,14 @@ function EntityInstanceContent({ node }: { readonly node: SelectedNode }): React
 
   return (
     <div className="space-y-4">
-      <Badge
-        variant="secondary"
-        className="bg-graph-entity/10 text-graph-entity border-graph-entity/30"
-      >
-        Instance
-      </Badge>
+      <Badge variant="outline">Instance</Badge>
 
       {data.entityTypeName != null && (
         <DetailRow label="Entity Type">{data.entityTypeName}</DetailRow>
       )}
 
       <div>
-        <Link
-          href={`/entities/${node.id}`}
-          className="text-sm text-primary hover:underline"
-        >
+        <Link href={`/entities/${node.id}`} className={DETAIL_LINK}>
           Open entity &rarr;
         </Link>
       </div>
@@ -234,12 +241,7 @@ function EmailComponentContent({ node }: { readonly node: SelectedNode }): React
 
   return (
     <div className="space-y-4">
-      <Badge
-        variant="secondary"
-        className="bg-graph-email-component/10 text-graph-email-component border-graph-email-component/30"
-      >
-        Component
-      </Badge>
+      <Badge variant="outline">Component</Badge>
 
       {(data.emailSender != null || data.emailSubject != null) && (
         <DetailRow label="Email">
@@ -265,10 +267,7 @@ function EmailComponentContent({ node }: { readonly node: SelectedNode }): React
 
       {emailId != null && (
         <div>
-          <Link
-            href={`/emails/${emailId}`}
-            className="text-sm text-primary hover:underline"
-          >
+          <Link href={`/emails/${emailId}`} className={DETAIL_LINK}>
             Open editor &rarr;
           </Link>
         </div>
@@ -282,10 +281,12 @@ function EmailContent({ node }: { readonly node: SelectedNode }): React.ReactEle
 
   return (
     <div className="space-y-4">
-      <Badge variant="secondary">Email</Badge>
+      <Badge variant="outline">Email</Badge>
 
-      {/* Subject — full, wrapping */}
-      <p className="text-sm font-semibold leading-snug">{node.label}</p>
+      {/* Subject — the user's own material, so it speaks serif (law 2). */}
+      <p data-evidence className="font-serif text-lg leading-snug text-ink">
+        {node.label}
+      </p>
 
       {data.sender != null && (
         <DetailRow label="From">{data.sender}</DetailRow>
@@ -296,10 +297,7 @@ function EmailContent({ node }: { readonly node: SelectedNode }): React.ReactEle
       )}
 
       <div>
-        <Link
-          href={`/emails/${node.id}`}
-          className="text-sm text-primary hover:underline"
-        >
+        <Link href={`/emails/${node.id}`} className={DETAIL_LINK}>
           Open editor &rarr;
         </Link>
       </div>
