@@ -1,0 +1,220 @@
+/**
+ * apps/web/src/app/documents/[id]/print/print.css
+ *
+ * DOCS-01 — the TYPESET stylesheet. Every value here resolves onto the LOCKED
+ * identity ladder declared in globals.css (D-58-01, LOCKED 2026-07-15): paper
+ * is the ground ladder, ink is the ink ladder, evidence speaks serif
+ * (--font-serif), chrome speaks sans (--font-sans). This file declares NO raw
+ * oklch and invents NO new colour — it only arranges the locked tokens into a
+ * page. It is imported by ./layout.tsx (global, App Router).
+ *
+ * Two jobs:
+ *   1. Turn the print route into a sheet of paper (the .ts-* rules below).
+ *   2. Strip the app shell so playwright's page.pdf() captures a DOCUMENT, not
+ *      a screenshot of a web app (the html[data-print-mode] rules). The reset
+ *      keys off a `data-print-mode` attribute that ./print-chrome-reset.tsx
+ *      stamps on <html>, so the isolation is DETERMINISTIC — it does not
+ *      depend on print-vs-screen media emulation.
+ */
+
+/* ── @page: the physical sheet (US Letter, generous typographic margins) ──
+   page.pdf() honours @page size/margins in print media. */
+@page {
+  size: letter;
+  margin: 22mm 20mm 20mm 20mm;
+}
+
+/* ── Shell isolation ──────────────────────────────────────────────────────
+   Stamped by print-chrome-reset.tsx. The desktop sidebar is the `.peer` div
+   carrying data-side; the mobile trigger bar is `md:hidden` and never shows at
+   the desktop viewport playwright renders, so it needs no rule. SidebarInset
+   renders a <main> whose margins/rounding/shadow come from the sidebar peer —
+   neutralised here so the paper is full-bleed. */
+html[data-print-mode] [data-side] {
+  display: none !important;
+}
+html[data-print-mode] main {
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  min-height: 0 !important;
+  /* SidebarInset's <main> ships bg-background (shelf); make it transparent so
+     the media-appropriate body ground shows through — --bright paper in print,
+     --shelf desk behind the centered sheet on screen (see @media blocks). */
+  background: transparent !important;
+}
+html[data-print-mode],
+html[data-print-mode] body {
+  /* --bright is the identity's whitest paper ("elevated sheet"); a document
+     is the one surface that earns it over the shelf/leaf page ground. */
+  background: var(--bright) !important;
+}
+
+/* Preserve the locked washes (pmark tints, evidence rule) through print — the
+   engine strips backgrounds by default, which would erase the provenance
+   marks DOCS-01 exists to preserve. */
+html[data-print-mode] * {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* ── The paper ────────────────────────────────────────────────────────────*/
+.ts-sheet {
+  background: var(--bright);
+  color: var(--ink);
+  /* Center the measure in the sheet with breathing room at the desktop
+     viewport (matters for the on-screen HTML read; @page owns the PDF). */
+  margin: 0 auto;
+  padding: 0 24px 64px;
+  max-width: 900px;
+}
+
+/* The reading column. LAW 2: evidence speaks serif. 68ch sits inside the
+   45–75ch measure DOCS-01 mandates; the measure is a hard invariant, verified
+   on the rendered PNG (MEMORY: rendered-geometry blind spot). */
+.ts-measure {
+  font-family: var(--font-serif);
+  max-width: 68ch;
+  margin: 0 auto;
+  /* Evidence reading size/leading — anchored on the identity's `lg` step
+     (reading-pane serif body). */
+  font-size: var(--text-lg);
+  line-height: var(--text-lg--line-height);
+  color: var(--ink);
+}
+
+/* ── Masthead (chrome — sans, per LAW 2) ──────────────────────────────────*/
+.ts-masthead {
+  max-width: 68ch;
+  margin: 0 auto;
+  padding: 8px 0 20px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 28px;
+  font-family: var(--font-sans);
+}
+.ts-eyebrow {
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  line-height: var(--text-2xs--line-height);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faded);
+  margin-bottom: 10px;
+}
+/* The document's OWN title is the user's material → serif. */
+.ts-title {
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  line-height: var(--text-xl--line-height);
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 6px;
+}
+.ts-subtitle {
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  line-height: var(--text-lg--line-height);
+  color: var(--faded);
+  margin: 0 0 14px;
+}
+.ts-meta {
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  line-height: var(--text-2xs--line-height);
+  color: var(--faded);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+.ts-meta .tabular {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* ── Body blocks ──────────────────────────────────────────────────────────*/
+.ts-h2 {
+  font-family: var(--font-serif);
+  font-size: var(--text-xl);
+  line-height: var(--text-xl--line-height);
+  font-weight: 600;
+  color: var(--ink);
+  margin: 32px 0 12px;
+  /* Avoid a heading orphaned at a page break in the PDF. */
+  break-after: avoid-page;
+}
+.ts-h3 {
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  line-height: var(--text-lg--line-height);
+  font-weight: 600;
+  color: var(--ink);
+  margin: 24px 0 10px;
+  break-after: avoid-page;
+}
+.ts-p {
+  margin: 0 0 16px;
+  /* Justified-left, hyphenation off — evidence must read verbatim. */
+  text-align: left;
+}
+.ts-list {
+  margin: 0 0 16px;
+  padding-left: 1.4em;
+}
+.ts-list li {
+  margin: 0 0 8px;
+}
+
+/* Pulled-out evidence excerpt — the reading register: a hairline rule, no
+   shadow, serif. Never a hue (LAW 1). */
+.ts-evidence {
+  margin: 20px 0;
+  padding: 4px 0 4px 18px;
+  border-left: 2px solid var(--rule-hi);
+  color: var(--ink);
+  break-inside: avoid;
+}
+.ts-evidence-cite {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  line-height: var(--text-2xs--line-height);
+  color: var(--faded);
+}
+
+/* ── Provenance legend (chrome — sans) ────────────────────────────────────
+   A one-line key so a human reading the PDF cold knows what the two marks
+   mean. The chips themselves reuse the locked `pmark` utilities. */
+.ts-legend {
+  max-width: 68ch;
+  margin: 36px auto 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--font-sans);
+  font-size: var(--text-2xs);
+  line-height: var(--text-2xs--line-height);
+  color: var(--faded);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 18px;
+}
+.ts-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* On-screen only: give the sheet a page ground behind it so the HTML read
+   looks like paper on a desk. The PDF ignores this (paper fills the sheet). */
+@media screen {
+  html[data-print-mode],
+  html[data-print-mode] body {
+    background: var(--shelf) !important;
+  }
+  .ts-sheet {
+    box-shadow: var(--elevation-2);
+    margin-top: 28px;
+    margin-bottom: 28px;
+  }
+}
