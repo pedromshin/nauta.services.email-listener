@@ -19,11 +19,12 @@ VISION.md` (E0–E7), `research/two-epoch-endgame/ENDGAME-PLAN.md` (v2.0), `nigh
 
 ## Wave status
 
-- [~] **Wave 1 — Registry spine consumers + first features** (workflow `w7oduc239`, running)
-  - [~] daemon → `@polytoken/capabilities` reconcile (INV-2)
-  - [~] Python chat capability registry (REG-02) — collapse the two parallel dicts
-  - [~] Research evals harness (RSRCH-05 / Phase 72)
-  - [~] PDF export floor (DOCS-01 / Phase 70)
+- [x] **Wave 1 — Registry spine consumers + first features** (workflow `w7oduc239`, DONE 2026-07-20)
+  - [x] `packages/capabilities` — the D2 spine (bd514b3, typecheck + 11 tests)
+  - [x] daemon → `@polytoken/capabilities` reconcile (INV-2) (feb18bb, daemon tc green)
+  - [x] Python chat capability registry (REG-02) — the two parallel dicts collapsed (f088904, 13 tests)
+  - [x] Research evals harness (RSRCH-05 / Phase 72) (31220f5, 11 offline tests)
+  - [x] PDF export floor (DOCS-01 / Phase 70) (d92f3b9)
 - [ ] **Wave 2 — v1.11 research + composition** (after Wave 1 lands; touches chat backend, must be serial to Wave 1's python-registry)
   - [ ] Phase 69 — research depth loop (multi-round plan→search→verify→synthesize) + `pmark` 3-tier citations (RSRCH-01/02/03/04)
   - [ ] Phase 70 rest — documents as first-class objects (list/reopen/canvas node, regenerate-from-spec) (DOCS-02/03)
