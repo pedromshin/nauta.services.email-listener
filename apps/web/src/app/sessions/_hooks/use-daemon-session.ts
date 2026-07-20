@@ -53,8 +53,12 @@ export function useDaemonSession(sessionId: string): DaemonSessionHandle {
   const stateRef = useRef<TerminalState>(state);
   stateRef.current = state;
 
+  // Key the socket lifecycle on PRIMITIVES: `config` is a fresh object every render, and
+  // an object dep here would tear down and redial the socket per render.
+  const { token, port } = config;
+
   const connect = useCallback(() => {
-    if (config.token === null) return;
+    if (token === null) return;
     // Drop any previous socket silently — this connect supersedes it.
     if (socketRef.current !== null) {
       socketRef.current.onclose = null;
@@ -67,7 +71,7 @@ export function useDaemonSession(sessionId: string): DaemonSessionHandle {
 
     let socket: WebSocket;
     try {
-      socket = new WebSocket(buildDaemonUrl(config));
+      socket = new WebSocket(buildDaemonUrl({ token, port }));
     } catch (error) {
       dispatch({ kind: "socket-closed", detail: (error as Error).message });
       return;
@@ -137,7 +141,7 @@ export function useDaemonSession(sessionId: string): DaemonSessionHandle {
     };
     // onerror always precedes onclose in browsers; onclose carries the state change.
     socket.onerror = () => undefined;
-  }, [config, sessionId]);
+  }, [token, port, sessionId]);
 
   useEffect(() => {
     if (!config.loaded || config.token === null) return;

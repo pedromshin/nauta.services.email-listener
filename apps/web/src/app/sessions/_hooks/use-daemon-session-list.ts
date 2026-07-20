@@ -48,8 +48,12 @@ export function useDaemonSessionList(
   const onStartedRef = useRef(onStarted);
   onStartedRef.current = onStarted;
 
+  // Key the socket lifecycle on PRIMITIVES: `config` is a fresh object every render, and
+  // an object dep here would tear down and redial the socket per render.
+  const { token, port } = config;
+
   const connect = useCallback(() => {
-    if (config.token === null) return;
+    if (token === null) return;
     if (socketRef.current !== null) {
       socketRef.current.onclose = null;
       socketRef.current.onerror = null;
@@ -61,7 +65,7 @@ export function useDaemonSessionList(
 
     let socket: WebSocket;
     try {
-      socket = new WebSocket(buildDaemonUrl(config));
+      socket = new WebSocket(buildDaemonUrl({ token, port }));
     } catch {
       setPhase("unreachable");
       return;
@@ -110,7 +114,7 @@ export function useDaemonSessionList(
       setPhase("unreachable");
     };
     socket.onerror = () => undefined;
-  }, [config]);
+  }, [token, port]);
 
   useEffect(() => {
     if (!config.loaded) return;
