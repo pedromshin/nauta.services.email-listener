@@ -37,6 +37,7 @@ import { ChatConversations } from "./schema/chat-conversations";
 import { ChatMessages } from "./schema/chat-messages";
 import { ChatSourceLedger } from "./schema/chat-source-ledger";
 import { EmailComponents } from "./schema/components";
+import { Documents } from "./schema/documents";
 import { Emails } from "./schema/emails";
 import { ForwardingAddresses } from "./schema/forwarding-addresses";
 import { Importers } from "./schema/importers";
@@ -210,6 +211,32 @@ export async function assertForwardingAddressOwnership(
   const row = rows[0];
   if (!row || row.userId !== userId) {
     throw new OwnershipError("forwarding_address", addressId);
+  }
+}
+
+/**
+ * assertDocumentOwnership — resolves when documents.user_id = userId. Direct
+ * user_id, no join (mirrors assertForwardingAddressOwnership /
+ * assertConversationOwnership — documents is NOT an importer-descendant,
+ * Phase 70 DOCS-02). Throws OwnershipError otherwise/missing (fail-closed, no
+ * existence oracle). This is the ONLY path any tRPC procedure or web route
+ * uses to gate a single document read/regenerate — never an ad-hoc
+ * per-call-site user_id filter.
+ */
+export async function assertDocumentOwnership(
+  db: OwnershipDb,
+  documentId: string,
+  userId: string,
+): Promise<void> {
+  const rows = await db
+    .select({ userId: Documents.userId })
+    .from(Documents)
+    .where(eq(Documents.id, documentId))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row || row.userId !== userId) {
+    throw new OwnershipError("document", documentId);
   }
 }
 

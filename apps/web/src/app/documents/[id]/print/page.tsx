@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 
+import { createClient as createSupabaseServerClient } from "~/lib/supabase/server";
+import { loadStoredDocument } from "../../_lib/document-store";
 import { loadReportDocument } from "../../_lib/report-document";
 import { PrintChromeReset } from "./print-chrome-reset";
 import { TypesetDocument } from "./typeset-document";
@@ -28,7 +30,20 @@ export default async function DocumentPrintPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const doc = await loadReportDocument(id);
+
+  // DOCS-02: prefer the owner-scoped DB store. When a session user is present,
+  // a stored document they own is loaded + typeset from its spec (INV-7); the
+  // built-in sample registry is the fallback for the Phase 70 floor demo
+  // (loadReportDocument's "sample" id) and for unauthenticated access to it.
+  // Server-verified identity only (getUser(), never getSession()).
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const doc =
+    (user ? await loadStoredDocument(id, user.id) : null) ??
+    (await loadReportDocument(id));
   if (!doc) notFound();
 
   return (

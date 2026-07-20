@@ -32,6 +32,7 @@ const NODE_KINDS: readonly CanvasNodeKind[] = [
   "genui-panel",
   "email-thread",
   "knowledge-preview",
+  "document",
   "unknown",
 ];
 

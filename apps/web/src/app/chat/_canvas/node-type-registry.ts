@@ -14,6 +14,7 @@ import type { z } from "zod";
 
 import {
   ChatNodeDataSchema,
+  DocumentNodeDataSchema,
   EmailThreadNodeDataSchema,
   GenuiPanelNodeDataSchema,
   KnowledgePreviewNodeDataSchema,
@@ -55,6 +56,12 @@ export const NODE_TYPE_REGISTRY: Record<string, NodeTypeRegistryEntry> = {
     dataSchema: EmailThreadNodeDataSchema,
     description:
       "Email-thread node — renders a real thread's subject/participants/summary anchored on a thread id, with Open-thread/Attach-chat actions.",
+  },
+  document: {
+    id: "document",
+    dataSchema: DocumentNodeDataSchema,
+    description:
+      "Document node — renders a stored document's title/generated date anchored on a document id, with an Open-document action into /documents/[id].",
   },
 };
 

@@ -31,6 +31,7 @@ describe("computeNodeRegistryHash", () => {
 
   it("is insensitive to registration order (sorted keys)", () => {
     const reordered: Record<string, NodeTypeRegistryEntry> = {
+      document: NODE_TYPE_REGISTRY.document!,
       "email-thread": NODE_TYPE_REGISTRY["email-thread"]!,
       "knowledge-preview": NODE_TYPE_REGISTRY["knowledge-preview"]!,
       "genui-panel": NODE_TYPE_REGISTRY["genui-panel"]!,

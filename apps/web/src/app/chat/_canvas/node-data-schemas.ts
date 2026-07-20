@@ -95,3 +95,21 @@ export const EmailThreadNodeDataSchema = z
   .strict();
 
 export type EmailThreadNodeData = z.infer<typeof EmailThreadNodeDataSchema>;
+
+// ---------------------------------------------------------------------------
+// DocumentNodeDataSchema — document node.data (document ref + optional label
+// only, Phase 70 DOCS-02) — mirrors EmailThreadNodeDataSchema's exact
+// provenance-ref-only discipline: node.data carries ONLY a documentId ref,
+// never the fetched document content (title/spec rehydrate via
+// api.documents.byId, gated through ownership.ts). `.strict()` — no stored
+// spec/blocks may ride along in node.data.
+// ---------------------------------------------------------------------------
+
+export const DocumentNodeDataSchema = z
+  .object({
+    documentId: z.string().uuid(),
+    label: z.string().max(120).optional(),
+  })
+  .strict();
+
+export type DocumentNodeData = z.infer<typeof DocumentNodeDataSchema>;

@@ -184,6 +184,7 @@ export type CanvasNodeKind =
   | "genui-panel"
   | "email-thread"
   | "knowledge-preview"
+  | "document"
   | "unknown";
 
 /**
@@ -199,6 +200,7 @@ const NODE_KIND_BY_TYPE: Readonly<Record<string, CanvasNodeKind>> = Object.freez
     "genui-panel": "genui-panel",
     "email-thread": "email-thread",
     "knowledge-preview": "knowledge-preview",
+    document: "document",
   }) as Record<string, CanvasNodeKind>,
 );
 
@@ -232,19 +234,29 @@ export function canvasNodeKindOf(type: string): CanvasNodeKind {
  *   LEFT-RULE WEIGHT = how much of the user's OWN material this node carries.
  *     chat (4)          the conversation itself — the anchor the canvas is about
  *     email-thread (2)  mail the user received — real evidence, in full
+ *     document (2)      a stored document — polytoken's SYNTHESIS of the user's
+ *                       real material, provenance-marked back to it (rule 2, the
+ *                       same evidence-carrying weight as a thread)
  *     genui-panel (1)   polytoken's rendering — it has no words of its own
+ *
+ *   DOUBLE RULE = "a bound artifact, a synthesis composed into a standalone
+ *   piece" — the one kind that is neither raw evidence nor a mere view:
+ *     document           a report bound from the user's material; the DOUBLE
+ *                        rule sets it apart from the raw thread at the same
+ *                        weight, without spending a hue (law 3)
  *
  *   DOTTED FRAME = "this is a VIEW or a guess, not an artifact in its own right".
  *     knowledge-preview  real material (rule 2) but a bounded, non-interactive
  *                        glance at another surface — a view of the thing
  *     unknown            claims nothing at all: no rule, provisional frame
  *
- * DOTTED, never DASHED: tier owns solid-vs-dashed on every surface, and
+ * DOTTED/DOUBLE, never DASHED: tier owns solid-vs-dashed on every surface, and
  * `region-vocabulary.ts` makes the identical concession with `unrelated`.
  */
 export const CANVAS_NODE_KIND_GEOMETRY: Record<CanvasNodeKind, string> = {
   chat: "border-l-4 border-l-ink",
   "email-thread": "border-l-2 border-l-ink",
+  document: "border-l-2 border-l-ink border-double",
   "genui-panel": "border-l border-l-ink",
   "knowledge-preview": "border-l-2 border-l-ink border-dotted",
   unknown: "border-dotted",
@@ -272,6 +284,7 @@ export const CANVAS_NODE_KIND_LABEL: Record<CanvasNodeKind, string> = {
   "genui-panel": "Panel",
   "email-thread": "Email thread",
   "knowledge-preview": "Knowledge",
+  document: "Document",
   unknown: "Unrecognized",
 };
 
