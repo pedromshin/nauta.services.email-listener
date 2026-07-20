@@ -15,8 +15,11 @@
 import type { NodeTypes } from "@xyflow/react";
 
 import { resolveNodeType } from "./node-type-registry";
+import { BrowserNode } from "./browser-node";
 import { ChatNode } from "./chat-node";
+import { DirectoryNode } from "./directory-node";
 import { DocumentNode } from "./document-node";
+import { EditorNode } from "./editor-node";
 import { EmailThreadNode } from "./email-thread-node";
 import { GenuiPanelNode } from "./genui-panel-node";
 import { KnowledgePreviewNode } from "./knowledge-preview-node";
@@ -30,6 +33,9 @@ export const nodeTypes: NodeTypes = {
   "email-thread": EmailThreadNode,
   document: DocumentNode,
   source: SourceNode,
+  directory: DirectoryNode,
+  browser: BrowserNode,
+  editor: EditorNode,
   // Plan 23-04 (restore + degrade, T-23-09/CANVAS-03): a node reconciled from
   // a persisted layout whose type this session's registry doesn't recognize
   // is rewritten to this fixed key (original type preserved in

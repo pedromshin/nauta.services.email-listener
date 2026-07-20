@@ -189,6 +189,9 @@ export type CanvasNodeKind =
   | "knowledge-preview"
   | "document"
   | "source"
+  | "directory"
+  | "browser"
+  | "editor"
   | "unknown";
 
 /**
@@ -206,6 +209,9 @@ const NODE_KIND_BY_TYPE: Readonly<Record<string, CanvasNodeKind>> = Object.freez
     "knowledge-preview": "knowledge-preview",
     document: "document",
     source: "source",
+    directory: "directory",
+    browser: "browser",
+    editor: "editor",
   }) as Record<string, CanvasNodeKind>,
 );
 
@@ -266,6 +272,23 @@ export function canvasNodeKindOf(type: string): CanvasNodeKind {
  *                        free, promotion is deliberate")
  *     unknown            claims nothing at all: no rule, provisional frame
  *
+ *   RIGHT SEAM RULE (2px ink, the v2.0 panels' one new structural bit) =
+ *   "a LIVE surface — the far edge of this card is the user's own machine,
+ *   reached through the daemon; its contents can change under you". The three
+ *   panel kinds each restate an EXISTING kind's left-rule/frame claim and add
+ *   this one bit, which is exactly what separates a live daemon-backed
+ *   counterpart from its static sibling (and what keeps every kind's geometry
+ *   DISTINCT without spending a hue, law 3):
+ *     directory          email-thread's claim (rule 2, solid: the user's own
+ *                        material, raw and in full) + live — the node IS the
+ *                        watched folder, fed by `fs.list`
+ *     browser            source's claim (rule 1, dotted: no words of its own,
+ *                        a view not an artifact) + live — a viewport streaming
+ *                        daemon screenshots
+ *     editor             document's claim (rule 2, double: a bound artifact)
+ *                        + live — the artifact still being AUTHORED, written
+ *                        back through `fs.write`
+ *
  * DOTTED/DOUBLE, never DASHED: tier owns solid-vs-dashed on every surface, and
  * `region-vocabulary.ts` makes the identical concession with `unrelated`.
  */
@@ -276,6 +299,9 @@ export const CANVAS_NODE_KIND_GEOMETRY: Record<CanvasNodeKind, string> = {
   "genui-panel": "border-l border-l-ink",
   "knowledge-preview": "border-l-2 border-l-ink border-dotted",
   source: "border-l border-l-ink border-dotted",
+  directory: "border-l-2 border-l-ink border-r-2 border-r-ink",
+  browser: "border-l border-l-ink border-r-2 border-r-ink border-dotted",
+  editor: "border-l-2 border-l-ink border-r-2 border-r-ink border-double",
   unknown: "border-dotted",
 };
 
@@ -303,6 +329,9 @@ export const CANVAS_NODE_KIND_LABEL: Record<CanvasNodeKind, string> = {
   "knowledge-preview": "Knowledge",
   document: "Document",
   source: "Source",
+  directory: "Folder",
+  browser: "Browser",
+  editor: "Editor",
   unknown: "Unrecognized",
 };
 

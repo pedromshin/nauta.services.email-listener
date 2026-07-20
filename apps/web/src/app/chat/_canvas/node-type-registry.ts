@@ -13,8 +13,11 @@
 import type { z } from "zod";
 
 import {
+  BrowserNodeDataSchema,
   ChatNodeDataSchema,
+  DirectoryNodeDataSchema,
   DocumentNodeDataSchema,
+  EditorNodeDataSchema,
   EmailThreadNodeDataSchema,
   GenuiPanelNodeDataSchema,
   KnowledgePreviewNodeDataSchema,
@@ -69,6 +72,24 @@ export const NODE_TYPE_REGISTRY: Record<string, NodeTypeRegistryEntry> = {
     dataSchema: SourceNodeDataSchema,
     description:
       "Source node — an auto-collected research source (RCNV-02/RSRCH-03): title/domain/excerpt from a chat_source_ledger capture, tier-marked suggested until promoted, with an Open-source external link.",
+  },
+  directory: {
+    id: "directory",
+    dataSchema: DirectoryNodeDataSchema,
+    description:
+      "Directory node — a daemon-watched folder anchored on a path, with a bounded immutable tree preview; the live tree arrives via the daemon's fs.list capability.",
+  },
+  browser: {
+    id: "browser",
+    dataSchema: BrowserNodeDataSchema,
+    description:
+      "Browser node — a jailed live-browser panel shell (url bar + daemon screenshot-stream viewport); never mounts an iframe or remote src, keyed on the daemon's browser.* capabilities.",
+  },
+  editor: {
+    id: "editor",
+    dataSchema: EditorNodeDataSchema,
+    description:
+      "Editor node — a jailed textarea editor shell anchored on a filePath ref (never content); load/save travel through the daemon's fs.read/fs.write capabilities.",
   },
 };
 

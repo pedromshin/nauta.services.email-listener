@@ -162,8 +162,11 @@ import {
   CANVAS_EDGE_TIER_STYLE,
   CANVAS_NODE_KIND_GEOMETRY,
 } from "../canvas-vocabulary";
+import { BrowserNode } from "../browser-node";
 import { ChatControllerProvider, ChatNode } from "../chat-node";
 import { DataEdge } from "../data-edge";
+import { DirectoryNode } from "../directory-node";
+import { EditorNode } from "../editor-node";
 import { EmailThreadNode } from "../email-thread-node";
 import { GenuiPanelNode } from "../genui-panel-node";
 import { KnowledgePreviewNode } from "../knowledge-preview-node";
@@ -343,6 +346,51 @@ const SHELLS = {
       />
     </ReactFlowProvider>
   ),
+  // The v2.0 panel shells (directory / browser / editor) — added at
+  // integration, mirroring how `source` joined this gate. They fetch nothing
+  // (no trpc import by design), so ReactFlowProvider is their whole tree.
+  directory: (selected: boolean) => (
+    <ReactFlowProvider>
+      <DirectoryNode
+        {...nodeProps({
+          id: "directory:1",
+          type: "directory",
+          data: {
+            path: "/home/user/projects/polytoken",
+            entries: [
+              { name: "src", kind: "dir", depth: 0 },
+              { name: "capability.ts", kind: "file", depth: 1 },
+            ],
+          },
+          selected,
+        })}
+      />
+    </ReactFlowProvider>
+  ),
+  browser: (selected: boolean) => (
+    <ReactFlowProvider>
+      <BrowserNode
+        {...nodeProps({
+          id: "browser:1",
+          type: "browser",
+          data: { url: "https://example.com/docs" },
+          selected,
+        })}
+      />
+    </ReactFlowProvider>
+  ),
+  editor: (selected: boolean) => (
+    <ReactFlowProvider>
+      <EditorNode
+        {...nodeProps({
+          id: "editor:1",
+          type: "editor",
+          data: { filePath: "/src/index.ts", language: "ts" },
+          selected,
+        })}
+      />
+    </ReactFlowProvider>
+  ),
   unknown: (selected: boolean) => (
     <ReactFlowProvider>
       <UnknownNodeTypePlaceholder
@@ -366,6 +414,9 @@ const REAL_KINDS: readonly ShellKind[] = [
   "email-thread",
   "knowledge-preview",
   "source",
+  "directory",
+  "browser",
+  "editor",
 ];
 const ALL_KINDS: readonly ShellKind[] = [...REAL_KINDS, "unknown"];
 
@@ -458,7 +509,14 @@ describe("canvas node law — the RENDERED shells (D-58-01 laws 1/2/3)", () => {
       expect(root.textContent).toContain("legacy-widget");
     });
 
-    for (const kind of ["email-thread", "knowledge-preview", "source"] as const) {
+    for (const kind of [
+      "email-thread",
+      "knowledge-preview",
+      "source",
+      "directory",
+      "browser",
+      "editor",
+    ] as const) {
       it(`${kind}'s remove control is ink — removing a card from a board is not irreversible (T-61-19)`, async () => {
         const root = await renderShell(kind);
         const remove = Array.from(root.querySelectorAll("button")).find((b) =>

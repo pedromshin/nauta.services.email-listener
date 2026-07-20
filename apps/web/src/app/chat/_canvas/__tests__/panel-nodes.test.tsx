@@ -3,14 +3,14 @@
  * editor): standalone schemas (panel-node-schemas.ts), pure intent/label
  * helpers, and the three components' rendered contracts.
  *
- * DELIBERATELY STANDALONE: the canvas REGISTRY files (node-type-registry.ts /
- * canvas-vocabulary.ts / node-types.ts / node-data-schemas.ts) are owned by
- * another wave RIGHT NOW, so — unlike source-node.test.tsx — this file
- * imports NONE of them. Registry/vocabulary/dimensions agreement gets its
- * own assertions in the sibling suites once the orchestrator registers the
- * three types (see the slice's seams). What this file CAN pin without the
- * registry, it does: the staged geometry literals, the capability id
- * strings the daemon allowlist keys on, the http(s) jail, and law 2's
+ * ORIGINALLY STANDALONE (the registry files were fenced while this slice
+ * landed); at integration the three types were REGISTERED and the staged
+ * geometry/label maps promoted into `canvas-vocabulary.ts`, so this file now
+ * reads the registered vocabulary directly — registry/vocabulary agreement
+ * is gated by the sibling suites (canvas-vocabulary.test.ts /
+ * node-type-registry.test.ts / canvas-node-law.test.tsx). What this file
+ * pins: the registered geometry literals, the capability id strings the
+ * daemon allowlist keys on, the http(s) jail, and law 2's
  * serif/data-evidence pairing.
  *
  * Component tests mount the REAL components (createRoot-in-jsdom + `act`,
@@ -32,9 +32,11 @@ import {
   DirectoryNodeDataSchema,
   EditorNodeDataSchema,
   isHttpPanelUrl,
-  PANEL_NODE_KIND_GEOMETRY,
-  PANEL_NODE_KIND_LABEL,
 } from "../panel-node-schemas";
+import {
+  CANVAS_NODE_KIND_GEOMETRY,
+  CANVAS_NODE_KIND_LABEL,
+} from "../canvas-vocabulary";
 
 const mockDeleteElements = vi.fn();
 
@@ -196,30 +198,42 @@ describe("isHttpPanelUrl — agrees with the sibling gate on hostile inputs", ()
 });
 
 // ---------------------------------------------------------------------------
-// Staged vocabulary — pinned so the orchestrator's promotion is a byte copy
+// Registered vocabulary — the staged maps were PROMOTED at integration. The
+// staged left-rule/frame claims survived verbatim, each gaining the panels'
+// shared RIGHT SEAM RULE (`border-r-2 border-r-ink`, "a live daemon-backed
+// surface") so every kind stays structurally DISTINCT from its static
+// sibling (directory/email-thread, browser/source, editor/document) — see
+// canvas-vocabulary.ts's axis doc.
 // ---------------------------------------------------------------------------
 
-describe("PANEL_NODE_KIND_GEOMETRY (staging for the fenced vocabulary)", () => {
-  it("pins the exact literals the seams instruct the orchestrator to register", () => {
-    expect(PANEL_NODE_KIND_GEOMETRY).toEqual({
-      directory: "border-l-2 border-l-ink",
-      browser: "border-l border-l-ink border-dotted",
-      editor: "border-l-2 border-l-ink border-double",
-    });
+const PANEL_KINDS = ["directory", "browser", "editor"] as const;
+
+describe("registered panel kind geometry (CANVAS_NODE_KIND_GEOMETRY)", () => {
+  it("pins the registered literals", () => {
+    expect(CANVAS_NODE_KIND_GEOMETRY.directory).toBe(
+      "border-l-2 border-l-ink border-r-2 border-r-ink",
+    );
+    expect(CANVAS_NODE_KIND_GEOMETRY.browser).toBe(
+      "border-l border-l-ink border-r-2 border-r-ink border-dotted",
+    );
+    expect(CANVAS_NODE_KIND_GEOMETRY.editor).toBe(
+      "border-l-2 border-l-ink border-r-2 border-r-ink border-double",
+    );
   });
 
   it("no kind claims DASHED (tier owns solid-vs-dashed) and no kind claims a hue", () => {
-    for (const cls of Object.values(PANEL_NODE_KIND_GEOMETRY)) {
+    for (const kind of PANEL_KINDS) {
+      const cls = CANVAS_NODE_KIND_GEOMETRY[kind];
       expect(cls).not.toContain("dashed");
       // Kind is shape, never hue (law 3): only ink may appear.
-      expect(cls).not.toMatch(/border-l-(?!ink)[a-z]+(?:-\d+)?(?:\s|$)/);
+      expect(cls).not.toMatch(/border-[lr]-(?!ink)[a-z]+(?:-\d+)?(?:\s|$)/);
     }
   });
 
-  it("labels exist for every staged kind, and they are chrome words (short, sans-destined)", () => {
-    expect(Object.keys(PANEL_NODE_KIND_LABEL).sort()).toEqual(
-      Object.keys(PANEL_NODE_KIND_GEOMETRY).sort(),
-    );
+  it("labels exist for every panel kind, and they are chrome words (short, sans-destined)", () => {
+    for (const kind of PANEL_KINDS) {
+      expect(CANVAS_NODE_KIND_LABEL[kind]).toMatch(/\S/);
+    }
   });
 });
 
@@ -397,10 +411,10 @@ async function mountDirectory(
 }
 
 describe("DirectoryNode — rendered contract", () => {
-  it("wears the staged directory geometry with zero shadow", async () => {
+  it("wears the registered directory geometry with zero shadow", async () => {
     const container = await mountDirectory();
     const root = container.firstElementChild as HTMLElement;
-    for (const cls of PANEL_NODE_KIND_GEOMETRY.directory.split(/\s+/)) {
+    for (const cls of CANVAS_NODE_KIND_GEOMETRY.directory.split(/\s+/)) {
       expect(root.className, `missing geometry class "${cls}"`).toContain(cls);
     }
     expect(root.className).not.toMatch(/\bshadow-elevation-/);
@@ -493,10 +507,10 @@ function submitUrlBar(container: HTMLElement): Promise<void> {
 }
 
 describe("BrowserNode — rendered contract", () => {
-  it("wears the staged browser geometry with zero shadow", async () => {
+  it("wears the registered browser geometry with zero shadow", async () => {
     const container = await mountBrowser();
     const root = container.firstElementChild as HTMLElement;
-    for (const cls of PANEL_NODE_KIND_GEOMETRY.browser.split(/\s+/)) {
+    for (const cls of CANVAS_NODE_KIND_GEOMETRY.browser.split(/\s+/)) {
       expect(root.className, `missing geometry class "${cls}"`).toContain(cls);
     }
     expect(root.className).not.toMatch(/\bshadow-elevation-/);
@@ -588,10 +602,10 @@ async function mountEditor(
 }
 
 describe("EditorNode — rendered contract", () => {
-  it("wears the staged editor geometry with zero shadow", async () => {
+  it("wears the registered editor geometry with zero shadow", async () => {
     const container = await mountEditor();
     const root = container.firstElementChild as HTMLElement;
-    for (const cls of PANEL_NODE_KIND_GEOMETRY.editor.split(/\s+/)) {
+    for (const cls of CANVAS_NODE_KIND_GEOMETRY.editor.split(/\s+/)) {
       expect(root.className, `missing geometry class "${cls}"`).toContain(cls);
     }
     expect(root.className).not.toMatch(/\bshadow-elevation-/);

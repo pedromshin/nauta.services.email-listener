@@ -34,6 +34,9 @@ const NODE_KINDS: readonly CanvasNodeKind[] = [
   "knowledge-preview",
   "document",
   "source",
+  "directory",
+  "browser",
+  "editor",
   "unknown",
 ];
 
@@ -124,6 +127,9 @@ describe("canvasNodeKindOf — a persisted node.type is untrusted (T-61-06)", ()
     expect(canvasNodeKindOf("knowledge-preview")).toBe("knowledge-preview");
     expect(canvasNodeKindOf("document")).toBe("document");
     expect(canvasNodeKindOf("source")).toBe("source");
+    expect(canvasNodeKindOf("directory")).toBe("directory");
+    expect(canvasNodeKindOf("browser")).toBe("browser");
+    expect(canvasNodeKindOf("editor")).toBe("editor");
   });
 
   it("resolves an UNRECOGNIZED type to \"unknown\" — never throws, never another kind's geometry", () => {

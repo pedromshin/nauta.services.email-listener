@@ -133,47 +133,15 @@ export const EditorNodeDataSchema = z
 export type EditorNodeData = z.infer<typeof EditorNodeDataSchema>;
 
 // ---------------------------------------------------------------------------
-// PANEL_NODE_KIND_GEOMETRY — STAGING for the fenced vocabulary.
-//
-// `canvas-vocabulary.ts` is owned by another wave, so the three kinds' shape
-// claims are stated HERE and the components read this map. The orchestrator
-// copies these EXACT literals into CANVAS_NODE_KIND_GEOMETRY (seams list) and
-// may then delete this map and re-point the components — or keep it and let
-// canvas-vocabulary.test.ts assert agreement. Two maps of one fact is the
-// known failure mode; this one is deliberate, temporary, and test-pinned.
-//
-// The claims, on the axis canvas-vocabulary.ts states (weight = how much of
-// the user's OWN material; DOTTED = a view/guess; DOUBLE = a bound artifact):
-//
-//   directory (2, solid)   the user's OWN files, raw and present in full —
-//                          the same claim email-thread makes about real mail.
-//                          The preview is bounded but the node IS the folder.
-//   browser   (1, dotted)  a live viewport: polytoken's rendering with no
-//                          words of its own (1) that is a VIEW, not an
-//                          artifact (dotted) — the same claim `source` makes.
-//   editor    (2, double)  an artifact BEING authored: the draft is the
-//                          user's own material (2) composed toward a bound
-//                          standalone piece (double) — document's claim, in
-//                          progress.
-//
-// DOTTED/DOUBLE, never DASHED: tier owns solid-vs-dashed (law 3).
+// GEOMETRY/LABELS LIVE IN THE VOCABULARY NOW — the staging maps this module
+// carried while `canvas-vocabulary.ts` was fenced (PANEL_NODE_KIND_GEOMETRY /
+// PANEL_NODE_KIND_LABEL) were PROMOTED at integration: the three kinds are
+// registered in `CANVAS_NODE_KIND_GEOMETRY` / `CANVAS_NODE_KIND_LABEL` and the
+// components read those maps directly. The staged left-rule/frame claims
+// survived verbatim; each kind additionally wears the RIGHT SEAM RULE
+// (`border-r-2 border-r-ink`, "a live daemon-backed surface") because the
+// staged literals collided with their static siblings (directory ==
+// email-thread, browser == source, editor == document) and kind must stay
+// structurally DISTINCT (canvas-vocabulary.test.ts's legibility gate, law 3).
+// One fact, one map — the deliberate, temporary second map is gone.
 // ---------------------------------------------------------------------------
-
-export const PANEL_NODE_KIND_GEOMETRY = {
-  directory: "border-l-2 border-l-ink",
-  browser: "border-l border-l-ink border-dotted",
-  editor: "border-l-2 border-l-ink border-double",
-} as const;
-
-export type PanelNodeKind = keyof typeof PANEL_NODE_KIND_GEOMETRY;
-
-/**
- * PANEL_NODE_KIND_LABEL — polytoken's word for each kind (sans, never behind
- * pmark/chip — these are chrome words, law 2). Staged for
- * CANVAS_NODE_KIND_LABEL exactly as the geometry map above.
- */
-export const PANEL_NODE_KIND_LABEL: Record<PanelNodeKind, string> = {
-  directory: "Folder",
-  browser: "Browser",
-  editor: "Editor",
-};

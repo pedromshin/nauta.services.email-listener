@@ -30,10 +30,10 @@
  * line, placeholder copy) — SANS throughout. A web page's own words never
  * appear here as text, only as pixels inside a daemon screenshot.
  *
- * Kind geometry: `PANEL_NODE_KIND_GEOMETRY.browser` — weight-1 DOTTED ink
+ * Kind geometry: `CANVAS_NODE_KIND_GEOMETRY.browser` — weight-1 DOTTED ink
  * rule: a live viewport with no words of its own, a VIEW rather than an
- * artifact (source's claim). Staged locally; the orchestrator promotes the
- * literal into the fenced vocabulary (see panel-node-schemas.ts).
+ * artifact (source's claim), plus the panels' shared RIGHT SEAM RULE: a
+ * live, daemon-backed surface (see the vocabulary's axis doc).
  *
  * Remove mirrors the siblings: `deleteElements` drops only the placement;
  * the daemon's browser session (if any) survives — closing it is
@@ -48,7 +48,8 @@ import type { Node, NodeProps } from "@xyflow/react";
 import { AppWindow, Camera, X } from "lucide-react";
 
 import { canvasNodeShellClass } from "./canvas-node-shell-class";
-import { isHttpPanelUrl, PANEL_NODE_KIND_GEOMETRY } from "./panel-node-schemas";
+import { CANVAS_NODE_KIND_GEOMETRY } from "./canvas-vocabulary";
+import { isHttpPanelUrl } from "./panel-node-schemas";
 import type { BrowserNodeData } from "./panel-node-schemas";
 
 export type BrowserNodeType = Node<BrowserNodeData, "browser">;
@@ -143,7 +144,7 @@ export const BrowserNode = memo(function BrowserNode({
 
   return (
     <div
-      className={`h-[300px] w-[400px] animate-in fade-in-0 zoom-in-95 [animation-duration:250ms] motion-reduce:animate-none ${canvasNodeShellClass(PANEL_NODE_KIND_GEOMETRY.browser, selected === true)}`}
+      className={`h-[300px] w-[400px] animate-in fade-in-0 zoom-in-95 [animation-duration:250ms] motion-reduce:animate-none ${canvasNodeShellClass(CANVAS_NODE_KIND_GEOMETRY.browser, selected === true)}`}
     >
       <Handle type="target" position={Position.Left} />
       <div className="node-drag-handle flex h-9 shrink-0 cursor-grab items-center justify-between gap-2 border-b border-hair px-3 active:cursor-grabbing">

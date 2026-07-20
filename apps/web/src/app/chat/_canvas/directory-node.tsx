@@ -18,10 +18,10 @@
  * font to the sans depth-guides by inheritance, which no className gate can
  * see). The path caption and row counts are polytoken's summary chrome: SANS.
  *
- * Kind geometry: `PANEL_NODE_KIND_GEOMETRY.directory` — weight-2 solid ink
- * rule: the user's own files, raw and present in full (email-thread's claim).
- * Staged locally because canvas-vocabulary.ts is fenced this wave; the
- * orchestrator promotes the literal (see panel-node-schemas.ts header).
+ * Kind geometry: `CANVAS_NODE_KIND_GEOMETRY.directory` — weight-2 solid ink
+ * rule: the user's own files, raw and present in full (email-thread's claim),
+ * plus the panels' shared RIGHT SEAM RULE: a live, daemon-backed surface
+ * (see the vocabulary's axis doc).
  *
  * ATTACH-CHAT AFFORDANCE STUB: the footer renders the same "Attach chat"
  * affordance EmailThreadNode wires for real, DISABLED with honest copy — the
@@ -42,7 +42,7 @@ import type { Node, NodeProps } from "@xyflow/react";
 import { File, Folder, FolderOpen, MessageSquarePlus, X } from "lucide-react";
 
 import { canvasNodeShellClass } from "./canvas-node-shell-class";
-import { PANEL_NODE_KIND_GEOMETRY } from "./panel-node-schemas";
+import { CANVAS_NODE_KIND_GEOMETRY } from "./canvas-vocabulary";
 import type { DirectoryEntry, DirectoryNodeData } from "./panel-node-schemas";
 
 export type DirectoryNodeType = Node<DirectoryNodeData, "directory">;
@@ -103,7 +103,7 @@ export const DirectoryNode = memo(function DirectoryNode({
 
   return (
     <div
-      className={`h-[240px] w-[300px] animate-in fade-in-0 zoom-in-95 [animation-duration:250ms] motion-reduce:animate-none ${canvasNodeShellClass(PANEL_NODE_KIND_GEOMETRY.directory, selected === true)}`}
+      className={`h-[240px] w-[300px] animate-in fade-in-0 zoom-in-95 [animation-duration:250ms] motion-reduce:animate-none ${canvasNodeShellClass(CANVAS_NODE_KIND_GEOMETRY.directory, selected === true)}`}
     >
       <Handle type="target" position={Position.Left} />
       <div className="node-drag-handle flex h-9 shrink-0 cursor-grab items-center justify-between gap-2 border-b border-hair px-3 active:cursor-grabbing">
