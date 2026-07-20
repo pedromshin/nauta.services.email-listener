@@ -58,7 +58,8 @@ describe("defineCapability", () => {
 });
 
 describe("createCapabilityRegistry", () => {
-  const registry = createCapabilityRegistry<TestCtx, TestScope>([echo, writer]);
+  const caps = [echo, writer] as unknown as readonly Capability<never, never, TestCtx, TestScope>[];
+  const registry = createCapabilityRegistry<TestCtx, TestScope>(caps);
 
   it("resolves by id — a lookup, not a switch (INV-2)", () => {
     expect(registry.get("test.echo")?.id).toBe("test.echo");
@@ -70,7 +71,8 @@ describe("createCapabilityRegistry", () => {
   });
 
   it("throws on a duplicate id — ambiguity is a permission bug waiting to happen", () => {
-    expect(() => createCapabilityRegistry<TestCtx, TestScope>([echo, echo])).toThrow(
+    const dupes = [echo, echo] as unknown as readonly Capability<never, never, TestCtx, TestScope>[];
+    expect(() => createCapabilityRegistry<TestCtx, TestScope>(dupes)).toThrow(
       /duplicate capability id "test.echo"/,
     );
   });

@@ -123,12 +123,12 @@ export type CapabilityRegistry<TCtx = unknown, TScope = unknown> = {
  * permission bug waiting to happen (INV-2).
  */
 export const createCapabilityRegistry = <TCtx = unknown, TScope = unknown>(
-  // Heterogeneous by construction: each capability has its own input/output types. `any` in those
-  // positions lets concrete capabilities register without a cast; type safety is restored at the
-  // boundary — `get()` returns `never` inputs, so a consumer MUST re-parse args against
-  // `capability.input` before `execute` ever sees them (the daemon's handler.ts already does this).
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  descriptors: readonly Capability<any, any, TCtx, TScope>[],
+  // Descriptors are heterogeneous and contravariant in their input type (via `scope`/`execute`), so
+  // a registry cannot be typed without `never`-erasure here — declare the source array as
+  // `readonly Capability<never, never, TCtx, TScope>[]` (concrete `defineCapability(...)` outputs
+  // assign into that annotated array cleanly). Safety is restored at the boundary: a consumer
+  // re-parses args against `capability.input` before `execute` ever sees them.
+  descriptors: readonly Capability<never, never, TCtx, TScope>[],
 ): CapabilityRegistry<TCtx, TScope> => {
   const byId = new Map<string, Capability<never, never, TCtx, TScope>>();
 
@@ -136,7 +136,7 @@ export const createCapabilityRegistry = <TCtx = unknown, TScope = unknown>(
     if (byId.has(descriptor.id)) {
       throw new Error(`[capabilities] duplicate capability id "${descriptor.id}"`);
     }
-    byId.set(descriptor.id, descriptor as unknown as Capability<never, never, TCtx, TScope>);
+    byId.set(descriptor.id, descriptor);
   }
 
   return Object.freeze({
