@@ -21,11 +21,11 @@
 
 import { useCallback } from "react";
 
+import type { TierFilterState } from "./tier-filter";
+
 // ---------------------------------------------------------------------------
 // Segments — order is the cumulative narrow -> wide sequence.
 // ---------------------------------------------------------------------------
-
-import type { TierFilterState } from "./tier-filter";
 
 const SEGMENTS: ReadonlyArray<{
   readonly state: TierFilterState;
