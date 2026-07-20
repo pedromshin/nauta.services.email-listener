@@ -33,6 +33,7 @@ const removeMutate = vi.fn();
 const requestDownloadMutate = vi.fn();
 const invalidate = vi.fn();
 const toastFn = vi.fn();
+const fetchNextPage = vi.fn();
 
 let listResult: {
   data?: unknown[];
@@ -40,6 +41,9 @@ let listResult: {
   error: unknown;
   refetch: () => void;
 } = { data: [], isPending: false, error: null, refetch: vi.fn() };
+
+/** Whether the mocked folder claims another page (drives VaultLoadMore). */
+let listHasNextPage = false;
 
 vi.mock("sonner", () => ({ toast: (...args: unknown[]) => toastFn(...args) }));
 
@@ -51,7 +55,25 @@ vi.mock("next/navigation", () => ({
 vi.mock("../../_lib/vault-api", () => ({
   vaultApi: {
     files: {
-      list: { useQuery: () => listResult },
+      // The surface pages the listing (v2.1). The fixtures keep their flat
+      // `listResult.data` shape; the mock wraps it into the one-page infinite
+      // result the real hook returns, so every older test reads unchanged.
+      list: {
+        useInfiniteQuery: () => ({
+          data: listResult.data
+            ? {
+                pages: [{ entries: listResult.data, nextCursor: null }],
+                pageParams: [null],
+              }
+            : undefined,
+          isPending: listResult.isPending,
+          error: listResult.error,
+          refetch: listResult.refetch,
+          fetchNextPage,
+          hasNextPage: listHasNextPage,
+          isFetchingNextPage: false,
+        }),
+      },
       requestUpload: {
         useMutation: () => ({ mutateAsync: requestUploadMutateAsync }),
       },
@@ -107,6 +129,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   FakeXHR.instances = [];
   listResult = { data: [], isPending: false, error: null, refetch: vi.fn() };
+  listHasNextPage = false;
   vi.stubGlobal("XMLHttpRequest", FakeXHR);
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -562,6 +585,60 @@ describe("the upload tray", () => {
     expect(container.textContent).toContain("100 MB limit");
   });
 
+  it("a failed row offers RETRY, and retry re-runs the whole funnel", async () => {
+    mount();
+
+    await act(async () => {
+      pane().dispatchEvent(dragEvent("drop", { types: ["Files"], files: [fileOf()] }));
+    });
+
+    await act(async () => {
+      const xhr = FakeXHR.instances[0]!;
+      xhr.status = 500;
+      xhr.onload?.();
+    });
+
+    // The way back wears a WORD, not a glyph to decode.
+    const retryButton = container.querySelector<HTMLButtonElement>(
+      "[data-slot='upload-retry']",
+    );
+    expect(retryButton).not.toBeNull();
+    expect(retryButton?.textContent).toContain("Retry");
+    // Ink — retrying is additive, it has earned no colour.
+    expect(retryButton?.getAttribute("class") ?? "").not.toMatch(/destructive|bad/);
+
+    await act(async () => retryButton!.click());
+
+    // A fresh signed URL and a fresh PUT — the failed URL may have expired.
+    expect(requestUploadMutateAsync).toHaveBeenCalledTimes(2);
+    expect(FakeXHR.instances).toHaveLength(2);
+
+    // The row is back in flight, not stuck on error.
+    const row = container.querySelector("[data-slot='upload-tray-row']");
+    expect(row?.getAttribute("data-status")).toBe("uploading");
+  });
+
+  it("dismissing a failed row releases it — no Retry ghost", async () => {
+    mount();
+
+    await act(async () => {
+      pane().dispatchEvent(dragEvent("drop", { types: ["Files"], files: [fileOf()] }));
+    });
+    await act(async () => {
+      const xhr = FakeXHR.instances[0]!;
+      xhr.status = 500;
+      xhr.onload?.();
+    });
+
+    const dismissButton = container.querySelector<HTMLButtonElement>(
+      "[data-slot='upload-dismiss']",
+    );
+    await act(async () => dismissButton!.click());
+
+    expect(container.querySelector("[data-slot='upload-tray-row']")).toBeNull();
+    expect(container.querySelector("[data-slot='upload-retry']")).toBeNull();
+  });
+
   it("a dropped FOLDER is refused with an explanation, not silence", async () => {
     mount();
 
@@ -577,5 +654,75 @@ describe("the upload tray", () => {
     expect(toastFn).toHaveBeenCalledWith(
       "Folders can't be uploaded yet — drop files instead.",
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Pagination (v2.1) — the cap is a page, and page failures don't eat the list
+// ---------------------------------------------------------------------------
+
+describe("a folder deeper than one page", () => {
+  const entry = {
+    name: "one.txt",
+    kind: "text" as const,
+    isFolder: false,
+    size: 10,
+    updatedAt: "2026-07-12T10:00:00Z",
+    contentType: "text/plain",
+  };
+
+  it("offers 'Show more', which fetches the next page — one click, no menu", () => {
+    listResult = { data: [entry], isPending: false, error: null, refetch: vi.fn() };
+    listHasNextPage = true;
+    mount();
+
+    const more = byText("Show more");
+    expect(more).toBeDefined();
+
+    act(() => more?.click());
+    expect(fetchNextPage).toHaveBeenCalledTimes(1);
+    expect(container.querySelector("[role='menu']")).toBeNull();
+  });
+
+  it("shows NO footer chrome for a one-page folder — the common case is silence", () => {
+    listResult = { data: [entry], isPending: false, error: null, refetch: vi.fn() };
+    listHasNextPage = false;
+    mount();
+
+    expect(byText("Show more")).toBeUndefined();
+    expect(container.querySelector("[data-slot='vault-load-more-error']")).toBeNull();
+  });
+
+  it("a page failure with rows on screen KEEPS the rows and reports at the foot", () => {
+    // With paging, `error` can be set while 500 rows are loaded. Replacing
+    // them with the full-pane error would punish the user for scrolling.
+    listResult = {
+      data: [entry],
+      isPending: false,
+      error: new Error("page 2 fell over"),
+      refetch: vi.fn(),
+    };
+    mount();
+
+    // The rows survived…
+    expect(container.querySelector("[data-slot='vault-row-primary']")).not.toBeNull();
+    // …the full-pane error did NOT mount…
+    expect(container.textContent).not.toContain("Couldn't load this folder.");
+    // …and the foot names the failure with the way out.
+    const footError = container.querySelector("[data-slot='vault-load-more-error']");
+    expect(footError).not.toBeNull();
+    expect(footError?.getAttribute("role")).toBe("alert");
+  });
+
+  it("with NO rows loaded, an error is still the full designed error state", () => {
+    listResult = {
+      data: undefined,
+      isPending: false,
+      error: new Error("first page fell over"),
+      refetch: vi.fn(),
+    };
+    mount();
+
+    expect(container.textContent).toContain("Couldn't load this folder.");
   });
 });

@@ -173,6 +173,29 @@ describe("scan the vault: ZERO clicks", () => {
     expect(tabbable()[0]).toBe(rowButtons()[1]);
   });
 
+  it("does NOT reset focus when a page is APPENDED (v2.1 'Show more')", () => {
+    renderListing();
+    press("End");
+    expect(document.activeElement).toBe(rowButtons()[4]);
+
+    // "Show more" hands the listing the same rows plus a new page on the end.
+    // A reset here would teleport the user from where they were reading —
+    // the bottom, where the button they just pressed lives — back to the top.
+    mount(
+      <VaultListing
+        entries={[...ENTRIES, file("page2-a.txt"), file("page2-b.txt")]}
+        onOpenFolder={vi.fn()}
+        onDownload={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+
+    const tabbable = rowButtons().filter((b) => b.tabIndex === 0);
+    expect(tabbable).toHaveLength(1);
+    // Still the row the user was on — position 4 — not row 0.
+    expect(tabbable[0]).toBe(rowButtons()[4]);
+  });
+
   it("resets focus to the first row when the folder's contents change", () => {
     renderListing();
     press("End");
@@ -317,6 +340,43 @@ describe("secondary actions are reachable — never hover-only", () => {
     // don't exist.
     const trigger = container.querySelector("[data-slot='vault-row-delete']");
     expect(trigger?.getAttribute("aria-keyshortcuts")).toBe("Delete");
+  });
+});
+
+describe("the provenance line (v2.1)", () => {
+  it("every FILE row states who added it and when", () => {
+    renderListing();
+
+    const lines = Array.from(
+      container.querySelectorAll("[data-slot='vault-row-provenance']"),
+    );
+    // 3 files in the fixture; folders carry none (see below).
+    expect(lines).toHaveLength(3);
+    for (const line of lines) {
+      expect(line.textContent).toContain("Added by you");
+      expect(line.textContent).toContain("12 Jul 2026");
+    }
+  });
+
+  it("folder rows carry NO provenance — storage records none, so none is stated", () => {
+    renderListing();
+
+    // Folders are implicit (D-66-01): inventing an "added" date for one would
+    // be decoration wearing a fact's clothes.
+    const folderRow = rowButtons()[0]!;
+    expect(folderRow.querySelector("[data-slot='vault-row-provenance']")).toBeNull();
+  });
+
+  it("provenance is meta, not a hue — pencil ink that steps up on hover", () => {
+    renderListing();
+
+    const line = container.querySelector("[data-slot='vault-row-provenance']");
+    const className = line?.getAttribute("class") ?? "";
+    // The contrast pair (vault-row.tsx): pencil at rest, faded over the
+    // bg-shade hover fill — split them and the line fails AA under the pointer.
+    expect(className).toMatch(/text-pencil/);
+    expect(className).toMatch(/group-hover:text-faded/);
+    expect(className).not.toMatch(/text-(conf|sugg|bad)\b/);
   });
 });
 

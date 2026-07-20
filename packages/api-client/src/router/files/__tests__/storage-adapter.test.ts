@@ -21,6 +21,7 @@ import type { RawFileObject, VaultStorageClient } from "../vault-types";
 import { EMPTY_FOLDER_PLACEHOLDER } from "../vault-keys";
 import {
   createVaultAdapter,
+  VAULT_LIST_PAGE_SIZE,
   VAULT_MAX_UPLOAD_BYTES,
   VaultStorageError,
 } from "../storage-adapter";
@@ -157,7 +158,7 @@ describe("listFolder", () => {
     });
     const adapter = createVaultAdapter({ client: fake.client, bucket: BUCKET });
 
-    const entries = await adapter.listFolder(USER_A, []);
+    const { entries } = await adapter.listFolder(USER_A, []);
 
     expect(entries).toEqual([
       {
@@ -186,7 +187,7 @@ describe("listFolder", () => {
     });
     const adapter = createVaultAdapter({ client: fake.client, bucket: BUCKET });
 
-    const entries = await adapter.listFolder(USER_A, ["empty"]);
+    const { entries } = await adapter.listFolder(USER_A, ["empty"]);
 
     expect(entries.map((e) => e.name)).toEqual(["real.txt"]);
   });
@@ -207,7 +208,7 @@ describe("listFolder", () => {
     const fake = createFakeClient({ [`user-a/${name}`]: FILE() });
     const adapter = createVaultAdapter({ client: fake.client, bucket: BUCKET });
 
-    const entries = await adapter.listFolder(USER_A, []);
+    const { entries } = await adapter.listFolder(USER_A, []);
 
     expect(entries[0]?.kind).toBe(kind);
   });
@@ -221,7 +222,7 @@ describe("listFolder", () => {
     });
     const adapter = createVaultAdapter({ client: fake.client, bucket: BUCKET });
 
-    const entries = await adapter.listFolder(USER_A, []);
+    const { entries } = await adapter.listFolder(USER_A, []);
 
     expect(entries.map((e) => e.name)).toEqual([
       "archive",
@@ -250,11 +251,14 @@ describe("listFolder", () => {
     expect(fake.callsOf("list")[0]!.args[0]).toBe("user-a/docs");
   });
 
-  it("returns [] for a genuinely empty folder", async () => {
+  it("returns an empty LAST page for a genuinely empty folder", async () => {
     const fake = createFakeClient({});
     const adapter = createVaultAdapter({ client: fake.client, bucket: BUCKET });
 
-    await expect(adapter.listFolder(USER_A, [])).resolves.toEqual([]);
+    await expect(adapter.listFolder(USER_A, [])).resolves.toEqual({
+      entries: [],
+      nextCursor: null,
+    });
   });
 
   it("THROWS on a storage error — it never invents an empty listing out of a failure", async () => {
@@ -276,6 +280,77 @@ describe("listFolder", () => {
 
     await expect(adapter.listFolder(USER_A, ["..", "user-b"])).rejects.toThrow();
     expect(fake.callsOf("list")).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// listFolder pagination — the 500-entry cap is a PAGE, not a truncation
+// ---------------------------------------------------------------------------
+
+describe("listFolder pagination (v2.1 hardening)", () => {
+  /** Seed n files under user-a/, zero-padded so name order is stable. */
+  const seed = (n: number): Record<string, FakeObject> => {
+    const objects: Record<string, FakeObject> = {};
+    for (let i = 0; i < n; i++) {
+      objects[`user-a/f-${String(i).padStart(5, "0")}.txt`] = FILE();
+    }
+    return objects;
+  };
+
+  it("a full page reports the next cursor; the last page reports null", async () => {
+    const fake = createFakeClient(seed(VAULT_LIST_PAGE_SIZE + 1));
+    const adapter = createVaultAdapter({ client: fake.client, bucket: BUCKET });
+
+    const first = await adapter.listFolder(USER_A, []);
+    expect(first.entries).toHaveLength(VAULT_LIST_PAGE_SIZE);
+    expect(first.nextCursor).toBe(VAULT_LIST_PAGE_SIZE);
+
+    // The entry Phase 66 silently dropped is now reachable.
+    const second = await adapter.listFolder(USER_A, [], first.nextCursor!);
+    expect(second.entries).toHaveLength(1);
+    expect(second.nextCursor).toBeNull();
+  });
+
+  it("forwards the offset to storage — the cursor is real, not decorative", async () => {
+    const fake = createFakeClient(seed(1));
+    const adapter = createVaultAdapter({ client: fake.client, bucket: BUCKET });
+
+    await adapter.listFolder(USER_A, ["docs"], 500);
+
+    const [, opts] = fake.callsOf("list")[0]!.args as [string, { offset: number }];
+    expect(opts.offset).toBe(500);
+  });
+
+  it("an exactly-full LAST page reports a cursor whose next page is empty — over-ask, never under-show", async () => {
+    // With offset-based listing the server cannot know a full page is the
+    // final one without a second call. The honest resolution: report a
+    // cursor, and let the next page come back empty-and-final. The client
+    // shows one extra "Show more" that resolves to nothing — cheap. The
+    // alternative (guessing null) hides real entries — not cheap.
+    const fake = createFakeClient(seed(VAULT_LIST_PAGE_SIZE));
+    const adapter = createVaultAdapter({ client: fake.client, bucket: BUCKET });
+
+    const first = await adapter.listFolder(USER_A, []);
+    expect(first.nextCursor).toBe(VAULT_LIST_PAGE_SIZE);
+
+    const second = await adapter.listFolder(USER_A, [], first.nextCursor!);
+    expect(second.entries).toHaveLength(0);
+    expect(second.nextCursor).toBeNull();
+  });
+
+  it("the placeholder filter cannot swallow a page boundary", async () => {
+    // A full raw page that CONTAINS the placeholder maps to 499 visible
+    // entries — the cursor decision reads the RAW length, so the page still
+    // chains. Decided on filtered length, the tail of the folder vanishes.
+    const objects = seed(VAULT_LIST_PAGE_SIZE + 1);
+    delete objects[`user-a/f-00000.txt`];
+    objects[`user-a/${EMPTY_FOLDER_PLACEHOLDER}`] = FILE(0);
+    const fake = createFakeClient(objects);
+    const adapter = createVaultAdapter({ client: fake.client, bucket: BUCKET });
+
+    const first = await adapter.listFolder(USER_A, []);
+    expect(first.entries).toHaveLength(VAULT_LIST_PAGE_SIZE - 1);
+    expect(first.nextCursor).toBe(VAULT_LIST_PAGE_SIZE);
   });
 });
 

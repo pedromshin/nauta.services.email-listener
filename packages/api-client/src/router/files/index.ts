@@ -33,6 +33,7 @@ import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { createServiceRoleVaultClient, VAULT_BUCKET } from "./service-client";
 import {
   createVaultAdapter,
+  VAULT_LIST_PAGE_SIZE,
   VAULT_MAX_UPLOAD_BYTES,
   VaultStorageError,
 } from "./storage-adapter";
@@ -88,12 +89,30 @@ export function createFilesRouter(opts?: { adapter?: VaultAdapter }) {
     });
 
   return createTRPCRouter({
-    /** One folder's contents. `path` defaults to the vault root. */
+    /**
+     * One PAGE of a folder's contents. `path` defaults to the vault root.
+     *
+     * `cursor` is the field tRPC's `useInfiniteQuery` echoes back — it MUST
+     * accept null (tRPC's initialCursor default) and it is bounded: an offset
+     * is not a key or a prefix (the input rule above stands untouched), but an
+     * unbounded one is still a free amplifier against storage. 2000 pages of
+     * 500 is deeper than any honest vault.
+     */
     list: protectedProcedure
-      .input(z.object({ path: VaultPathSchema }))
+      .input(
+        z.object({
+          path: VaultPathSchema,
+          cursor: z
+            .number()
+            .int()
+            .min(0)
+            .max(VAULT_LIST_PAGE_SIZE * 2000)
+            .nullish(),
+        }),
+      )
       .query(async ({ ctx, input }) => {
         try {
-          return await adapter().listFolder(ctx.user.id, input.path);
+          return await adapter().listFolder(ctx.user.id, input.path, input.cursor ?? 0);
         } catch (err) {
           return toClientError(err);
         }
