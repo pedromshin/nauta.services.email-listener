@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isAuthorized, readDaemonToken } from "../server/auth.js";
+import { isAuthorized, readDaemonToken, tokenFromUpgradeUrl } from "../server/auth.js";
 
 /**
  * The token is the ONLY gate on a process that can read, write and execute on this PC. localhost
@@ -72,5 +72,42 @@ describe("isAuthorized — timing-safe, exact match only (T-65-11)", () => {
 
   it("accepts the exact token", () => {
     expect(isAuthorized(expected, expected)).toBe(true);
+  });
+});
+
+describe("tokenFromUpgradeUrl — the browser seam (?token=, because browsers cannot send headers)", () => {
+  it("extracts ?token= from an upgrade URL", () => {
+    expect(tokenFromUpgradeUrl("/?token=abc")).toBe("abc");
+  });
+
+  it("URL-decodes the value (buildDaemonUrl percent-encodes it)", () => {
+    expect(tokenFromUpgradeUrl("/?token=abc%20def")).toBe("abc def");
+  });
+
+  it("returns undefined when there is no query string", () => {
+    expect(tokenFromUpgradeUrl("/")).toBeUndefined();
+  });
+
+  it("returns undefined when the token param is absent", () => {
+    expect(tokenFromUpgradeUrl("/?other=x")).toBeUndefined();
+  });
+
+  it("returns undefined for a missing URL", () => {
+    expect(tokenFromUpgradeUrl(undefined)).toBeUndefined();
+  });
+
+  it("returns undefined for an empty URL", () => {
+    expect(tokenFromUpgradeUrl("")).toBeUndefined();
+  });
+
+  it("takes the FIRST value when the param repeats (no last-wins smuggling)", () => {
+    expect(tokenFromUpgradeUrl("/?token=first&token=second")).toBe("first");
+  });
+
+  it("feeds isAuthorized exactly like the header path (same gate, same comparison)", () => {
+    const expected = "correct-horse-battery-staple-01";
+    expect(isAuthorized(tokenFromUpgradeUrl(`/?token=${expected}`), expected)).toBe(true);
+    expect(isAuthorized(tokenFromUpgradeUrl("/?token=wrong-token-value-here-000001"), expected)).toBe(false);
+    expect(isAuthorized(tokenFromUpgradeUrl("/"), expected)).toBe(false);
   });
 });

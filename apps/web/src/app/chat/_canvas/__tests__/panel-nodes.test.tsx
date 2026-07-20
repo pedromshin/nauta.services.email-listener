@@ -3,14 +3,14 @@
  * editor): standalone schemas (panel-node-schemas.ts), pure intent/label
  * helpers, and the three components' rendered contracts.
  *
- * DELIBERATELY STANDALONE: the canvas REGISTRY files (node-type-registry.ts /
- * canvas-vocabulary.ts / node-types.ts / node-data-schemas.ts) are owned by
- * another wave RIGHT NOW, so — unlike source-node.test.tsx — this file
- * imports NONE of them. Registry/vocabulary/dimensions agreement gets its
- * own assertions in the sibling suites once the orchestrator registers the
- * three types (see the slice's seams). What this file CAN pin without the
- * registry, it does: the staged geometry literals, the capability id
- * strings the daemon allowlist keys on, the http(s) jail, and law 2's
+ * ORIGINALLY STANDALONE (the registry files were fenced while this slice
+ * landed); at integration the three types were REGISTERED and the staged
+ * geometry/label maps promoted into `canvas-vocabulary.ts`, so this file now
+ * reads the registered vocabulary directly — registry/vocabulary agreement
+ * is gated by the sibling suites (canvas-vocabulary.test.ts /
+ * node-type-registry.test.ts / canvas-node-law.test.tsx). What this file
+ * pins: the registered geometry literals, the capability id strings the
+ * daemon allowlist keys on, the http(s) jail, and law 2's
  * serif/data-evidence pairing.
  *
  * Component tests mount the REAL components (createRoot-in-jsdom + `act`,
@@ -32,9 +32,11 @@ import {
   DirectoryNodeDataSchema,
   EditorNodeDataSchema,
   isHttpPanelUrl,
-  PANEL_NODE_KIND_GEOMETRY,
-  PANEL_NODE_KIND_LABEL,
 } from "../panel-node-schemas";
+import {
+  CANVAS_NODE_KIND_GEOMETRY,
+  CANVAS_NODE_KIND_LABEL,
+} from "../canvas-vocabulary";
 
 const mockDeleteElements = vi.fn();
 

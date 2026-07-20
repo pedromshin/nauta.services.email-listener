@@ -173,3 +173,25 @@ export const SourceNodeDataSchema = z
   .strict();
 
 export type SourceNodeData = z.infer<typeof SourceNodeDataSchema>;
+
+// ---------------------------------------------------------------------------
+// Panel node.data schemas (directory / browser / editor) — authored in
+// `panel-node-schemas.ts` while this module was fenced (v2.0 canvas-panels
+// slice; see that file's header for the per-type ref-only/threat reasoning).
+// Re-exported HERE at integration so this module stays the ONE Zod boundary
+// for canvas node.data: `node-type-registry.ts` imports every dataSchema from
+// this module and nowhere else.
+// ---------------------------------------------------------------------------
+
+export {
+  BrowserNodeDataSchema,
+  DirectoryEntrySchema,
+  DirectoryNodeDataSchema,
+  EditorNodeDataSchema,
+} from "./panel-node-schemas";
+export type {
+  BrowserNodeData,
+  DirectoryEntry,
+  DirectoryNodeData,
+  EditorNodeData,
+} from "./panel-node-schemas";

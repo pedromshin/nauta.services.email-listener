@@ -34,11 +34,11 @@
  * serif + data-evidence pair; the status line and buttons are polytoken's
  * chrome, SANS.
  *
- * Kind geometry: `PANEL_NODE_KIND_GEOMETRY.editor` — weight-2 DOUBLE ink
+ * Kind geometry: `CANVAS_NODE_KIND_GEOMETRY.editor` — weight-2 DOUBLE ink
  * rule: an artifact being AUTHORED — the user's own material (2) composed
- * toward a bound standalone piece (double; document's claim, in progress).
- * Staged locally; the orchestrator promotes the literal into the fenced
- * vocabulary (see panel-node-schemas.ts).
+ * toward a bound standalone piece (double; document's claim, in progress),
+ * plus the panels' shared RIGHT SEAM RULE: a live, daemon-backed surface
+ * (see the vocabulary's axis doc).
  *
  * Remove mirrors the siblings: `deleteElements` drops only the placement;
  * the file on disk survives untouched (ink, not madder — T-61-19).
@@ -51,7 +51,7 @@ import type { Node, NodeProps } from "@xyflow/react";
 import { FileCode, X } from "lucide-react";
 
 import { canvasNodeShellClass } from "./canvas-node-shell-class";
-import { PANEL_NODE_KIND_GEOMETRY } from "./panel-node-schemas";
+import { CANVAS_NODE_KIND_GEOMETRY } from "./canvas-vocabulary";
 import type { EditorNodeData } from "./panel-node-schemas";
 
 export type EditorNodeType = Node<EditorNodeData, "editor">;
@@ -133,7 +133,7 @@ export const EditorNode = memo(function EditorNode({
 
   return (
     <div
-      className={`h-[300px] w-[380px] animate-in fade-in-0 zoom-in-95 [animation-duration:250ms] motion-reduce:animate-none ${canvasNodeShellClass(PANEL_NODE_KIND_GEOMETRY.editor, selected === true)}`}
+      className={`h-[300px] w-[380px] animate-in fade-in-0 zoom-in-95 [animation-duration:250ms] motion-reduce:animate-none ${canvasNodeShellClass(CANVAS_NODE_KIND_GEOMETRY.editor, selected === true)}`}
     >
       <Handle type="target" position={Position.Left} />
       <div className="node-drag-handle flex h-9 shrink-0 cursor-grab items-center justify-between gap-2 border-b border-hair px-3 active:cursor-grabbing">

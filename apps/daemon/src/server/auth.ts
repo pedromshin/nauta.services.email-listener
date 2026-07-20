@@ -39,6 +39,23 @@ export const readDaemonToken = (env: NodeJS.ProcessEnv): string => {
 };
 
 /**
+ * Extract `?token=` from an upgrade request URL (the browser seam: browser WebSockets cannot
+ * send headers, so `/sessions` presents the token as a query parameter instead).
+ *
+ * Returns the FIRST `token` value, URL-decoded, or `undefined` when absent/unparsable. The
+ * value is only ever fed to `isAuthorized` — never logged, never echoed.
+ */
+export const tokenFromUpgradeUrl = (url: string | undefined): string | undefined => {
+  if (url === undefined || url.length === 0) return undefined;
+  try {
+    // Upgrade URLs are path-relative ("/?token=..."); the base only anchors the parse.
+    return new URL(url, "http://127.0.0.1").searchParams.get("token") ?? undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+/**
  * Constant-time comparison of the presented header against the expected token.
  *
  * The length check leaks length (unavoidable — `timingSafeEqual` throws on unequal buffers), but
