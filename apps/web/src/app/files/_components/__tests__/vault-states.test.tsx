@@ -20,7 +20,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { VaultEmpty, VaultError, VaultLoading } from "../vault-states";
+import { VaultEmpty, VaultError, VaultLoading, VaultLoadMore } from "../vault-states";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -152,20 +152,77 @@ describe("VaultError", () => {
 
   it("THE LAW: an error wears NO madder — it is a status, not an irreversible act", () => {
     mount(<VaultError onRetry={() => undefined} />);
-
-    // D-58-01 law 1: madder means "irreversible — this cannot be undone".
-    // "Never errors, never warnings." The madder budget on this whole surface
-    // is ONE control: delete-dialog.tsx's confirm button.
-    //
-    // This is the single most natural mistake anyone will make here — a failed
-    // load FEELS red — so it is asserted on the rendered container AND every
-    // descendant's className, not merely on the source.
-    const classes = allClassNames(container);
-    expect(classes).not.toMatch(/destructive/);
-    expect(classes).not.toMatch(/\bbg-bad\b|\btext-bad\b|\bborder-bad\b/);
-
-    // And the glyph carries the role instead — assert it EXISTS, so "no hue"
-    // was not achieved by simply saying less.
-    expect(container.querySelector("svg")).not.toBeNull();
+    assertNoMadder();
   });
 });
+
+describe("VaultLoadMore (v2.1 pagination)", () => {
+  const idle = {
+    hasMore: false,
+    isLoadingMore: false,
+    failed: false,
+    onMore: () => undefined,
+    onRetry: () => undefined,
+  };
+
+  it("renders NOTHING for a one-page folder — the common foot is silence", () => {
+    mount(<VaultLoadMore {...idle} />);
+    expect(container.children).toHaveLength(0);
+  });
+
+  it("offers 'Show more' when a next page exists, and fires it", () => {
+    const onMore = vi.fn();
+    mount(<VaultLoadMore {...idle} hasMore onMore={onMore} />);
+
+    const more = buttons().find((b) => b.textContent?.includes("Show more"));
+    expect(more).toBeDefined();
+
+    act(() => more?.click());
+    expect(onMore).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the action's name through the flow: 'Show more' -> 'Loading more…'", () => {
+    mount(<VaultLoadMore {...idle} hasMore isLoadingMore />);
+
+    const button = buttons()[0];
+    expect(button?.textContent).toContain("Loading more…");
+    expect(button?.disabled).toBe(true);
+  });
+
+  it("a failed page is announced, keeps its retry, and wears NO madder", () => {
+    const onRetry = vi.fn();
+    mount(<VaultLoadMore {...idle} failed onRetry={onRetry} />);
+
+    const alert = container.querySelector("[role='alert']");
+    expect(alert).not.toBeNull();
+    expect(text()).toContain("Couldn't load the rest of this folder.");
+
+    const retry = buttons().find((b) => b.textContent?.includes("Try again"));
+    expect(retry).toBeDefined();
+    act(() => retry?.click());
+    expect(onRetry).toHaveBeenCalledTimes(1);
+
+    assertNoMadder();
+  });
+});
+
+/**
+ * The one law shared by every status on this surface: no madder outside the
+ * delete confirm. Scans the rendered subtree, not the source.
+ */
+function assertNoMadder() {
+  // D-58-01 law 1: madder means "irreversible — this cannot be undone".
+  // "Never errors, never warnings." The madder budget on this whole surface
+  // is ONE control: delete-dialog.tsx's confirm button.
+  //
+  // This is the single most natural mistake anyone will make here — a failed
+  // load FEELS red — so it is asserted on the rendered container AND every
+  // descendant's className, not merely on the source.
+  const classes = allClassNames(container);
+  expect(classes).not.toMatch(/destructive/);
+  expect(classes).not.toMatch(/\bbg-bad\b|\btext-bad\b|\bborder-bad\b/);
+
+  // And the glyph carries the role instead — assert it EXISTS, so "no hue"
+  // was not achieved by simply saying less.
+  expect(container.querySelector("svg")).not.toBeNull();
+}
