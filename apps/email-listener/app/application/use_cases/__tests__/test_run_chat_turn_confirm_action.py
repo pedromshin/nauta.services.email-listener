@@ -128,6 +128,9 @@ class FakeChatMessageRepository:
         active = [m for m in self.messages if m.conversation_id == conversation_id and m.is_active]
         return sorted(active, key=lambda m: m.turn_index)
 
+    async def get_by_id(self, message_id: str) -> ChatMessage | None:  # pragma: no cover - unused this plan
+        return next((m for m in self.messages if m.id == message_id), None)
+
     async def mark_status(self, message_id: str, status: str) -> None:
         pass
 
