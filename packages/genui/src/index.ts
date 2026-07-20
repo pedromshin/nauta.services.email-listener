@@ -12,3 +12,4 @@ export * from "./registry/index";
 export * from "./renderer/index";
 export * from "./generation/index";
 export * from "./studio/index";
+export * from "./binding/index";
