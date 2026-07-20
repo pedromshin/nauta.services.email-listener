@@ -34,6 +34,7 @@ type Recorded = {
   segments: readonly string[];
   name?: string;
   isFolder?: boolean;
+  offset?: number;
 };
 
 function createFakeAdapter(behavior?: { throwOn?: string }) {
@@ -48,19 +49,22 @@ function createFakeAdapter(behavior?: { throwOn?: string }) {
   };
 
   const adapter: VaultAdapter = {
-    listFolder: async (userId, segments) => {
-      calls.push({ op: "listFolder", userId, segments });
+    listFolder: async (userId, segments, offset) => {
+      calls.push({ op: "listFolder", userId, segments, offset });
       maybeThrow("listFolder");
-      return [
-        {
-          name: "a.txt",
-          kind: "text",
-          isFolder: false,
-          size: 1,
-          updatedAt: null,
-          contentType: "text/plain",
-        },
-      ];
+      return {
+        entries: [
+          {
+            name: "a.txt",
+            kind: "text",
+            isFolder: false,
+            size: 1,
+            updatedAt: null,
+            contentType: "text/plain",
+          },
+        ],
+        nextCursor: null,
+      };
     },
     signedDownloadUrl: async (userId, segments, name) => {
       calls.push({ op: "signedDownloadUrl", userId, segments, name });
@@ -164,7 +168,26 @@ describe("the acting user comes from the auth context", () => {
   it("list acts as ctx.user.id", async () => {
     const { adapter, calls } = createFakeAdapter();
     await callerFor(USER_A, adapter).files.list({ path: ["docs"] });
-    expect(calls[0]).toMatchObject({ userId: "user-a", segments: ["docs"] });
+    expect(calls[0]).toMatchObject({ userId: "user-a", segments: ["docs"], offset: 0 });
+  });
+
+  it("list with a cursor STILL acts as ctx.user.id — an offset moves down a page, never across a tenant", async () => {
+    const { adapter, calls } = createFakeAdapter();
+    await callerFor(USER_A, adapter).files.list({ path: ["docs"], cursor: 500 });
+    expect(calls[0]).toMatchObject({ userId: "user-a", segments: ["docs"], offset: 500 });
+  });
+
+  it("list rejects a negative or non-integer cursor before storage is touched", async () => {
+    const { adapter, calls } = createFakeAdapter();
+    await expectRejectionCode(
+      callerFor(USER_A, adapter).files.list({ path: [], cursor: -500 }),
+      "BAD_REQUEST",
+    );
+    await expectRejectionCode(
+      callerFor(USER_A, adapter).files.list({ path: [], cursor: 1.5 }),
+      "BAD_REQUEST",
+    );
+    expect(calls).toHaveLength(0);
   });
 
   it("createFolder acts as ctx.user.id", async () => {

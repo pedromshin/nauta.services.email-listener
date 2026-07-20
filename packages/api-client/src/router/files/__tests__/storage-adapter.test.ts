@@ -21,6 +21,7 @@ import type { RawFileObject, VaultStorageClient } from "../vault-types";
 import { EMPTY_FOLDER_PLACEHOLDER } from "../vault-keys";
 import {
   createVaultAdapter,
+  VAULT_LIST_PAGE_SIZE,
   VAULT_MAX_UPLOAD_BYTES,
   VaultStorageError,
 } from "../storage-adapter";
@@ -157,7 +158,7 @@ describe("listFolder", () => {
     });
     const adapter = createVaultAdapter({ client: fake.client, bucket: BUCKET });
 
-    const entries = await adapter.listFolder(USER_A, []);
+    const { entries } = await adapter.listFolder(USER_A, []);
 
     expect(entries).toEqual([
       {
@@ -186,7 +187,7 @@ describe("listFolder", () => {
     });
     const adapter = createVaultAdapter({ client: fake.client, bucket: BUCKET });
 
-    const entries = await adapter.listFolder(USER_A, ["empty"]);
+    const { entries } = await adapter.listFolder(USER_A, ["empty"]);
 
     expect(entries.map((e) => e.name)).toEqual(["real.txt"]);
   });
@@ -207,7 +208,7 @@ describe("listFolder", () => {
     const fake = createFakeClient({ [`user-a/${name}`]: FILE() });
     const adapter = createVaultAdapter({ client: fake.client, bucket: BUCKET });
 
-    const entries = await adapter.listFolder(USER_A, []);
+    const { entries } = await adapter.listFolder(USER_A, []);
 
     expect(entries[0]?.kind).toBe(kind);
   });
@@ -221,7 +222,7 @@ describe("listFolder", () => {
     });
     const adapter = createVaultAdapter({ client: fake.client, bucket: BUCKET });
 
-    const entries = await adapter.listFolder(USER_A, []);
+    const { entries } = await adapter.listFolder(USER_A, []);
 
     expect(entries.map((e) => e.name)).toEqual([
       "archive",
@@ -250,11 +251,14 @@ describe("listFolder", () => {
     expect(fake.callsOf("list")[0]!.args[0]).toBe("user-a/docs");
   });
 
-  it("returns [] for a genuinely empty folder", async () => {
+  it("returns an empty LAST page for a genuinely empty folder", async () => {
     const fake = createFakeClient({});
     const adapter = createVaultAdapter({ client: fake.client, bucket: BUCKET });
 
-    await expect(adapter.listFolder(USER_A, [])).resolves.toEqual([]);
+    await expect(adapter.listFolder(USER_A, [])).resolves.toEqual({
+      entries: [],
+      nextCursor: null,
+    });
   });
 
   it("THROWS on a storage error — it never invents an empty listing out of a failure", async () => {
