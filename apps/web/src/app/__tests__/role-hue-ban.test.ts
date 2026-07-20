@@ -106,6 +106,9 @@ export const SCOPED_DIRS: readonly string[] = [
   "studio",
   "settings",
   "login",
+  // v2.2 /sessions (daemon terminal surface) — born clean: built monochrome under law 1
+  // (state is glyph + ink weight; exit codes are words in a rule chip, never a fill).
+  "sessions",
 ];
 
 /** Structurally excluded from the walk (§E, same set as palette-ban.test.ts). */
