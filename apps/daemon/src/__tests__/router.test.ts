@@ -159,6 +159,62 @@ describe("upgrade-time auth (T-65-11) — the socket never opens", () => {
   });
 });
 
+describe("upgrade-time auth via ?token= — the browser seam, same gate (T-65-11)", () => {
+  /** Dial with a query string instead of headers — what a browser WebSocket can actually do. */
+  const dialUrl = (port: number, query: string): Promise<WebSocket> =>
+    new Promise((resolve, reject) => {
+      const socket = new WebSocket(`ws://127.0.0.1:${port}/${query}`);
+      openSockets.push(socket);
+      socket.on("open", () => resolve(socket));
+      socket.on("error", (error: Error) => reject(error));
+      socket.on("unexpected-response", (_req: unknown, res: { statusCode?: number }) =>
+        reject(new Error(`unexpected-response ${res.statusCode}`)),
+      );
+    });
+
+  it("ACCEPTS the correct token presented as ?token= (headerless, like a browser)", async () => {
+    await withDaemon(async (handle) => {
+      const socket = await dialUrl(handle.port, `?token=${encodeURIComponent(TOKEN)}`);
+      expect(socket.readyState).toBe(WebSocket.OPEN);
+    });
+  });
+
+  it("REJECTS a wrong ?token=", async () => {
+    await withDaemon(async (handle) => {
+      await expect(dialUrl(handle.port, "?token=wrong-token-value-here-01")).rejects.toThrow();
+    });
+  });
+
+  it("REJECTS an empty ?token=", async () => {
+    await withDaemon(async (handle) => {
+      await expect(dialUrl(handle.port, "?token=")).rejects.toThrow();
+    });
+  });
+
+  it("header keeps precedence — a WRONG header is rejected even with the right ?token=", async () => {
+    await withDaemon(async (handle) => {
+      await expect(
+        new Promise((resolve, reject) => {
+          const socket = new WebSocket(
+            `ws://127.0.0.1:${handle.port}/?token=${encodeURIComponent(TOKEN)}`,
+            { headers: { "x-daemon-token": "wrong-token-value-here-01" } },
+          );
+          openSockets.push(socket);
+          socket.on("open", resolve);
+          socket.on("error", reject);
+        }),
+      ).rejects.toThrow();
+    });
+  });
+
+  it("a rejected ?token= peer is never registered as a client", async () => {
+    await withDaemon(async (handle) => {
+      await expect(dialUrl(handle.port, "?token=nope-still-not-the-token")).rejects.toThrow();
+      expect(handle.registry.size).toBe(0);
+    });
+  });
+});
+
 describe("dispatch — both-directions validation, socket survives garbage (R-02/T-65-13)", () => {
   it("round-trips session.list -> { sessions: [] } (honest empty, R-06)", async () => {
     await withDaemon(async (handle) => {

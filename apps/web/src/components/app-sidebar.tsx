@@ -2,7 +2,9 @@
 
 import type { LucideIcon } from "lucide-react";
 import {
+  Bookmark,
   Boxes,
+  FileText,
   FlaskConical,
   FolderOpen,
   Inbox,
@@ -10,6 +12,8 @@ import {
   Moon,
   Share2,
   Shapes,
+  ShieldCheck,
+  SquareTerminal,
   Sun,
 } from "lucide-react";
 import Link from "next/link";
@@ -55,6 +59,10 @@ const LIVE_NAV_ITEMS: ReadonlyArray<LiveNavItem> = [
   { href: "/studio", label: "Studio", icon: FlaskConical }, // ← Phase 15: repointed to /studio landing (D-14)
   { href: "/chat", label: "Chat", icon: MessageSquare }, // ← Phase 22 (D-11): single Chat nav item
   { href: "/files", label: "Files", icon: FolderOpen }, // ← Phase 66: the self-cloud vault (v2.1 slice)
+  { href: "/documents", label: "Documents", icon: FileText }, // ← integration: living-documents surface
+  { href: "/references", label: "References", icon: Bookmark }, // ← integration: 999.35 reference shelf
+  { href: "/sessions", label: "Sessions", icon: SquareTerminal }, // ← integration: daemon terminal sessions
+  { href: "/capabilities", label: "Capabilities", icon: ShieldCheck }, // ← integration: tool-registry allowlist
 ];
 
 const SOON_NAV_ITEMS: ReadonlyArray<SoonNavItem> = []; // Knowledge removed

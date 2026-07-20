@@ -17,7 +17,7 @@ import type { DaemonConfig } from "../config.js";
 import { createAuditLog, type AuditLog } from "../permissions/audit.js";
 import { createPermissionBroker, type AskFn, type PermissionBroker } from "../permissions/broker.js";
 import { loadAllowlist } from "../permissions/store.js";
-import { isAuthorized } from "./auth.js";
+import { isAuthorized, tokenFromUpgradeUrl } from "./auth.js";
 import { createClient, createClientRegistry, type ClientRegistry } from "./clients.js";
 import { createPendingAsks, createWsAsk } from "./ask.js";
 import { createRouter, type Router } from "./router.js";
@@ -94,7 +94,13 @@ export const startDaemon = async (opts: {
     const presented = request.headers["x-daemon-token"];
     const headerValue = Array.isArray(presented) ? undefined : presented;
 
-    if (!isAuthorized(headerValue, token)) {
+    // Browser WebSockets cannot send headers, so /sessions presents `?token=` instead.
+    // The header keeps precedence: when a header is presented, IT is the credential —
+    // a wrong header is a rejection even if the query string carries the right token.
+    // Both paths land in the same constant-time `isAuthorized`.
+    const credential = headerValue ?? tokenFromUpgradeUrl(request.url);
+
+    if (!isAuthorized(credential, token)) {
       socket.write("HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n");
       socket.destroy();
       return;
