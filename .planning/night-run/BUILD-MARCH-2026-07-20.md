@@ -63,3 +63,10 @@ VISION.md` (E0–E7), `research/two-epoch-endgame/ENDGAME-PLAN.md` (v2.0), `nigh
 
 ---
 *Updated as each wave lands. Commits reference the wave. Pushed to `claude/gsd-plugin-marketplace-s6us9d`.*
+
+## 2026-07-20 ~21:50 UTC — session-limit checkpoint
+
+- Wave 3: 2/4 landed GREEN and committed (research vertical efdaebb + envelope fix 4e91822; source canvas node 002b22d — 599/599 chat tests, tsc clean, backend suites green). mail-review-strip + phase-62 killed by the session limit (resets 12:20am UTC); partial files reverted.
+- Mega-wave (Waves 4-6 merged, 9 slices): all agents killed by the limit before returning; partial daemon/protocol/mail files reverted — clean tree. Script preserved for fresh relaunch.
+- Gap-wave (999.33/35/25 + Cloud Desktop RFC 999.39): launch blocked (classifier outage during the limit window); plan saved.
+- Relaunch scheduled via send_later at 00:26 UTC (trigger trig_018ZiHbjYd4RtR3dKpYuyXfW) per scratchpad/RELAUNCH-PLAN.md.
