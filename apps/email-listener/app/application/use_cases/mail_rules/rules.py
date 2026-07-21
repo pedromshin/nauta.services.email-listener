@@ -149,9 +149,7 @@ class RulesMatcher:
         )
 
 
-def assert_rules_reference_registered_capabilities(
-    rules: Iterable[Rule], registry: CapabilityRegistry
-) -> None:
+def assert_rules_reference_registered_capabilities(rules: Iterable[Rule], registry: CapabilityRegistry) -> None:
     """Fail closed if any rule points at a capability id the registry does not know.
 
     Delegates to `registry.get`, which raises `UnknownCapabilityError` (INV-5) --

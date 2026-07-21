@@ -184,7 +184,9 @@ def test_scoring_accepts_dataclass_and_dict_identically() -> None:
     typed = ResearchRunOutput(
         question_id="q-test",
         sources=(
-            Source(id="s1", url="https://example.dev/retrieval", excerpt="retrieved source excerpt reduces hallucination"),
+            Source(
+                id="s1", url="https://example.dev/retrieval", excerpt="retrieved source excerpt reduces hallucination"
+            ),
             Source(id="s2", url="https://example.dev/citation", excerpt="cite the source"),
         ),
         claims=(
@@ -195,7 +197,11 @@ def test_scoring_accepts_dataclass_and_dict_identically() -> None:
     dict_form = {
         "question_id": "q-test",
         "sources": [
-            {"id": "s1", "url": "https://example.dev/retrieval", "excerpt": "retrieved source excerpt reduces hallucination"},
+            {
+                "id": "s1",
+                "url": "https://example.dev/retrieval",
+                "excerpt": "retrieved source excerpt reduces hallucination",
+            },
             {"id": "s2", "url": "https://example.dev/citation", "excerpt": "cite the source"},
         ],
         "claims": [

@@ -168,9 +168,7 @@ def score_cited_sources(run: Any) -> DimensionResult:
         return DimensionResult("cited-sources", 0.0, False, "no claims to cite from")
     cited = sum(1 for c in claims if c["source_ids"])
     score = cited / len(claims)
-    return DimensionResult(
-        "cited-sources", score, score == 1.0, f"{cited}/{len(claims)} claims carry a citation"
-    )
+    return DimensionResult("cited-sources", score, score == 1.0, f"{cited}/{len(claims)} claims carry a citation")
 
 
 def score_claims_resolve(run: Any) -> DimensionResult:
@@ -183,9 +181,7 @@ def score_claims_resolve(run: Any) -> DimensionResult:
     if not claims:
         return DimensionResult("claims-resolve", 0.0, False, "no claims to resolve")
     source_ids = {s["id"] for s in _as_sources(run) if s["id"]}
-    resolved = sum(
-        1 for c in claims if c["source_ids"] and all(sid in source_ids for sid in c["source_ids"])
-    )
+    resolved = sum(1 for c in claims if c["source_ids"] and all(sid in source_ids for sid in c["source_ids"]))
     score = resolved / len(claims)
     return DimensionResult(
         "claims-resolve", score, score == 1.0, f"{resolved}/{len(claims)} claims resolve to real sources"

@@ -54,9 +54,7 @@ class MailRuleSuggestExecutor:
     def __init__(self, *, action: str) -> None:
         self._action = action
 
-    async def execute(
-        self, *, name: str, arguments: dict[str, Any], importer_id: str
-    ) -> ToolExecutionResult:
+    async def execute(self, *, name: str, arguments: dict[str, Any], importer_id: str) -> ToolExecutionResult:
         del name  # this instance serves exactly one action
         envelope = {
             "action": self._action,

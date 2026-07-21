@@ -156,9 +156,7 @@ class ResearchReport:
         """
         return {
             "question_id": self.question_id,
-            "sources": [
-                {"id": s.id, "url": s.url, "excerpt": s.excerpt, "title": s.title} for s in self.sources
-            ],
+            "sources": [{"id": s.id, "url": s.url, "excerpt": s.excerpt, "title": s.title} for s in self.sources],
             "claims": [{"text": c.text, "source_ids": list(c.source_ids)} for c in self.claims],
             "report": self.report,
         }
@@ -424,7 +422,9 @@ class DeepResearch:
             if url and url in state.seen_urls:
                 continue
             source_id = f"s{len(state.sources) + 1}"
-            state.sources.append(Source(id=source_id, url=url, excerpt=excerpt, title=str(hit.get("title", "")).strip()))
+            state.sources.append(
+                Source(id=source_id, url=url, excerpt=excerpt, title=str(hit.get("title", "")).strip())
+            )
             if url:
                 state.seen_urls.add(url)
             added += 1
@@ -511,7 +511,12 @@ class DeepResearch:
         await self._emit(
             state,
             "completed",
-            {"claims": len(claims), "sources": len(report.sources), "rejected": len(rejected), "rounds": state.rounds_used},
+            {
+                "claims": len(claims),
+                "sources": len(report.sources),
+                "rejected": len(rejected),
+                "rounds": state.rounds_used,
+            },
         )
         return report
 
@@ -680,9 +685,7 @@ def _render_sources(sources: Sequence[Source]) -> str:
 
 
 def _render_claims(claims: Sequence[Claim]) -> str:
-    return (
-        "\n".join(f"{i}. {c.text}  cites={list(c.source_ids)}" for i, c in enumerate(claims)) or "(none)"
-    )
+    return "\n".join(f"{i}. {c.text}  cites={list(c.source_ids)}" for i, c in enumerate(claims)) or "(none)"
 
 
 # ---------------------------------------------------------------------------

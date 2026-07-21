@@ -143,8 +143,20 @@ def _good_replies() -> dict[str, str]:
 
 def _two_envelopes() -> list[dict[str, Any]]:
     return [
-        _envelope({"title": "Rubric design", "url": "https://ex.com/rubric", "snippet": "A rubric scores explicit dimensions rather than a single vibe score."}),
-        _envelope({"title": "Calibration", "url": "https://ex.com/calibrate", "snippet": "Judges must be calibrated against human labels and anchors."}),
+        _envelope(
+            {
+                "title": "Rubric design",
+                "url": "https://ex.com/rubric",
+                "snippet": "A rubric scores explicit dimensions rather than a single vibe score.",
+            }
+        ),
+        _envelope(
+            {
+                "title": "Calibration",
+                "url": "https://ex.com/calibrate",
+                "snippet": "Judges must be calibrated against human labels and anchors.",
+            }
+        ),
     ]
 
 
@@ -160,7 +172,9 @@ async def test_multi_round_loop_runs_all_phases() -> None:
     loop = DeepResearch(chat_provider=chat, search_executor=search, model_id=_MODEL_ID)
     sink = _EventSink()
 
-    report = await loop.run(question="What makes an LLM judge reliable?", importer_id=_IMPORTER, question_id="q1", emit=sink)
+    report = await loop.run(
+        question="What makes an LLM judge reliable?", importer_id=_IMPORTER, question_id="q1", emit=sink
+    )
 
     # More than one search round dispatched — this is a multi-round loop, not a single pass.
     assert len(search.calls) == 2
@@ -239,7 +253,9 @@ async def test_output_scores_under_the_real_rubric() -> None:
     search = FakeSearchExecutor(_two_envelopes())
     loop = DeepResearch(chat_provider=chat, search_executor=search, model_id=_MODEL_ID)
 
-    report = await loop.run(question="What makes an LLM judge reliable?", importer_id=_IMPORTER, question_id="rsrch-eval-01")
+    report = await loop.run(
+        question="What makes an LLM judge reliable?", importer_id=_IMPORTER, question_id="rsrch-eval-01"
+    )
 
     # A golden question shaped like scripts/research_eval/questions.json.
     question = {
@@ -380,7 +396,9 @@ async def test_capability_executor_rejects_empty_question() -> None:
     search = FakeSearchExecutor(_two_envelopes())
     capability = define_research_capability(chat_provider=chat, search_executor=search, model_id=_MODEL_ID)
 
-    result = await capability.executor.execute(name="deep_research", arguments={"question": "  "}, importer_id=_IMPORTER)
+    result = await capability.executor.execute(
+        name="deep_research", arguments={"question": "  "}, importer_id=_IMPORTER
+    )
 
     assert result.is_error is True
     assert search.calls == []

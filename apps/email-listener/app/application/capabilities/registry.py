@@ -151,9 +151,7 @@ def define_capability(
     resolved_id = id if id is not None else tool_def["name"]
     resolved_describe = describe if describe is not None else tool_def["description"]
     if tool_def["name"] != resolved_id:
-        raise ValueError(
-            f"[capabilities] capability id {resolved_id!r} != tool_def name {tool_def['name']!r}"
-        )
+        raise ValueError(f"[capabilities] capability id {resolved_id!r} != tool_def name {tool_def['name']!r}")
     return Capability(
         id=resolved_id,
         describe=resolved_describe,
