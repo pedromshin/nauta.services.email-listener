@@ -185,6 +185,12 @@ class FakeChatMessageRepository:
     async def list_active_context(self, conversation_id: str) -> list[ChatMessage]:
         return [m for m in self._existing if m.conversation_id == conversation_id]
 
+    async def get_by_id(self, message_id: str) -> ChatMessage | None:  # pragma: no cover - unused
+        return next(
+            (m for m in [*self._existing, *self.inserted] if m.id == message_id),
+            None,
+        )
+
     async def mark_status(self, message_id: str, status: str) -> None:  # pragma: no cover - unused
         pass
 

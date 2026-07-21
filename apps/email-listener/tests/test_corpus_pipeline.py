@@ -506,7 +506,7 @@ class TestImageOnlyOcrIntegration:
     )
     def test_image_only_live_ocr_returns_components(self, entry: dict) -> None:
         """Image-only PDF with live Textract yields non-empty OCR text."""
-        from app.infrastructure.ocr.textract_ocr_adapter import TextractOcrAdapter
+        from app.infrastructure.ocr.textract_adapter import TextractOcrAdapter
         from app.infrastructure.pdf.pdf_parser import PdfParser
 
         ocr = TextractOcrAdapter()

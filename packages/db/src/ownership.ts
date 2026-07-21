@@ -37,10 +37,13 @@ import { ChatConversations } from "./schema/chat-conversations";
 import { ChatMessages } from "./schema/chat-messages";
 import { ChatSourceLedger } from "./schema/chat-source-ledger";
 import { EmailComponents } from "./schema/components";
+import { DesktopSessions } from "./schema/desktop-sessions";
+import { Documents } from "./schema/documents";
 import { Emails } from "./schema/emails";
 import { ForwardingAddresses } from "./schema/forwarding-addresses";
 import { Importers } from "./schema/importers";
 import { KnowledgeNodes } from "./schema/knowledge-nodes";
+import { References } from "./schema/references";
 import { Threads } from "./schema/threads";
 
 /** The Drizzle handle every ownership function accepts as its first parameter. */
@@ -210,6 +213,82 @@ export async function assertForwardingAddressOwnership(
   const row = rows[0];
   if (!row || row.userId !== userId) {
     throw new OwnershipError("forwarding_address", addressId);
+  }
+}
+
+/**
+ * assertDocumentOwnership — resolves when documents.user_id = userId. Direct
+ * user_id, no join (mirrors assertForwardingAddressOwnership /
+ * assertConversationOwnership — documents is NOT an importer-descendant,
+ * Phase 70 DOCS-02). Throws OwnershipError otherwise/missing (fail-closed, no
+ * existence oracle). This is the ONLY path any tRPC procedure or web route
+ * uses to gate a single document read/regenerate — never an ad-hoc
+ * per-call-site user_id filter.
+ */
+export async function assertDocumentOwnership(
+  db: OwnershipDb,
+  documentId: string,
+  userId: string,
+): Promise<void> {
+  const rows = await db
+    .select({ userId: Documents.userId })
+    .from(Documents)
+    .where(eq(Documents.id, documentId))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row || row.userId !== userId) {
+    throw new OwnershipError("document", documentId);
+  }
+}
+
+/**
+ * assertReferenceOwnership — resolves when references.user_id = userId.
+ * Direct user_id, no join (mirrors assertDocumentOwnership — references is
+ * NOT an importer-descendant, 999.35). Throws OwnershipError
+ * otherwise/missing (fail-closed, no existence oracle). This is the ONLY
+ * path any tRPC procedure uses to gate a single reference read/delete —
+ * never an ad-hoc per-call-site user_id filter.
+ */
+export async function assertReferenceOwnership(
+  db: OwnershipDb,
+  referenceId: string,
+  userId: string,
+): Promise<void> {
+  const rows = await db
+    .select({ userId: References.userId })
+    .from(References)
+    .where(eq(References.id, referenceId))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row || row.userId !== userId) {
+    throw new OwnershipError("reference", referenceId);
+  }
+}
+
+/**
+ * assertDesktopSessionOwnership — resolves when desktop_sessions.user_id = userId. Direct user_id,
+ * no join (mirrors assertDocumentOwnership — a desktop is one-VM-per-owner, RFC §6, NOT an
+ * importer-descendant). Throws OwnershipError otherwise/missing (fail-closed, no existence oracle).
+ * This is the ONLY path any desktop.* lifecycle procedure uses to gate attach/hibernate/destroy on
+ * a single session — never an ad-hoc per-call-site user_id filter, and NEVER by parsing the row's
+ * provider instance id / gateway hostname (INV-11).
+ */
+export async function assertDesktopSessionOwnership(
+  db: OwnershipDb,
+  sessionId: string,
+  userId: string,
+): Promise<void> {
+  const rows = await db
+    .select({ userId: DesktopSessions.userId })
+    .from(DesktopSessions)
+    .where(eq(DesktopSessions.id, sessionId))
+    .limit(1);
+
+  const row = rows[0];
+  if (!row || row.userId !== userId) {
+    throw new OwnershipError("desktop_session", sessionId);
   }
 }
 

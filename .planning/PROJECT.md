@@ -224,7 +224,28 @@ loop; `spec-renderer.tsx`/`render-node.tsx`/`genui-part-boundary.tsx` stay byte-
 
 </details>
 
-## Current Milestone: v1.10 Product Design & Research Canvas
+## Current Milestone: v1.11 Research Core & the Capability Spine
+
+**Goal:** Leave Claude web for research — in-chat deep research that cites, exports, and composes —
+with every capability declared once in a registry the LLM, genui, the canvas, and the daemon all
+read. This is the user's **D2** directive made concrete (`DIRECTIVES-2026-07-17.md`): *"a self
+building product … the product emanated from this project, which is its infrastructure … we piece
+it together using our genui engine."* Features become compositions over declared primitives.
+
+**Phases:** 64 (absorbed — Lane B slice), 68 (the capability spine), 69 (research depth), 70
+(documents), 71 (genui×registry D2 proof), 72 (research evals). Plan of record:
+`night-run/reports/negative-space.md` §3. Opened 2026-07-20 via `/gsd:new-milestone` from the user's
+D1–D4, in parallel with v1.10's carried pixel-gated Phases 62/63 (the user's "up to 2.2" authorization).
+
+**Target features:** a capability registry (`packages/capabilities`) read by all four consumers
+(REG); in-chat deep research with 3-tier `pmark` citations and auto-ledgered sources (RSRCH);
+typeset PDF export + documents as first-class canvas objects (DOCS); suggest-only mail rules over the
+fixture corpus, executed as registry capabilities (MAIL). Registry kept cheap; INV-2 reconciles the
+already-shipped daemon before it diverges.
+
+---
+
+### Prior Milestone: v1.10 Product Design & Research Canvas (Phases 62/63 carried, pixel-gated)
 
 **Goal:** polytoken stops looking experimental and starts working the way the user described it —
 a *designed* product whose research canvas collects sources without ceremony, lets the user select

@@ -65,6 +65,8 @@ import type {
 } from "../_hooks/use-conversation-controller";
 import { AddEmailThreadPopover } from "./add-email-thread-popover";
 import { AddKnowledgePreviewPopover } from "./add-knowledge-preview-popover";
+import { isSourceNode, toggleCanonSelection } from "./canon-selection";
+import { CanonToolbar } from "./canon-toolbar";
 import { CanvasEmptyState } from "./canvas-empty-state";
 import { CANVAS_PANEL_BUTTON_CLASS } from "./canvas-panel-button-class";
 import {
@@ -476,6 +478,20 @@ export function ChatCanvas({
     [onEdgesChange, persistence, canvasStore],
   );
 
+  // RCNV-03: source nodes opt OUT of stock click-selection. Stock React Flow
+  // click-select is single-select (a plain click deselects everything else),
+  // and it applies via these "select" changes BEFORE onNodeClick fires — so
+  // left alone it would clobber the canon gathering gesture on every click
+  // (deselect the pile, then the toggle below flips the clicked card OFF).
+  // Dropping source nodes' "select" changes here makes handleNodeClick's
+  // toggleCanonSelection the ONE authority over a source card's `selected`
+  // flag (canon-selection.tsx's click-to-toggle accumulation); every other
+  // node type keeps stock behaviour, and handlePaneClick still clears all.
+  const sourceNodeIds = useMemo(
+    () => new Set(nodes.filter((node) => isSourceNode(node)).map((node) => node.id)),
+    [nodes],
+  );
+
   // PREV-01: node removal (the knowledge-preview node's own remove button,
   // or React Flow's own Backspace-key deletion) now triggers the SAME
   // debounced save handleEdgesChange already uses for edge add/remove —
@@ -484,13 +500,37 @@ export function ChatCanvas({
   // directly at the moment it appends the new node.
   const handleNodesChange = useCallback(
     (changes: NodeChange<FlowNode>[]) => {
-      onNodesChange(changes);
+      onNodesChange(
+        changes.filter(
+          (change) => !(change.type === "select" && sourceNodeIds.has(change.id)),
+        ),
+      );
       if (changes.some((change) => change.type === "remove")) {
         persistence.scheduleSave(canvasStore);
       }
     },
-    [onNodesChange, persistence, canvasStore],
+    [onNodesChange, sourceNodeIds, persistence, canvasStore],
   );
+
+  // RCNV-03: the canon gathering gesture — a plain click on a SOURCE node
+  // toggles it in/out of the selection while preserving every other source
+  // card's selection (see canon-selection.tsx's header for why this is not
+  // stock single-select). Non-source nodes return early and keep stock
+  // behaviour untouched.
+  const handleNodeClick = useCallback(
+    (_event: React.MouseEvent, node: FlowNode) => {
+      if (!isSourceNode(node)) return;
+      setNodes((prev) => [...toggleCanonSelection(prev, node.id)]);
+    },
+    [setNodes],
+  );
+
+  // RCNV-03: a settled promotion flipped ≥1 source card's tier on node.data —
+  // persist it through the EXISTING debounced save, never a new save path
+  // (canon-toolbar.tsx's onPromotionSettled contract).
+  const handlePromotionSettled = useCallback(() => {
+    persistence.scheduleSave(canvasStore);
+  }, [persistence, canvasStore]);
 
   // PREV-01: AddKnowledgePreviewPopover's onAdd — materializes a new
   // knowledge-preview node near the current viewport center, selected
@@ -779,6 +819,7 @@ export function ChatCanvas({
                     edgeTypes={edgeTypes}
                     onNodesChange={handleNodesChange}
                     onEdgesChange={handleEdgesChange}
+                    onNodeClick={handleNodeClick}
                     onNodeDragStop={handleNodeDragStop}
                     onConnect={handleConnect}
                     onConnectEnd={handleConnectEnd}
@@ -870,6 +911,15 @@ export function ChatCanvas({
                     </Panel>
                   </ReactFlowJSX>
                 )}
+                {/* RCNV-03: the floating canon curation bar — absolutely
+                    positioned inside this relative container, rendered
+                    unconditionally (its live region must outlive the
+                    selection; the card inside is selection-gated). */}
+                <CanonToolbar
+                  nodes={nodes}
+                  setNodes={setNodes}
+                  onPromotionSettled={handlePromotionSettled}
+                />
                 {!hintDismissed && <CanvasKeyboardHint onDismiss={handleDismissHint} />}
                 {pickerState && (
                   <EdgeCreationPicker

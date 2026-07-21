@@ -1,0 +1,108 @@
+/**
+ * documents/index.ts — documentsRouter (Phase 70 — DOCS-02, read path).
+ *
+ * Documents are first-class objects: stored, listed, re-openable, regenerable
+ * from spec (DOCS-03). This router is the owner-scoped READ path the web
+ * documents surfaces consume (documents/page.tsx list + documents/[id]/page.tsx
+ * detail/reopen).
+ *
+ * Tenancy (INV-8/INV-9, TENA-03): every procedure is `protectedProcedure` — the
+ * acting identity is ALWAYS `ctx.user.id`, never a client-supplied field. Reads
+ * scope through the central `@polytoken/db/ownership` helper:
+ *   - `list` filters directly on `ctx.user.id` (documents carries a DIRECT
+ *     user_id anchor — no importer join; the same direct-user_id scoping
+ *     forwardingRouter.getOrCreateMyAddress uses). This is NOT an inline
+ *     cross-table user_id join — it is the ownership anchor itself.
+ *   - `byId` calls `assertDocumentOwnership` at the TOP of the resolver BEFORE
+ *     any read; a missing document and one owned by another user both surface
+ *     as NOT_FOUND (fail-closed, no existence oracle).
+ *
+ * The `spec` column is the structured `ReportDocument` (jsonb) the print route +
+ * PDF handler typeset from (DOCS-03 / INV-7). Its concrete shape is owned by
+ * apps/web (`documents/_lib/report-document.ts`); this package stays free of any
+ * apps/web import, so `spec` crosses the boundary as `unknown` and the web
+ * detail page narrows it. The list projection deliberately OMITS `spec` so a
+ * large document body is never streamed into the list response.
+ */
+
+import { desc, eq } from "drizzle-orm";
+import { z } from "zod";
+
+import { Documents } from "@polytoken/db/schema";
+import { assertDocumentOwnership } from "@polytoken/db/ownership";
+
+import { createTRPCRouter, protectedProcedure } from "../../trpc";
+import { assertOwnedOrNotFound } from "../_ownership";
+
+export const documentsRouter = createTRPCRouter({
+  /**
+   * list — the caller's documents, newest first. Scoped directly to
+   * `ctx.user.id` (the ownership anchor); `spec` is omitted from the projection
+   * so the list never streams document bodies. limit/offset paging with a
+   * `hasMore` hint (mirrors emailsRouter.list).
+   */
+  list: protectedProcedure
+    .input(
+      z
+        .object({
+          limit: z.number().int().min(1).max(100).default(50),
+          offset: z.number().int().min(0).default(0),
+        })
+        .default({ limit: 50, offset: 0 }),
+    )
+    .query(async ({ ctx, input }) => {
+      const rows = await ctx.db
+        .select({
+          id: Documents.id,
+          title: Documents.title,
+          sourceLedgerId: Documents.sourceLedgerId,
+          createdAt: Documents.createdAt,
+        })
+        .from(Documents)
+        .where(eq(Documents.userId, ctx.user.id))
+        .orderBy(desc(Documents.createdAt))
+        // Fetch one extra row to compute hasMore without a COUNT.
+        .limit(input.limit + 1)
+        .offset(input.offset);
+
+      const hasMore = rows.length > input.limit;
+      const items = hasMore ? rows.slice(0, input.limit) : rows;
+
+      return {
+        items,
+        hasMore,
+        nextOffset: input.offset + items.length,
+      };
+    }),
+
+  /**
+   * byId — a single document with its full `spec` (the regenerate-from-spec
+   * input the print route / PDF handler consume). Ownership is asserted BEFORE
+   * the read; NOT_FOUND on missing-or-not-yours (fail-closed).
+   */
+  byId: protectedProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertDocumentOwnership(ctx.db, input.id, ctx.user.id),
+      );
+
+      const rows = await ctx.db
+        .select({
+          id: Documents.id,
+          title: Documents.title,
+          spec: Documents.spec,
+          sourceLedgerId: Documents.sourceLedgerId,
+          createdAt: Documents.createdAt,
+        })
+        .from(Documents)
+        .where(eq(Documents.id, input.id))
+        .limit(1);
+
+      // Ownership already asserted the row exists and is ours; this is a
+      // defensive narrowing, not an existence oracle.
+      const row = rows[0];
+      if (!row) return null;
+      return row;
+    }),
+});

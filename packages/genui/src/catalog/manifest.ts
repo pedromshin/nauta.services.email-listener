@@ -7,10 +7,12 @@
  * SpecNodes — "use client" declared here (house convention, mirrors form-component.tsx /
  * spec-renderer.tsx) since this file now uses a hook directly.
  *
- * Contains exactly 16 catalog entries (D-01, D-02):
+ * Contains exactly 22 catalog entries (D-01, D-02):
  *   - 3 layout primitives: stack, grid, section (house-built, no @polytoken/ui import)
  *   - 8 legacy leaf components: text, badge, button, card, key-value-list, separator, alert, table
  *   - 5 Phase-18 domain components: avatar, input, nav, feed-item, tabs (CTLG-06)
+ *   - 1 Phase-19 form component
+ *   - 5 999.13 vendored components: number-ticker, spinner, avatar-stack, animated-list, marquee
  *
  * Each entry is a fully-real ManifestEntry<TProps>:
  *   - strict Zod propsSchema (Bedrock additionalProperties:false — D-22 / COST-02)
@@ -53,6 +55,12 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@polytoken/ui/avatar";
 import { Input } from "@polytoken/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@polytoken/ui/tabs";
+// 999.13 — vendored motion/utility components registered as spec types (CTLG-06 pattern)
+import { NumberTicker } from "@polytoken/ui/number-ticker";
+import { Spinner } from "@polytoken/ui/spinner";
+import { AvatarStack } from "@polytoken/ui/avatar-stack";
+import { AnimatedList } from "@polytoken/ui/animated-list";
+import { Marquee } from "@polytoken/ui/marquee";
 
 import type { AnyManifestEntry, ComponentRegistry } from "./types";
 import { ActionSchema } from "../schema/action-schema";
@@ -212,6 +220,50 @@ type TabsProps = {
   readonly tabs: ReadonlyArray<TabItem>;
   readonly defaultValue?: string;
   readonly children?: React.ReactNode; // injected by renderer for TabsContent slots
+};
+
+// 999.13 — vendored-component prop types ------------------------------------
+
+/** number-ticker — @polytoken/ui/number-ticker leaf; aria-label a11y-required (D-04) */
+type NumberTickerProps = {
+  readonly value: number;
+  readonly "aria-label": string; // a11y-required (D-04 / UI-SPEC §11)
+  readonly startValue?: number;
+  readonly decimalPlaces?: number;
+};
+
+/** spinner — @polytoken/ui/spinner leaf; label a11y-required (D-04) */
+type SpinnerProps = {
+  readonly label: string; // a11y-required (D-04 / UI-SPEC §11) — rendered as aria-label
+  readonly size?: "sm" | "md" | "lg";
+};
+
+/** avatar-stack — @polytoken/ui/avatar-stack leaf; aria-label + item alt required (D-04) */
+type AvatarStackProps = {
+  readonly "aria-label": string; // a11y-required group label (D-04 / UI-SPEC §11)
+  readonly items: ReadonlyArray<{
+    readonly alt: string;
+    readonly src?: string;
+  }>;
+  readonly size?: "sm" | "md" | "lg";
+  readonly animate?: boolean;
+};
+
+/** animated-list — @polytoken/ui/animated-list container */
+type AnimatedListProps = {
+  readonly "aria-label"?: string; // optional landmark label (UI-SPEC §11)
+  readonly delay?: number; // ms between reveals, bounded 100-10000
+  readonly children?: React.ReactNode;
+};
+
+/** marquee — @polytoken/ui/marquee container */
+type MarqueeProps = {
+  readonly "aria-label"?: string; // optional landmark label (UI-SPEC §11)
+  readonly reverse?: boolean;
+  readonly pauseOnHover?: boolean;
+  readonly vertical?: boolean;
+  readonly repeat?: number; // bounded 1-10
+  readonly children?: React.ReactNode;
 };
 
 // ---------------------------------------------------------------------------
@@ -728,12 +780,120 @@ function TabsComponent({
 }
 
 // ---------------------------------------------------------------------------
-// POLYTOKEN_CATALOG — 16 fully-real manifest entries (D-01, D-02, D-03)
+// 999.13 — vendored-component wrappers (adapt catalog props → vendored props)
+// ---------------------------------------------------------------------------
+
+function NumberTickerComponent({
+  value,
+  "aria-label": ariaLabel,
+  startValue,
+  decimalPlaces,
+}: NumberTickerProps): React.ReactElement {
+  return React.createElement(NumberTicker, {
+    value,
+    startValue,
+    decimalPlaces,
+    "aria-label": ariaLabel,
+    // Token-only styling (CTLG-09): override the vendored hardcoded black/white
+    // with the theme foreground token; size up for the stat-display use case.
+    className: "text-2xl font-semibold text-foreground dark:text-foreground",
+  });
+}
+
+/** Size → Tailwind className map for Spinner (CTLG-09: CSS-variable tokens only). */
+const SPINNER_SIZE_CLASS: Readonly<Record<"sm" | "md" | "lg", string>> = {
+  sm: "size-4",
+  md: "size-6",
+  lg: "size-8",
+} as const;
+
+function SpinnerComponent({ label, size = "md" }: SpinnerProps): React.ReactElement {
+  return React.createElement(Spinner, {
+    "aria-label": label,
+    className: `${SPINNER_SIZE_CLASS[size]} text-muted-foreground`,
+  });
+}
+
+/** Size → pixel map for AvatarStack (matches AVATAR_SIZE_CLASS: 32/40/56). */
+const AVATAR_STACK_SIZE_PX: Readonly<Record<"sm" | "md" | "lg", number>> = {
+  sm: 32,
+  md: 40,
+  lg: 56,
+} as const;
+
+function AvatarStackComponent({
+  "aria-label": ariaLabel,
+  items,
+  size = "md",
+  animate = false,
+}: AvatarStackProps): React.ReactElement {
+  return React.createElement(
+    "div",
+    { role: "group", "aria-label": ariaLabel },
+    React.createElement(AvatarStack, {
+      size: AVATAR_STACK_SIZE_PX[size],
+      animate,
+      // children passed via props (not rest args) — AvatarStackProps.children is
+      // required, and the createElement overload only type-checks it in props.
+      children: items.map((item, i) =>
+        React.createElement(
+          Avatar,
+          { key: `${item.alt}-${i}`, className: "size-full" },
+          item.src ? React.createElement(AvatarImage, { src: item.src, alt: item.alt }) : null,
+          React.createElement(
+            AvatarFallback,
+            { className: "text-foreground bg-muted text-xs font-medium" },
+            item.alt.trim().slice(0, 2).toUpperCase(),
+          ),
+        ),
+      ),
+    }),
+  );
+}
+
+function AnimatedListComponent({
+  "aria-label": ariaLabel,
+  delay = 1000,
+  children,
+}: AnimatedListProps): React.ReactElement {
+  // children via props — AnimatedListProps.children is required (see AvatarStack note)
+  return React.createElement(AnimatedList, {
+    delay,
+    "aria-label": ariaLabel,
+    className: "w-full items-stretch",
+    children,
+  });
+}
+
+function MarqueeComponent({
+  "aria-label": ariaLabel,
+  reverse = false,
+  pauseOnHover = false,
+  vertical = false,
+  repeat,
+  children,
+}: MarqueeProps): React.ReactElement {
+  // children via props — MarqueeProps.children is required (see AvatarStack note)
+  return React.createElement(Marquee, {
+    reverse,
+    pauseOnHover,
+    vertical,
+    repeat,
+    "aria-label": ariaLabel,
+    children,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// POLYTOKEN_CATALOG — fully-real manifest entries (D-01, D-02, D-03)
+// 17 legacy/domain entries + 5 vendored 999.13 entries = 22 total
 // ---------------------------------------------------------------------------
 
 /**
- * The component catalog. 16 entries: 3 layout primitives + 8 @polytoken/ui-backed legacy leaves
- * + 5 Phase-18 domain components (avatar, input, nav, feed-item, tabs — CTLG-06).
+ * The component catalog. 22 entries: 3 layout primitives + 8 @polytoken/ui-backed legacy leaves
+ * + 5 Phase-18 domain components (avatar, input, nav, feed-item, tabs — CTLG-06)
+ * + 1 Phase-19 form + 5 vendored 999.13 components (number-ticker, spinner,
+ * avatar-stack, animated-list, marquee).
  *
  * Frozen as const; typed as ComponentRegistry for keyed lookup.
  *
@@ -1201,6 +1361,127 @@ export const POLYTOKEN_CATALOG: ComponentRegistry = Object.freeze({
     lockedProps: [],
     acceptsChildren: false,
     component: FormComponent as unknown as AnyManifestEntry["component"],
+  },
+
+  // ---------------------------------------------------------------------------
+  // 999.13 vendored components: number-ticker, spinner, avatar-stack,
+  // animated-list, marquee (@polytoken/ui vendored imports, CTLG-06 pattern)
+  // ---------------------------------------------------------------------------
+
+  "number-ticker": {
+    type: "number-ticker",
+    description:
+      "Animated numeric counter that counts up (or down) to `value` when it scrolls into view. Use for stat/KPI displays (revenue, counts, percentages). aria-label is required and must describe what the number represents (e.g. 'Total active users'). startValue sets the animation origin (default 0); decimalPlaces (0-6) controls formatting. Numeric display only — pair with a text node for the metric caption.",
+    example: {
+      value: 1284,
+      "aria-label": "Total active users",
+      decimalPlaces: 0,
+    },
+    propsSchema: z
+      .object({
+        value: z.number(),
+        "aria-label": z.string(), // a11y-required (D-04 / UI-SPEC §11)
+        startValue: z.number().optional(),
+        decimalPlaces: z.number().int().min(0).max(6).optional(),
+      })
+      .strict(),
+    lockedProps: [],
+    acceptsChildren: false,
+    component: NumberTickerComponent as AnyManifestEntry["component"],
+  },
+
+  spinner: {
+    type: "spinner",
+    description:
+      "Spinning loading indicator (role=status). label is required and becomes the accessible aria-label (e.g. 'Loading results'). size controls dimensions: sm (16px), md (24px, default), lg (32px). Use to signal in-progress work — never as a decorative element.",
+    example: {
+      label: "Loading results",
+      size: "md",
+    },
+    propsSchema: z
+      .object({
+        label: z.string(), // a11y-required (D-04 / UI-SPEC §11)
+        size: z.enum(["sm", "md", "lg"]).optional(),
+      })
+      .strict(),
+    lockedProps: [],
+    acceptsChildren: false,
+    component: SpinnerComponent as AnyManifestEntry["component"],
+  },
+
+  "avatar-stack": {
+    type: "avatar-stack",
+    description:
+      "Horizontally overlapping group of avatars for showing participants, team members, or collaborators. aria-label is required and should describe the group (e.g. 'Meeting attendees'). Each item needs alt (initials fallback derives from it); src is an optional image URL. size: sm (32px), md (40px, default), lg (56px). animate:true spreads the stack apart on hover.",
+    example: {
+      "aria-label": "Meeting attendees",
+      items: [
+        { alt: "Alice Johnson", src: "https://i.pravatar.cc/40?u=alice" },
+        { alt: "Bob Smith" },
+        { alt: "Carol Diaz" },
+      ],
+      size: "md",
+    },
+    propsSchema: z
+      .object({
+        "aria-label": z.string(), // a11y-required group label (D-04 / UI-SPEC §11)
+        items: z
+          .array(
+            z
+              .object({
+                alt: z.string(), // a11y-required per avatar (D-04)
+                src: z.string().url().optional(),
+              })
+              .strict(),
+          )
+          .min(1),
+        size: z.enum(["sm", "md", "lg"]).optional(),
+        animate: z.boolean().optional(),
+      })
+      .strict(),
+    lockedProps: [],
+    acceptsChildren: false,
+    component: AvatarStackComponent as AnyManifestEntry["component"],
+  },
+
+  "animated-list": {
+    type: "animated-list",
+    description:
+      "Vertical container that reveals its children one at a time with a spring animation, newest on top — ideal for live activity feeds and notification demos. Accepts positional children (typically feed-item nodes). delay is the milliseconds between reveals (100-10000, default 1000). Use aria-label when the list acts as a landmark region.",
+    example: {
+      delay: 1500,
+    },
+    propsSchema: z
+      .object({
+        "aria-label": z.string().optional(), // optional landmark (UI-SPEC §11)
+        delay: z.number().int().min(100).max(10000).optional(),
+      })
+      .strict(),
+    lockedProps: [],
+    acceptsChildren: true,
+    component: AnimatedListComponent as AnyManifestEntry["component"],
+  },
+
+  marquee: {
+    type: "marquee",
+    description:
+      "Infinitely scrolling strip that loops its children — for logo walls, testimonial tickers, or highlight reels. Accepts positional children. pauseOnHover:true stops scrolling on hover (recommended for readable content); reverse flips direction; vertical:true scrolls vertically; repeat (1-10) controls how many copies render (default 4). Decorative motion — never put critical-path actions inside.",
+    example: {
+      pauseOnHover: true,
+      repeat: 4,
+    },
+    propsSchema: z
+      .object({
+        "aria-label": z.string().optional(), // optional landmark (UI-SPEC §11)
+        reverse: z.boolean().optional(),
+        pauseOnHover: z.boolean().optional(),
+        vertical: z.boolean().optional(),
+        repeat: z.number().int().min(1).max(10).optional(),
+      })
+      .strict(),
+    lockedProps: [],
+    acceptsChildren: true,
+    component: MarqueeComponent as AnyManifestEntry["component"],
   },
 } satisfies ComponentRegistry);
 

@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 import type { VaultKind } from "../../../../../../../packages/api-client/src/router/files/vault-types";
 import {
   formatBytes,
+  formatProvenance,
   formatVaultDate,
   KIND_GLYPH,
   KIND_LABEL,
@@ -89,6 +90,27 @@ describe("formatVaultDate", () => {
   it("renders nothing for an unparseable string, never 'Invalid Date'", () => {
     expect(formatVaultDate("not-a-date")).toBe("");
     expect(formatVaultDate("")).toBe("");
+  });
+});
+
+describe("formatProvenance", () => {
+  it("names the who and the when — 'Added by you · 12 Jul 2026'", () => {
+    // "you" is a structural fact of the vault's tenancy (every key is minted
+    // from ctx.user.id), not stored metadata — see the implementation header
+    // for the watched-folder seam where that stops being a constant.
+    expect(formatProvenance("2026-07-12T10:00:00Z")).toBe("Added by you · 12 Jul 2026");
+  });
+
+  it("declines to invent a date it does not have", () => {
+    expect(formatProvenance(null)).toBe("Added by you");
+    expect(formatProvenance(undefined)).toBe("Added by you");
+    expect(formatProvenance("not-a-date")).toBe("Added by you");
+  });
+
+  it("inherits the absolute, UTC, locale-free date rhythm", () => {
+    // Same instant, same string, on every machine — formatVaultDate's own
+    // guarantees, checked here so a rewrite that stops composing it fails.
+    expect(formatProvenance("2025-12-31T23:30:00Z")).toBe("Added by you · 31 Dec 2025");
   });
 });
 

@@ -63,6 +63,35 @@ export type {
   ToolResultPayload,
 } from "./tools.js";
 
+// browser (v2.0 additive module — the frozen 5 above are untouched)
+export {
+  browserToolNameSchema,
+  browserToolRequestSchema,
+  browserToolOutputSchema,
+  extendedToolRequestSchema,
+  extendedToolOutputSchema,
+  extendedToolResultSchema,
+} from "./browser.js";
+export type {
+  BrowserToolName,
+  BrowserToolRequestPayload,
+  BrowserToolOutput,
+  ExtendedToolRequestPayload,
+  ExtendedToolOutput,
+  ExtendedToolResultPayload,
+} from "./browser.js";
+
+// dir (v2.0 additive module — filesystem-read tools, folded into the extended unions above)
+export {
+  dirToolNameSchema,
+  dirToolRequestSchema,
+  dirToolOutputSchema,
+  dirTreeEntrySchema,
+  dirManifestFileSchema,
+  DIR_TOOL_BOUNDS,
+} from "./dir.js";
+export type { DirToolName, DirToolRequestPayload, DirToolOutput } from "./dir.js";
+
 // perms
 export { permRequestSchema, permDecisionSchema } from "./perms.js";
 export type { PermRequestPayload, PermDecisionPayload } from "./perms.js";

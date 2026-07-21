@@ -29,7 +29,12 @@
  * only `{ url }` reaches the browser; failures are loud, never fail-open.
  */
 
-import type { VaultEntry, VaultKind, VaultStorageClient } from "./vault-types";
+import type {
+  VaultEntry,
+  VaultKind,
+  VaultListPage,
+  VaultStorageClient,
+} from "./vault-types";
 import {
   EMPTY_FOLDER_PLACEHOLDER,
   emptyFolderPlaceholderKey,
@@ -48,8 +53,14 @@ import {
  */
 export const VAULT_MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 
-/** One listing page. The OUT-listed cap (pagination beyond it is backlog). */
-const LIST_PAGE_SIZE = 500;
+/**
+ * One listing page. Was the OUT-listed hard cap in Phase 66; the v2.1
+ * hardening pass turned it into a PAGE SIZE — `listFolder` takes an offset and
+ * reports whether another page exists, so a >500-entry folder is reachable
+ * rather than silently truncated. Exported so the router's cursor bound and
+ * any test that manufactures a full page cite the same number.
+ */
+export const VAULT_LIST_PAGE_SIZE = 500;
 
 /** Signed download URLs live for 60 seconds. Long enough to click, not to share. */
 const DOWNLOAD_URL_TTL_SECONDS = 60;
@@ -132,7 +143,15 @@ function kindForFile(name: string): VaultKind {
 // ---------------------------------------------------------------------------
 
 export type VaultAdapter = {
-  listFolder(userId: string, segments: readonly string[]): Promise<VaultEntry[]>;
+  /**
+   * One PAGE of a folder, starting at `offset` (default 0 — the first page).
+   * `nextCursor` names the next offset, or null when this page is the last.
+   */
+  listFolder(
+    userId: string,
+    segments: readonly string[],
+    offset?: number,
+  ): Promise<VaultListPage>;
   signedDownloadUrl(
     userId: string,
     segments: readonly string[],
@@ -165,7 +184,7 @@ export function createVaultAdapter(opts: {
   /** One page of a prefix's children. Throws rather than inventing an empty page. */
   async function listPage(prefix: string, offset: number) {
     const { data, error } = await client.list(prefix, {
-      limit: LIST_PAGE_SIZE,
+      limit: VAULT_LIST_PAGE_SIZE,
       offset,
       sortBy: { column: "name", order: "asc" },
     });
@@ -198,14 +217,14 @@ export function createVaultAdapter(opts: {
     // Page until a page comes back short. The listing cap is a UI bound; a
     // DELETE that inherited it would leave orphans the user cannot see or
     // reach — a folder that reports itself gone while still costing storage.
-    for (let offset = 0; ; offset += LIST_PAGE_SIZE) {
+    for (let offset = 0; ; offset += VAULT_LIST_PAGE_SIZE) {
       const page = await listPage(prefix, offset);
       for (const entry of page) {
         const childKey = `${prefix}/${entry.name}`;
         if (entry.id === null) folders.push(childKey);
         else keys.push(childKey);
       }
-      if (page.length < LIST_PAGE_SIZE) break;
+      if (page.length < VAULT_LIST_PAGE_SIZE) break;
     }
 
     for (const folder of folders) {
@@ -224,10 +243,17 @@ export function createVaultAdapter(opts: {
   }
 
   return {
-    async listFolder(userId, segments) {
+    async listFolder(userId, segments, offset = 0) {
       // Throws on a crafted path BEFORE any call reaches storage.
       const prefix = vaultKey(userId, segments);
-      const raw = await listPage(prefix, 0);
+      const raw = await listPage(prefix, offset);
+
+      // A FULL page means storage may hold more; a short page is the end.
+      // Decided on the RAW length, before the placeholder filter below — the
+      // filter can shrink a full page, and a shrunk-but-full page must still
+      // report a next cursor or the entries past it become unreachable again.
+      const nextCursor =
+        raw.length === VAULT_LIST_PAGE_SIZE ? offset + VAULT_LIST_PAGE_SIZE : null;
 
       const entries = raw
         // The placeholder is bookkeeping (D-66-01) — never a row.
@@ -247,10 +273,19 @@ export function createVaultAdapter(opts: {
       // Folders first, then name. Decided ONCE, here, server-side: a
       // client-side re-sort is a second opinion about the same rhythm, and the
       // two disagree the moment one of them changes.
-      return entries.sort((a, b) => {
+      //
+      // WITH PAGINATION THIS RHYTHM IS PER-PAGE, and that is stated rather
+      // than hidden: storage sorts the whole folder by name, so page 2's
+      // folders sit after page 1's files. Exact within the first 500 entries
+      // (every realistic folder); honest name-order beyond. Re-sorting
+      // accumulated pages client-side would reorder rows under the user's
+      // cursor on every "Show more" — the worse trade.
+      entries.sort((a, b) => {
         if (a.isFolder !== b.isFolder) return a.isFolder ? -1 : 1;
         return a.name.localeCompare(b.name);
       });
+
+      return { entries, nextCursor };
     },
 
     async signedDownloadUrl(userId, segments, filename) {

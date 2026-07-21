@@ -13,10 +13,16 @@
 import type { z } from "zod";
 
 import {
+  BrowserNodeDataSchema,
   ChatNodeDataSchema,
+  DesktopNodeDataSchema,
+  DirectoryNodeDataSchema,
+  DocumentNodeDataSchema,
+  EditorNodeDataSchema,
   EmailThreadNodeDataSchema,
   GenuiPanelNodeDataSchema,
   KnowledgePreviewNodeDataSchema,
+  SourceNodeDataSchema,
 } from "./node-data-schemas";
 
 export interface NodeTypeRegistryEntry {
@@ -55,6 +61,42 @@ export const NODE_TYPE_REGISTRY: Record<string, NodeTypeRegistryEntry> = {
     dataSchema: EmailThreadNodeDataSchema,
     description:
       "Email-thread node — renders a real thread's subject/participants/summary anchored on a thread id, with Open-thread/Attach-chat actions.",
+  },
+  document: {
+    id: "document",
+    dataSchema: DocumentNodeDataSchema,
+    description:
+      "Document node — renders a stored document's title/generated date anchored on a document id, with an Open-document action into /documents/[id].",
+  },
+  source: {
+    id: "source",
+    dataSchema: SourceNodeDataSchema,
+    description:
+      "Source node — an auto-collected research source (RCNV-02/RSRCH-03): title/domain/excerpt from a chat_source_ledger capture, tier-marked suggested until promoted, with an Open-source external link.",
+  },
+  directory: {
+    id: "directory",
+    dataSchema: DirectoryNodeDataSchema,
+    description:
+      "Directory node — a daemon-watched folder anchored on a path, with a bounded immutable tree preview; the live tree arrives via the daemon's fs.list capability.",
+  },
+  browser: {
+    id: "browser",
+    dataSchema: BrowserNodeDataSchema,
+    description:
+      "Browser node — a jailed live-browser panel shell (url bar + daemon screenshot-stream viewport); never mounts an iframe or remote src, keyed on the daemon's browser.* capabilities.",
+  },
+  editor: {
+    id: "editor",
+    dataSchema: EditorNodeDataSchema,
+    description:
+      "Editor node — a jailed textarea editor shell anchored on a filePath ref (never content); load/save travel through the daemon's fs.read/fs.write capabilities.",
+  },
+  desktop: {
+    id: "desktop",
+    dataSchema: DesktopNodeDataSchema,
+    description:
+      "Desktop node — a jailed remote-desktop panel shell anchored on an opaque sessionId (never a gateway url/token); no iframe mounted yet, keyed on the desktop.* control-plane capabilities (spawn/attach/hibernate/destroy).",
   },
 };
 

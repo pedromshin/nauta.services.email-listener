@@ -37,3 +37,6 @@ export * from "./chat-source-ledger";
 export * from "./chat-context-edges";
 export * from "./autofill-retrieval-events";
 export * from "./forwarding-addresses";
+export * from "./documents";
+export * from "./references";
+export * from "./desktop-sessions";

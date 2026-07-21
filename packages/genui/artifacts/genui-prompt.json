@@ -1,7 +1,7 @@
 {
   "registryVersion": {
     "catalogId": "global",
-    "version": "2562c1fb84e66b1c7c48cf3dba5b7e67e8adac1a3e69bc8de1ef2e3aebcf6216"
+    "version": "78171c79ef1392c9e6d2a470864112ec1e71aba243140ee7edfcd76d98df4a4e"
   },
   "components": [
     {
@@ -76,7 +76,7 @@
     },
     {
       "type": "grid",
-      "description": "CSS grid of EQUAL-width columns where EACH child fills exactly ONE cell — there is NO column spanning. Set cols to the number of items per row (2–4 is typical for card galleries). cols larger than the child count automatically collapses to fewer, wider columns. Do NOT use grid as a page wrapper or to hold a single wide region — use stack for overall page structure. Use aria-label when acting as a landmark.",
+      "description": "CSS grid layout. By default renders EQUAL-width columns where each child fills one cell — set cols to the number of items per row (2–4 is typical for card galleries); cols larger than the child count automatically collapses to fewer, wider columns when no child spans. A grid CHILD may set colSpan (integer 1–12) to span multiple columns, enabling asymmetric layouts such as a main+sidebar split (e.g. cols: 12 with an 8-span main child and a 4-span sidebar child). Use aria-label when acting as a landmark.",
       "acceptsChildren": true,
       "slots": [],
       "lockedProps": []
@@ -127,6 +127,41 @@
       "type": "form",
       "description": "Declarative, interactive form (Phase 19). Carries a `fields` array (each with name, required `label`, `fieldType` — text/email/number/tel/url/password/textarea/select/checkbox/radio — plus optional required, options for select/radio, min/max/minLength/maxLength/pattern, helpText, defaultValue). Conditional logic is declarative: `visibleWhen`/`requiredWhen` = {field, equals} show/require a field based on another field's value. Validation runs on submit with inline field-level errors (no eval). `onSubmit` binds ONLY to the allowlisted action seam (navigate/setState) — never an arbitrary endpoint. For exotic/arbitrary form logic beyond this, use a code-island instead.",
       "acceptsChildren": false,
+      "slots": [],
+      "lockedProps": []
+    },
+    {
+      "type": "number-ticker",
+      "description": "Animated numeric counter that counts up (or down) to `value` when it scrolls into view. Use for stat/KPI displays (revenue, counts, percentages). aria-label is required and must describe what the number represents (e.g. 'Total active users'). startValue sets the animation origin (default 0); decimalPlaces (0-6) controls formatting. Numeric display only — pair with a text node for the metric caption.",
+      "acceptsChildren": false,
+      "slots": [],
+      "lockedProps": []
+    },
+    {
+      "type": "spinner",
+      "description": "Spinning loading indicator (role=status). label is required and becomes the accessible aria-label (e.g. 'Loading results'). size controls dimensions: sm (16px), md (24px, default), lg (32px). Use to signal in-progress work — never as a decorative element.",
+      "acceptsChildren": false,
+      "slots": [],
+      "lockedProps": []
+    },
+    {
+      "type": "avatar-stack",
+      "description": "Horizontally overlapping group of avatars for showing participants, team members, or collaborators. aria-label is required and should describe the group (e.g. 'Meeting attendees'). Each item needs alt (initials fallback derives from it); src is an optional image URL. size: sm (32px), md (40px, default), lg (56px). animate:true spreads the stack apart on hover.",
+      "acceptsChildren": false,
+      "slots": [],
+      "lockedProps": []
+    },
+    {
+      "type": "animated-list",
+      "description": "Vertical container that reveals its children one at a time with a spring animation, newest on top — ideal for live activity feeds and notification demos. Accepts positional children (typically feed-item nodes). delay is the milliseconds between reveals (100-10000, default 1000). Use aria-label when the list acts as a landmark region.",
+      "acceptsChildren": true,
+      "slots": [],
+      "lockedProps": []
+    },
+    {
+      "type": "marquee",
+      "description": "Infinitely scrolling strip that loops its children — for logo walls, testimonial tickers, or highlight reels. Accepts positional children. pauseOnHover:true stops scrolling on hover (recommended for readable content); reverse flips direction; vertical:true scrolls vertically; repeat (1-10) controls how many copies render (default 4). Decorative motion — never put critical-path actions inside.",
+      "acceptsChildren": true,
       "slots": [],
       "lockedProps": []
     }

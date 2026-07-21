@@ -46,6 +46,21 @@ export type VaultEntry = {
 };
 
 /**
+ * One page of a folder listing (v2.1 hardening — the 500-entry cap is now a
+ * PAGE, not a silent truncation).
+ *
+ * `nextCursor` is the offset of the next page, or `null` when this page is the
+ * last. Named `cursor` on the wire because that is the field tRPC's
+ * `useInfiniteQuery` feeds back — an opaque number to the client, an offset to
+ * the adapter. The client never invents one; it only echoes what the server
+ * handed back.
+ */
+export type VaultListPage = {
+  readonly entries: readonly VaultEntry[];
+  readonly nextCursor: number | null;
+};
+
+/**
  * The raw shape Supabase Storage's `.list()` returns.
  *
  * `id === null` MEANS THIS IS A FOLDER — that is the whole of folder

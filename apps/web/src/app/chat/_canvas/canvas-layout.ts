@@ -29,6 +29,13 @@ export const CANVAS_NODE_DIMENSIONS: Readonly<
   "genui-panel": { width: 320, height: 240 },
   "knowledge-preview": { width: 320, height: 240 },
   "email-thread": { width: 320, height: 220 },
+  source: { width: 300, height: 180 },
+  // v2.0 panels — mirror each component's own fixed h-[..]/w-[..] classes
+  // (directory-node.tsx / browser-node.tsx / editor-node.tsx) so dagre ranks
+  // and the cascade fallback see the true rendered rects.
+  directory: { width: 300, height: 240 },
+  browser: { width: 400, height: 300 },
+  editor: { width: 380, height: 300 },
 };
 
 export const DEFAULT_CANVAS_NODE_DIMENSIONS = { width: 320, height: 240 };

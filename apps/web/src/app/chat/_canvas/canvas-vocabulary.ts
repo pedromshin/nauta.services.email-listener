@@ -175,15 +175,24 @@ export const CANVAS_EDGE_TIER_STYLE: Record<CanvasEdgeTier, EdgeStyle> = {
 };
 
 /**
- * A canvas node's kind. Mirrors `NODE_TYPE_REGISTRY`'s four registered types
- * plus the `unknown` marker `resolveNodeType` already returns for an
- * unregistered/legacy type (CANVAS-03, T-23-05: the canvas "never breaks").
+ * A canvas node's kind. Mirrors `NODE_TYPE_REGISTRY`'s registered types
+ * ONE-FOR-ONE plus the `unknown` marker `resolveNodeType` already returns for
+ * an unregistered/legacy type (CANVAS-03, T-23-05: the canvas "never breaks").
+ * `canvas-vocabulary.test.ts` asserts the two stay in lockstep — register a
+ * node type without growing this vocabulary and that gate goes red rather than
+ * the new node silently rendering a degraded placeholder frame forever.
  */
 export type CanvasNodeKind =
   | "chat"
   | "genui-panel"
   | "email-thread"
   | "knowledge-preview"
+  | "document"
+  | "source"
+  | "directory"
+  | "browser"
+  | "editor"
+  | "desktop"
   | "unknown";
 
 /**
@@ -199,6 +208,12 @@ const NODE_KIND_BY_TYPE: Readonly<Record<string, CanvasNodeKind>> = Object.freez
     "genui-panel": "genui-panel",
     "email-thread": "email-thread",
     "knowledge-preview": "knowledge-preview",
+    document: "document",
+    source: "source",
+    directory: "directory",
+    browser: "browser",
+    editor: "editor",
+    desktop: "desktop",
   }) as Record<string, CanvasNodeKind>,
 );
 
@@ -232,21 +247,80 @@ export function canvasNodeKindOf(type: string): CanvasNodeKind {
  *   LEFT-RULE WEIGHT = how much of the user's OWN material this node carries.
  *     chat (4)          the conversation itself — the anchor the canvas is about
  *     email-thread (2)  mail the user received — real evidence, in full
+ *     document (2)      a stored document — polytoken's SYNTHESIS of the user's
+ *                       real material, provenance-marked back to it (rule 2, the
+ *                       same evidence-carrying weight as a thread)
  *     genui-panel (1)   polytoken's rendering — it has no words of its own
+ *     source (1)        a web source the agent pulled in (RCNV-02) — its words
+ *                       are real (they earn the serif) but they are NOT the
+ *                       user's own material yet; curation into the canon is
+ *                       what would raise its standing, and that promotion is
+ *                       recorded by TIER (the pmark flips dashed->solid), never
+ *                       by kind — kind is shape, and this card stays a source
+ *
+ *   DOUBLE RULE = "a bound artifact, a synthesis composed into a standalone
+ *   piece" — the one kind that is neither raw evidence nor a mere view:
+ *     document           a report bound from the user's material; the DOUBLE
+ *                        rule sets it apart from the raw thread at the same
+ *                        weight, without spending a hue (law 3)
  *
  *   DOTTED FRAME = "this is a VIEW or a guess, not an artifact in its own right".
  *     knowledge-preview  real material (rule 2) but a bounded, non-interactive
  *                        glance at another surface — a view of the thing
+ *     source             a GUESS with words of its own (rule 1): the system's
+ *                        zero-ceremony bet that this source matters to the
+ *                        research — a candidate, not an artifact, until the
+ *                        user curates it (taste-references §3: "arrival is
+ *                        free, promotion is deliberate")
  *     unknown            claims nothing at all: no rule, provisional frame
  *
- * DOTTED, never DASHED: tier owns solid-vs-dashed on every surface, and
+ *   RIGHT SEAM RULE (2px ink, the v2.0 panels' one new structural bit) =
+ *   "a LIVE surface — the far edge of this card is the user's own machine,
+ *   reached through the daemon; its contents can change under you". The three
+ *   panel kinds each restate an EXISTING kind's left-rule/frame claim and add
+ *   this one bit, which is exactly what separates a live daemon-backed
+ *   counterpart from its static sibling (and what keeps every kind's geometry
+ *   DISTINCT without spending a hue, law 3):
+ *     directory          email-thread's claim (rule 2, solid: the user's own
+ *                        material, raw and in full) + live — the node IS the
+ *                        watched folder, fed by `fs.list`
+ *     browser            source's claim (rule 1, dotted: no words of its own,
+ *                        a view not an artifact) + live — a viewport streaming
+ *                        daemon screenshots
+ *     editor             document's claim (rule 2, double: a bound artifact)
+ *                        + live — the artifact still being AUTHORED, written
+ *                        back through `fs.write`
+ *     desktop            a WHOLE cloud machine the user owns, streamed live
+ *                        (Cloud Desktop epoch, RFC §4). It has NO words of its
+ *                        own — a streamed screen is pixels, a VIEW not an
+ *                        artifact — so it takes DOTTED, exactly as the browser
+ *                        panel does. But it is weightier than a browser tab's
+ *                        single view: it is the user's own whole computer
+ *                        ("replaces my computer", RFC §1), substantial like the
+ *                        watched folder / knowledge preview, so it takes the
+ *                        rule-2 left weight rather than browser's rule-1. The
+ *                        one bit that separates it from `knowledge-preview`
+ *                        (also rule-2 dotted) is the right seam: a desktop is a
+ *                        LIVE control-plane-backed surface, a preview is a
+ *                        static glance. rule-2 DOTTED + right seam is therefore
+ *                        distinct from every sibling (browser is rule-1;
+ *                        knowledge-preview has no seam; directory/editor are not
+ *                        dotted) without spending a hue (law 3).
+ *
+ * DOTTED/DOUBLE, never DASHED: tier owns solid-vs-dashed on every surface, and
  * `region-vocabulary.ts` makes the identical concession with `unrelated`.
  */
 export const CANVAS_NODE_KIND_GEOMETRY: Record<CanvasNodeKind, string> = {
   chat: "border-l-4 border-l-ink",
   "email-thread": "border-l-2 border-l-ink",
+  document: "border-l-2 border-l-ink border-double",
   "genui-panel": "border-l border-l-ink",
   "knowledge-preview": "border-l-2 border-l-ink border-dotted",
+  source: "border-l border-l-ink border-dotted",
+  directory: "border-l-2 border-l-ink border-r-2 border-r-ink",
+  browser: "border-l border-l-ink border-r-2 border-r-ink border-dotted",
+  editor: "border-l-2 border-l-ink border-r-2 border-r-ink border-double",
+  desktop: "border-l-2 border-l-ink border-r-2 border-r-ink border-dotted",
   unknown: "border-dotted",
 };
 
@@ -272,6 +346,12 @@ export const CANVAS_NODE_KIND_LABEL: Record<CanvasNodeKind, string> = {
   "genui-panel": "Panel",
   "email-thread": "Email thread",
   "knowledge-preview": "Knowledge",
+  document: "Document",
+  source: "Source",
+  directory: "Folder",
+  browser: "Browser",
+  editor: "Editor",
+  desktop: "Desktop",
   unknown: "Unrecognized",
 };
 

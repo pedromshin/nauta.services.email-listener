@@ -31,9 +31,15 @@ describe("computeNodeRegistryHash", () => {
 
   it("is insensitive to registration order (sorted keys)", () => {
     const reordered: Record<string, NodeTypeRegistryEntry> = {
+      editor: NODE_TYPE_REGISTRY.editor!,
+      desktop: NODE_TYPE_REGISTRY.desktop!,
+      source: NODE_TYPE_REGISTRY.source!,
+      browser: NODE_TYPE_REGISTRY.browser!,
+      document: NODE_TYPE_REGISTRY.document!,
       "email-thread": NODE_TYPE_REGISTRY["email-thread"]!,
       "knowledge-preview": NODE_TYPE_REGISTRY["knowledge-preview"]!,
       "genui-panel": NODE_TYPE_REGISTRY["genui-panel"]!,
+      directory: NODE_TYPE_REGISTRY.directory!,
       chat: NODE_TYPE_REGISTRY.chat!,
     };
     expect(computeNodeRegistryHash(reordered)).toBe(
@@ -121,6 +127,25 @@ describe("resolveNodeType", () => {
       expect(resolved.entry.id).toBe("knowledge-preview");
     }
   });
+
+  it("resolves 'source' to its registered entry", () => {
+    const resolved = resolveNodeType("source");
+    expect(resolved.kind).toBe("registered");
+    if (resolved.kind === "registered") {
+      expect(resolved.entry.id).toBe("source");
+    }
+  });
+
+  // The v2.0 panel types, registered at integration (mirrors 'source' above).
+  for (const panelType of ["directory", "browser", "editor"] as const) {
+    it(`resolves '${panelType}' to its registered entry`, () => {
+      const resolved = resolveNodeType(panelType);
+      expect(resolved.kind).toBe("registered");
+      if (resolved.kind === "registered") {
+        expect(resolved.entry.id).toBe(panelType);
+      }
+    });
+  }
 });
 
 describe("GenuiPanelNodeDataSchema", () => {

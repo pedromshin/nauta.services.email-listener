@@ -32,6 +32,12 @@ const NODE_KINDS: readonly CanvasNodeKind[] = [
   "genui-panel",
   "email-thread",
   "knowledge-preview",
+  "document",
+  "source",
+  "directory",
+  "browser",
+  "editor",
+  "desktop",
   "unknown",
 ];
 
@@ -120,6 +126,11 @@ describe("canvasNodeKindOf — a persisted node.type is untrusted (T-61-06)", ()
     expect(canvasNodeKindOf("genui-panel")).toBe("genui-panel");
     expect(canvasNodeKindOf("email-thread")).toBe("email-thread");
     expect(canvasNodeKindOf("knowledge-preview")).toBe("knowledge-preview");
+    expect(canvasNodeKindOf("document")).toBe("document");
+    expect(canvasNodeKindOf("source")).toBe("source");
+    expect(canvasNodeKindOf("directory")).toBe("directory");
+    expect(canvasNodeKindOf("browser")).toBe("browser");
+    expect(canvasNodeKindOf("editor")).toBe("editor");
   });
 
   it("resolves an UNRECOGNIZED type to \"unknown\" — never throws, never another kind's geometry", () => {
@@ -178,7 +189,7 @@ describe("CANVAS_NODE_KIND_GEOMETRY — kind is shape, never hue (law 3)", () =>
     }
   });
 
-  it("all five kinds are structurally DISTINCT — kind is re-encoded, not deleted", () => {
+  it("every kind is structurally DISTINCT — kind is re-encoded, not deleted", () => {
     const values = NODE_KINDS.map((kind) => CANVAS_NODE_KIND_GEOMETRY[kind]);
     expect(new Set(values).size).toBe(NODE_KINDS.length);
   });
@@ -191,7 +202,7 @@ describe("CANVAS_NODE_KIND_LABEL — polytoken's word per kind, in ONE place", (
     }
   });
 
-  it("all five labels are distinct", () => {
+  it("every label is distinct", () => {
     const values = NODE_KINDS.map((kind) => CANVAS_NODE_KIND_LABEL[kind]);
     expect(new Set(values).size).toBe(NODE_KINDS.length);
   });
@@ -311,7 +322,7 @@ describe("KIND IS LEGIBLE — for a fixed tier, all five kinds stay distinguisha
   // canvas is one edit away from the same failure: its retired node-type
   // tokens already resolve to within 4.4% lightness of each other.
   for (const tier of EDGE_TIERS) {
-    it(`edge=${tier}: chat / genui-panel / email-thread / knowledge-preview / unknown all render distinguishably`, () => {
+    it(`edge=${tier}: every node kind (registered + unknown) renders distinguishably`, () => {
       // Tier lives on the EDGE and kind on the NODE, so a node's geometry is
       // the whole of its kind reading at any edge tier.
       const rendered = NODE_KINDS.map((kind) => CANVAS_NODE_KIND_GEOMETRY[kind]);

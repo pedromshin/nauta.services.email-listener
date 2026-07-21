@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.10
-milestone_name: Product Design & Research Canvas
+milestone: v1.11
+milestone_name: Research Core & the Capability Spine
 status: in-progress
-last_updated: "2026-07-16T08:05:00.000Z"
+last_updated: "2026-07-20T16:00:00.000Z"
 progress:
-  total_phases: 9
-  completed_phases: 7
-  total_plans: 32
-  completed_plans: 34
-  percent: 78
+  total_phases: 6
+  completed_phases: 1
+  total_plans: 0
+  completed_plans: 0
+  percent: 16
 ---
 
 # State

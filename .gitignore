@@ -63,3 +63,14 @@ apps/email-listener/listener-*.log
 # Remote Control session log — contains a live session/environment URL
 .planning/night-run/remote-control.log
 .planning/night-run/resume-log.txt
+
+# GSD plugin, vendored locally for this session (not a real /plugin install)
+.claude/skills/
+.claude/agents/
+.claude/gsd-support/
+
+# Windows-path junk from daemon tests running on Linux (pre-existing win32 tests)
+apps/daemon/\\tmp\\daemon-tools-*
+
+# UI review captures — contain signed-in app state (docs/RUN-LOCAL + CLAUDE.md say gitignored; the rule was missing)
+.planning/ui-reviews/
