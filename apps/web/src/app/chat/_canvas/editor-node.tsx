@@ -51,6 +51,7 @@ import type { Node, NodeProps } from "@xyflow/react";
 import { FileCode, X } from "lucide-react";
 
 import { canvasNodeShellClass } from "./canvas-node-shell-class";
+import { useDaemonTool } from "./_lib/use-daemon-tool";
 import { CANVAS_NODE_KIND_GEOMETRY } from "./canvas-vocabulary";
 import type { EditorNodeData } from "./panel-node-schemas";
 
