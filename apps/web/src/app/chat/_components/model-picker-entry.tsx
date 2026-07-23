@@ -19,6 +19,10 @@ export interface WebllmEntryState {
 export interface ModelPickerEntryProps {
   readonly model: ChatModelEntry;
   readonly isRecommended: boolean;
+  /** DX Phase 0 — this row is the local model the device-profiler recommends
+   * for the visitor's hardware (a non-intrusive hint; never auto-switches).
+   * Distinct from `isRecommended` (which marks the currently-selected model). */
+  readonly isRecommendedForDevice?: boolean;
   /** Only meaningful for the browser-locus entry (D-08) — omitted for every
    * server-transport row. */
   readonly webllm?: WebllmEntryState;
@@ -76,6 +80,7 @@ export function formatCostLine(
 export function ModelPickerEntry({
   model,
   isRecommended,
+  isRecommendedForDevice = false,
   webllm,
 }: ModelPickerEntryProps): React.ReactElement {
   const isBrowser = model.executionLocus === "browser";
@@ -98,6 +103,12 @@ export function ModelPickerEntry({
               />
               Ready
             </Badge>
+          )}
+          {isRecommendedForDevice && (
+            // DX Phase 0 — non-intrusive hardware hint. `secondary` (not the
+            // accent outline the current-selection badge uses) so it reads as a
+            // suggestion, never as the active choice; it never auto-switches.
+            <Badge variant="secondary">Recommended for your device</Badge>
           )}
           {isRecommended && (
             <Badge variant="outline" className="border-primary text-primary">
