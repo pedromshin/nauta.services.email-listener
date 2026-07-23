@@ -4,7 +4,14 @@
 > UPDATE THIS FILE at every batch launch, batch completion, and merge. This file is the single
 > source of truth for "where are we"; chat context is disposable.
 
-## Status: RUNNING — Batch 1 (W0 + gap docs)
+## Status: RUNNING — Batch 1R (W0 repairs)
+
+Batch 1 DONE 2026-07-23T03:0xZ: 3 gap docs committed (c1bf55c); 4 W0 fix branches
+merged (92c9098) after skeptic review; full listener suite green (91.36% cov),
+api-client 22/22, web 5/5; pushed. Skeptics confirmed 3 residual gaps → Batch 1R:
+ING-6 attachment surfacing, RES-1 read path (+migration for 0039 RPCs), REG-1
+deterministic page ids. The 4 pre-existing OCR corpus failures are environmental
+(fail identically on baseline c1bf55c; live-OCR deps absent in container) — not ours.
 
 - Branch: `claude/polytoken-email-infra-cont-jzz1pg` (all merges land here; NO PR)
 - Model policy: fable-5 (verify panels/synthesis) · opus-4.8 (mutations/security, session default) · sonnet-5 (mechanical). Never haiku.
@@ -12,11 +19,11 @@
   `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>` + `Claude-Session: https://claude.ai/code/session_01RZuPfFSoRaTp59yqF91AZs`
 
 ## Active workflow
-- Run ID: `wf_acbedf4e-6ec`
-- Script: `/root/.claude/projects/-home-user-polytoken-ai/a7169b4b-2d04-50fc-9192-30f267d087bc/workflows/scripts/grand-orchestrator-batch-1-wf_acbedf4e-6ec.js`
-- Resume (after container death): `Workflow({scriptPath: <above>, resumeFromRunId: "wf_acbedf4e-6ec"})` — NO args, ever.
-- Journal (inspect before assuming results): `<transcriptDir>/journal.jsonl` under
-  `/root/.claude/projects/-home-user-polytoken-ai/a7169b4b-2d04-50fc-9192-30f267d087bc/subagents/workflows/wf_acbedf4e-6ec`
+- Run ID: `wf_b93b55e9-cca` (Batch 1R repairs)
+- Script: `/root/.claude/projects/-home-user-polytoken-ai/a7169b4b-2d04-50fc-9192-30f267d087bc/workflows/scripts/batch-1r-repairs-wf_b93b55e9-cca.js`
+- Resume (after container death): `Workflow({scriptPath: <above>, resumeFromRunId: "wf_b93b55e9-cca"})` — NO args, ever.
+- Journal: `/root/.claude/projects/-home-user-polytoken-ai/a7169b4b-2d04-50fc-9192-30f267d087bc/subagents/workflows/wf_b93b55e9-cca/journal.jsonl`
+- Prior batch (all cached): `wf_acbedf4e-6ec`
 
 ## Batch plan (whole program)
 | Batch | Contents | Status |
