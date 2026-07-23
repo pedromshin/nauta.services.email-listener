@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from app.domain.entities.component import Component
 
 
@@ -107,12 +109,28 @@ class ComponentRepository(Protocol):
         """
         ...
 
-    async def supersede_pending_regions(self, email_id: str) -> int:
-        """Mark the email's auto-proposed (pending) region components as superseded.
+    async def supersede_pending_regions(self, email_id: str, *, created_before: datetime) -> int:
+        """Supersede the email's auto-proposed (pending) region components that
+        predate ``created_before``.
 
         Single bulk update — scales past the per-row row cap. Only source_type
-        'region' rows with extraction_status 'pending' are affected; human-touched
-        regions (candidate/confirmed/rejected) and page components are untouched.
-        Returns the number of rows superseded.
+        'region' rows with extraction_status 'pending' AND created_at < created_before
+        are affected; human-touched regions (candidate/confirmed/rejected) and page
+        components are untouched. The created_before cutoff exists so reprocess can
+        supersede ONLY the OLD pending pile after re-ingest, leaving the freshly
+        proposed regions (created during re-ingest) intact — otherwise reprocess
+        would either destroy the new proposals or stack duplicates. Returns the
+        number of rows superseded.
+        """
+        ...
+
+    async def count_pending_regions_created_since(self, email_id: str, cutoff: datetime) -> int:
+        """Count the email's pending region components created at/after ``cutoff``.
+
+        Used by reprocess to detect whether re-ingest actually produced fresh
+        proposals before superseding the old pile: if segmentation degraded to
+        zero regions (e.g. a Bedrock outage that returns [] without raising),
+        this returns 0 and reprocess preserves the prior proposals instead of
+        silently destroying them. Uses an exact count (not a capped SELECT).
         """
         ...
