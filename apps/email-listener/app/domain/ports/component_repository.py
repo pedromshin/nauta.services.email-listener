@@ -5,8 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
-    from datetime import datetime
-
     from app.domain.entities.component import Component
 
 
@@ -109,28 +107,46 @@ class ComponentRepository(Protocol):
         """
         ...
 
-    async def supersede_pending_regions(self, email_id: str, *, created_before: datetime) -> int:
-        """Supersede the email's auto-proposed (pending) region components that
-        predate ``created_before``.
+    async def latest_component_created_at(self, email_id: str) -> str | None:
+        """Return the newest created_at among the email's components, or None.
 
-        Single bulk update — scales past the per-row row cap. Only source_type
-        'region' rows with extraction_status 'pending' AND created_at < created_before
-        are affected; human-touched regions (candidate/confirmed/rejected) and page
-        components are untouched. The created_before cutoff exists so reprocess can
-        supersede ONLY the OLD pending pile after re-ingest, leaving the freshly
-        proposed regions (created during re-ingest) intact — otherwise reprocess
-        would either destroy the new proposals or stack duplicates. Returns the
-        number of rows superseded.
+        The value is the DB's own row timestamp (ISO-8601 string as stored),
+        NOT an app-server clock reading — used to derive a clock-skew-free
+        cutoff for supersede_pending_regions.
         """
         ...
 
-    async def count_pending_regions_created_since(self, email_id: str, cutoff: datetime) -> int:
-        """Count the email's pending region components created at/after ``cutoff``.
+    async def supersede_pending_regions(self, email_id: str, *, created_before: str | None = None) -> int:
+        """Mark the email's auto-proposed (pending) region components as superseded.
+
+        Single bulk update — scales past the per-row row cap. Only source_type
+        'region' rows with extraction_status 'pending' are affected; human-touched
+        regions (candidate/confirmed/rejected) and page components are untouched.
+
+        created_before: optional INCLUSIVE upper bound on created_at (a DB row
+        timestamp, e.g. from latest_component_created_at). When provided, only
+        rows with created_at <= created_before are superseded, so regions
+        inserted concurrently AFTER the cutoff snapshot are never eaten. The
+        bound is inclusive because rows written in one save_many batch share a
+        single statement timestamp — a strict bound would skip the newest batch
+        entirely. When None, all pending regions are superseded (legacy scope).
+
+        Returns the number of rows superseded.
+        """
+        ...
+
+    async def count_pending_regions_created_since(self, email_id: str, cutoff: str | None) -> int:
+        """Count the email's pending region components created STRICTLY AFTER ``cutoff``.
 
         Used by reprocess to detect whether re-ingest actually produced fresh
         proposals before superseding the old pile: if segmentation degraded to
         zero regions (e.g. a Bedrock outage that returns [] without raising),
         this returns 0 and reprocess preserves the prior proposals instead of
-        silently destroying them. Uses an exact count (not a capped SELECT).
+        silently destroying them. ``cutoff`` is a DB row timestamp (ISO-8601
+        string from latest_component_created_at); the comparison is strict (>)
+        so the boundary row itself — the newest PRE-existing component — never
+        counts as fresh, exactly complementing the inclusive (<=) supersede
+        bound. ``None`` (no components existed before re-ingest) counts ALL
+        pending regions. Uses an exact count (not a capped SELECT).
         """
         ...

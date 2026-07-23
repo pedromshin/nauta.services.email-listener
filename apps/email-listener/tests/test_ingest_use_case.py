@@ -530,6 +530,8 @@ def test_post_persist_failure_marks_parse_status_failed() -> None:
     assert status == "failed"
     assert error is not None
     assert "propose_regions" in error
+
+
 # ING-6 tests — the parse_status lifecycle is driven, failures are visible
 # ---------------------------------------------------------------------------
 

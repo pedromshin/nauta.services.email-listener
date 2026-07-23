@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any, cast
 
 from postgrest.base_request_builder import CountMethod
@@ -133,42 +132,72 @@ class SupabaseComponentRepository:
         )
         return [_from_row(cast("dict[str, Any]", row)) for row in result.data]
 
-    async def supersede_pending_regions(self, email_id: str, *, created_before: datetime) -> int:
-        """Bulk-supersede the email's pending region components older than the cutoff.
+    async def latest_component_created_at(self, email_id: str) -> str | None:
+        """Newest created_at among the email's components (DB row timestamp).
+
+        Single-row SELECT (order desc + limit 1) — immune to the 1000-row cap.
+        Returns the ISO-8601 string exactly as PostgREST serialized it so it can
+        be fed straight back into a created_at comparison without any app-side
+        clock arithmetic (clock-skew mitigation for supersede_pending_regions).
+        """
+        result = (
+            self._client.table("email_components")
+            .select("created_at")
+            .eq("email_id", email_id)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if not result.data:
+            return None
+        created_at = cast("dict[str, Any]", result.data[0]).get("created_at")
+        return str(created_at) if created_at is not None else None
+
+    async def supersede_pending_regions(self, email_id: str, *, created_before: str | None = None) -> int:
+        """Bulk-supersede the email's pending (auto-proposed) region components.
 
         One UPDATE covers every matching row regardless of count (the row cap
         applies to SELECTs, not UPDATEs), so reprocess never loops thousands of
         rows. Human-touched regions (candidate/confirmed/rejected) and page
-        components are left untouched. The `created_at < created_before` predicate
-        confines the supersede to the OLD pending pile so re-ingest's fresh
-        proposals (created after the cutoff) survive.
+        components are left untouched.
+
+        created_before (inclusive, DB timestamp): when provided, adds
+        created_at <= created_before so rows inserted after the cutoff snapshot
+        (e.g. by a concurrent re-ingest) survive. Derived from the DB's own row
+        timestamps (latest_component_created_at), never from the app clock.
         """
-        result = (
+        query = (
             self._client.table("email_components")
             .update({"extraction_status": "superseded"})
             .eq("email_id", email_id)
             .eq("source_type", "region")
             .eq("extraction_status", "pending")
-            .lt("created_at", created_before.isoformat())
-            .execute()
         )
+        if created_before is not None:
+            query = query.lte("created_at", created_before)
+        result = query.execute()
         return len(result.data)
 
-    async def count_pending_regions_created_since(self, email_id: str, cutoff: datetime) -> int:
-        """Exact count of the email's pending regions created at/after `cutoff`.
+    async def count_pending_regions_created_since(self, email_id: str, cutoff: str | None) -> int:
+        """Exact count of the email's pending regions created STRICTLY AFTER `cutoff`.
 
         count='exact' returns the total via the Content-Range header, so it is
-        not subject to the PostgREST 1000-row SELECT cap.
+        not subject to the PostgREST 1000-row SELECT cap. `cutoff` is a DB row
+        timestamp (ISO string from latest_component_created_at); the strict (>)
+        comparison exactly complements supersede's inclusive (<=) bound so the
+        boundary row is never double-classified. None counts all pending regions
+        (no components existed before re-ingest).
         """
-        result = (
+        query = (
             self._client.table("email_components")
             .select("id", count=CountMethod.exact)
             .eq("email_id", email_id)
             .eq("source_type", "region")
             .eq("extraction_status", "pending")
-            .gte("created_at", cutoff.isoformat())
-            .execute()
         )
+        if cutoff is not None:
+            query = query.gt("created_at", cutoff)
+        result = query.execute()
         return result.count or 0
 
     async def update_status(self, component_id: str, status: str) -> Component:

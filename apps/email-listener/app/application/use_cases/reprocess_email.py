@@ -34,8 +34,6 @@ Key derivation rationale (resolved decision — do not deviate):
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
-
 import structlog
 
 from app.application.use_cases.ingest_inbound_email import IngestInboundEmailUseCase
@@ -91,12 +89,16 @@ class ReprocessEmailUseCase:
         logger.info("reprocess_started", email_id=email_id)
 
         # Boundary between the OLD auto-proposed regions and the fresh ones this
-        # reprocess is about to create. Captured before re-ingest, so every row
-        # already persisted for the email predates it. Re-ingest runs Textract +
-        # segmentation (seconds to minutes), so new rows land comfortably after
-        # the cutoff even under modest clock skew; in the worst case skew only
-        # causes a transient duplicate, never data loss.
-        cutoff = datetime.now(UTC)
+        # reprocess is about to create: the newest created_at ALREADY IN THE DB
+        # for this email — a DB-clock row timestamp captured before re-ingest —
+        # never datetime.now(UTC) on the app server. An app clock skewed against
+        # Postgres could otherwise miss stale regions (clock behind) or eat rows
+        # the re-ingest is inserting (clock ahead). Fresh rows get a strictly
+        # later DB timestamp; the supersede bound is inclusive (<=) and the
+        # freshness count strict (>), so the two predicates partition the
+        # timeline exactly at the boundary row. None ⇒ no components existed
+        # before this reprocess, so there is nothing to supersede.
+        cutoff = await self._components.latest_component_created_at(email_id)
 
         # Re-ingest FIRST. If this raises (raw S3 object gone, NULL storage key),
         # execution stops before any supersede — the prior proposals are untouched.
@@ -112,16 +114,18 @@ class ReprocessEmailUseCase:
         # proof of new regions. Supersede the old pile only when there is a
         # replacement set to show; otherwise keep the prior proposals visible.
         new_regions = await self._components.count_pending_regions_created_since(email_id, cutoff)
-        if new_regions > 0:
-            superseded_count = await self._components.supersede_pending_regions(
-                email_id, created_before=cutoff
-            )
+        if new_regions > 0 and cutoff is not None:
+            superseded_count = await self._components.supersede_pending_regions(email_id, created_before=cutoff)
             logger.info(
                 "reprocess_superseded",
                 email_id=email_id,
                 superseded_regions=superseded_count,
                 new_regions=new_regions,
             )
+        elif new_regions > 0:
+            # Fresh proposals exist but no components predated this reprocess
+            # (cutoff is None) — nothing to supersede.
+            superseded_count = 0
         else:
             superseded_count = 0
             logger.warning(
