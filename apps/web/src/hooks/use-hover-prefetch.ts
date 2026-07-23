@@ -15,12 +15,16 @@
  *     fire a prefetch per row — a prefetch only fires if the pointer is
  *     still "interested" when the timer elapses. `cancel()` (wired to
  *     `pointerleave`/`blur`) clears the pending timer.
- *   - DEDUPE: each key prefetches at most once per hook instance —
- *     re-hovering a row never re-fires (the router/TanStack caches hold the
- *     result anyway).
- *   - CAP (`maxPrefetches`, default 30): an upper bound on how many distinct
- *     keys one surface may warm, so a long scroll-and-hover session cannot
- *     turn into an unbounded prefetch storm.
+ *   - DEDUPE with TTL (`dedupeTtlMs`, default 30 000 ms — matching the
+ *     TanStack staleTime): a key that already fired will not re-fire while
+ *     its cache entry is still fresh, but becomes eligible again once the
+ *     TTL lapses, so a re-hover after staleness re-warms the detail cache
+ *     instead of leaving later clicks cold.
+ *   - CAP (`maxPrefetches`, default 30): a ROLLING bound on how many keys
+ *     may be warm at once (expired entries free their slot), so a long
+ *     scroll-and-hover session cannot turn into an unbounded prefetch storm
+ *     — and prefetching keeps working for the whole session rather than
+ *     dying after the first 30 distinct rows.
  *
  * The hook is transport-agnostic: callers pass the actual prefetch work
  * (e.g. `router.prefetch(...)` + `utils.emails.detail.prefetch(...)`), keyed
@@ -32,8 +36,11 @@ import { useCallback, useEffect, useRef } from "react";
 export interface UseHoverPrefetchOptions {
   /** Hover dwell time before the prefetch fires. Default 80 ms. */
   readonly delayMs?: number;
-  /** Max distinct keys ever prefetched by this hook instance. Default 30. */
+  /** Max keys warm at once (rolling — expired entries free slots). Default 30. */
   readonly maxPrefetches?: number;
+  /** How long a fired key stays deduped before a re-hover may re-warm it.
+   * Default 30 000 ms, matching the TanStack Query staleTime. */
+  readonly dedupeTtlMs?: number;
 }
 
 export interface HoverPrefetchHandlers {
@@ -46,16 +53,20 @@ export interface HoverPrefetchHandlers {
 
 const DEFAULT_DELAY_MS = 80;
 const DEFAULT_MAX_PREFETCHES = 30;
+const DEFAULT_DEDUPE_TTL_MS = 30_000;
 
 export function useHoverPrefetch(
   prefetch: (key: string) => void,
   {
     delayMs = DEFAULT_DELAY_MS,
     maxPrefetches = DEFAULT_MAX_PREFETCHES,
+    dedupeTtlMs = DEFAULT_DEDUPE_TTL_MS,
   }: UseHoverPrefetchOptions = {},
 ): HoverPrefetchHandlers {
   const timersRef = useRef(new Map<string, ReturnType<typeof setTimeout>>());
-  const firedRef = useRef(new Set<string>());
+  // key -> epoch-ms when it fired; entries older than dedupeTtlMs are expired
+  // (pruned lazily) so re-hovers re-warm and cap slots are freed.
+  const firedRef = useRef(new Map<string, number>());
   // Latest-callback ref so `begin`/`cancel` stay referentially stable even
   // when the caller passes an inline closure every render.
   const prefetchRef = useRef(prefetch);
@@ -73,19 +84,26 @@ export function useHoverPrefetch(
 
   const begin = useCallback(
     (key: string) => {
-      if (firedRef.current.has(key)) return;
-      if (firedRef.current.size >= maxPrefetches) return;
+      const pruneAndCheck = (): boolean => {
+        const now = Date.now();
+        for (const [k, firedAt] of firedRef.current) {
+          if (now - firedAt >= dedupeTtlMs) firedRef.current.delete(k);
+        }
+        // Still-fresh entry for this key → dedupe; full rolling window → wait.
+        if (firedRef.current.has(key)) return false;
+        return firedRef.current.size < maxPrefetches;
+      };
+      if (!pruneAndCheck()) return;
       if (timersRef.current.has(key)) return;
       const timer = setTimeout(() => {
         timersRef.current.delete(key);
-        if (firedRef.current.has(key)) return;
-        if (firedRef.current.size >= maxPrefetches) return;
-        firedRef.current.add(key);
+        if (!pruneAndCheck()) return;
+        firedRef.current.set(key, Date.now());
         prefetchRef.current(key);
       }, delayMs);
       timersRef.current.set(key, timer);
     },
-    [delayMs, maxPrefetches],
+    [delayMs, maxPrefetches, dedupeTtlMs],
   );
 
   const cancel = useCallback((key: string) => {
