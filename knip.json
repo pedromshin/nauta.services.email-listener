@@ -1,0 +1,39 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [],
+      "project": []
+    },
+    "apps/web": {
+      "entry": ["e2e/**/*.spec.ts", "e2e/helpers/**/*.ts"],
+      "project": ["src/**/*.{ts,tsx}", "e2e/**/*.ts"]
+    },
+    "apps/daemon": {
+      "project": ["src/**/*.ts", "scripts/**/*.ts"]
+    },
+    "packages/api-client": {
+      "project": ["src/**/*.ts"]
+    },
+    "packages/capabilities": {
+      "project": ["src/**/*.ts"]
+    },
+    "packages/daemon-protocol": {
+      "project": ["src/**/*.ts"]
+    },
+    "packages/db": {
+      "entry": ["drizzle.config.ts"],
+      "project": ["src/**/*.ts"],
+      "drizzle": false
+    },
+    "packages/genui": {
+      "project": ["src/**/*.{ts,tsx}", "scripts/**/*.ts"]
+    },
+    "packages/tailwind-config": {
+      "project": ["*.ts"]
+    },
+    "packages/ui": {
+      "project": ["src/**/*.{ts,tsx}"]
+    }
+  }
+}

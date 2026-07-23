@@ -55,6 +55,9 @@ apps/web/test-results/
 apps/web/playwright-report/
 
 .env*
+# .env.example files are documentation, not secrets — keep them trackable
+# (negation must follow the blanket .env* rule above; META-AUDIT P2)
+!.env.example
 
 # Claude Code personal overrides
 .claude/settings.local.json
