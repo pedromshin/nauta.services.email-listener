@@ -4,6 +4,7 @@ import { Archivo } from "next/font/google";
 import { SidebarInset, SidebarProvider } from "@polytoken/ui/sidebar";
 import { Toaster } from "@polytoken/ui/sonner";
 
+import { Omnibox } from "~/app/_components/omnibox";
 import { AppSidebar } from "~/components/app-sidebar";
 import { MobileTabBar } from "~/components/mobile-tab-bar";
 import { ThemeProvider } from "~/components/theme-provider";
@@ -103,6 +104,10 @@ export default function RootLayout({
                 <MobileTabBar />
               </SidebarInset>
             </SidebarProvider>
+            {/* AI-05: Cmd/Ctrl+K cross-surface search — inside
+                TRPCReactProvider (it queries search.omnibox), outside the
+                sidebar shell (it is an overlay, not a pane). */}
+            <Omnibox />
           </ThemeProvider>
         </TRPCReactProvider>
         <Toaster />
