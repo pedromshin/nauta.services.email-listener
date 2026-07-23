@@ -22,7 +22,7 @@ import { getStatusBadge } from "./status-badge";
 
 import type { AutofillFieldsPhase } from "./use-autofill-fields";
 import type { ParentEntityOption } from "./field-relationship-picker";
-import type { ComponentRole } from "./region-overlay-box";
+import type { ComponentRole } from "~/components/regions/region-overlay-box";
 
 /** The selected component, as the inspector consumes it (subset of detail). */
 export interface InspectorComponent {

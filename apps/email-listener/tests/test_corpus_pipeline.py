@@ -506,10 +506,16 @@ class TestImageOnlyOcrIntegration:
     )
     def test_image_only_live_ocr_returns_components(self, entry: dict) -> None:
         """Image-only PDF with live Textract yields non-empty OCR text."""
+        import boto3
+
         from app.infrastructure.ocr.textract_adapter import TextractOcrAdapter
         from app.infrastructure.pdf.pdf_parser import PdfParser
 
-        ocr = TextractOcrAdapter()
+        client = boto3.client(
+            "textract",
+            region_name=os.environ.get("AWS_TEXTRACT_REGION", "us-east-1"),
+        )
+        ocr = TextractOcrAdapter(client=client)
         parser = PdfParser(ocr=ocr)
         file_bytes = _corpus_path(entry["file"]).read_bytes()
         components = asyncio.run(

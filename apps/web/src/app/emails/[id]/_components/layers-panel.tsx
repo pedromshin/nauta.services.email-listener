@@ -7,7 +7,7 @@ import { ScrollArea } from "@polytoken/ui/scroll-area";
 
 import { LayersTreeRow } from "./layers-tree-row";
 
-import type { ComponentRole } from "./region-overlay-box";
+import type { ComponentRole } from "~/components/regions/region-overlay-box";
 
 /** The component shape the LAYERS panel consumes (subset of emails.detail). */
 export interface LayersComponent {

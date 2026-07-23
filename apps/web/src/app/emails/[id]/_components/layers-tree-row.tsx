@@ -4,7 +4,7 @@ import { ChevronDown, ChevronRight, Square } from "lucide-react";
 
 import { REGION_ROLE_GEOMETRY, REGION_TIER, regionLabelFor, tierOf } from "./region-vocabulary";
 
-import type { ComponentRole } from "./region-overlay-box";
+import type { ComponentRole } from "~/components/regions/region-overlay-box";
 
 /**
  * The role chip (09-UI-SPEC §LAYERS Panel → Role Chips), re-encoded onto the

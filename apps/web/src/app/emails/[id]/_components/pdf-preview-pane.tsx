@@ -20,10 +20,10 @@ import { Switch } from "@polytoken/ui/switch";
 import { ActionToolbar } from "./action-toolbar";
 import { DrawModeBar } from "./draw-mode-bar";
 import { DrawOverlay } from "./draw-overlay";
-import { OverlayLayer } from "./overlay-layer";
+import { OverlayLayer } from "~/components/regions/overlay-layer";
 
 import type { CanvasMode } from "./canvas-toolbar";
-import type { ComponentRole } from "./region-overlay-box";
+import type { ComponentRole } from "~/components/regions/region-overlay-box";
 import type { DrawMode, LiveRect, Polygon } from "./use-region-edit";
 
 // pdfjs worker — initialized in useEffect to avoid SSR issues with
@@ -621,7 +621,7 @@ export function PdfPreviewPane({
             size="sm"
             onClick={onClassifyDocument}
             disabled={!canAddRegion || drawMode !== null}
-            title="Treat the entire multi-page attachment as one entity (e.g. a 4-page bill of lading), then autofill it"
+            title="Treat the entire multi-page attachment as one entity (e.g. a 4-page contract), then autofill it"
           >
             Classify Document
           </Button>

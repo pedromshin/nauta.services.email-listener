@@ -25,6 +25,7 @@ import { useHoverPrefetch } from "~/hooks/use-hover-prefetch";
 import { api } from "~/trpc/react";
 
 import type { EntityChipEntry } from "./entity-chips";
+import { InboxEmailPreview } from "./inbox-email-preview";
 import { InboxEntitiesRail } from "./inbox-entities-rail";
 import { InboxThreadGroup } from "./inbox-thread-group";
 import type { InboxEmail } from "./inbox-row";
@@ -143,86 +144,6 @@ function FiltersRail({
         </Link>
         .
       </p>
-    </div>
-  );
-}
-
-function ReadingPreview({
-  email,
-  ruleReview,
-}: {
-  readonly email: InboxEmailItem | null;
-  /**
-   * MAIL-01: the suggest-only rule-review panel for THIS email, rendered
-   * between the meta line and the body — in-context during triage (HEY
-   * Screener model), never a settings destination. Pre-built by the parent
-   * so this sub-view stays presentational.
-   */
-  readonly ruleReview?: React.ReactNode;
-}): React.ReactElement {
-  if (!email) {
-    return (
-      <div
-        data-pane="reading"
-        className="flex h-full flex-col items-center justify-center gap-2 bg-leaf p-12 text-center"
-      >
-        <p className="text-sm font-semibold text-ink">No email selected</p>
-        <p className="text-sm text-faded">
-          Select a message from the list to preview it here.
-        </p>
-      </div>
-    );
-  }
-
-  const sender = email.senderName
-    ? `${email.senderName} <${email.senderAddress}>`
-    : email.senderAddress;
-
-  return (
-    <div data-pane="reading" className="flex h-full flex-col overflow-auto bg-leaf p-panel">
-      {/* .rp-head: the subject is the user's own material (law 2) — a
-          serif h2, not muted chrome. */}
-      <div className="flex items-start justify-between gap-4">
-        <h2
-          data-field="subject"
-          data-evidence
-          className="min-w-0 flex-1 font-serif text-xl text-ink"
-        >
-          {email.subject ?? "(no subject)"}
-        </h2>
-        <Button asChild size="sm" variant="outline" className="shrink-0">
-          <Link href={`/emails/${email.id}`}>Open email →</Link>
-        </Button>
-      </div>
-
-      {/* .rp-meta: From/To are the user's material but they are metadata,
-          not prose — sans, under a ruled boundary. */}
-      <div className="mt-2.5 border-b border-hair pb-3.5 text-xs text-faded">
-        From: {sender} · To: {email.toAddresses.join(", ") || "—"}
-      </div>
-
-      {ruleReview}
-
-      {email.bodyText ? (
-        // .rp-body: --text-lg (15.5px/1.7) is the step Phase 59 anchored
-        // on THIS pane's body specifically (59-02-SUMMARY.md's scale
-        // table) — the designed value, not a guess. The 56ch measure is
-        // the reference's own, and is what makes long mail readable.
-        // T-60-04: the 2000-char bound stays — never rely on CSS
-        // truncation alone to tame a megabyte body.
-        <p
-          data-field="body"
-          data-evidence
-          className="mt-4 max-w-[56ch] whitespace-pre-line font-serif text-lg text-ink"
-        >
-          {email.bodyText.slice(0, 2000)}
-        </p>
-      ) : (
-        <p className="mt-4 text-sm text-faded">
-          This email has no plain-text body. Open the editor to view the full
-          document and its regions.
-        </p>
-      )}
     </div>
   );
 }
@@ -612,13 +533,14 @@ export function InboxThreePane({
             existing defaultSizes for no design gain). */}
         <div className="flex h-full">
           <div className="min-w-0 flex-1">
-            <ReadingPreview email={selectedEmail} ruleReview={ruleReviewPanel} />
+            <InboxEmailPreview email={selectedEmail} ruleReview={ruleReviewPanel} />
           </div>
           <InboxEntitiesRail
             entities={
               selectedEmailId ? (entitiesByEmailId.get(selectedEmailId) ?? []) : []
             }
             emailId={selectedEmailId ?? ""}
+            onSelect={setSelectedEmailId}
           />
         </div>
       </ResizablePanel>
@@ -743,7 +665,7 @@ export function InboxThreePane({
               </span>
             </div>
             <div className="min-h-0 flex-1">
-              <ReadingPreview email={selectedEmail} ruleReview={ruleReviewPanel} />
+              <InboxEmailPreview email={selectedEmail} ruleReview={ruleReviewPanel} />
             </div>
           </div>
         )}

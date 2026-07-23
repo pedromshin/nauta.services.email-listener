@@ -63,6 +63,12 @@ vi.mock("~/trpc/react", () => ({
         getCanvasLayout: utilsGetCanvasLayout,
       },
     }),
+    emails: {
+      // Composer attach menu (CH-01): inert while closed.
+      listThreads: {
+        useQuery: () => ({ data: { threads: [] }, isPending: false, isError: false }),
+      },
+    },
     chat: {
       listConversations: {
         useQuery: () => ({ data: [{ id: CONVERSATION_ID, title: "c", modelId: "m", updatedAt: "" }] }),
@@ -237,17 +243,20 @@ describe("attached-files chip rail", () => {
   it("renders one chip per vault_file edge and removing it calls removeContextEdge", async () => {
     listContextEdgesData = [
       { id: "edge-1", sourceRef: { type: "vault_file", path: ["docs"], name: "spec.pdf" } },
-      // a non-vault edge is ignored — the rail is vault-files only
+      // an email_thread edge renders its OWN chip in the same rail (CH-01)
       { id: "edge-2", sourceRef: { type: "email_thread", threadId: "t" } },
     ];
 
     const container = await mount(<ComposerAttachments conversationId={CONVERSATION_ID} />);
-    const rail = container.querySelector('ul[aria-label="Attached files"]');
+    const rail = container.querySelector('ul[aria-label="Attached context"]');
     expect(rail).not.toBeNull();
-    expect(rail!.querySelectorAll("li")).toHaveLength(1);
+    expect(rail!.querySelectorAll("li")).toHaveLength(2);
     expect(rail!.textContent).toContain("spec.pdf");
+    expect(rail!.textContent).toContain("Email thread");
 
-    const removeBtn = rail!.querySelector("button") as HTMLButtonElement;
+    const removeBtn = rail!.querySelector(
+      'button[aria-label="Remove attachment spec.pdf"]',
+    ) as HTMLButtonElement;
     await act(async () => {
       removeBtn.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });

@@ -8,24 +8,12 @@ import * as React from "react";
 import { useMemo, useState } from "react";
 
 import { Button } from "@polytoken/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@polytoken/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@polytoken/ui/popover";
 
 import { api } from "~/trpc/react";
 
-import { useDeviceModelRecommendation } from "../_hooks/use-device-model-recommendation";
-import {
-  ModelPickerEntry,
-  type ChatModelEntry,
-  type WebllmEntryState,
-} from "./model-picker-entry";
+import { ModelPickerPanel } from "./model-picker-panel";
+import { type WebllmEntryState } from "./model-picker-entry";
 
 export interface ModelPickerProps {
   readonly conversationId: string;
@@ -33,7 +21,7 @@ export interface ModelPickerProps {
   /**
    * Called BEFORE persisting a browser-locus (WebLLM) selection — 22-11's
    * download/WebGPU-readiness gate (the caller's implementation calls
-   * useWebllmEngine().ensureLoaded()). ModelPicker awaits it, then persists
+   * useWebllmEngine().ensureLoaded()). The panel awaits it, then persists
    * via the SAME chat.setModel path as any other model — this keeps the
    * "same API, same shape" selection flow uniform across loci. Rejecting
    * (loading failed) aborts the selection: the picker stays open, nothing
@@ -47,22 +35,14 @@ export interface ModelPickerProps {
   readonly webllm?: WebllmEntryState;
 }
 
-const TRANSPORT_GROUPS: ReadonlyArray<{
-  readonly transport: ChatModelEntry["transport"];
-  readonly heading: string;
-}> = [
-  { transport: "bedrock", heading: "Bedrock" },
-  { transport: "openrouter", heading: "OpenRouter" },
-  { transport: "browser", heading: "Browser" },
-];
-
 /**
  * ModelPicker (D-04..D-10) — toolbar trigger showing the current model's
- * short name; opens a cmdk Command grouped Bedrock / OpenRouter / Browser
- * (22-UI-SPEC.md Interaction Contracts). Selecting a server model persists
- * it via chat.setModel and invalidates listConversations (so the parent's
- * selectedConversation.modelId — which feeds useChatStream.send — updates);
- * selecting a browser model defers to onSelectBrowserModel (22-11 seam).
+ * short name; opens the shared ModelPickerPanel (cmdk Command grouped
+ * Bedrock / OpenRouter / Browser, 22-UI-SPEC.md Interaction Contracts) in a
+ * Popover. The Command body + selection/persistence logic lives in
+ * model-picker-panel.tsx so the quick-actions FAB's Dialog host consumes the
+ * exact same panel — this component is now only the header trigger + Popover
+ * shell (behavior unchanged).
  */
 export function ModelPicker({
   conversationId,
@@ -71,13 +51,7 @@ export function ModelPicker({
   webllm,
 }: ModelPickerProps): React.ReactElement {
   const [open, setOpen] = useState(false);
-  const utils = api.useUtils();
   const { data } = api.chat.models.useQuery();
-  const setModel = api.chat.setModel.useMutation({
-    onSuccess: async () => {
-      await utils.chat.listConversations.invalidate();
-    },
-  });
 
   const models = data?.models ?? [];
 
@@ -85,42 +59,6 @@ export function ModelPicker({
     () => models.find((model) => model.id === currentModelId) ?? null,
     [models, currentModelId],
   );
-
-  // DX Phase 0 — device-profiled local-model hint. Profiles the visitor's
-  // hardware and recommends the best browser-locus model it can run; badges
-  // that row only. Suggestion-only: it never changes the selected model.
-  const browserModelIds = useMemo(
-    () =>
-      models
-        .filter((model) => model.executionLocus === "browser")
-        .map((model) => model.id),
-    [models],
-  );
-  const recommendedForDeviceId =
-    useDeviceModelRecommendation(browserModelIds);
-
-  const handleSelect = async (model: ChatModelEntry): Promise<void> => {
-    if (model.executionLocus === "browser") {
-      if (webllm && !webllm.supported) return; // disabled row — defensive no-op
-      if (onSelectBrowserModel) {
-        try {
-          await onSelectBrowserModel(model.id);
-        } catch {
-          // Loading failed (e.g. WebGPU OOM) — leave the picker open; the
-          // row's own error state surfaces via webllm.status, nothing persists.
-          return;
-        }
-      }
-      if (model.id !== currentModelId) {
-        setModel.mutate({ conversationId, modelId: model.id });
-      }
-      setOpen(false);
-      return;
-    }
-    setOpen(false);
-    if (model.id === currentModelId) return;
-    setModel.mutate({ conversationId, modelId: model.id });
-  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -139,47 +77,13 @@ export function ModelPicker({
         className="w-[26rem] p-0 data-[state=open]:animate-none data-[state=closed]:animate-none"
       >
         <div className="t-dropdown-reveal">
-          <Command>
-            <CommandInput placeholder="Search models…" />
-            <CommandList>
-              <CommandEmpty>No models available.</CommandEmpty>
-              {TRANSPORT_GROUPS.map(({ transport, heading }) => {
-                const entries = models.filter(
-                  (model) => model.transport === transport,
-                );
-                if (entries.length === 0) return null;
-                return (
-                  <CommandGroup key={transport} heading={heading}>
-                    {entries.map((model) => (
-                      <CommandItem
-                        key={model.id}
-                        value={`${model.displayName} ${model.id}`}
-                        disabled={
-                          model.executionLocus === "browser" &&
-                          webllm !== undefined &&
-                          !webllm.supported
-                        }
-                        onSelect={() => void handleSelect(model)}
-                      >
-                        <ModelPickerEntry
-                          model={model}
-                          isRecommended={model.id === currentModelId}
-                          isRecommendedForDevice={
-                            model.id === recommendedForDeviceId
-                          }
-                          webllm={
-                            model.executionLocus === "browser"
-                              ? webllm
-                              : undefined
-                          }
-                        />
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                );
-              })}
-            </CommandList>
-          </Command>
+          <ModelPickerPanel
+            conversationId={conversationId}
+            currentModelId={currentModelId}
+            onSelectBrowserModel={onSelectBrowserModel}
+            webllm={webllm}
+            onClose={() => setOpen(false)}
+          />
         </div>
       </PopoverContent>
     </Popover>

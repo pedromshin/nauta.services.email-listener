@@ -135,7 +135,13 @@ vi.mock("~/trpc/react", () => ({
       requestUpload: { useMutation: () => ({ mutateAsync: vi.fn() }) },
       list: { useQuery: () => ({ data: { entries: [] }, isPending: false, isError: false }) },
     },
-    emails: { threadCard: { useQuery: () => threadCardQuery } },
+    emails: {
+      threadCard: { useQuery: () => threadCardQuery },
+      // Composer attach menu (CH-01): inert while closed.
+      listThreads: {
+        useQuery: () => ({ data: { threads: [] }, isPending: false, isError: false }),
+      },
+    },
     knowledge: { expandNode: { useQuery: () => expandNodeQuery } },
     genui: {
       applyPanelEdit: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },

@@ -180,6 +180,34 @@ vi.mock("~/trpc/react", () => ({
           isError: false,
         }),
       },
+      // Inline-preview era: InboxEmailPreview (via useEmailPreview) runs the
+      // emails.detail query for the selected email. The default-selected
+      // email is EMAIL_1 — return its detail row (no attachments, no
+      // components, so the carousel is a single body slide and the
+      // react-pdf-bearing dynamic slide never mounts in jsdom).
+      detail: {
+        useQuery: () => ({
+          data: {
+            email: {
+              id: EMAIL_1_ID,
+              subject: "Cotação frete SP -> POA",
+              senderName: "Rafael Lima",
+              senderAddress: "rafael@example.com",
+              toAddresses: ["me@example.com"],
+              receivedAt: "2026-01-01T00:00:00.000Z",
+              bodyText: "Consigo fechar em R$ 4.820,00 com coleta na sexta.",
+              bodyHtml: null,
+              parseStatus: "parsed",
+              parseError: null,
+              importerId: "imp-1",
+            },
+            attachments: [],
+            components: [],
+          },
+          isLoading: false,
+          isError: false,
+        }),
+      },
       entitySummary: {
         useQuery: () => ({
           data: FAKE_ENTITY_SUMMARY,
@@ -436,7 +464,13 @@ describe("inbox-structure (ROADMAP criterion 1, the anti-re-token gate)", () => 
     expect(container.textContent).toBe("");
   });
 
-  it("Leg 8: the reading body carries font-serif and the 56ch bounded measure", async () => {
+  it("Leg 8: the reading body carries font-serif and a bounded measure (inline-preview era: EmailBodyView's max-w-prose)", async () => {
+    // The reading pane's body now renders through the shared EmailBodyView
+    // inside the PreviewCarousel (the two-step inbox→editor hop is gone).
+    // The law is unchanged — the body is the user's own words (serif +
+    // data-evidence) inside a bounded measure — but the bound is now the
+    // view's `max-w-prose` container rather than ReadingPreview's inline
+    // `max-w-[56ch]`.
     const container = await mount(
       <InboxThreePane data={FAKE_DATA} isLoading={false} isError={false} />,
     );
@@ -446,7 +480,7 @@ describe("inbox-structure (ROADMAP criterion 1, the anti-re-token gate)", () => 
 
     expect(bodyEl).not.toBeNull();
     expect(bodyEl?.className).toContain("font-serif");
-    expect(bodyEl?.className).toContain("max-w-[56ch]");
     expect(bodyEl?.hasAttribute("data-evidence")).toBe(true);
+    expect(bodyEl?.closest('[class*="max-w-prose"]')).not.toBeNull();
   });
 });

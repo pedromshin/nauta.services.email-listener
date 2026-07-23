@@ -316,8 +316,10 @@ def test_chat_stream_rejects_a_conversation_the_caller_does_not_own(stream_clien
 
 @pytest.mark.unit
 def test_chat_stream_reaches_run_for_the_owner() -> None:
-    """Positive control: the actual owner streams successfully."""
-    client = _make_chat_stream_client()
+    """Positive control: the actual owner streams successfully, and the
+    caller's OWNED importer ids reach run() (chat-context fix)."""
+    use_case = _FakeRunChatTurn()
+    client = _make_chat_stream_client(use_case=use_case)
 
     resp = client.post(
         "/v1/chat/stream",
@@ -327,6 +329,7 @@ def test_chat_stream_reaches_run_for_the_owner() -> None:
 
     assert resp.status_code == 200
     assert resp.headers["content-type"].startswith("text/event-stream")
+    assert use_case.run_calls == [{"conversation_id": _CONVERSATION_ID, "importer_ids": _OWNED_IMPORTER_IDS}]
 
 
 @pytest.mark.unit
@@ -362,8 +365,10 @@ def test_chat_regenerate_rejects_a_conversation_the_caller_does_not_own(stream_c
 
 @pytest.mark.unit
 def test_chat_regenerate_reaches_regenerate_for_the_owner() -> None:
-    """Positive control: the actual owner regenerates successfully."""
-    client = _make_chat_stream_client()
+    """Positive control: the actual owner regenerates successfully, and the
+    caller's OWNED importer ids reach regenerate() (chat-context fix)."""
+    use_case = _FakeRunChatTurn()
+    client = _make_chat_stream_client(use_case=use_case)
 
     resp = client.post(
         "/v1/chat/regenerate",
@@ -377,3 +382,4 @@ def test_chat_regenerate_reaches_regenerate_for_the_owner() -> None:
 
     assert resp.status_code == 200
     assert resp.headers["content-type"].startswith("text/event-stream")
+    assert use_case.regenerate_calls == [{"conversation_id": _CONVERSATION_ID, "importer_ids": _OWNED_IMPORTER_IDS}]

@@ -141,8 +141,8 @@ function CreateTypeDialog({
 // ---------------------------------------------------------------------------
 
 export default function EntityTypesPage(): React.ReactElement {
-  // Active-only by default: deactivated system types (e.g. the retired
-  // maritime defaults) stay recoverable in the DB but out of the catalog view.
+  // Active-only by default: deactivated types stay in the DB but out of the
+  // catalog view.
   const { data, isLoading, isError, error } =
     api.entityTypes.list.useQuery({ includeInactive: false });
 

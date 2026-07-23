@@ -91,6 +91,35 @@ vi.mock("~/trpc/react", () => ({
       entitySummary: {
         useQuery: () => ({ data: [], isLoading: false, isError: false }),
       },
+      // Inline-preview era: InboxEmailPreview (via useEmailPreview) runs the
+      // emails.detail query for the selected email. A static EMAIL_1 row is
+      // enough here — the preview header falls back to the emails.list
+      // projection for whichever email is actually selected, and no
+      // attachments/components keeps the carousel to a single body slide
+      // (the react-pdf dynamic slide never mounts in jsdom).
+      detail: {
+        useQuery: () => ({
+          data: {
+            email: {
+              id: EMAIL_1_ID,
+              subject: "Welcome to polytoken",
+              senderName: "Ada Lovelace",
+              senderAddress: "ada@example.com",
+              toAddresses: ["me@example.com"],
+              receivedAt: "2026-01-01T00:00:00.000Z",
+              bodyText: "Hello there",
+              bodyHtml: null,
+              parseStatus: "parsed",
+              parseError: null,
+              importerId: "imp-1",
+            },
+            attachments: [],
+            components: [],
+          },
+          isLoading: false,
+          isError: false,
+        }),
+      },
       // MAIL-01: the rule-suggestion seam — empty result, resolved (so the
       // teaching empty state is the branch under test-by-default).
       ruleSuggestions: {

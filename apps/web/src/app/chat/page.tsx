@@ -5,7 +5,7 @@
 // in scope for any suite that mounts this file directly (documented gotcha,
 // see genui-panel-node.tsx / 53-03 / 53-04's identical fix).
 import * as React from "react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { PanelLeft, PanelLeftClose } from "lucide-react";
 
 import { Button } from "@polytoken/ui/button";
@@ -14,6 +14,7 @@ import { useIsMobileViewport } from "~/hooks/use-is-mobile-viewport";
 import { api } from "~/trpc/react";
 
 import { ChatHomeEmptyState } from "./_components/chat-home-empty-state";
+import { ChatQuickActionsFab } from "./_components/chat-quick-actions-fab";
 import { Composer } from "./_components/composer";
 import { ConversationRail } from "./_components/conversation-rail";
 import { CostMeter } from "./_components/cost-meter";
@@ -300,6 +301,27 @@ export default function ChatPage(): React.ReactElement {
     conversations?.find((conversation) => conversation.id === selectedId) ??
     null;
 
+  // AUTO-OPEN (task #18): land on the most-recent conversation instead of the
+  // empty state. listConversations is updatedAt-desc (conversations.ts), so
+  // conversations[0] IS the most recent. Fires AT MOST ONCE per mount — the
+  // ref latches as soon as any selection exists (auto or user-made), so
+  // deleting the open conversation (handleConversationDeleted → null) shows
+  // the empty state rather than bouncing to the next row uninvited.
+  const autoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (autoOpenedRef.current) return;
+    if (selectedId !== null) {
+      // A selection already happened by other means (e.g. New chat raced the
+      // list query) — never auto-open later in this mount.
+      autoOpenedRef.current = true;
+      return;
+    }
+    const mostRecent = conversations?.[0];
+    if (!mostRecent) return;
+    autoOpenedRef.current = true;
+    setSelectedId(mostRecent.id);
+  }, [conversations, selectedId]);
+
   // Constructed HERE (this component owns both booleans) and rendered into the
   // single header rule by whichever branch is live — ConversationView's, or the
   // empty/loading branch's. One element, one definition, one aria contract, and
@@ -364,7 +386,9 @@ export default function ChatPage(): React.ReactElement {
           creatingConversation={createConversation.isPending}
         />
 
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {/* `relative` anchors ChatQuickActionsFab's absolute bottom-right
+            position to THIS column (never over the rail). */}
+        <div className="relative flex min-h-0 min-w-0 flex-1 flex-col">
           {selectedId && selectedConversation ? (
             <ConversationView
               key={selectedId}
@@ -405,6 +429,27 @@ export default function ChatPage(): React.ReactElement {
               </div>
             </>
           )}
+          {/* Quick-actions FAB — a SIBLING of both branches (not inside the
+              ternary), so it survives conversation switches/deletes and is
+              present on the empty state too; conversation-scoped items
+              disable themselves while selectedConversation is null. */}
+          <ChatQuickActionsFab
+            selectedConversation={selectedConversation}
+            onNewChat={handleNewChat}
+            onOpenConversation={handleOpenConversation}
+            onSelectBrowserModel={async () => {
+              // Same 22-11 gate as useConversationController's
+              // handleSelectBrowserModel: ensure the engine/weights before
+              // persisting a browser-locus pick.
+              await webllm.ensureLoaded();
+            }}
+            webllm={{
+              supported: webllm.supported,
+              status: webllm.status,
+              progress: webllm.progress,
+              progressText: webllm.progressText,
+            }}
+          />
         </div>
       </div>
     </div>

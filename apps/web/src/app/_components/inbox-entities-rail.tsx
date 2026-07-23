@@ -21,6 +21,13 @@ interface InboxEntitiesRailProps {
    */
   readonly entities: ReadonlyArray<EntityChipEntry>;
   readonly emailId: string;
+  /**
+   * In-place review (inline-preview era): a plain left-click on "Review in
+   * email →" selects the email in the reading pane instead of navigating —
+   * the preview now shows the evidence right there. The href stays on the
+   * link so middle-click / cmd-click still opens the editor in a new tab.
+   */
+  readonly onSelect?: (emailId: string) => void;
 }
 
 /**
@@ -57,6 +64,7 @@ interface InboxEntitiesRailProps {
 export function InboxEntitiesRail({
   entities,
   emailId,
+  onSelect,
 }: InboxEntitiesRailProps): React.ReactElement | null {
   if (entities.length === 0) return null;
 
@@ -123,6 +131,23 @@ export function InboxEntitiesRail({
                 <Link
                   href={`/emails/${emailId}`}
                   className="mt-1.5 inline-block text-xs font-semibold text-ink underline underline-offset-2"
+                  onClick={(event) => {
+                    // In-place select on a plain left-click; modified clicks
+                    // (new tab/window) keep the href's editor navigation.
+                    if (!onSelect) return;
+                    if (
+                      event.defaultPrevented ||
+                      event.button !== 0 ||
+                      event.metaKey ||
+                      event.ctrlKey ||
+                      event.shiftKey ||
+                      event.altKey
+                    ) {
+                      return;
+                    }
+                    event.preventDefault();
+                    onSelect(emailId);
+                  }}
                 >
                   Review in email →
                 </Link>

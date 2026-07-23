@@ -57,6 +57,12 @@ const saveSpy = vi.fn((_input: unknown, _opts?: SaveMutationCallbacks) => undefi
 
 vi.mock("~/trpc/react", () => ({
   api: {
+    emails: {
+      // Composer attach menu (CH-01): inert while closed.
+      listThreads: {
+        useQuery: () => ({ data: { threads: [] }, isPending: false, isError: false }),
+      },
+    },
     chat: {
       getCanvasLayout: { useQuery: () => ({ data: layoutRow, isPending: false }) },
       saveCanvasLayout: { useMutation: () => ({ mutate: saveSpy }) },

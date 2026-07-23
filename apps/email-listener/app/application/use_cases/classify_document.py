@@ -1,8 +1,9 @@
 """ClassifyDocumentUseCase — treat a whole multi-page attachment as one entity.
 
 A region is normally page-scoped (one page's tokens). Some documents, however,
-are a single entity whose fields span every page — e.g. a 4-page bill of lading
-that is ONE BL. This use case creates one candidate region whose content_text is
+are a single entity whose fields span every page — e.g. a 4-page contract or
+itemized invoice that is ONE document. This use case creates one candidate
+region whose content_text is
 the concatenation of every page's text in page order, anchored to the first page
 with a full-page polygon so it renders, selects, autofills, and confirms exactly
 like any other region.

@@ -18,8 +18,13 @@ import {
   TooltipTrigger,
 } from "@polytoken/ui/tooltip";
 
-import { ConfirmDenyControls } from "./confirm-deny-controls";
-import { REGION_ROLE_GEOMETRY, REGION_TIER, regionLabelFor, tierOf } from "./region-vocabulary";
+import { ConfirmDenyControls } from "~/app/emails/[id]/_components/confirm-deny-controls";
+import {
+  REGION_ROLE_GEOMETRY,
+  REGION_TIER,
+  regionLabelFor,
+  tierOf,
+} from "~/app/emails/[id]/_components/region-vocabulary";
 
 interface ComponentLocation {
   page_index?: number;

@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { api } from "~/trpc/react";
 
-import type { ComponentRole } from "./region-overlay-box";
+import type { ComponentRole } from "~/components/regions/region-overlay-box";
 
 /**
  * use-role-mutations — the relationship + review mutation hook (D-15).

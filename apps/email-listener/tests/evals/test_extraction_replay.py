@@ -53,7 +53,7 @@ def _record(
 ) -> EvalRecord:
     return EvalRecord(
         record_id="r-test",
-        entity_type_slug="commercial_invoice",
+        entity_type_slug="invoice",
         component_text="synthetic",
         extracted_fields=extracted,
         corrected_fields=corrected,
@@ -95,9 +95,9 @@ def test_score_record_marks_corrected_fields_wrong_and_uncorrected_right() -> No
 
 @pytest.mark.unit
 def test_score_record_counts_field_added_by_correction_as_extraction_miss() -> None:
-    record = _record({"a": "x"}, {"vessel_name": "MSC AURORA"})
+    record = _record({"a": "x"}, {"organizer_name": "Aurora Events GmbH"})
     scores = score_record(record)
-    assert scores["vessel_name"] is False
+    assert scores["organizer_name"] is False
     assert scores["a"] is True
 
 

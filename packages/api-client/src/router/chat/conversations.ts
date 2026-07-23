@@ -18,10 +18,14 @@
  * via @polytoken/db/ownership BEFORE the write (fail-closed NOT_FOUND).
  */
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 
-import { ChatConversations } from "@polytoken/db/schema";
+import {
+  ChatContextEdges,
+  ChatConversations,
+  ChatMessages,
+} from "@polytoken/db/schema";
 import { assertConversationOwnership } from "@polytoken/db/ownership";
 
 import { protectedProcedure } from "../../trpc";
@@ -77,6 +81,13 @@ export type DeleteConversationInput = z.infer<
   typeof deleteConversationInputSchema
 >;
 
+export const duplicateConversationInputSchema = z.object({
+  id: z.string().uuid(),
+});
+export type DuplicateConversationInput = z.infer<
+  typeof duplicateConversationInputSchema
+>;
+
 // ---------------------------------------------------------------------------
 // D-10 — selection persists: setModel updates a conversation's remembered
 // model. Combined with createConversation's last-used default (above), this
@@ -108,6 +119,46 @@ export function resolveDefaultModelId(
     return requestedModelId;
   }
   return lastUsedModelId ?? DEFAULT_CHAT_MODEL_ID;
+}
+
+// ---------------------------------------------------------------------------
+// Pure helpers for duplicateConversation — exported for DB-free testing
+// (mirrors resolveDefaultModelId above).
+// ---------------------------------------------------------------------------
+
+/**
+ * duplicateTitleFor — "Copy of <source title>", hard-capped at the same 200
+ * chars renameConversationInputSchema enforces (the prefix can push an
+ * already-long title over the column's soft contract otherwise).
+ */
+export function duplicateTitleFor(sourceTitle: string): string {
+  return `Copy of ${sourceTitle}`.slice(0, 200);
+}
+
+/**
+ * remapSiblingGroupIds — D-16 sibling groups are conversation-scoped
+ * identities: copying messages into a NEW conversation must mint a FRESH
+ * uuid per source group (one new id shared by all rows of that group, so
+ * the < N/M > navigator still works in the copy) rather than reusing the
+ * source's group ids across two conversations. Null stays null (a turn that
+ * was never regenerated). Never mutates its input. `mintUuid` is injectable
+ * for deterministic tests only.
+ */
+export function remapSiblingGroupIds<
+  T extends { readonly siblingGroupId: string | null },
+>(rows: readonly T[], mintUuid: () => string = () => crypto.randomUUID()): T[] {
+  const freshIdBySourceGroup = new Map<string, string>();
+  return rows.map((row) => {
+    if (row.siblingGroupId === null) {
+      return { ...row };
+    }
+    let fresh = freshIdBySourceGroup.get(row.siblingGroupId);
+    if (fresh === undefined) {
+      fresh = mintUuid();
+      freshIdBySourceGroup.set(row.siblingGroupId, fresh);
+    }
+    return { ...row, siblingGroupId: fresh };
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -239,6 +290,131 @@ export const chatConversationsProcedures = {
         .delete(ChatConversations)
         .where(eq(ChatConversations.id, input.id));
       return { deleted: true };
+    }),
+
+  /**
+   * duplicateConversation — copy an owned conversation into a fresh one:
+   * conversation row (userId/modelId/importerId copied; threadId copied only
+   * behind the SAME tableColumnExists gate createConversation uses; title
+   * "Copy of <source>", capped 200), every chat_messages row (role/parts/
+   * turnIndex/version/isActive/status preserved; runId=null — the copy has
+   * no run provenance; siblingGroupId remapped to fresh per-group uuids),
+   * and every chat_context_edges row (keeps attached context). Deliberately
+   * NOT copied: cost ledger, runs, run events, canvas layouts — those are
+   * per-run/per-surface provenance of the ORIGINAL, not conversation
+   * content. Ownership asserted exactly like rename/delete (fail-closed
+   * NOT_FOUND); all writes in ONE Drizzle transaction (mirrors
+   * browser-turn.ts's recordBrowserTurn).
+   */
+  duplicateConversation: protectedProcedure
+    .input(duplicateConversationInputSchema)
+    .mutation(async ({ ctx, input }) => {
+      await assertOwnedOrNotFound(() =>
+        assertConversationOwnership(ctx.db, input.id, ctx.user.id),
+      );
+
+      const [source] = await ctx.db
+        .select({
+          title: ChatConversations.title,
+          modelId: ChatConversations.modelId,
+          importerId: ChatConversations.importerId,
+        })
+        .from(ChatConversations)
+        .where(eq(ChatConversations.id, input.id))
+        .limit(1);
+      if (!source) {
+        throw new Error("Failed to read conversation to duplicate");
+      }
+
+      // Phase 54 gate (mirrors createConversation above): only touch
+      // thread_id when migration 0036's column physically exists.
+      const threadColumnExists = await tableColumnExists(
+        ctx.db,
+        "chat_conversations",
+        "thread_id",
+      );
+      let sourceThreadId: string | null = null;
+      if (threadColumnExists) {
+        const [threadRow] = await ctx.db
+          .select({ threadId: ChatConversations.threadId })
+          .from(ChatConversations)
+          .where(eq(ChatConversations.id, input.id))
+          .limit(1);
+        sourceThreadId = threadRow?.threadId ?? null;
+      }
+
+      return ctx.db.transaction(async (tx) => {
+        const [created] = await tx
+          .insert(ChatConversations)
+          .values({
+            userId: ctx.user.id,
+            modelId: source.modelId,
+            importerId: source.importerId,
+            title: duplicateTitleFor(source.title),
+            ...(threadColumnExists && sourceThreadId !== null
+              ? { threadId: sourceThreadId }
+              : {}),
+          })
+          .returning({ id: ChatConversations.id });
+        if (!created) {
+          throw new Error("Failed to duplicate conversation");
+        }
+
+        const messages = await tx
+          .select({
+            role: ChatMessages.role,
+            parts: ChatMessages.parts,
+            turnIndex: ChatMessages.turnIndex,
+            siblingGroupId: ChatMessages.siblingGroupId,
+            version: ChatMessages.version,
+            isActive: ChatMessages.isActive,
+            status: ChatMessages.status,
+          })
+          .from(ChatMessages)
+          .where(eq(ChatMessages.conversationId, input.id))
+          .orderBy(asc(ChatMessages.turnIndex), asc(ChatMessages.version));
+
+        const remapped = remapSiblingGroupIds(messages);
+        if (remapped.length > 0) {
+          await tx.insert(ChatMessages).values(
+            remapped.map((message) => ({
+              conversationId: created.id,
+              runId: null,
+              role: message.role,
+              parts: message.parts,
+              turnIndex: message.turnIndex,
+              siblingGroupId: message.siblingGroupId,
+              version: message.version,
+              isActive: message.isActive,
+              status: message.status,
+            })),
+          );
+        }
+
+        // Context edges (RCNV-04) — copied verbatim (sourceRefKey is derived
+        // from sourceRef, which is unchanged; the partial unique index is
+        // per-conversation so the copy can't collide with the source's rows).
+        const edges = await tx
+          .select({
+            sourceRef: ChatContextEdges.sourceRef,
+            sourceRefKey: ChatContextEdges.sourceRefKey,
+            isActive: ChatContextEdges.isActive,
+          })
+          .from(ChatContextEdges)
+          .where(eq(ChatContextEdges.targetConversationId, input.id));
+        if (edges.length > 0) {
+          await tx.insert(ChatContextEdges).values(
+            edges.map((edge) => ({
+              targetConversationId: created.id,
+              sourceRef: edge.sourceRef,
+              sourceRefKey: edge.sourceRefKey,
+              isActive: edge.isActive,
+            })),
+          );
+        }
+
+        return { id: created.id };
+      });
     }),
 
   /**

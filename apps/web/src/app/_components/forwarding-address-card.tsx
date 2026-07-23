@@ -106,7 +106,7 @@ export function ForwardingAddressCard(): React.ReactElement {
               Set this as a forwarding address in your email provider to send
               mail into your inbox here.{" "}
               <a
-                href="https://github.com/pedromshin/nauta.services.email-listener/blob/main/.planning/phases/45-email-threads-forwarding-seam/FORWARDING-RUNBOOK.md"
+                href="https://github.com/pedromshin/polytoken.ai/blob/main/.planning/milestones/v1.7-phases/45-email-threads-forwarding-seam/FORWARDING-RUNBOOK.md"
                 target="_blank"
                 rel="noreferrer noopener"
                 className="font-medium text-primary underline-offset-4 hover:underline"

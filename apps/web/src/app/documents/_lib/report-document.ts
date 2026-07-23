@@ -120,19 +120,19 @@ export interface ReportDocument {
  */
 export const SAMPLE_REPORT_DOCUMENT: ReportDocument = {
   id: "sample",
-  title: "Q2 Supplier Exposure — Synthesised Report",
-  subtitle: "Assembled from 14 inbound documents across 3 suppliers",
+  title: "Q2 Subscription Spend — Synthesised Report",
+  subtitle: "Assembled from 14 inbound documents across 3 vendors",
   generatedAt: "2026-07-20T09:00:00.000Z",
-  source: "Research run · thread “Q2 logistics reconciliation”",
+  source: "Research run · thread “Q2 subscription reconciliation”",
   blocks: [
     {
       kind: "paragraph",
       runs: [
-        "Across the quarter, invoiced freight from ",
-        { text: "Meridian Forwarding", tier: "confirmed", source: "Invoice #MF-4471 (verified)" },
-        " rose against contract, while ",
-        { text: "an estimated 11% of line items", tier: "suggested", source: "inferred from OCR totals" },
-        " could not be reconciled to a purchase order. The confirmed figures below rest on human-verified documents; suggested figures are machine-inferred and await a second look.",
+        "Across the quarter, invoiced software spend from ",
+        { text: "Meridian Analytics", tier: "confirmed", source: "Invoice #MA-4471 (verified)" },
+        " rose against the annual agreement, while ",
+        { text: "an estimated 11% of line items", tier: "suggested", source: "inferred from receipt totals" },
+        " could not be reconciled to a plan or seat count. The confirmed figures below rest on human-verified documents; suggested figures are machine-inferred and await a second look.",
       ],
     },
     {
@@ -145,15 +145,15 @@ export const SAMPLE_REPORT_DOCUMENT: ReportDocument = {
       runs: [
         "Total verified over-billing for the quarter is ",
         { text: "$48,220.14", tier: "confirmed", source: "reconciled against 6 invoices" },
-        ", concentrated in two shipments cleared in June.",
+        ", concentrated in two renewals processed in June.",
       ],
     },
     {
       kind: "evidence",
       runs: [
-        "“Fuel surcharge applied at 18.5% versus the 12% ceiling in Schedule B.”",
+        "“Per-seat rate applied at $18.50 versus the $12.00 ceiling in Schedule B.”",
       ],
-      cite: "Meridian Forwarding — Invoice #MF-4471, line 7",
+      cite: "Meridian Analytics — Invoice #MA-4471, line 7",
     },
     {
       kind: "heading",
@@ -165,12 +165,12 @@ export const SAMPLE_REPORT_DOCUMENT: ReportDocument = {
       ordered: false,
       items: [
         [
-          { text: "Three demurrage charges", tier: "suggested", source: "inferred from arrival dates" },
-          " lack a matching gate-out record and may be duplicates.",
+          { text: "Three duplicate seat charges", tier: "suggested", source: "inferred from billing dates" },
+          " lack a matching provisioning record and may be double-billed.",
         ],
         [
           "The ",
-          { text: "Q2 rebate of $6,900", tier: "confirmed", source: "credit memo CM-208" },
+          { text: "Q2 credit of $6,900", tier: "confirmed", source: "credit memo CM-208" },
           " has been received and applied.",
         ],
       ],

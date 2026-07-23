@@ -24,10 +24,10 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { RegionOverlayBox } from "../region-overlay-box";
+import { RegionOverlayBox } from "~/components/regions/region-overlay-box";
 import { tierOf } from "../region-vocabulary";
 
-import type { ComponentRole } from "../region-overlay-box";
+import type { ComponentRole } from "~/components/regions/region-overlay-box";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 

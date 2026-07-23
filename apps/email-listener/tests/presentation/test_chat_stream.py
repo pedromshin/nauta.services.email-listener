@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from typing import Any
 
 import pytest
@@ -29,12 +29,14 @@ from fastapi.testclient import TestClient
 
 from app.application.use_cases.run_chat_turn import RunChatTurn
 from app.domain.ports.chat_repositories import ChatConversationRepository, ChatRunEvent
+from app.domain.ports.importer_resolver import ImporterResolver
 from app.presentation.api.v1.chat_stream import stream_run_events
 from app.presentation.middleware.user_context import USER_ID_HEADER
 
 _VALID_UUID_1 = "11111111-1111-1111-1111-111111111111"
 _VALID_UUID_2 = "22222222-2222-2222-2222-222222222222"
 _TEST_USER_ID = "user-owner"
+_TEST_OWNED_IMPORTER_IDS = ["importer-owned-1"]
 
 
 # ---------------------------------------------------------------------------
@@ -50,16 +52,40 @@ class _FakeRunChatTurn:
         self.run_calls: list[dict[str, Any]] = []
         self.regenerate_calls: list[dict[str, Any]] = []
 
-    async def run(self, *, conversation_id: str, user_text: str, model_id: str) -> AsyncIterator[ChatRunEvent]:
-        self.run_calls.append({"conversation_id": conversation_id, "user_text": user_text, "model_id": model_id})
+    async def run(
+        self,
+        *,
+        conversation_id: str,
+        user_text: str,
+        model_id: str,
+        importer_ids: Sequence[str] | None = None,
+    ) -> AsyncIterator[ChatRunEvent]:
+        self.run_calls.append(
+            {
+                "conversation_id": conversation_id,
+                "user_text": user_text,
+                "model_id": model_id,
+                "importer_ids": importer_ids,
+            }
+        )
         for event in self._events:
             yield event
 
     async def regenerate(
-        self, *, conversation_id: str, assistant_message_id: str, model_id: str
+        self,
+        *,
+        conversation_id: str,
+        assistant_message_id: str,
+        model_id: str,
+        importer_ids: Sequence[str] | None = None,
     ) -> AsyncIterator[ChatRunEvent]:
         self.regenerate_calls.append(
-            {"conversation_id": conversation_id, "assistant_message_id": assistant_message_id, "model_id": model_id}
+            {
+                "conversation_id": conversation_id,
+                "assistant_message_id": assistant_message_id,
+                "model_id": model_id,
+                "importer_ids": importer_ids,
+            }
         )
         for event in self._events:
             yield event
@@ -111,6 +137,18 @@ class _FakeChatConversationRepository:
         return self._owner_user_id
 
 
+class _FakeImporterResolver:
+    """Owned-importer-set resolver double (chat-context fix) — both endpoints
+    resolve the caller's owned importer ids from the verified user_id and pass
+    them to run()/regenerate() as `importer_ids`."""
+
+    async def resolve(self, sender_address: str, *, user_id: str | None = None) -> str:
+        raise AssertionError("resolve() must never be called by the chat SSE endpoints")
+
+    async def list_importer_ids_for_user(self, user_id: str) -> list[str]:
+        return list(_TEST_OWNED_IMPORTER_IDS)
+
+
 def _sample_events() -> list[ChatRunEvent]:
     return [
         ChatRunEvent(type="started", data={"model_id": "m1"}, id="e1", run_id="r1", seq=0),
@@ -132,10 +170,12 @@ def _make_app_with_fake_agent(
     app.include_router(router)
 
     conversations_repo = conversations if conversations is not None else _FakeChatConversationRepository()
+    importer_resolver = _FakeImporterResolver()
 
     provider = Provider(scope=Scope.APP)
     provider.provide(lambda: agent, provides=RunChatTurn, scope=Scope.APP)
     provider.provide(lambda: conversations_repo, provides=ChatConversationRepository, scope=Scope.APP)
+    provider.provide(lambda: importer_resolver, provides=ImporterResolver, scope=Scope.APP)
     container = make_async_container(provider)
     setup_dishka(container=container, app=app)
     return app
@@ -176,7 +216,14 @@ def test_stream_yields_one_sse_frame_per_event_ending_after_terminal(
     assert [p["type"] for p in parsed] == ["started", "text_delta_checkpoint", "usage", "completed"]
     assert parsed[-1]["type"] == "completed"
 
-    assert fake_agent.run_calls == [{"conversation_id": _VALID_UUID_1, "user_text": "Hi there", "model_id": "m1"}]
+    assert fake_agent.run_calls == [
+        {
+            "conversation_id": _VALID_UUID_1,
+            "user_text": "Hi there",
+            "model_id": "m1",
+            "importer_ids": _TEST_OWNED_IMPORTER_IDS,
+        }
+    ]
 
 
 @pytest.mark.unit
@@ -188,7 +235,12 @@ def test_regenerate_streams_sibling_run(client: TestClient, fake_agent: _FakeRun
     assert resp.status_code == 200
     assert resp.headers["content-type"].startswith("text/event-stream")
     assert fake_agent.regenerate_calls == [
-        {"conversation_id": _VALID_UUID_1, "assistant_message_id": _VALID_UUID_2, "model_id": "m1"}
+        {
+            "conversation_id": _VALID_UUID_1,
+            "assistant_message_id": _VALID_UUID_2,
+            "model_id": "m1",
+            "importer_ids": _TEST_OWNED_IMPORTER_IDS,
+        }
     ]
 
 

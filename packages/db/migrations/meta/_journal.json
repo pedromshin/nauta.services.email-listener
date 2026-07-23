@@ -351,6 +351,13 @@
       "when": 1784900100000,
       "tag": "0049_generalize_entity_types",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1784900200000,
+      "tag": "0050_purge_maritime_data",
+      "breakpoints": true
     }
   ]
 }

@@ -4,7 +4,7 @@ import { Button } from "@polytoken/ui/button";
 
 import { REGION_ROLE_LABEL, REGION_ROLE_SWATCH } from "./region-vocabulary";
 
-import type { ComponentRole } from "./region-overlay-box";
+import type { ComponentRole } from "~/components/regions/region-overlay-box";
 
 /** The three assignable roles (null = unclassified, cleared separately). */
 type AssignableRole = NonNullable<ComponentRole>;

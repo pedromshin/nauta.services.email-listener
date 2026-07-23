@@ -116,6 +116,12 @@ vi.mock("~/trpc/react", () => ({
       },
       renameConversation: { useMutation: () => ({ mutate: () => undefined }) },
       deleteConversation: { useMutation: () => ({ mutate: () => undefined }) },
+      // Task #18: ChatQuickActionsFab (mounted unconditionally by ChatPage)
+      // wires Duplicate to this mutation — inert here, exercised in
+      // _components/__tests__/chat-quick-actions-fab.test.tsx.
+      duplicateConversation: {
+        useMutation: () => ({ mutate: () => undefined, isPending: false }),
+      },
       getHistory: { useQuery: () => ({ data: [] }) },
       getWidgetInteractions: { useQuery: () => ({ data: [] }) },
       models: { useQuery: () => ({ data: { models: [] } }) },
@@ -168,6 +174,12 @@ vi.mock("~/trpc/react", () => ({
     emails: {
       threadCard: {
         useQuery: () => ({ data: undefined }),
+      },
+      // CH-01 follow-up (attach email threads as chat context): the
+      // composer's attach menu lists inbox threads — disabled until the
+      // menu opens, so inert data here.
+      listThreads: {
+        useQuery: () => ({ data: { threads: [] }, isPending: false, isError: false }),
       },
     },
   },

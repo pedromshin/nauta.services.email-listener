@@ -1,27 +1,12 @@
 {
   "dataset_file": "extraction-eval-v1.jsonl",
-  "dataset_sha256": "d98d099aa20c34fa6057acf6984e14b0fe516fdc591b7b30a61aaca9ac4905eb",
+  "dataset_sha256": "7f6ff554b2f2a11f7654c61bf01b32f588793192935109183972e775005dc0f2",
   "dataset_version": "v1",
-  "field_correct": 29,
-  "field_total": 36,
-  "overall_accuracy": 0.805556,
+  "field_correct": 30,
+  "field_total": 37,
+  "overall_accuracy": 0.810811,
   "per_field": {
-    "bl_number": {
-      "accuracy": 1.0,
-      "correct": 2,
-      "total": 2
-    },
     "currency": {
-      "accuracy": 0.8,
-      "correct": 4,
-      "total": 5
-    },
-    "gross_weight_kg": {
-      "accuracy": 0.0,
-      "correct": 0,
-      "total": 1
-    },
-    "incoterm": {
       "accuracy": 0.8,
       "correct": 4,
       "total": 5
@@ -31,24 +16,44 @@
       "correct": 5,
       "total": 5
     },
-    "net_weight_kg": {
+    "item_count": {
       "accuracy": 1.0,
       "correct": 1,
       "total": 1
     },
-    "package_count": {
+    "organizer_name": {
+      "accuracy": 0.0,
+      "correct": 0,
+      "total": 1
+    },
+    "payment_terms": {
+      "accuracy": 0.8,
+      "correct": 4,
+      "total": 5
+    },
+    "reference": {
+      "accuracy": 1.0,
+      "correct": 3,
+      "total": 3
+    },
+    "start_date": {
       "accuracy": 1.0,
       "correct": 1,
       "total": 1
     },
-    "port_of_discharge": {
+    "subtotal": {
+      "accuracy": 0.0,
+      "correct": 0,
+      "total": 1
+    },
+    "tax_amount": {
+      "accuracy": 1.0,
+      "correct": 1,
+      "total": 1
+    },
+    "title": {
       "accuracy": 1.0,
       "correct": 2,
-      "total": 2
-    },
-    "port_of_loading": {
-      "accuracy": 0.5,
-      "correct": 1,
       "total": 2
     },
     "total_amount": {
@@ -61,7 +66,7 @@
       "correct": 4,
       "total": 5
     },
-    "vessel_name": {
+    "venue": {
       "accuracy": 0.5,
       "correct": 1,
       "total": 2

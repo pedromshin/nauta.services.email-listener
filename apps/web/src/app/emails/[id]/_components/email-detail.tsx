@@ -7,11 +7,12 @@ import { toast } from "sonner";
 import { Button } from "@polytoken/ui/button";
 import { Skeleton } from "@polytoken/ui/skeleton";
 
+import { EmailBodyView } from "~/components/email-preview/body-view";
+import { useSignedAttachmentUrl } from "~/hooks/use-signed-attachment-url";
 import { api } from "~/trpc/react";
 
 import { ActiveParentBanner } from "./active-parent-banner";
 import { CanvasShell } from "./canvas-shell";
-import { EmailBodyPane } from "./email-body-pane";
 import { ExtractionSummaryPanel } from "./extraction-summary-panel";
 import { InspectorPanel } from "./inspector-panel";
 import { LayersPanel } from "./layers-panel";
@@ -25,7 +26,7 @@ import { useRoleMutations } from "./use-role-mutations";
 import type { ParentEntityOption } from "./field-relationship-picker";
 import type { InspectorComponent } from "./inspector-panel";
 import type { LayersComponent } from "./layers-panel";
-import type { ComponentRole } from "./region-overlay-box";
+import type { ComponentRole } from "~/components/regions/region-overlay-box";
 import type { Polygon } from "./use-region-edit";
 
 /** Full-page polygon used by the legacy "Classify Page" affordance. */
@@ -38,20 +39,6 @@ const FULL_PAGE_POLYGON: Polygon = [
 
 const fmt = (d: Date | string | null) =>
   d ? new Date(d).toLocaleString() : "—";
-
-/** Signed URL entry with expiry tracking (WR-01). */
-interface SignedUrlEntry {
-  readonly url: string;
-  readonly expiresAt: number;
-}
-
-type SignedUrlCache = Record<string, SignedUrlEntry>;
-
-function getCachedUrl(cache: SignedUrlCache, id: string): string | undefined {
-  const entry = cache[id];
-  if (!entry) return undefined;
-  return entry.expiresAt > Date.now() ? entry.url : undefined;
-}
 
 function getLocationPageIndex(location: unknown): number | null {
   if (
@@ -183,11 +170,10 @@ export function EmailDetail({ emailId }: EmailDetailProps) {
     null,
   );
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [signedUrls, setSignedUrls] = useState<SignedUrlCache>({});
-  const signedUrlsRef = useRef<SignedUrlCache>({});
-  useEffect(() => {
-    signedUrlsRef.current = signedUrls;
-  }, [signedUrls]);
+
+  // Signed URL for the active attachment — fetch/cache/expiry extracted to
+  // the shared hook (WR-01/08), behavior unchanged.
+  const activeSignedUrl = useSignedAttachmentUrl(activeAttachmentId);
 
   // ---- Canvas shell view-toggle state ----
   const [showRegions, setShowRegions] = useState<boolean>(true);
@@ -291,35 +277,6 @@ export function EmailDetail({ emailId }: EmailDetailProps) {
     h1Ref.current?.focus();
   }, []);
 
-  // Fetch the signed URL for the active attachment if absent/expired (WR-01/08).
-  useEffect(() => {
-    if (!activeAttachmentId) return;
-    if (getCachedUrl(signedUrlsRef.current, activeAttachmentId)) return;
-    let cancelled = false;
-    async function fetchUrl() {
-      try {
-        const res = await fetch(`/api/attachments/${activeAttachmentId}`);
-        if (!res.ok) return;
-        const json = (await res.json()) as { url?: string };
-        if (!cancelled && json.url) {
-          setSignedUrls((prev) => ({
-            ...prev,
-            [activeAttachmentId as string]: {
-              url: json.url as string,
-              expiresAt: Date.now() + 55 * 60 * 1000,
-            },
-          }));
-        }
-      } catch {
-        // Silently fail — the inbox/download path surfaces its own errors.
-      }
-    }
-    void fetchUrl();
-    return () => {
-      cancelled = true;
-    };
-  }, [activeAttachmentId]);
-
   // Auto-open the first PDF attachment on load (the preview is the core
   // surface) — but only ONCE. After the user closes it, the canvas falls back
   // to the email body pane; without this guard the effect would immediately
@@ -401,10 +358,6 @@ export function EmailDetail({ emailId }: EmailDetailProps) {
 
   const { email, attachments } = data;
   const subject = email.subject ?? "(no subject)";
-
-  const activeSignedUrl = activeAttachmentId
-    ? getCachedUrl(signedUrls, activeAttachmentId)
-    : undefined;
 
   // attachment_page parent for the current page (createRegion / classify).
   const pageComponentId =
@@ -730,8 +683,8 @@ export function EmailDetail({ emailId }: EmailDetailProps) {
     ) : (
       // No attachment open — render the email body as the document. For a
       // body-only email (no attachment bytes, e.g. Gmail-forwarded) this IS the
-      // whole message; EmailBodyPane also handles the truly-empty case.
-      <EmailBodyPane bodyText={email.bodyText} bodyHtml={email.bodyHtml} />
+      // whole message; EmailBodyView also handles the truly-empty case.
+      <EmailBodyView bodyText={email.bodyText} bodyHtml={email.bodyHtml} />
     );
 
   return (

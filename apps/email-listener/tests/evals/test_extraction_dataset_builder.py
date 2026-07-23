@@ -69,7 +69,7 @@ def test_row_to_record_rejects_rows_missing_required_keys() -> None:
 def test_row_to_record_normalizes_empty_corrections_overlay_to_none() -> None:
     row = {
         "id": "r1",
-        "entity_type_slug": "commercial_invoice",
+        "entity_type_slug": "invoice",
         "component_text": "text",
         "extracted_fields": {"a": 1},
         "corrected_fields": {},
