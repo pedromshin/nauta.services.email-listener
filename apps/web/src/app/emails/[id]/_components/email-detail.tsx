@@ -11,6 +11,7 @@ import { api } from "~/trpc/react";
 
 import { ActiveParentBanner } from "./active-parent-banner";
 import { CanvasShell } from "./canvas-shell";
+import { EmailBodyPane } from "./email-body-pane";
 import { ExtractionSummaryPanel } from "./extraction-summary-panel";
 import { InspectorPanel } from "./inspector-panel";
 import { LayersPanel } from "./layers-panel";
@@ -319,13 +320,22 @@ export function EmailDetail({ emailId }: EmailDetailProps) {
     };
   }, [activeAttachmentId]);
 
-  // Auto-open the first PDF attachment on load (the preview is the core surface).
+  // Auto-open the first PDF attachment on load (the preview is the core
+  // surface) — but only ONCE. After the user closes it, the canvas falls back
+  // to the email body pane; without this guard the effect would immediately
+  // re-open the attachment and the body would be unreachable.
+  const didAutoOpenRef = useRef(false);
   useEffect(() => {
+    if (didAutoOpenRef.current) return;
     if (activeAttachmentId !== null) return;
     const atts = data?.attachments ?? [];
+    if (atts.length === 0) return;
     const firstPdf =
       atts.find((a) => a.contentType === "application/pdf") ?? atts[0];
-    if (firstPdf) setActiveAttachmentId(firstPdf.id);
+    if (firstPdf) {
+      didAutoOpenRef.current = true;
+      setActiveAttachmentId(firstPdf.id);
+    }
   }, [data, activeAttachmentId]);
 
   if (isLoading) {
@@ -718,9 +728,10 @@ export function EmailDetail({ emailId }: EmailDetailProps) {
         onDenyField={roleMutations.denyField}
       />
     ) : (
-      <div className="flex h-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
-        No document open. Select an attachment to preview it.
-      </div>
+      // No attachment open — render the email body as the document. For a
+      // body-only email (no attachment bytes, e.g. Gmail-forwarded) this IS the
+      // whole message; EmailBodyPane also handles the truly-empty case.
+      <EmailBodyPane bodyText={email.bodyText} bodyHtml={email.bodyHtml} />
     );
 
   return (
