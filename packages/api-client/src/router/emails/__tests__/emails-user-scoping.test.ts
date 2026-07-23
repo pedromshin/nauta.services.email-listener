@@ -344,6 +344,7 @@ describe("componentMutationProcedures — cross-tenant write rejection (T-44-05-
     vi.mocked(assertComponentOwnership).mockReset();
     vi.mocked(assertEmailOwnership).mockReset();
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
   });
 
   it("Test 18: accept (componentId-keyed) rejects a component owned by another user, never reaching fetch", async () => {
@@ -418,5 +419,33 @@ describe("componentMutationProcedures — cross-tenant write rejection (T-44-05-
       }),
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  // RPR-1 regression: the reprocess proxy MUST forward X-User-Id (derived from
+  // the session, never a client field). The Phase-44 emails router requires it
+  // via require_user_id — without the header every reprocess 401s from the
+  // browser. Guards the header wiring the previous tests never exercised
+  // (they all reject at the ownership gate before fetch).
+  it("Test 22: reprocessEmail forwards X-User-Id derived from the session once ownership resolves", async () => {
+    vi.mocked(assertEmailOwnership).mockResolvedValueOnce(undefined);
+    vi.stubEnv("EMAIL_LISTENER_URL", "http://listener.test");
+    vi.stubEnv("EMAIL_LISTENER_API_KEY", "test-key");
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ok: true }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const caller = makeCaller(USER_A);
+
+    await caller.emails.reprocessEmail({ emailId: OTHER_EMAIL_ID });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [reqUrl, init] = fetchMock.mock.calls[0]! as [string, RequestInit];
+    expect(reqUrl).toBe(
+      `http://listener.test/v1/emails/${OTHER_EMAIL_ID}/reprocess`,
+    );
+    const headers = init.headers as Record<string, string>;
+    expect(headers["X-User-Id"]).toBe(USER_A.id);
+    expect(headers["X-API-Key"]).toBe("test-key");
   });
 });

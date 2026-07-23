@@ -34,14 +34,6 @@ export interface RoleMutationsState {
    */
   confirmFields: (componentIds: readonly string[]) => Promise<void>;
   denyField: (componentId: string) => void;
-  /**
-   * Restore an auto-detected field denied via the inline ✗ undo toast (WR-01).
-   * Optimistically flips the box back to "candidate" and re-invalidates so the
-   * server-side restore (un-reject + drop the D-19 memo) reconciles.
-   */
-  restoreField: (componentId: string) => void;
-  /** Revert a confirmed field back to candidate so the user can re-review it. */
-  unconfirmField: (componentId: string) => void;
 
   /** Component ids with an in-flight mutation (drives aria-busy + pulse). */
   readonly mutatingComponentIds: readonly string[];
@@ -256,43 +248,13 @@ export function useRoleMutations({
     },
   });
 
-  // ---- restoreField (optimistic undo of an auto-detected deny, WR-01) ----
-  // No server un-reject endpoint exists yet; the undo affordance the UI-SPEC
-  // mandates is delivered optimistically: flip the box back to "candidate" and
-  // re-invalidate so the authoritative server state reconciles the cache.
-  function restoreField(componentId: string): void {
-    utils.emails.detail.setData({ id: emailId }, (prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        components: prev.components.map((c) =>
-          c.id === componentId
-            ? { ...c, extractionStatus: "candidate" as const }
-            : c,
-        ),
-      };
-    });
-    void utils.emails.detail.invalidate({ id: emailId });
-  }
-
-  // ---- unconfirmField — revert a confirmed field back to candidate ----
-  // No backend /unconfirm endpoint; /accept transitions pending→candidate, not
-  // confirmed→candidate. We use the same optimistic-only pattern as restoreField:
-  // flip the status locally and invalidate so the server state reconciles.
-  function unconfirmField(componentId: string): void {
-    utils.emails.detail.setData({ id: emailId }, (prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        components: prev.components.map((c) =>
-          c.id === componentId
-            ? { ...c, extractionStatus: "candidate" as const }
-            : c,
-        ),
-      };
-    });
-    void utils.emails.detail.invalidate({ id: emailId });
-  }
+  // UI-1 / UI-3: the optimistic-only `restoreField` (undo an auto-detected
+  // deny) and `unconfirmField` (demote a confirmed field) were removed. Both
+  // only patched the query cache and immediately invalidated — the refetch
+  // reverted the flip within one round-trip because no server endpoint exists
+  // (/accept is pending→candidate only; there is no un-reject or un-confirm).
+  // A control that visibly reverts itself is worse than none; when the real
+  // endpoints ship, reintroduce these as genuine mutations, not cache pokes.
 
   // ---- Public handlers ----
 
@@ -399,8 +361,6 @@ export function useRoleMutations({
     confirmField,
     confirmFields,
     denyField,
-    restoreField,
-    unconfirmField,
 
     mutatingComponentIds,
   };

@@ -73,8 +73,6 @@ interface RegionOverlayBoxProps {
   onConfirm?: (id: string) => void;
   /** Deny callback for the inline deny control (D-16/D-18). */
   onDeny?: (id: string) => void;
-  /** Restore callback for the inline Undo (auto-detected deny, WR-01). */
-  onRestore?: (id: string) => void;
 }
 
 function getPolygon(
@@ -146,7 +144,6 @@ export function RegionOverlayBox({
   isAutoDetected = false,
   onConfirm,
   onDeny,
-  onRestore,
 }: RegionOverlayBoxProps) {
   const polygon = getPolygon(component.location);
 
@@ -247,7 +244,6 @@ export function RegionOverlayBox({
                 isAutoDetected={isAutoDetected}
                 onConfirm={onConfirm}
                 onDeny={onDeny}
-                onRestore={onRestore}
               />
             )}
           </div>

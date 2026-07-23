@@ -174,6 +174,35 @@ function getCandidateValue(
   return null;
 }
 
+/**
+ * Resolve the extractedFields KEY that `getCandidateValue` surfaced (UI-2).
+ *
+ * The Inspector needs this key to build corrected_fields when the user edits
+ * the candidate value before confirming: the correction must be keyed by the
+ * same slug the machine value lives under. Mirrors getCandidateValue's
+ * selection exactly — the mapped slug when mapped, else the single-entry key
+ * of an unambiguous blob — and returns null when no addressable key exists
+ * (unmapped multi-property blob), in which case the edit cannot be keyed.
+ */
+function getCandidateFieldKey(
+  extractedFields: unknown,
+  fieldKey: string | null,
+): string | null {
+  if (
+    extractedFields === null ||
+    typeof extractedFields !== "object" ||
+    Array.isArray(extractedFields)
+  ) {
+    return null;
+  }
+  const fields = extractedFields as Record<string, unknown>;
+  if (fieldKey !== null) {
+    return fieldKey in fields ? fieldKey : null;
+  }
+  const entries = Object.entries(fields);
+  return entries.length === 1 ? entries[0]![0] : null;
+}
+
 interface EmailDetailProps {
   emailId: string;
 }
@@ -528,6 +557,10 @@ export function EmailDetail({ emailId }: EmailDetailProps) {
             selectedComponent.extractedFields,
             fieldKeyFor(selectedComponent.entityTypeFieldId ?? null),
           ),
+          candidateFieldKey: getCandidateFieldKey(
+            selectedComponent.extractedFields,
+            fieldKeyFor(selectedComponent.entityTypeFieldId ?? null),
+          ),
           confidenceScore: toConfidence(selectedComponent.confidenceScore),
           propertyLabel:
             selectedComponent.entityTypeFieldId !== null
@@ -721,7 +754,6 @@ export function EmailDetail({ emailId }: EmailDetailProps) {
         autoDetectedComponentIds={autoDetectedComponentIds}
         onConfirmField={roleMutations.confirmField}
         onDenyField={roleMutations.denyField}
-        onRestoreField={roleMutations.restoreField}
       />
     ) : (
       <div className="flex h-full items-center justify-center p-6 text-center text-sm text-muted-foreground">
@@ -814,7 +846,6 @@ export function EmailDetail({ emailId }: EmailDetailProps) {
               onAutofillFields={autofill.autofillFields}
               onConfirmAllFields={autofill.confirmAllFields}
               onConfirmField={roleMutations.confirmField}
-              onUnconfirmField={roleMutations.unconfirmField}
             />
           }
           summary={

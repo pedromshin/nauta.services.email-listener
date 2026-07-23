@@ -457,6 +457,10 @@ export const componentMutationProcedures = {
           method: "POST",
           headers: {
             "X-API-Key": apiKey,
+            // RPR-1: the Phase-44-hardened emails router requires X-User-Id
+            // (require_user_id → 401 without it). Derive it from the session
+            // (never a client-supplied field), mirroring the /api/chat/* routes.
+            "X-User-Id": ctx.user.id,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({}),

@@ -61,8 +61,6 @@ interface OverlayLayerProps {
   readonly onConfirmField?: (id: string) => void;
   /** Deny callback for the inline ✗ control (D-16/D-18). */
   readonly onDenyField?: (id: string) => void;
-  /** Restore callback for the inline Undo of an auto-detected deny (WR-01). */
-  readonly onRestoreField?: (id: string) => void;
 }
 
 /**
@@ -146,7 +144,6 @@ export function OverlayLayer({
   autoDetectedComponentIds = [],
   onConfirmField,
   onDenyField,
-  onRestoreField,
 }: OverlayLayerProps) {
   // Guard: do not render before page has measured dimensions
   if (pageSize === null) return null;
@@ -219,7 +216,6 @@ export function OverlayLayer({
           isAutoDetected={autoDetectedComponentIds.includes(c.id)}
           onConfirm={onConfirmField}
           onDeny={onDenyField}
-          onRestore={onRestoreField}
         />
       ))}
     </div>
