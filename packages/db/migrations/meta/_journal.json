@@ -337,6 +337,13 @@
       "when": 1784798710647,
       "tag": "0047_workspaces_teams_rbac",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1784900000000,
+      "tag": "0048_secure_rls_chat_telemetry",
+      "breakpoints": true
     }
   ]
 }
