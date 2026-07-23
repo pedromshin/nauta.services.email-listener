@@ -1,0 +1,491 @@
+# knip baseline — 2026-07-23
+# Command: npx knip --no-exit-code (knip 5.88.1, config: knip.json)
+# BASELINE ONLY — nothing here was deleted. Deletions require human-ordered review
+# (audit R0, .planning/research/2026-07-23-codebase-hygiene-audit.md §2.4).
+# Note: packages/db drizzle plugin disabled in knip.json — loading drizzle.config.ts
+# requires POSTGRES_URL* env vars, which must not be present in agent runs.
+
+Unused files (6)
+apps/web/src/app/emails/[id]/_components/attachments-card.tsx
+apps/web/src/app/emails/[id]/_components/body-card.tsx       
+apps/web/src/app/emails/[id]/_components/entities-list.tsx   
+apps/web/src/app/emails/[id]/_components/fields-panel.tsx    
+apps/web/src/app/emails/[id]/_components/metadata-card.tsx   
+apps/web/src/app/emails/[id]/_components/use-autofill.ts     
+Unused dependencies (9)
+playwright-core       apps/daemon/package.json:16:6             
+dompurify             apps/web/package.json:39:6                
+drizzle-zod           packages/db/package.json:39:6             
+postcss               packages/tailwind-config/package.json:10:6
+tailwindcss-animate   packages/tailwind-config/package.json:12:6
+@hookform/resolvers   packages/ui/package.json:18:6             
+@tailwindcss/postcss  packages/ui/package.json:41:6             
+tailwindcss-animate   packages/ui/package.json:60:6             
+vaul                  packages/ui/package.json:61:6             
+Unused devDependencies (6)
+@polytoken/tailwind-config  apps/web/package.json:56:6   
+@types/dompurify            apps/web/package.json:57:6   
+@types/ws                   package.json:45:6            
+jsdom                       package.json:46:6            
+@polytoken/tailwind-config  packages/ui/package.json:64:6
+zod                         packages/ui/package.json:71:6
+Unlisted dependencies (150)
+dotenv                     apps/web/e2e/helpers/screenshot-fixtures.ts:16:39                           
+pg                         apps/web/e2e/helpers/screenshot-fixtures.ts:17:17                           
+dotenv                     apps/web/e2e/helpers/seed-session.ts:33:39                                  
+dotenv                     apps/web/e2e/helpers/uat-chat-fixtures.ts:18:39                             
+pg                         apps/web/e2e/helpers/uat-chat-fixtures.ts:19:17                             
+dotenv                     apps/web/e2e/helpers/uat-thread-fixtures.ts:31:39                           
+pg                         apps/web/e2e/helpers/uat-thread-fixtures.ts:32:17                           
+dotenv                     apps/web/e2e/live-loop-green.spec.ts:35:39                                  
+pg                         apps/web/e2e/live-loop-green.spec.ts:36:17                                  
+dotenv                     apps/web/e2e/surface-geometry.spec.ts:59:39                                 
+pg                         apps/web/e2e/surface-geometry.spec.ts:60:17                                 
+dotenv                     apps/web/e2e/token-render.spec.ts:42:39                                     
+pg                         apps/web/e2e/token-render.spec.ts:43:17                                     
+dotenv                     apps/web/e2e/uat-39-tool-round.spec.ts:31:39                                
+pg                         apps/web/e2e/uat-39-tool-round.spec.ts:32:17                                
+dotenv                     apps/web/e2e/uat-41-knowledge-preview.spec.ts:29:39                         
+pg                         apps/web/e2e/uat-41-knowledge-preview.spec.ts:30:17                         
+dotenv                     apps/web/e2e/uat-43-auth.spec.ts:21:39                                      
+dotenv                     apps/web/e2e/uat-45-threads.spec.ts:38:39                                   
+dotenv                     apps/web/e2e/uat-48-token-surfaces.spec.ts:39:39                            
+pg                         apps/web/e2e/uat-48-token-surfaces.spec.ts:40:17                            
+lucide-react               apps/web/src/app/_components/forwarding-address-card.tsx:19:30              
+lucide-react               apps/web/src/app/_components/inbox-thread-group.tsx:11:31                   
+lucide-react               apps/web/src/app/_components/inbox-three-pane.tsx:12:28                     
+zod                        apps/web/src/app/api/chat/regenerate/route.ts:14:20                         
+zod                        apps/web/src/app/api/chat/sources/[ledgerId]/promote/route.ts:20:20         
+zod                        apps/web/src/app/api/chat/stream/route.ts:23:20                             
+zod                        apps/web/src/app/api/chat/widget/submit/route.ts:20:20                      
+zod                        apps/web/src/app/api/knowledge/edges/[edgeId]/promote/route.ts:18:20        
+zod                        apps/web/src/app/chat/_canvas/__tests__/node-type-registry.test.ts:22:20    
+lucide-react               apps/web/src/app/chat/_canvas/add-email-thread-popover.tsx:9:23             
+lucide-react               apps/web/src/app/chat/_canvas/add-knowledge-preview-popover.tsx:23:25       
+zod                        apps/web/src/app/chat/_canvas/add-knowledge-preview-popover.tsx:24:20       
+lucide-react               apps/web/src/app/chat/_canvas/browser-node.tsx:49:39                        
+lucide-react               apps/web/src/app/chat/_canvas/canon-toolbar.tsx:54:32                       
+lucide-react               apps/web/src/app/chat/_canvas/canvas-empty-state.tsx:17:29                  
+lucide-react               apps/web/src/app/chat/_canvas/canvas-keyboard-hint.tsx:44:20                
+lucide-react               apps/web/src/app/chat/_canvas/chat-canvas.tsx:32:33                         
+lucide-react               apps/web/src/app/chat/_canvas/chat-node.tsx:51:32                           
+lucide-react               apps/web/src/app/chat/_canvas/controls/edit-params-control.tsx:26:45        
+sonner                     apps/web/src/app/chat/_canvas/controls/pack-switcher.tsx:30:24              
+lucide-react               apps/web/src/app/chat/_canvas/controls/regenerate-control.tsx:28:27         
+sonner                     apps/web/src/app/chat/_canvas/controls/regenerate-control.tsx:29:24         
+lucide-react               apps/web/src/app/chat/_canvas/controls/retheme-control.tsx:24:33            
+sonner                     apps/web/src/app/chat/_canvas/controls/retheme-control.tsx:25:24            
+lucide-react               apps/web/src/app/chat/_canvas/controls/version-history-control.tsx:39:9     
+sonner                     apps/web/src/app/chat/_canvas/controls/version-history-control.tsx:40:24    
+lucide-react               apps/web/src/app/chat/_canvas/desktop-node.tsx:58:37                        
+lucide-react               apps/web/src/app/chat/_canvas/directory-node.tsx:42:76                      
+lucide-react               apps/web/src/app/chat/_canvas/document-node.tsx:33:43                       
+zod                        apps/web/src/app/chat/_canvas/edge-payload-schema.ts:15:20                  
+lucide-react               apps/web/src/app/chat/_canvas/editor-node.tsx:51:30                         
+lucide-react               apps/web/src/app/chat/_canvas/email-thread-node.tsx:79:74                   
+sonner                     apps/web/src/app/chat/_canvas/email-thread-node.tsx:81:24                   
+lucide-react               apps/web/src/app/chat/_canvas/genui-panel-node.tsx:82:32                    
+lucide-react               apps/web/src/app/chat/_canvas/knowledge-preview-mini-graph.tsx:29:38        
+lucide-react               apps/web/src/app/chat/_canvas/knowledge-preview-node.tsx:47:28              
+zod                        apps/web/src/app/chat/_canvas/node-data-schemas.ts:19:20                    
+zod                        apps/web/src/app/chat/_canvas/node-registry-version.ts:23:20                
+zod                        apps/web/src/app/chat/_canvas/node-type-registry.ts:13:25                   
+zod                        apps/web/src/app/chat/_canvas/panel-node-schemas.ts:46:20                   
+zod                        apps/web/src/app/chat/_canvas/panel-overlay.ts:35:20                        
+lucide-react               apps/web/src/app/chat/_canvas/source-node.tsx:56:27                         
+lucide-react               apps/web/src/app/chat/_canvas/unknown-node-type-placeholder.tsx:56:32       
+zod                        apps/web/src/app/chat/_canvas/use-data-bindings.ts:42:20                    
+lucide-react               apps/web/src/app/chat/_components/chat-home-empty-state.tsx:8:42            
+lucide-react               apps/web/src/app/chat/_components/composer.tsx:9:31                         
+lucide-react               apps/web/src/app/chat/_components/conversation-rail.tsx:9:23                
+lucide-react               apps/web/src/app/chat/_components/conversation-row.tsx:8:49                 
+lucide-react               apps/web/src/app/chat/_components/cost-cap-blocked-card.tsx:11:32           
+lucide-react               apps/web/src/app/chat/_components/inline-error-card.tsx:11:32               
+lucide-react               apps/web/src/app/chat/_components/interactive-widget-boundary.tsx:47:41     
+lucide-react               apps/web/src/app/chat/_components/jump-to-bottom-button.tsx:3:28            
+lucide-react               apps/web/src/app/chat/_components/message-list.tsx:9:26                     
+lucide-react               apps/web/src/app/chat/_components/research-trace.tsx:81:9                   
+lucide-react               apps/web/src/app/chat/_components/sibling-nav.tsx:3:44                      
+lucide-react               apps/web/src/app/chat/_components/thread-cluster-indicator.tsx:10:23        
+lucide-react               apps/web/src/app/chat/_components/tool-invocation-result-row.tsx:51:32      
+lucide-react               apps/web/src/app/chat/_components/tool-round-activity-row.tsx:41:26         
+lucide-react               apps/web/src/app/chat/_components/turn-action-row.tsx:12:41                 
+lucide-react               apps/web/src/app/chat/_components/widget-status-badge.tsx:17:50             
+lucide-react               apps/web/src/app/chat/page.tsx:9:44                                         
+lucide-react               apps/web/src/app/documents/_components/document-detail.tsx:4:47             
+lucide-react               apps/web/src/app/documents/_components/documents-list.tsx:4:27              
+zod                        apps/web/src/app/documents/_lib/document-store.ts:38:20                     
+lucide-react               apps/web/src/app/emails/[id]/_components/canvas-toolbar.tsx:8:63            
+sonner                     apps/web/src/app/emails/[id]/_components/confirm-deny-controls.tsx:3:24     
+sonner                     apps/web/src/app/emails/[id]/_components/email-detail.tsx:5:24              
+lucide-react               apps/web/src/app/emails/[id]/_components/extraction-summary-panel.tsx:39:33 
+lucide-react               apps/web/src/app/emails/[id]/_components/inspector-panel.tsx:4:51           
+lucide-react               apps/web/src/app/emails/[id]/_components/layers-panel.tsx:4:44              
+lucide-react               apps/web/src/app/emails/[id]/_components/layers-tree-row.tsx:3:52           
+sonner                     apps/web/src/app/emails/[id]/_components/pdf-preview-pane.tsx:5:24          
+sonner                     apps/web/src/app/emails/[id]/_components/use-autofill-fields.ts:4:24        
+sonner                     apps/web/src/app/emails/[id]/_components/use-region-edit.ts:4:24            
+sonner                     apps/web/src/app/emails/[id]/_components/use-role-mutations.ts:3:24         
+lucide-react               apps/web/src/app/entities/_components/entities-gallery.tsx:9:9              
+lucide-react               apps/web/src/app/entities/_components/entities-table.tsx:3:41               
+lucide-react               apps/web/src/app/entities/[id]/_components/entity-detail.tsx:5:47           
+lucide-react               apps/web/src/app/entities/[id]/_components/entity-fields.tsx:3:32           
+date-fns                   apps/web/src/app/entities/[id]/_components/entity-knowledge.tsx:3:25        
+lucide-react               apps/web/src/app/entities/[id]/_components/entity-merge-suggestions.tsx:3:36
+date-fns                   apps/web/src/app/entities/[id]/_components/entity-occurrences.tsx:3:25      
+sonner                     apps/web/src/app/entities/[id]/_components/use-entity-curation.ts:18:24     
+lucide-react               apps/web/src/app/entity-types/_components/entity-type-detail.tsx:3:55       
+zod                        apps/web/src/app/entity-types/_components/field-row-dialog.tsx:4:20         
+sonner                     apps/web/src/app/entity-types/_components/use-entity-type-admin.ts:4:24     
+lucide-react               apps/web/src/app/entity-types/page.tsx:3:34                                 
+zod                        apps/web/src/app/entity-types/page.tsx:5:20                                 
+lucide-react               apps/web/src/app/files/_components/new-folder-row.tsx:5:25                  
+lucide-react               apps/web/src/app/files/_components/upload-tray.tsx:4:67                     
+lucide-react               apps/web/src/app/files/_components/vault-row.tsx:6:25                       
+lucide-react               apps/web/src/app/files/_components/vault-states.tsx:4:45                    
+sonner                     apps/web/src/app/files/_components/vault-surface.tsx:10:24                  
+sonner                     apps/web/src/app/files/_lib/use-vault-upload.ts:4:24                        
+lucide-react               apps/web/src/app/files/_lib/vault-format.ts:26:34                           
+lucide-react               apps/web/src/app/knowledge/_components/edge-detail-popover.tsx:25:33        
+lucide-react               apps/web/src/app/knowledge/_components/graph-nodes.tsx:30:58                
+lucide-react               apps/web/src/app/knowledge/_components/graph-states.tsx:21:38               
+lucide-react               apps/web/src/app/knowledge/_components/graph-toolbar.tsx:18:28              
+sonner                     apps/web/src/app/knowledge/_components/knowledge-graph.tsx:38:24            
+date-fns                   apps/web/src/app/knowledge/_components/node-detail-pane.tsx:27:25           
+lucide-react               apps/web/src/app/knowledge/_components/node-detail-pane.tsx:28:39           
+lucide-react               apps/web/src/app/knowledge/_components/taxonomy-banner.tsx:14:20            
+lucide-react               apps/web/src/app/login/_components/google-signin-button.tsx:24:26           
+lucide-react               apps/web/src/app/references/_components/references-surface.tsx:3:30         
+sonner                     apps/web/src/app/references/_components/references-surface.tsx:5:24         
+sonner                     apps/web/src/app/references/_components/save-reference-form.tsx:4:24        
+lucide-react               apps/web/src/app/studio/_components/code-sandbox-island.tsx:19:42           
+lucide-react               apps/web/src/app/studio/_components/generation-sandbox-island.tsx:44:26     
+lucide-react               apps/web/src/app/studio/_components/generation-state-chrome.tsx:21:41       
+lucide-react               apps/web/src/app/studio/_components/json-pane.tsx:19:30                     
+lucide-react               apps/web/src/app/studio/_components/page-ideas-island.tsx:32:26             
+lucide-react               apps/web/src/app/studio/_components/studio-tabs.tsx:29:31                   
+lucide-react               apps/web/src/components/app-sidebar.tsx:3:34                                
+lucide-react               apps/web/src/components/empty-state.test.tsx:13:57                          
+lucide-react               apps/web/src/components/empty-state.tsx:20:34                               
+@radix-ui/react-accordion  apps/web/src/components/file-tree.tsx:28:38                                 
+lucide-react               apps/web/src/components/file-tree.tsx:29:62                                 
+lucide-react               apps/web/src/components/mobile-tab-bar.tsx:30:27                            
+lucide-react               apps/web/src/components/nav-items.ts:22:34                                  
+lucide-react               apps/web/src/components/provenance-link.tsx:75:36                           
+lucide-react               apps/web/src/components/sign-out-button.tsx:12:25                           
+next-themes                apps/web/src/components/theme-provider.tsx:4:54                             
+lucide-react               apps/web/src/components/theme-toggle.tsx:12:28                              
+next-themes                apps/web/src/components/theme-toggle.tsx:13:27                              
+zod                        apps/web/src/lib/env.public.ts:16:20                                        
+zod                        apps/web/src/lib/env.ts:21:20                                               
+@supabase/supabase-js      packages/api-client/src/router/files/service-client.ts:31:31                
+vitest                     packages/ui/src/__tests__/spreadsheet-grid.test.tsx:12:43                   
+Unlisted binaries (3)
+uv         package.json               
+terraform  package.json               
+tsx        packages/genui/package.json
+Unused exports (80)
+daemonConfigSchema                            apps/daemon/src/config.ts:37:14                                           
+allowlistFileSchema                           apps/daemon/src/permissions/store.ts:43:14                                
+MAX_PENDING_ASKS                              apps/daemon/src/server/ask.ts:31:14                                       
+SESSION_LIMITS                                apps/daemon/src/sessions/manager.ts:276:14                                
+gitCapability                                 apps/daemon/src/tools/capabilities.ts:266:14                              
+MAX_VISIBLE_CHIPS                             apps/web/src/app/_components/entity-chips.tsx:47:14                       
+SNIPPET_MAX_CHARS                             apps/web/src/app/_components/inbox-row.tsx:56:14                          
+suggestionActionLabel               function  apps/web/src/app/_components/mail-rule-review.tsx:71:17                   
+__resetDaemonConnectionForTests     function  apps/web/src/app/chat/_canvas/_lib/use-daemon-tool.ts:174:17              
+SOURCE_NODE_TYPE                              apps/web/src/app/chat/_canvas/canon-selection.tsx:54:14                   
+CANVAS_NODE_SHELL_BASE                        apps/web/src/app/chat/_canvas/canvas-node-shell-class.ts:62:14            
+CANVAS_NODE_SELECTED                          apps/web/src/app/chat/_canvas/canvas-node-shell-class.ts:72:14            
+writeStoredViewMode                 function  apps/web/src/app/chat/_canvas/chat-canvas-view-toggle.tsx:47:17           
+buildPartsByProvenance              function  apps/web/src/app/chat/_canvas/chat-canvas.tsx:175:17                      
+resolveHeaderLabel                  function  apps/web/src/app/chat/_canvas/document-node.tsx:62:17                     
+sharedFieldOptions                  function  apps/web/src/app/chat/_canvas/edge-creation-picker.tsx:52:17              
+DirectoryEntrySchema                          apps/web/src/app/chat/_canvas/node-data-schemas.ts:189:3                  
+usePanelActionLock                  function  apps/web/src/app/chat/_canvas/panel-overlay-context.tsx:288:17            
+INITIAL_VERSION_SENTINEL                      apps/web/src/app/chat/_canvas/panel-overlay.ts:59:14                      
+GENUI_PANEL_CLASS_NAME                        apps/web/src/app/chat/_canvas/use-canvas-persistence.ts:267:14            
+extractBindings                     function  apps/web/src/app/chat/_canvas/use-data-bindings.ts:159:17                 
+DEFAULT_OPTION_LABEL                          apps/web/src/app/chat/_components/build-proposal-cards-spec.ts:89:10      
+formatContextTokens                 function  apps/web/src/app/chat/_components/model-picker-entry.tsx:32:17            
+formatCapabilityRow                 function  apps/web/src/app/chat/_components/model-picker-entry.tsx:43:17            
+formatCostLine                      function  apps/web/src/app/chat/_components/model-picker-entry.tsx:55:17            
+STREAMING_TURN_ID                             apps/web/src/app/chat/_hooks/use-conversation-controller.ts:35:14         
+OPTIMISTIC_USER_TURN_ID                       apps/web/src/app/chat/_hooks/use-conversation-controller.ts:36:14         
+siblingGroupKeyFor                  function  apps/web/src/app/chat/_hooks/use-conversation-controller.ts:83:17         
+liveAnnouncementFor                 function  apps/web/src/app/chat/_hooks/use-conversation-controller.ts:182:17        
+WEBLLM_REGISTRY_MODEL_ID                      apps/web/src/app/chat/_hooks/use-webllm-engine.ts:44:14                   
+reportDocumentSpecSchema                      apps/web/src/app/documents/_lib/document-store.ts:106:14                  
+SAMPLE_REPORT_DOCUMENT                        apps/web/src/app/documents/_lib/report-document.ts:121:14                 
+ENTITY_CONFIRMED_ID                           …app/emails/[id]/_components/__tests__/support/extraction-fixture.ts:41:14
+ENTITY_CANDIDATE_ID                           …app/emails/[id]/_components/__tests__/support/extraction-fixture.ts:42:14
+FIELD_AMOUNT_ID                               …app/emails/[id]/_components/__tests__/support/extraction-fixture.ts:43:14
+FIELD_NO_VALUE_ID                             …app/emails/[id]/_components/__tests__/support/extraction-fixture.ts:44:14
+FIELD_PERSON_ID                               …app/emails/[id]/_components/__tests__/support/extraction-fixture.ts:45:14
+ORPHAN_FIELD_ID                               …app/emails/[id]/_components/__tests__/support/extraction-fixture.ts:46:14
+EntityTypeNode                                apps/web/src/app/knowledge/_components/graph-nodes.tsx:77:14              
+EntityTypeFieldNode                           apps/web/src/app/knowledge/_components/graph-nodes.tsx:113:14             
+EntityInstanceNode                            apps/web/src/app/knowledge/_components/graph-nodes.tsx:147:14             
+EmailComponentNode                            apps/web/src/app/knowledge/_components/graph-nodes.tsx:193:14             
+EmailNode                                     apps/web/src/app/knowledge/_components/graph-nodes.tsx:224:14             
+KnowledgeNodeNode                             apps/web/src/app/knowledge/_components/graph-nodes.tsx:271:14             
+parseTags                           function  apps/web/src/app/references/_components/save-reference-form.tsx:30:17     
+DAEMON_HOST                                   apps/web/src/app/sessions/_lib/daemon-client.ts:37:14                     
+DAEMON_TOKEN_STORAGE_KEY                      apps/web/src/app/sessions/_lib/daemon-client.ts:40:14                     
+DAEMON_PORT_STORAGE_KEY                       apps/web/src/app/sessions/_lib/daemon-client.ts:41:14                     
+pickSurprisePack                    function  apps/web/src/app/studio/_components/generation-sandbox-island.tsx:101:17  
+chipLabelFor                        function  apps/web/src/components/provenance-link.tsx:184:17                        
+publicEnvSchema                               apps/web/src/lib/env.public.ts:18:14                                      
+parsePublicEnv                      function  apps/web/src/lib/env.public.ts:25:17                                      
+clusterSummaryInputSchema                     packages/api-client/src/router/chat/cluster-summary.ts:75:14              
+createContextEdgeInputSchema                  packages/api-client/src/router/chat/context-edges.ts:108:14               
+removeContextEdgeInputSchema                  packages/api-client/src/router/chat/context-edges.ts:114:14               
+listContextEdgesInputSchema                   packages/api-client/src/router/chat/context-edges.ts:119:14               
+setModelInputSchema                           packages/api-client/src/router/chat/conversations.ts:85:14                
+ChatModelCapabilitiesSchema                   packages/api-client/src/router/chat/models.ts:73:14                       
+ChatModelSchema                               packages/api-client/src/router/chat/models.ts:80:14                       
+toChatModel                         function  packages/api-client/src/router/chat/models.ts:99:17                       
+attachConversationToThreadInputSc…            packages/api-client/src/router/chat/thread-link.ts:52:14                  
+getConversationThreadIdInputSchema            packages/api-client/src/router/chat/thread-link.ts:60:14                  
+MEMBER_EMAIL_ID_CAP                           packages/api-client/src/router/emails/list-threads.ts:39:14               
+SUGGEST_FORWARD_EMAIL_CAPABILITY_…            packages/api-client/src/router/emails/rule-suggestions.ts:55:14           
+SUGGEST_APPLY_LABEL_CAPABILITY_ID             packages/api-client/src/router/emails/rule-suggestions.ts:56:14           
+SUGGEST_EXTRACT_TO_SHEET_CAPABILI…            packages/api-client/src/router/emails/rule-suggestions.ts:57:14           
+VAULT_NAME_MAX_LENGTH                         packages/api-client/src/router/files/vault-keys.ts:53:14                  
+getForwardingDomain                 function  packages/api-client/src/router/forwarding/index.ts:59:17                  
+ALLOWED_OVERRIDE_KEYS                         packages/api-client/src/router/genui/retheme.ts:67:14                     
+RethemeResolutionSchema                       packages/api-client/src/router/genui/retheme.ts:106:14                    
+EXPAND_BUDGET_CAP                             packages/api-client/src/router/knowledge/expand.ts:60:14                  
+toolErrorCodeSchema                           packages/daemon-protocol/src/browser.ts:176:10                            
+CANARY_PATTERN                                packages/genui/src/eval/injection-scorer.ts:17:14                         
+addHrefAbsoluteSchemeGuard          function  packages/genui/src/generation/artifact-builder.ts:108:17                  
+inlineNamedRoot                     function  packages/genui/src/generation/artifact-builder.ts:201:17                  
+ActionSchema                                  packages/genui/src/schema/allowlists.ts:48:3                              
+DataBindingSchema                             packages/genui/src/schema/allowlists.ts:55:10                             
+FieldConditionSchema                          packages/genui/src/schema/spec-schema.ts:393:14                           
+FormFieldTypeSchema                           packages/genui/src/schema/spec-schema.ts:400:14                           
+relativeLuminance                   function  packages/genui/src/theme/__tests__/contrast.ts:71:17                      
+Unused exported types (221)
+DaemonConfigInput                 type       apps/daemon/src/config.ts:55:13                                            
+CanonicalizeResult                type       apps/daemon/src/permissions/paths.ts:22:13                                 
+Decision                          type       apps/daemon/src/server/ask.ts:19:13                                        
+PendingAsks                       type       apps/daemon/src/server/ask.ts:21:13                                        
+CanonicalPath                     type       apps/daemon/src/sessions/manager.ts:277:15                                 
+PwContext                         type       apps/daemon/src/tools/browser.ts:40:13                                     
+PwBrowser                         type       apps/daemon/src/tools/browser.ts:46:13                                     
+BrowserSession                    type       apps/daemon/src/tools/browser.ts:87:13                                     
+BrowserCapabilitySet              type       apps/daemon/src/tools/browser.ts:142:13                                    
+CapabilityCost                    type       apps/daemon/src/tools/registry.ts:52:3                                     
+CapabilitySource                  type       apps/daemon/src/tools/registry.ts:53:3                                     
+CapabilityTrust                   type       apps/daemon/src/tools/registry.ts:54:3                                     
+CapabilityManifestEntry           type       apps/daemon/src/tools/registry.ts:55:3                                     
+SpawnResult                       type       apps/daemon/src/tools/spawn.ts:17:13                                       
+StructuralFingerprint             interface  apps/web/src/app/__tests__/support/structural-fingerprint.ts:36:18         
+InboxEmailItem                    interface  apps/web/src/app/_components/inbox-three-pane.tsx:36:18                    
+DaemonStatus                      type       apps/web/src/app/chat/_canvas/_lib/use-daemon-tool.ts:30:13                
+ToolCallResult                    type       apps/web/src/app/chat/_canvas/_lib/use-daemon-tool.ts:32:13                
+PendingPermission                 type       apps/web/src/app/chat/_canvas/_lib/use-daemon-tool.ts:36:13                
+UseDaemonTool                     type       apps/web/src/app/chat/_canvas/_lib/use-daemon-tool.ts:151:13               
+AddEmailThreadPopoverProps        interface  apps/web/src/app/chat/_canvas/add-email-thread-popover.tsx:34:18           
+AddKnowledgePreviewPopoverProps   interface  apps/web/src/app/chat/_canvas/add-knowledge-preview-popover.tsx:42:18      
+BrowserCapabilityIntent           interface  apps/web/src/app/chat/_canvas/browser-node.tsx:75:18                       
+CanonPromotionOutcome             interface  apps/web/src/app/chat/_canvas/canon-toolbar.tsx:81:18                      
+CanonNodesUpdater                 type       apps/web/src/app/chat/_canvas/canon-toolbar.tsx:144:13                     
+CanonToolbarProps                 interface  apps/web/src/app/chat/_canvas/canon-toolbar.tsx:148:18                     
+CanvasSpecProviderProps           interface  apps/web/src/app/chat/_canvas/canvas-spec-context.tsx:51:18                
+CanvasStoreProviderProps          interface  apps/web/src/app/chat/_canvas/canvas-store-context.tsx:103:18              
+CanvasEdgesProviderProps          interface  apps/web/src/app/chat/_canvas/canvas-store-context.tsx:180:18              
+CanvasStoreMutation               type       apps/web/src/app/chat/_canvas/canvas-store.ts:36:13                        
+EdgeStyle                         interface  apps/web/src/app/chat/_canvas/canvas-vocabulary.ts:163:18                  
+Tier                              type       apps/web/src/app/chat/_canvas/canvas-vocabulary.ts:363:15                  
+ChatCanvasIslandProps             interface  apps/web/src/app/chat/_canvas/chat-canvas-island.tsx:26:18                 
+ChatCanvasViewToggleProps         interface  apps/web/src/app/chat/_canvas/chat-canvas-view-toggle.tsx:55:18            
+ChatCanvasProps                   interface  apps/web/src/app/chat/_canvas/chat-canvas.tsx:298:18                       
+ChatNodeType                      type       apps/web/src/app/chat/_canvas/chat-node.tsx:62:13                          
+ChatControllerProviderProps       interface  apps/web/src/app/chat/_canvas/chat-node.tsx:74:18                          
+PackSwitcherProps                 interface  apps/web/src/app/chat/_canvas/controls/pack-switcher.tsx:45:18             
+EdgeLabelClickProviderProps       interface  apps/web/src/app/chat/_canvas/data-edge.tsx:99:18                          
+DataEdgeData                      interface  apps/web/src/app/chat/_canvas/data-edge.tsx:118:18                         
+DocumentNodeType                  type       apps/web/src/app/chat/_canvas/document-node.tsx:44:13                      
+EdgeCreationPickerProps           interface  apps/web/src/app/chat/_canvas/edge-creation-picker.tsx:64:18               
+EditorCapabilityIntent            interface  apps/web/src/app/chat/_canvas/editor-node.tsx:72:18                        
+TrimPreviewGraphResult            interface  apps/web/src/app/chat/_canvas/knowledge-preview-layout.ts:87:18            
+PreviewBox                        interface  apps/web/src/app/chat/_canvas/knowledge-preview-layout.ts:211:18           
+KnowledgePreviewMiniGraphProps    interface  apps/web/src/app/chat/_canvas/knowledge-preview-mini-graph.tsx:57:18       
+BrowserNodeData                   type       apps/web/src/app/chat/_canvas/node-data-schemas.ts:194:3                   
+DesktopNodeData                   type       apps/web/src/app/chat/_canvas/node-data-schemas.ts:195:3                   
+DirectoryEntry                    type       apps/web/src/app/chat/_canvas/node-data-schemas.ts:196:3                   
+DirectoryNodeData                 type       apps/web/src/app/chat/_canvas/node-data-schemas.ts:197:3                   
+EditorNodeData                    type       apps/web/src/app/chat/_canvas/node-data-schemas.ts:198:3                   
+ResolvedNodeType                  type       apps/web/src/app/chat/_canvas/node-type-registry.ts:103:13                 
+PanelActionBridgeDeps             interface  apps/web/src/app/chat/_canvas/panel-action-bridge.ts:33:18                 
+PanelActionsToolbarProps          interface  apps/web/src/app/chat/_canvas/panel-actions-toolbar.tsx:66:18              
+CanvasPersistenceProviderProps    interface  apps/web/src/app/chat/_canvas/panel-overlay-context.tsx:86:18              
+UsePanelOverlayResult             interface  apps/web/src/app/chat/_canvas/panel-overlay-context.tsx:138:18             
+UsePanelActionLockResult          interface  apps/web/src/app/chat/_canvas/panel-overlay-context.tsx:276:18             
+ResolvedPanel                     interface  apps/web/src/app/chat/_canvas/panel-overlay.ts:103:18                      
+AppendVersionInput                interface  apps/web/src/app/chat/_canvas/panel-overlay.ts:204:18                      
+PanelThemeScopeProps              interface  apps/web/src/app/chat/_canvas/panel-theme-scope.tsx:63:18                  
+SaveStatusIndicatorProps          interface  apps/web/src/app/chat/_canvas/save-status-indicator.tsx:27:18              
+TranscriptPanelHostProps          interface  apps/web/src/app/chat/_canvas/transcript-panel-host.tsx:196:18             
+UnknownNodeTypeNodeData           type       apps/web/src/app/chat/_canvas/unknown-node-type-placeholder.tsx:65:13      
+UnknownNodeTypeNodeType           type       apps/web/src/app/chat/_canvas/unknown-node-type-placeholder.tsx:69:13      
+UseCanvasPersistenceOptions       interface  apps/web/src/app/chat/_canvas/use-canvas-persistence.ts:365:18             
+UseDataBindingsArgs               interface  apps/web/src/app/chat/_canvas/use-data-bindings.ts:178:18                  
+ClarifyFieldType                  type       apps/web/src/app/chat/_components/build-clarify-widget-spec.ts:28:13       
+ClarifyWidgetFieldOption          interface  apps/web/src/app/chat/_components/build-clarify-widget-spec.ts:37:18       
+CapabilityConfirmCardProps        interface  apps/web/src/app/chat/_components/capability-confirm-card.tsx:49:18        
+CompactInteractionEntryProps      interface  apps/web/src/app/chat/_components/compact-interaction-entry.tsx:43:18      
+ComposerProps                     interface  apps/web/src/app/chat/_components/composer.tsx:27:18                       
+CostBreakdownRow                  type       apps/web/src/app/chat/_components/cost-breakdown-popover.tsx:3:13          
+CostBreakdownPopoverProps         interface  apps/web/src/app/chat/_components/cost-breakdown-popover.tsx:6:18          
+CostMeterProps                    interface  apps/web/src/app/chat/_components/cost-meter.tsx:14:18                     
+GenuiPartBoundaryProps            interface  apps/web/src/app/chat/_components/genui-part-boundary.tsx:51:18            
+InlineErrorCardProps              interface  apps/web/src/app/chat/_components/inline-error-card.tsx:15:18              
+InteractiveWidgetBoundaryProps    interface  apps/web/src/app/chat/_components/interactive-widget-boundary.tsx:86:18    
+JumpToBottomButtonProps           interface  apps/web/src/app/chat/_components/jump-to-bottom-button.tsx:7:18           
+MarkdownRendererProps             interface  apps/web/src/app/chat/_components/markdown-renderer.tsx:201:18             
+MessageListProps                  interface  apps/web/src/app/chat/_components/message-list.tsx:41:18                   
+GeneratingIndicatorProps          interface  apps/web/src/app/chat/_components/message-list.tsx:191:18                  
+MessageTurnProps                  interface  apps/web/src/app/chat/_components/message-turn.tsx:223:18                  
+ModelPickerEntryProps             interface  apps/web/src/app/chat/_components/model-picker-entry.tsx:19:18             
+ModelPickerProps                  interface  apps/web/src/app/chat/_components/model-picker.tsx:29:18                   
+ResearchSource                    interface  apps/web/src/app/chat/_components/research-trace.tsx:101:18                
+ResearchClaim                     interface  apps/web/src/app/chat/_components/research-trace.tsx:108:18                
+ResearchRun                       interface  apps/web/src/app/chat/_components/research-trace.tsx:113:18                
+ResearchTraceRowProps             interface  apps/web/src/app/chat/_components/research-trace.tsx:256:18                
+SiblingNavProps                   interface  apps/web/src/app/chat/_components/sibling-nav.tsx:5:18                     
+ThreadClusterIndicatorProps       interface  apps/web/src/app/chat/_components/thread-cluster-indicator.tsx:36:18       
+ToolInvocationResultRowProps      interface  apps/web/src/app/chat/_components/tool-invocation-result-row.tsx:57:18     
+ToolRoundActivityRowProps         interface  apps/web/src/app/chat/_components/tool-round-activity-row.tsx:45:18        
+TurnActionRowProps                interface  apps/web/src/app/chat/_components/turn-action-row.tsx:26:18                
+TurnStatusBadgeStatus             type       apps/web/src/app/chat/_components/turn-status-badge.tsx:13:13              
+TurnStatusBadgeProps              interface  apps/web/src/app/chat/_components/turn-status-badge.tsx:22:18              
+WebLLMLoadingProps                interface  apps/web/src/app/chat/_components/webllm-loading.tsx:3:18                  
+DeriveWidgetDisplayStateArgs      interface  apps/web/src/app/chat/_components/widget-display-state.ts:31:18            
+WidgetStatusBadgeKind             type       apps/web/src/app/chat/_components/widget-status-badge.tsx:21:13            
+WidgetStatusBadgeProps            interface  apps/web/src/app/chat/_components/widget-status-badge.tsx:23:18            
+UseChatStreamOptions              interface  apps/web/src/app/chat/_hooks/use-chat-stream.ts:148:18                     
+UseChatStreamResult               interface  apps/web/src/app/chat/_hooks/use-chat-stream.ts:161:18                     
+UseConversationControllerOptions  interface  apps/web/src/app/chat/_hooks/use-conversation-controller.ts:276:18         
+WebllmUsage                       interface  apps/web/src/app/chat/_hooks/use-webllm-engine.ts:57:18                    
+LayersTreeRowComponent            interface  apps/web/src/app/emails/[id]/_components/layers-tree-row.tsx:36:18         
+RegionRole                        type       apps/web/src/app/emails/[id]/_components/region-vocabulary.ts:114:13       
+RegionLabel                       type       apps/web/src/app/emails/[id]/_components/region-vocabulary.ts:188:13       
+AutofillFieldsState               interface  apps/web/src/app/emails/[id]/_components/use-autofill-fields.ts:16:18      
+RoleMutationsState                interface  apps/web/src/app/emails/[id]/_components/use-role-mutations.ts:18:18       
+FieldValueProvenance              interface  apps/web/src/app/entities/[id]/_components/entity-fields.tsx:13:18         
+AggregatedField                   interface  apps/web/src/app/entities/[id]/_components/entity-fields.tsx:21:18         
+MergeSuggestion                   interface  …s/web/src/app/entities/[id]/_components/entity-merge-suggestions.tsx:16:18
+EntityOccurrence                  interface  apps/web/src/app/entities/[id]/_components/entity-occurrences.tsx:13:18    
+EntityCurationState               interface  apps/web/src/app/entities/[id]/_components/use-entity-curation.ts:26:18    
+VaultDropState                    type       apps/web/src/app/files/_lib/use-vault-drop.ts:21:13                        
+MergeGraphResult                  interface  apps/web/src/app/knowledge/_components/graph-merge.ts:31:18                
+EntityTypeNodeData                type       apps/web/src/app/knowledge/_components/graph-nodes.tsx:71:13               
+EntityTypeNodeType                type       apps/web/src/app/knowledge/_components/graph-nodes.tsx:75:13               
+EntityTypeFieldNodeData           type       apps/web/src/app/knowledge/_components/graph-nodes.tsx:104:13              
+EntityTypeFieldNodeType           type       apps/web/src/app/knowledge/_components/graph-nodes.tsx:108:13              
+EntityInstanceNodeData            type       apps/web/src/app/knowledge/_components/graph-nodes.tsx:138:13              
+EntityInstanceNodeType            type       apps/web/src/app/knowledge/_components/graph-nodes.tsx:142:13              
+EmailComponentNodeData            type       apps/web/src/app/knowledge/_components/graph-nodes.tsx:184:13              
+EmailComponentNodeType            type       apps/web/src/app/knowledge/_components/graph-nodes.tsx:188:13              
+EmailNodeData                     type       apps/web/src/app/knowledge/_components/graph-nodes.tsx:218:13              
+EmailNodeType                     type       apps/web/src/app/knowledge/_components/graph-nodes.tsx:222:13              
+KnowledgeNodeNodeData             type       apps/web/src/app/knowledge/_components/graph-nodes.tsx:262:13              
+KnowledgeNodeNodeType             type       apps/web/src/app/knowledge/_components/graph-nodes.tsx:266:13              
+PromoteEdgeOutcome                interface  apps/web/src/app/knowledge/_components/knowledge-graph.tsx:156:18          
+TierEdgeStyle                     interface  apps/web/src/app/knowledge/_components/tier-edge-style.ts:18:18            
+SessionListPhase                  type       apps/web/src/app/sessions/_hooks/use-daemon-session-list.ts:22:13          
+DaemonSessionListHandle           type       apps/web/src/app/sessions/_hooks/use-daemon-session-list.ts:30:13          
+DaemonSessionHandle               type       apps/web/src/app/sessions/_hooks/use-daemon-session.ts:38:13               
+ClientPayloadByType               type       apps/web/src/app/sessions/_lib/daemon-client.ts:90:13                      
+EncodedFrame                      type       apps/web/src/app/sessions/_lib/daemon-client.ts:98:13                      
+IslandHealer                      type       apps/web/src/app/studio/_components/code-island-frame.tsx:36:13            
+CodeIslandFrameProps              interface  apps/web/src/app/studio/_components/code-island-frame.tsx:38:18            
+GenerationSandboxIslandProps      interface  apps/web/src/app/studio/_components/generation-sandbox-island.tsx:127:18   
+GenerationStateChromeProps        interface  apps/web/src/app/studio/_components/generation-state-chrome.tsx:29:18      
+JsonPaneProps                     interface  apps/web/src/app/studio/_components/json-pane.tsx:27:18                    
+PageIdeasIslandProps              interface  apps/web/src/app/studio/_components/page-ideas-island.tsx:273:18           
+SpecRendererIslandProps           interface  apps/web/src/app/studio/_components/spec-renderer-island.tsx:43:18         
+SpecRendererIslandProps           type       apps/web/src/app/studio/preview/_components/spec-renderer-island.tsx:9:15  
+BrandMarkProps                    interface  apps/web/src/components/brand-mark.tsx:30:18                               
+EmptyStateAction                  interface  apps/web/src/components/empty-state.tsx:24:18                              
+EmptyStateProps                   interface  apps/web/src/components/empty-state.tsx:31:18                              
+FileTreeProps                     interface  apps/web/src/components/file-tree.tsx:40:18                                
+GeneratingRingProps               interface  apps/web/src/components/generating-ring.tsx:24:18                          
+LiveNavItem                       interface  apps/web/src/components/nav-items.ts:38:18                                 
+ProvenanceLinkProps               interface  apps/web/src/components/provenance-link.tsx:79:18                          
+ChipLabel                         type       apps/web/src/components/provenance-link.tsx:161:13                         
+ResolveAuthRedirectInput          interface  apps/web/src/lib/auth/redirect.ts:28:18                                    
+ResolveAuthRedirectResult         interface  apps/web/src/lib/auth/redirect.ts:34:18                                    
+PublicEnv                         type       apps/web/src/lib/env.public.ts:23:13                                       
+Env                               type       apps/web/src/lib/env.ts:36:13                                              
+ListScope                         type       packages/api-client/src/router/_scope.ts:22:13                             
+CapabilityOrigin                  type       packages/api-client/src/router/capabilities/builtin-manifest.ts:47:13      
+BuiltinManifestEntry              type       packages/api-client/src/router/capabilities/builtin-manifest.ts:53:13      
+BrowserTurnRowContext             interface  packages/api-client/src/router/chat/browser-turn.ts:120:18                 
+BrowserTurnConversationUpdate     interface  packages/api-client/src/router/chat/browser-turn.ts:129:18                 
+BrowserTurnRows                   interface  packages/api-client/src/router/chat/browser-turn.ts:134:18                 
+GetCanvasLayoutInput              type       packages/api-client/src/router/chat/canvas.ts:48:31                        
+SaveCanvasLayoutInput             type       packages/api-client/src/router/chat/canvas.ts:48:53                        
+ClusterSummaryInput               type       packages/api-client/src/router/chat/cluster-summary.ts:78:13               
+ClusterSummary                    interface  packages/api-client/src/router/chat/cluster-summary.ts:80:18               
+CreateContextEdgeInput            type       packages/api-client/src/router/chat/context-edges.ts:112:13                
+RemoveContextEdgeInput            type       packages/api-client/src/router/chat/context-edges.ts:117:13                
+ListContextEdgesInput             type       packages/api-client/src/router/chat/context-edges.ts:122:13                
+CreateContextEdgeResult           type       packages/api-client/src/router/chat/context-edges.ts:129:13                
+RemoveContextEdgeResult           type       packages/api-client/src/router/chat/context-edges.ts:133:13                
+CreateConversationInput           type       packages/api-client/src/router/chat/conversations.ts:54:13                 
+ListConversationsInput            type       packages/api-client/src/router/chat/conversations.ts:61:13                 
+RenameConversationInput           type       packages/api-client/src/router/chat/conversations.ts:69:13                 
+DeleteConversationInput           type       packages/api-client/src/router/chat/conversations.ts:76:13                 
+SetModelInput                     type       packages/api-client/src/router/chat/conversations.ts:89:13                 
+SessionCostInput                  type       packages/api-client/src/router/chat/cost.ts:39:13                          
+CostBreakdownRow                  interface  packages/api-client/src/router/chat/cost.ts:60:18                          
+SessionCostOutput                 interface  packages/api-client/src/router/chat/cost.ts:68:18                          
+GetHistoryInput                   type       packages/api-client/src/router/chat/history.ts:34:13                       
+ChatModel                         type       packages/api-client/src/router/chat/models.ts:90:13                        
+ChatModelsOutput                  type       packages/api-client/src/router/chat/models.ts:96:13                        
+AttachConversationToThreadInput   type       packages/api-client/src/router/chat/thread-link.ts:56:13                   
+GetConversationThreadIdInput      type       packages/api-client/src/router/chat/thread-link.ts:63:13                   
+AttachConversationToThreadResult  type       packages/api-client/src/router/chat/thread-link.ts:70:13                   
+GetWidgetInteractionsInput        type       packages/api-client/src/router/chat/widget-interactions.ts:39:13           
+EntityTier                        type       packages/api-client/src/router/emails/entity-summary.ts:66:13              
+EntitySummaryEntry                interface  packages/api-client/src/router/emails/entity-summary.ts:68:18              
+EmailEntitySummary                interface  packages/api-client/src/router/emails/entity-summary.ts:90:18              
+ThreadListEntry                   interface  packages/api-client/src/router/emails/list-threads.ts:59:18                
+RuleSuggestionStatus              type       packages/api-client/src/router/emails/rule-suggestions.ts:52:13            
+RuleSuggestion                    interface  packages/api-client/src/router/emails/rule-suggestions.ts:59:18            
+EmailRuleSuggestions              interface  packages/api-client/src/router/emails/rule-suggestions.ts:70:18            
+MatchableEmail                    interface  packages/api-client/src/router/emails/rule-suggestions.ts:92:18            
+DerivedThreadCard                 interface  packages/api-client/src/router/emails/thread-card.ts:50:18                 
+ThreadCard                        type       packages/api-client/src/router/emails/thread-card.ts:61:13                 
+FieldValueProvenance              interface  packages/api-client/src/router/entities/detail.ts:53:18                    
+AggregatedField                   interface  packages/api-client/src/router/entities/detail.ts:62:18                    
+ListInput                         type       packages/api-client/src/router/entities/gallery.ts:46:13                   
+GalleryItem                       interface  packages/api-client/src/router/entities/gallery.ts:69:18                   
+EntityTypeField                   interface  packages/api-client/src/router/entity-types.ts:33:18                       
+EntityTypeItem                    interface  packages/api-client/src/router/entity-types.ts:49:18                       
+VaultPath                         type       packages/api-client/src/router/files/vault-keys.ts:117:13                  
+CodeIslandOutput                  type       packages/api-client/src/router/genui/code-island.ts:66:13                  
+GenerateOutput                    type       packages/api-client/src/router/genui/generate.ts:116:13                    
+HistoryRow                        type       packages/api-client/src/router/genui/history.ts:85:13                      
+HistoryDetail                     type       packages/api-client/src/router/genui/history.ts:100:13                     
+ApplyPanelEditOutput              type       packages/api-client/src/router/genui/panel-edit.ts:74:13                   
+RethemeOutput                     type       packages/api-client/src/router/genui/retheme.ts:135:13                     
+CapBudgetResult                   interface  packages/api-client/src/router/knowledge/expand.ts:83:18                   
+ExpandInput                       type       packages/api-client/src/router/knowledge/expand.ts:122:13                  
+WalkResult                        interface  packages/api-client/src/router/knowledge/expand.ts:128:18                  
+ExpandResponse                    interface  packages/api-client/src/router/knowledge/expand.ts:185:18                  
+GraphInput                        type       packages/api-client/src/router/knowledge/graph.ts:75:13                    
+ListKnowledgeInput                type       packages/api-client/src/router/knowledge/list.ts:35:13                     
+TRPCContext                       type       packages/api-client/src/trpc.ts:50:13                                      
+FormSubmitAction                  interface  packages/genui/src/catalog/form-component.tsx:28:18                        
+FormComponentProps                interface  packages/genui/src/catalog/form-component.tsx:33:18                        
+Action                            type       packages/genui/src/schema/allowlists.ts:52:15                              
+NavigateAction                    type       packages/genui/src/schema/allowlists.ts:52:23                              
+SetStateAction                    type       packages/genui/src/schema/allowlists.ts:52:39                              
+MutateAction                      type       packages/genui/src/schema/allowlists.ts:52:55                              
+DataBinding                       type       packages/genui/src/schema/allowlists.ts:57:15                              
+Duplicate exports (1)
+VaultSegmentSchema|VaultNameSchema  packages/api-client/src/router/files/vault-keys.ts

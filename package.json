@@ -38,11 +38,13 @@
     "web:dev:staging": "npm run dev:staging -w @polytoken/web",
     "web:dev:prod": "npm run dev:prod -w @polytoken/web",
     "web:build": "npm run build -w @polytoken/api-client && npm run build -w @polytoken/web",
-    "api-client:build": "npm run build -w @polytoken/api-client"
+    "api-client:build": "npm run build -w @polytoken/api-client",
+    "hygiene:knip": "knip"
   },
   "devDependencies": {
     "@types/ws": "^8.18.1",
     "jsdom": "^29.1.1",
+    "knip": "^5.64.3",
     "supabase": "^2.106.0"
   }
 }
