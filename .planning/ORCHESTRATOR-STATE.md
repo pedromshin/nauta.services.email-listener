@@ -4,6 +4,20 @@
 > UPDATE THIS FILE at every batch launch, batch completion, and merge. This file is the single
 > source of truth for "where are we"; chat context is disposable.
 
+## Status: COMPLETE ✅ — all waves W0–W6 merged, verified, pushed (tip a5c5539)
+
+Completion report: `.planning/research/2026-07-23-GRAND-COMPLETION-REPORT.md`.
+Final sweep GREEN: TS packages (db 84 / api-client 724 / capabilities 65 / ui 22 /
+genui 626 / apps/web 1677), listener pytest 91.61% + ruff/mypy/lint-imports clean,
+drizzle lineage clean (0000–0047 linear), all tsc clean. Only the 4 OCR corpus
+tests fail (environmental — no Textract client in-container, fail identically on base).
+W6 lanes recovered after a container restart killed them uncommitted (~88min) — the
+worktrees preserved every file; resumed both to gate+commit, zero work lost.
+Watchdogs stood down: hourly backstop deleted, send_later chain stopped.
+Remaining work is Pedro's manual runsheet (visual/geometry gates, live-stack E2E,
+real-DB migration apply) + documented venture/billing-gated seams — see the report.
+
+## --- historic detail below ---
 ## Status: RUNNING — Batch 7 (W6 ventures) — THE LAST BATCH
 
 Batch 6 DONE 2026-07-23T10:xxZ (52ba8fa pushed): W5 teams (workspaces/members/
