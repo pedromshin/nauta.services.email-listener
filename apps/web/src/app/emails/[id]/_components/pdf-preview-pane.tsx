@@ -152,8 +152,6 @@ interface PdfPreviewPaneProps {
   onConfirmField?: (id: string) => void;
   /** D-16/D-18: deny a candidate FIELD from the on-PDF inline ✗ (origin-aware). */
   onDenyField?: (id: string) => void;
-  /** WR-01: restore an auto-detected deny via the inline Undo toast. */
-  onRestoreField?: (id: string) => void;
 }
 
 const MAX_FILENAME_LEN = 32;
@@ -219,7 +217,6 @@ export function PdfPreviewPane({
   autoDetectedComponentIds = [],
   onConfirmField,
   onDenyField,
-  onRestoreField,
 }: PdfPreviewPaneProps) {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [scale, setScale] = useState<number>(1.0);
@@ -740,7 +737,6 @@ export function PdfPreviewPane({
               autoDetectedComponentIds={autoDetectedComponentIds}
               onConfirmField={onConfirmField}
               onDenyField={onDenyField}
-              onRestoreField={onRestoreField}
             />
           </div>
 

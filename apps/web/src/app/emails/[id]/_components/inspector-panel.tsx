@@ -1,5 +1,12 @@
 "use client";
 
+// Explicit React namespace import (not just the named hook) — this file's JSX
+// compiles under Next.js's SWC automatic runtime, but vitest's plain esbuild
+// transform defaults to the classic runtime (React.createElement) and needs
+// `React` in scope whenever a test mounts this component directly (same note
+// as region-overlay-box.tsx; needed by inspector-confirm-correction.test.tsx,
+// the first test to mount InspectorPanel directly — UI-2).
+import * as React from "react";
 import { useState } from "react";
 import { Loader2, MousePointer2, Sparkles } from "lucide-react";
 
@@ -29,6 +36,14 @@ export interface InspectorComponent {
   readonly pageNumber: number;
   /** AI candidate value (auto-escaped React text node — T-09-80). */
   readonly candidateValue: string | null;
+  /**
+   * The extractedFields key the candidate value lives under (its mapped
+   * property slug, or the single-entry key of an unmapped blob). Needed to
+   * build corrected_fields when the user edits the value before confirming
+   * (UI-2). Null when no addressable key exists — the correction cannot be
+   * keyed and Confirm falls back to confirming the machine value as-is.
+   */
+  readonly candidateFieldKey: string | null;
   /** Overall confidence for the candidate value (0..1), if present. */
   readonly confidenceScore: number | null;
   /** Resolved field-property label for a FIELD. */
@@ -60,8 +75,16 @@ interface InspectorPanelProps {
     entityComponentId: string,
     candidateFieldIds: readonly string[],
   ) => void;
-  readonly onConfirmField: (componentId: string) => void;
-  readonly onUnconfirmField: (componentId: string) => void;
+  /**
+   * Confirm a candidate field. When the user edits the candidate value in the
+   * Inspector, the edited value is passed as a keyed correction (UI-2) so the
+   * human's correction — not the machine's original read — becomes the
+   * confirmed record and feeds the flywheel.
+   */
+  readonly onConfirmField: (
+    componentId: string,
+    correctedFields?: Record<string, unknown> | null,
+  ) => void;
 }
 
 /**
@@ -97,7 +120,6 @@ export function InspectorPanel({
   onAutofillFields,
   onConfirmAllFields,
   onConfirmField,
-  onUnconfirmField,
 }: InspectorPanelProps) {
   const [entityTypeOpen, setEntityTypeOpen] = useState(false);
 
@@ -268,7 +290,13 @@ export function InspectorPanel({
           </div>
         )}
 
-        {/* Section 5a: Confirmed field — show value + Unconfirm button */}
+        {/* Section 5a: Confirmed field — show the confirmed value (read-only).
+            UI-3: the "Unconfirm Field" control was removed. It was a no-op —
+            an optimistic status flip that its own refetch immediately reverted,
+            with no server endpoint behind it (/accept only handles
+            pending→candidate, never confirmed→candidate). A control that
+            visibly reverts itself is worse than none; the honest surface shows
+            the confirmed value and no fake demote affordance. */}
         {showConfirmed && selected.candidateValue !== null && (
           <div className="space-y-1">
             <p className="text-2xs font-semibold uppercase tracking-wide text-pencil">
@@ -284,52 +312,101 @@ export function InspectorPanel({
               readOnly
               aria-label="Confirmed value"
             />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={() => onUnconfirmField(selected.id)}
-            >
-              Unconfirm Field
-            </Button>
           </div>
         )}
 
-        {/* Section 5: Candidate Value (role = field AND candidate present) */}
+        {/* Section 5: Candidate Value (role = field AND candidate present).
+            UI-2: the input is CONTROLLED and its edited value is threaded into
+            the confirm as a keyed correction, so a human who fixes the machine's
+            read has their value confirmed (and fed to the flywheel) — not the
+            original. `key` on the editor resets its state when the selection
+            changes. */}
         {showCandidateValue && (
-          <div className="space-y-1">
-            <p className="text-2xs font-semibold uppercase tracking-wide text-pencil">
-              Candidate value
-            </p>
-            {/* Evidence: this is what the machine read off the page. */}
-            <Input
-              className="h-8 text-sm font-serif tabular"
-              data-evidence
-              defaultValue={selected.candidateValue ?? ""}
-              aria-label="Candidate value"
-            />
-            {selected.confidenceScore !== null && (
-              <span
-                className={`text-xs tabular ${
-                  lowConfidence ? "font-semibold text-ink" : "text-pencil"
-                }`}
-              >
-                {Math.round(selected.confidenceScore * 100)}% confidence
-              </span>
-            )}
-            <Button
-              type="button"
-              variant="default"
-              size="sm"
-              className="w-full"
-              onClick={() => onConfirmField(selected.id)}
-            >
-              Confirm Field
-            </Button>
-          </div>
+          <CandidateValueEditor
+            key={selected.id}
+            candidateValue={selected.candidateValue ?? ""}
+            candidateFieldKey={selected.candidateFieldKey}
+            confidenceScore={selected.confidenceScore}
+            lowConfidence={lowConfidence}
+            onConfirm={(correctedFields) =>
+              onConfirmField(selected.id, correctedFields)
+            }
+          />
         )}
       </div>
     </aside>
+  );
+}
+
+/**
+ * CandidateValueEditor — the controlled "Candidate value" editor + Confirm
+ * button (UI-2). Kept as a keyed child so React remounts it (and re-seeds its
+ * state) whenever the inspected region changes.
+ *
+ * On Confirm: if the user edited the value AND the field has an addressable
+ * key, the edited value is sent as `{ [key]: value }` corrected_fields (the
+ * backend already stores + embeds corrected_fields over the machine read). If
+ * unchanged, or if no key exists to address the correction, it confirms the
+ * machine value as-is (correctedFields = null).
+ */
+export function CandidateValueEditor({
+  candidateValue,
+  candidateFieldKey,
+  confidenceScore,
+  lowConfidence,
+  onConfirm,
+}: {
+  readonly candidateValue: string;
+  readonly candidateFieldKey: string | null;
+  readonly confidenceScore: number | null;
+  readonly lowConfidence: boolean;
+  readonly onConfirm: (
+    correctedFields: Record<string, unknown> | null,
+  ) => void;
+}) {
+  const [value, setValue] = useState(candidateValue);
+  const edited = value !== candidateValue;
+
+  function handleConfirm(): void {
+    const correction =
+      edited && candidateFieldKey !== null
+        ? { [candidateFieldKey]: value }
+        : null;
+    onConfirm(correction);
+  }
+
+  return (
+    <div className="space-y-1">
+      <p className="text-2xs font-semibold uppercase tracking-wide text-pencil">
+        Candidate value
+      </p>
+      {/* Evidence: what the machine read off the page — now editable so a
+          correction survives the confirm (UI-2). */}
+      <Input
+        className="h-8 text-sm font-serif tabular"
+        data-evidence
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        aria-label="Candidate value"
+      />
+      {confidenceScore !== null && (
+        <span
+          className={`text-xs tabular ${
+            lowConfidence ? "font-semibold text-ink" : "text-pencil"
+          }`}
+        >
+          {Math.round(confidenceScore * 100)}% confidence
+        </span>
+      )}
+      <Button
+        type="button"
+        variant="default"
+        size="sm"
+        className="w-full"
+        onClick={handleConfirm}
+      >
+        Confirm Field
+      </Button>
+    </div>
   );
 }

@@ -1,5 +1,10 @@
 "use client";
 
+// Explicit React namespace import — vitest's esbuild transform defaults to the
+// classic JSX runtime and needs `React` in scope when a test mounts this
+// component directly (same convention as region-overlay-box.tsx; needed by
+// deny-toast-honesty.test.tsx — UI-1).
+import * as React from "react";
 import { toast } from "sonner";
 
 interface ConfirmDenyControlsProps {
@@ -16,8 +21,6 @@ interface ConfirmDenyControlsProps {
   readonly onConfirm: (componentId: string) => void;
   /** Deny the candidate (origin-aware on the server, D-18). */
   readonly onDeny: (componentId: string) => void;
-  /** Undo an auto-detected deny (restores the rejected candidate). */
-  readonly onRestore?: (componentId: string) => void;
 }
 
 /**
@@ -25,9 +28,16 @@ interface ConfirmDenyControlsProps {
  * (D-16/D-17/D-18, 09-UI-SPEC §Inline ✓/✗ Controls).
  *
  * Positioned `absolute -top-3 right-0 z-30`. ✓ confirms (flywheel). ✗ denies:
- * auto-detected → deny + `toast.info("Field value cleared.", { Undo, 3000ms })`
- * (box leaves view); user-drawn → deny (keeps box, clears value). The exact undo
- * toast copy + 3000ms duration come from the Copywriting Contract.
+ * auto-detected → deny + an honest `toast.info` that the field was removed (box
+ * leaves view); user-drawn → deny (keeps box, clears value).
+ *
+ * UI-1: this toast used to offer an "Undo" action. It was a lie — no server
+ * un-reject endpoint exists, so the action only patched the query cache to
+ * "candidate" and immediately invalidated; the refetch returned "rejected" and
+ * the box vanished again. Worse, deny atomically appends the polygon to the
+ * parent's denied_field_polygons memo (D-19), so a later Autofill never
+ * re-proposes it — the "undo" had a permanent side effect. An honest "Field
+ * removed" with no action beats a fake undo that silently loses a correct read.
  *
  * LAW 1 DISPOSITION OF THE TWO HUES HERE (60-05-PLAN.md §D):
  *   ✓ CONFIRM wears the confirmed token (verdigris). It states a TIER — this
@@ -44,18 +54,13 @@ export function ConfirmDenyControls({
   isAutoDetected,
   onConfirm,
   onDeny,
-  onRestore,
 }: ConfirmDenyControlsProps) {
   function handleDeny(): void {
     onDeny(componentId);
     if (isAutoDetected) {
-      toast.info("Field value cleared.", {
-        action: {
-          label: "Undo",
-          onClick: () => onRestore?.(componentId),
-        },
-        duration: 3000,
-      });
+      // UI-1: no Undo action — there is no server restore path, and deny has a
+      // durable side effect (the D-19 memo). State the outcome honestly.
+      toast.info("Field removed.", { duration: 3000 });
     }
   }
 
