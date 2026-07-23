@@ -1,5 +1,9 @@
 # Production Deploy Runbook — polytoken (2026-07-23)
 
+> This is the **manual, backup-first runbook** used today. The **target production-grade
+> pipeline** (build→migrate→deploy→smoke DAG, expand/contract, auto-rollback) that replaces
+> these manual steps before a real launch is designed in [`docs/DEPLOY.md`](../docs/DEPLOY.md).
+
 Branch `claude/polytoken-email-infra-cont-jzz1pg`. Deploys the full W0–W6 program to prod.
 Designed to be **backup-first and rollbackable at every step**. Pedro is the only user, so blast
 radius is small — but the order below still matters (the app expects the new tables, so the DB
