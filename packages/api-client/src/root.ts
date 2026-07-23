@@ -10,6 +10,7 @@ import { forwardingRouter } from "./router/forwarding";
 import { genuiRouter } from "./router/genui";
 import { knowledgeRouter } from "./router/knowledge";
 import { referencesRouter } from "./router/references";
+import { searchRouter } from "./router/search";
 import { createTRPCRouter } from "./trpc";
 
 export const appRouter = createTRPCRouter({
@@ -25,6 +26,7 @@ export const appRouter = createTRPCRouter({
   references: referencesRouter,
   capabilities: capabilitiesRouter,
   desktop: desktopRouter,
+  search: searchRouter,
 });
 
 // export type definition of API
