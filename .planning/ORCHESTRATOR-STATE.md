@@ -4,6 +4,31 @@
 > UPDATE THIS FILE at every batch launch, batch completion, and merge. This file is the single
 > source of truth for "where are we"; chat context is disposable.
 
+## Status: RUNNING — Batch 4 (W3 canvas+viz)
+
+Batch 3a DONE (5c72a60). Batch 3b DONE 2026-07-23T07:xxZ (4d2b760 pushed):
+AI-04 send-to-chat/canvas (verified), AI-06 graph memory (refuted on 8 mypy errors
+→ fixed test-double protocol stubs + object-cast, re-verified, merged), AI-03
+ingest-time resolution (REFUTED on a REAL defect — sender-global tier-blind edge
+deactivation demoted human-promoted canon + wiped other emails' pending; I replaced
+deactivate-then-insert with insert-if-absent pre-seeded from active edges [never
+touches canon], added rejected/superseded component filter + a canon-survival
+regression test; re-verified, merged). Integrated listener green 91.61%, mypy 254
+clean, lint-imports 3/3. W2 spine COMPLETE.
+
+Carry-forward: (1) amend every agent commit to noreply@anthropic.com before merge;
+(2) skeptics refuted 3 of last 6 lanes on real defects — NEVER merge a refuted lane
+unfixed; (3) W3 lanes add canvas node types + capabilities → they MUST update the
+AI-01 mirror (packages/capabilities/src/canvas.ts CANVAS_NODE_DATA_SCHEMAS) + AI-02
+projection-map + pinned id sets or the enforcement suites go red (by design).
+
+## Batch 4 in flight (b4-* worktrees forked 4d2b760)
+- b4-ci-canvas (CI-06 undo, CI-01 context menus, CI-02 keymap, CI-05 multi-select) — agentId af3cb9b1574ea283e
+- b4-tm-treemap (TM-01 CirclePack primitive, TM-02 email view, TM-03 canvas node) — aa5d72eddca37a8cf
+- b4-sheet-grid (EN-01 grid shakedown, CV-03 spreadsheet node + table.* capability) — aafb480b69c9bc0c5
+Batch 5 (W4 drive+home) next: DR-01..05, CH-01, HM-01/02, TM-04, OneDrive design.
+
+## --- historic detail below (superseded) ---
 ## Status: RUNNING — Batch 3a (W2 spine, manual-worktree agents) + ST-04 rebuild
 
 Batch 2 DONE 2026-07-23T05:5xZ (9e93f6d pushed): 5/6 lanes merged — evals harness
