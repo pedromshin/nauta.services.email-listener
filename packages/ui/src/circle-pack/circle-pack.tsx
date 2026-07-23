@@ -28,6 +28,7 @@
 
 import * as React from "react";
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { ZoomOut } from "lucide-react";
 
 import { cn } from "@polytoken/ui";
 
@@ -38,6 +39,7 @@ import {
   type PackOptions,
 } from "./circle-pack-layout";
 import {
+  CIRCLE_PACK_ROOT_ID,
   circlePackNavReducer,
   createCircleNavIndex,
   initialCirclePackNavState,
@@ -184,10 +186,17 @@ export function CirclePack<TLeaf = unknown>({
 
   const handleCircleClick = useCallback(
     (circle: PackedCircle<TLeaf>) => {
+      // Tapping the circle you are already zoomed to zooms OUT to its parent
+      // (Bostock's convention). Without this — and with Escape being the only
+      // other zoom-out — touch users had no way back up the hierarchy.
+      if (!circle.isLeaf && circle.id === nav.focusId) {
+        dispatch({ type: "zoomOut" });
+        return;
+      }
       dispatch({ type: "focus", id: circle.id });
       if (circle.isLeaf) onLeafActivate?.(circle);
     },
-    [onLeafActivate],
+    [onLeafActivate, nav.focusId],
   );
 
   const handleKeyDown = useCallback(
@@ -300,6 +309,18 @@ export function CirclePack<TLeaf = unknown>({
           );
         })}
       </svg>
+
+      {nav.focusId !== CIRCLE_PACK_ROOT_ID ? (
+        <button
+          type="button"
+          data-testid="circle-pack-zoom-out"
+          aria-label="Zoom out"
+          onClick={() => dispatch({ type: "zoomOut" })}
+          className="absolute left-2 top-2 z-10 flex size-9 items-center justify-center rounded-full border border-rule bg-bright text-ink transition-colors hover:bg-ink-08 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+        >
+          <ZoomOut className="size-4" aria-hidden />
+        </button>
+      ) : null}
 
       {hovered ? (
         <div

@@ -129,6 +129,47 @@ describe("CirclePack — leaf activation", () => {
   });
 });
 
+describe("CirclePack — zoom-out affordances (touch has no Escape key)", () => {
+  const click = (el: Element) =>
+    act(async () => {
+      el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+  it("shows a zoom-out button only while zoomed in, and it zooms back out", async () => {
+    const container = await mount(<CirclePack data={DATA} width={300} height={300} />);
+    expect(container.querySelector('[data-testid="circle-pack-zoom-out"]')).toBeNull();
+
+    // Zoom into a sender container.
+    await click(container.querySelector('g[data-circle-id="0/0"]')!);
+    const button = container.querySelector('[data-testid="circle-pack-zoom-out"]');
+    expect(button).not.toBeNull();
+    expect(button!.getAttribute("aria-label")).toBe("Zoom out");
+
+    await click(button!);
+    expect(container.querySelector('[data-testid="circle-pack-zoom-out"]')).toBeNull();
+  });
+
+  it("clicking the currently-focused container zooms out to its parent", async () => {
+    const container = await mount(<CirclePack data={DATA} width={300} height={300} />);
+    const sender = container.querySelector('g[data-circle-id="0/0"]')!;
+    await click(sender); // zoom in → focused on 0/0
+    expect(container.querySelector('[data-testid="circle-pack-zoom-out"]')).not.toBeNull();
+    await click(sender); // same circle again → back out to the root
+    expect(container.querySelector('[data-testid="circle-pack-zoom-out"]')).toBeNull();
+  });
+
+  it("clicking a leaf does not strand the viewport (focus goes to its parent, not the leaf)", async () => {
+    const onLeafActivate = vi.fn();
+    const container = await mount(
+      <CirclePack data={DATA} width={300} height={300} onLeafActivate={onLeafActivate} />,
+    );
+    await click(container.querySelector('g[data-circle-id="0/0/0"]')!);
+    expect(onLeafActivate).toHaveBeenCalledTimes(1);
+    // Zoomed to the leaf's parent → the way back out must be visible.
+    expect(container.querySelector('[data-testid="circle-pack-zoom-out"]')).not.toBeNull();
+  });
+});
+
 describe("CirclePack — hover card", () => {
   it("shows a hover card naming the circle under the pointer", async () => {
     const container = await mount(<CirclePack data={DATA} width={300} height={300} />);
