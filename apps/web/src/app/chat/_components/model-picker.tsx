@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@polytoken/ui/popover";
 
 import { api } from "~/trpc/react";
 
+import { useDeviceModelRecommendation } from "../_hooks/use-device-model-recommendation";
 import {
   ModelPickerEntry,
   type ChatModelEntry,
@@ -84,6 +85,19 @@ export function ModelPicker({
     () => models.find((model) => model.id === currentModelId) ?? null,
     [models, currentModelId],
   );
+
+  // DX Phase 0 — device-profiled local-model hint. Profiles the visitor's
+  // hardware and recommends the best browser-locus model it can run; badges
+  // that row only. Suggestion-only: it never changes the selected model.
+  const browserModelIds = useMemo(
+    () =>
+      models
+        .filter((model) => model.executionLocus === "browser")
+        .map((model) => model.id),
+    [models],
+  );
+  const recommendedForDeviceId =
+    useDeviceModelRecommendation(browserModelIds);
 
   const handleSelect = async (model: ChatModelEntry): Promise<void> => {
     if (model.executionLocus === "browser") {
@@ -150,6 +164,9 @@ export function ModelPicker({
                         <ModelPickerEntry
                           model={model}
                           isRecommended={model.id === currentModelId}
+                          isRecommendedForDevice={
+                            model.id === recommendedForDeviceId
+                          }
                           webllm={
                             model.executionLocus === "browser"
                               ? webllm
