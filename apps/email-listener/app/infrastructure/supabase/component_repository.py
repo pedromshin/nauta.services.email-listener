@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any, cast
 
+from postgrest.base_request_builder import CountMethod
 from supabase import Client
 
 from app.domain.entities.component import Component
@@ -131,13 +133,15 @@ class SupabaseComponentRepository:
         )
         return [_from_row(cast("dict[str, Any]", row)) for row in result.data]
 
-    async def supersede_pending_regions(self, email_id: str) -> int:
-        """Bulk-supersede the email's pending (auto-proposed) region components.
+    async def supersede_pending_regions(self, email_id: str, *, created_before: datetime) -> int:
+        """Bulk-supersede the email's pending region components older than the cutoff.
 
         One UPDATE covers every matching row regardless of count (the row cap
         applies to SELECTs, not UPDATEs), so reprocess never loops thousands of
         rows. Human-touched regions (candidate/confirmed/rejected) and page
-        components are left untouched.
+        components are left untouched. The `created_at < created_before` predicate
+        confines the supersede to the OLD pending pile so re-ingest's fresh
+        proposals (created after the cutoff) survive.
         """
         result = (
             self._client.table("email_components")
@@ -145,9 +149,27 @@ class SupabaseComponentRepository:
             .eq("email_id", email_id)
             .eq("source_type", "region")
             .eq("extraction_status", "pending")
+            .lt("created_at", created_before.isoformat())
             .execute()
         )
         return len(result.data)
+
+    async def count_pending_regions_created_since(self, email_id: str, cutoff: datetime) -> int:
+        """Exact count of the email's pending regions created at/after `cutoff`.
+
+        count='exact' returns the total via the Content-Range header, so it is
+        not subject to the PostgREST 1000-row SELECT cap.
+        """
+        result = (
+            self._client.table("email_components")
+            .select("id", count=CountMethod.exact)
+            .eq("email_id", email_id)
+            .eq("source_type", "region")
+            .eq("extraction_status", "pending")
+            .gte("created_at", cutoff.isoformat())
+            .execute()
+        )
+        return result.count or 0
 
     async def update_status(self, component_id: str, status: str) -> Component:
         """Update extraction_status for the given component; returns refreshed entity.

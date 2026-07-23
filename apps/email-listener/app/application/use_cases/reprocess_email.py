@@ -1,8 +1,23 @@
 """Use case: reprocess an already-ingested email.
 
-Supersedes all active extraction records for the email's components (D-16)
-then re-triggers ingestion with the BARE SES message id derived from the
-stored raw_storage_key.
+Re-triggers ingestion with the BARE SES message id derived from the stored
+raw_storage_key, THEN supersedes the prior auto-proposed regions — in that
+order, so a failed or degraded re-ingest never destroys the existing
+proposals (REG-1 / REG-3).
+
+Ordering rationale (do not revert to supersede-first):
+  The old flow superseded the pending regions BEFORE the fallible re-ingest.
+  If re-ingest raised (raw S3 object lifecycle-deleted, NULL raw_storage_key)
+  or the segmenter degraded to zero regions on a Bedrock outage (it returns []
+  without raising), the user was left with an empty overlay and a 200 ack —
+  every un-reviewed detection box silently gone with no way back except another
+  reprocess that failed identically. Re-ingesting first, then superseding ONLY
+  the pre-existing pending pile (created before the reprocess started) and ONLY
+  when fresh proposals actually materialized, makes reprocess:
+    * non-destructive — a raising ingest never reaches the supersede;
+    * outage-safe — zero new regions ⇒ skip supersede, keep the old proposals;
+    * idempotent — each run supersedes exactly the previous run's pending set,
+      so pending regions never accumulate across repeated reprocessing.
 
 Key derivation rationale (resolved decision — do not deviate):
   Email.raw_storage_key stores the FULL S3 key including the env prefix
@@ -19,6 +34,8 @@ Key derivation rationale (resolved decision — do not deviate):
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
+
 import structlog
 
 from app.application.use_cases.ingest_inbound_email import IngestInboundEmailUseCase
@@ -34,14 +51,18 @@ class ReprocessEmailUseCase:
 
     Steps:
     1. Load the email; raise ValueError if not found (caller maps to 404).
-    2. Bulk-supersede the email's pending (auto-proposed) region components in a
-       single query so the re-ingest REPLACES them instead of piling fresh
-       pending boxes on top of old ones (repeated reprocessing otherwise
-       accumulates thousands of duplicate regions). Human-touched regions —
-       accepted (candidate), confirmed, or rejected — are preserved, as are page
-       components (which never render as overlay boxes and are recreated below).
+    2. Capture a cutoff timestamp BEFORE anything is re-created — every row that
+       already exists for the email predates it.
     3. Re-trigger ingestion with the BARE SES id derived from raw_storage_key.
-    4. Return a summary ack with the count of superseded regions.
+       This creates the fresh page + pending-region proposals (created after the
+       cutoff). If it raises, execution stops here and nothing is superseded.
+    4. Only if re-ingest actually produced fresh pending regions, bulk-supersede
+       the OLD pending pile (source_type=region, status=pending, created before
+       the cutoff) in a single query. Human-touched regions (candidate/confirmed/
+       rejected) and page components are never touched. When re-ingest produced
+       zero regions (segmenter degraded to [] on an outage), the supersede is
+       skipped so the prior proposals survive rather than vanishing behind a 200.
+    5. Return a summary ack with the count of superseded and newly-proposed regions.
     """
 
     def __init__(
@@ -60,7 +81,7 @@ class ReprocessEmailUseCase:
     async def execute(self, *, email_id: str) -> dict[str, object]:
         """Reprocess the email identified by email_id.
 
-        Returns {"email_id": email_id, "superseded_components": N}.
+        Returns {"email_id": email_id, "superseded_components": N, "new_regions": M}.
         Raises ValueError if the email does not exist (maps to 404 at the API layer).
         """
         email = await self._emails.find_by_id(email_id)
@@ -69,25 +90,49 @@ class ReprocessEmailUseCase:
 
         logger.info("reprocess_started", email_id=email_id)
 
-        # Replace prior detection: bulk-supersede the email's pending (auto-proposed)
-        # region components in a single query so the re-ingest does not stack
-        # duplicate pending regions. Accepted/confirmed/rejected regions are
-        # preserved — only untouched auto-proposals are replaced.
-        superseded_count = await self._components.supersede_pending_regions(email_id)
+        # Boundary between the OLD auto-proposed regions and the fresh ones this
+        # reprocess is about to create. Captured before re-ingest, so every row
+        # already persisted for the email predates it. Re-ingest runs Textract +
+        # segmentation (seconds to minutes), so new rows land comfortably after
+        # the cutoff even under modest clock skew; in the worst case skew only
+        # causes a transient duplicate, never data loss.
+        cutoff = datetime.now(UTC)
 
-        logger.info(
-            "reprocess_superseded",
-            email_id=email_id,
-            superseded_regions=superseded_count,
-        )
-
-        # Derive the BARE SES message id from the stored full S3 key.
-        # raw_storage_key = "<prefix>/<ses-id>" where prefix ends with "/".
+        # Re-ingest FIRST. If this raises (raw S3 object gone, NULL storage key),
+        # execution stops before any supersede — the prior proposals are untouched.
+        # Derive the BARE SES message id from the stored full S3 key:
+        # raw_storage_key = "<prefix>/<ses-id>" where prefix ends with "/", so
         # rsplit("/", 1)[-1] reliably extracts the ses-id regardless of depth.
         ses_id = email.raw_storage_key.rsplit("/", 1)[-1]  # type: ignore[union-attr]
         logger.info("reprocess_reingest", email_id=email_id, ses_id=ses_id)
-
         await self._ingest.execute(ses_id)
 
+        # Did re-ingest actually produce fresh proposals? A Bedrock outage makes
+        # the segmenter return [] WITHOUT raising, so a completed ingest is not
+        # proof of new regions. Supersede the old pile only when there is a
+        # replacement set to show; otherwise keep the prior proposals visible.
+        new_regions = await self._components.count_pending_regions_created_since(email_id, cutoff)
+        if new_regions > 0:
+            superseded_count = await self._components.supersede_pending_regions(
+                email_id, created_before=cutoff
+            )
+            logger.info(
+                "reprocess_superseded",
+                email_id=email_id,
+                superseded_regions=superseded_count,
+                new_regions=new_regions,
+            )
+        else:
+            superseded_count = 0
+            logger.warning(
+                "reprocess_no_new_regions",
+                email_id=email_id,
+                detail="re-ingest produced zero pending regions; preserved prior proposals",
+            )
+
         logger.info("reprocess_complete", email_id=email_id)
-        return {"email_id": email_id, "superseded_components": superseded_count}
+        return {
+            "email_id": email_id,
+            "superseded_components": superseded_count,
+            "new_regions": new_regions,
+        }
