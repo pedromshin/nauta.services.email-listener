@@ -8,7 +8,9 @@ venv/
 .ruff_cache/
 .coverage
 htmlcov/
-uv.lock
+# uv.lock is COMMITTED on purpose: CI runs `uv sync` and must resolve the
+# locked toolchain (an unpinned `ruff>=0.8` broke deploys when ruff 0.16.0
+# shipped new-stable rules). Do not re-ignore it.
 
 # Node
 node_modules/
