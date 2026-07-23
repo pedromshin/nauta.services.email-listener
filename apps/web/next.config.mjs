@@ -18,6 +18,20 @@ const config = {
   /** Pin the monorepo root so Next ignores the stray parent lockfile. */
   outputFileTracingRoot: path.join(__dirname, "../../"),
 
+  /**
+   * Client router cache (snappiness plan §4): Next 15 defaults
+   * `staleTimes.dynamic` to 0, so back/forward and quick re-navigation tear
+   * down and refetch every dynamic route segment. 30s dynamic deliberately
+   * matches the tRPC layer's `staleTime: 30 * 1000` (src/trpc/query-client.ts)
+   * so the router cache and the TanStack cache agree on what "fresh" means.
+   */
+  experimental: {
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
+  },
+
   /** Hot-reload local workspace packages without a separate build step. */
   transpilePackages: [
     "@polytoken/api-client",

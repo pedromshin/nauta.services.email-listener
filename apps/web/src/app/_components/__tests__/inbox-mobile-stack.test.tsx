@@ -109,7 +109,18 @@ vi.mock("~/trpc/react", () => ({
         }),
       },
     },
+    // Snappiness plan §4: the three-pane now wires hover-prefetch through
+    // api.useUtils().emails.detail.prefetch — an inert stub here.
+    useUtils: () => ({
+      emails: { detail: { prefetch: vi.fn().mockResolvedValue(undefined) } },
+    }),
   },
+}));
+
+// Snappiness plan §4: the three-pane calls next/navigation's useRouter()
+// for router.prefetch — jsdom has no App Router mounted, so stub it.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ prefetch: vi.fn() }),
 }));
 
 import { InboxThreePane, type InboxData } from "../inbox-three-pane";

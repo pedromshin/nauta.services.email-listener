@@ -41,6 +41,16 @@ interface InboxRowProps {
    * nothing.
    */
   readonly ruleSuggestionCount?: number;
+  /**
+   * Snappiness plan §4 — hover/focus prefetch of the email-detail route +
+   * data. `onHoverPrefetch(id)` fires on pointerenter/focus (the parent
+   * debounces + dedupes via useHoverPrefetch); `onHoverPrefetchCancel(id)`
+   * on pointerleave/blur cancels a still-pending debounce. Optional so
+   * existing call sites and tests compile unchanged — the row stays purely
+   * presentational (no tRPC/router imports here).
+   */
+  readonly onHoverPrefetch?: (emailId: string) => void;
+  readonly onHoverPrefetchCancel?: (emailId: string) => void;
 }
 
 const formatDate = (value: Date | string | null): string =>
@@ -96,6 +106,8 @@ export function InboxRow({
   isSelected,
   onSelect,
   ruleSuggestionCount = 0,
+  onHoverPrefetch,
+  onHoverPrefetchCancel,
 }: InboxRowProps): React.ReactElement {
   const sender = email.senderName ?? email.senderAddress;
   const snippet = toInboxSnippet(email.bodyText);
@@ -122,6 +134,17 @@ export function InboxRow({
       aria-pressed={isSelected}
       onClick={activate}
       onKeyDown={handleKeyDown}
+      onPointerEnter={() => onHoverPrefetch?.(email.id)}
+      onPointerLeave={() => onHoverPrefetchCancel?.(email.id)}
+      onFocus={(event) => {
+        // Only the row's own focus warms the caches — focus bubbling up from
+        // the nested entity-chip links is not "about to open the detail".
+        if (event.target === event.currentTarget) onHoverPrefetch?.(email.id);
+      }}
+      onBlur={(event) => {
+        if (event.target === event.currentTarget)
+          onHoverPrefetchCancel?.(email.id);
+      }}
       className={`flex w-full cursor-pointer flex-col gap-0.5 px-row-x py-row-y text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-1 ${
         isSelected ? "border-y border-rule bg-bright" : "border-b border-hair hover:bg-shade"
       }`}

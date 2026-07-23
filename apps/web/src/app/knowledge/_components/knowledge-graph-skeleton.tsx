@@ -11,6 +11,12 @@
  * `motion-reduce:animate-none` per the app-wide reduced-motion contract.
  */
 
+// Explicit React import — vitest's classic-runtime esbuild transform needs
+// `React` in scope for any suite that renders this file (documented codebase
+// gotcha, see genui-panel-node.tsx's identical note). Needed since
+// knowledge/loading.tsx made this component reachable from a jsdom suite.
+import * as React from "react";
+
 // Ghost counts approximate a small schema: 3 entity types + 5 fields.
 const ENTITY_TYPE_GHOSTS = 3;
 const ENTITY_TYPE_FIELD_GHOSTS = 5;
