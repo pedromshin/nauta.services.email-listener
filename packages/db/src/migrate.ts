@@ -15,16 +15,56 @@ const runMigrate = async (): Promise<void> => {
   const connectionString = env.POSTGRES_URL_NON_POOLING;
   console.log("Using non-pooling connection for migrations");
 
+  // The 0032 tenancy backfill reads current_setting('app.backfill_user_id') to
+  // anchor rows when auth.users is empty (a brand-new database). The drizzle
+  // node-postgres migrator runs migrations on pool connections we don't
+  // control, so a session `SET` on our own connection is invisible to them
+  // (a session GUC is connection-scoped — verified). The connection-independent
+  // mechanism is a DATABASE-level default (`ALTER DATABASE … SET`), which is
+  // inherited only by connections opened AFTER it — so it must be applied
+  // through a throwaway connection that is fully closed BEFORE the migration
+  // pool is created. This path only runs when BACKFILL_USER_ID is set (a fresh
+  // empty DB); existing staging/prod applied 0032 long ago, so a normal deploy
+  // never enters it. (The prior single-connection assumption here was broken.)
+  const backfillUserId = env.BACKFILL_USER_ID;
+  const dbName = backfillUserId
+    ? new URL(connectionString).pathname.replace(/^\//, "")
+    : undefined;
+  const dbIdent = dbName ? `"${dbName.replace(/"/g, '""')}"` : undefined;
+
+  const setBackfillDefault = async (value: string | null): Promise<void> => {
+    if (!dbIdent) return;
+    const setupPool = new Pool({ connectionString });
+    try {
+      if (value === null) {
+        await setupPool.query(
+          `ALTER DATABASE ${dbIdent} RESET app.backfill_user_id`,
+        );
+      } else {
+        await setupPool.query(
+          `ALTER DATABASE ${dbIdent} SET app.backfill_user_id = '${value}'`,
+        );
+      }
+    } finally {
+      await setupPool.end();
+    }
+  };
+
+  if (backfillUserId && dbIdent) {
+    const uuidRe =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRe.test(backfillUserId)) {
+      throw new Error(`BACKFILL_USER_ID must be a UUID, got: ${backfillUserId}`);
+    }
+    await setBackfillDefault(backfillUserId);
+    console.log(
+      `⚠️  BACKFILL_USER_ID override active (db-level): ${backfillUserId}`,
+    );
+  }
+
   const pool = new Pool({ connectionString });
 
   try {
-    // A single dedicated connection for the whole run: extension setup, the
-    // optional BACKFILL_USER_ID session GUC, and the migration transaction
-    // itself must all share one Postgres session so the 0032 backfill
-    // migration's `current_setting('app.backfill_user_id', true)` can see
-    // whatever was SET here (Phase 44, D-05). Using the pool directly for
-    // `drizzle()` would let the migration transaction run on a different
-    // connection than the one the GUC was set on.
     const client = await pool.connect();
 
     try {
@@ -32,15 +72,6 @@ const runMigrate = async (): Promise<void> => {
       await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
       await client.query("CREATE EXTENSION IF NOT EXISTS pg_trgm");
       console.log("✅ Extensions verified (vector, uuid-ossp, pg_trgm)");
-
-      if (env.BACKFILL_USER_ID) {
-        await client.query("SET app.backfill_user_id = $1", [
-          env.BACKFILL_USER_ID,
-        ]);
-        console.log(
-          `⚠️  BACKFILL_USER_ID override active: ${env.BACKFILL_USER_ID}`,
-        );
-      }
 
       const db = drizzle(client);
 
@@ -62,6 +93,11 @@ const runMigrate = async (): Promise<void> => {
       );
     } finally {
       client.release();
+    }
+    // Always clear the DB-level override so it never lingers as a default on
+    // the database after the one-time backfill.
+    if (backfillUserId) {
+      await setBackfillDefault(null).catch(() => undefined);
     }
   } catch (error) {
     console.error("❌ Migration failed");
