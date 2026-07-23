@@ -47,6 +47,16 @@ def test_decode_stage_prefix_roundtrips() -> None:
     assert decode_stage_prefix("propose_regions:no-space") is None
 
 
+def test_decode_stage_prefix_recognizes_entity_resolution_stage() -> None:
+    # AI-03: the ingest-time resolution stage is part of the closed vocabulary,
+    # so a resolution failure buckets correctly on the health dashboard.
+    assert decode_stage_prefix("entity_resolution: RuntimeError('x')") == ("entity_resolution", None)
+    assert decode_failed_stages("entity_resolution: RuntimeError('x'); propose_regions: boom") == [
+        "entity_resolution",
+        "propose_regions",
+    ]
+
+
 def test_decode_failed_stages_buckets_and_dedupes() -> None:
     error = "attachment[0]: a.pdf: boom; attachment[1]: b.pdf: boom; propose_regions: RuntimeError('x')"
     # attachment[N] collapses into ONE 'attachment' bucket (indexes are not stages).

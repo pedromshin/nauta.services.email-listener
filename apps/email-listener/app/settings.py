@@ -203,6 +203,19 @@ class BaseAppSettings(BaseSettings):
     GENUI_CODE_JUDGE_MODEL_ID: str = ""  # judge model; default Haiku (cheap)
     GENUI_CODE_JUDGE_MAX_TOKENS: int = 512  # judge output is tiny (best_index + reason)
 
+    # --- Ingest-time entity resolution (AI-03) ---
+    # Gates the post-persist ResolveIngestEntitiesUseCase stage: resolve the
+    # email's classified entity regions against the identity corpus and propose
+    # pending candidate links + suggested-tier knowledge edges (suggest-only,
+    # human-gated). Default True (the vision's "AI establishes relationships
+    # automatically"); set INGEST_ENTITY_RESOLUTION_ENABLED=false to turn the
+    # stage OFF without a code change — the container then injects None and the
+    # ingest pipeline structurally omits the stage (never a mutation). The use
+    # case + its test suite exist regardless of this flag; only container.py's
+    # wiring reads it. Plain bool field (no @property wrapper) — mirrors
+    # SEARCH_KNOWLEDGE_TOOL_ENABLED's convention.
+    INGEST_ENTITY_RESOLUTION_ENABLED: bool = True
+
     # --- Anticipatory prompting SPIKE (Phase 25, ANTIC-01/02) ---
     # D-12: single global off switch. When False, run_triggers short-circuits to []
     # before any trigger evaluates — zero candidates produced, pipeline fully dark.
