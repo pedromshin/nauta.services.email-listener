@@ -1,18 +1,15 @@
-"""Tests for POST /v1/emails/backfill (backfill transport, HMAC-signed).
+"""Tests for POST /v1/emails/backfill (backfill transport, capability auth).
 
 Verifies:
-- HMAC signature auth: 401 missing/invalid, 503 when no secret configured,
-  200 with a correctly signed body
-- payload validation: 422 on invalid base64, 422 on invalid backfill id
+- forwarding-token authorization: 401 when no recipient resolves, 200 when one does
+- payload validation: 422 on invalid base64, 422 on invalid backfill id,
+  422 when recipients is empty (pydantic min_length)
 - DI wiring: BackfillInboundEmailUseCase invoked with decoded bytes + recipients
 """
 
 from __future__ import annotations
 
 import base64
-import hashlib
-import hmac
-import json
 from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock
 
@@ -25,12 +22,11 @@ from app.application.use_cases.backfill_inbound_email import (
     InvalidBackfillIdError,
 )
 from app.domain.entities.email import Email
-from app.presentation.api.v1.backfill_email import SIGNATURE_HEADER
-from app.settings import get_settings
-
-_SECRET = "sb_secret_test_value"  # noqa: S105 — test fixture, not a real credential
+from app.domain.ports.forwarding_address_resolver import ForwardingAddressResolver
 
 _RAW_MIME = b"From: a@example.com\r\nTo: u-tok@fwd.test\r\nSubject: hi\r\n\r\nbody\r\n"
+_FWD = "u-tok@fwd.test"
+_OWNER = "user-1"
 
 
 def _make_email(**overrides: object) -> Email:
@@ -44,7 +40,7 @@ def _make_email(**overrides: object) -> Email:
         "received_at": datetime(2026, 7, 23, tzinfo=UTC),
         "sender_address": "a@example.com",
         "sender_name": None,
-        "to_addresses": ("u-tok@fwd.test",),
+        "to_addresses": (_FWD,),
         "cc_addresses": (),
         "subject": "hi",
         "body_html": None,
@@ -59,7 +55,7 @@ def _make_email(**overrides: object) -> Email:
     return Email(**base)
 
 
-def _make_app(use_case: BackfillInboundEmailUseCase) -> FastAPI:
+def _make_app(use_case: BackfillInboundEmailUseCase, resolver: ForwardingAddressResolver) -> FastAPI:
     from dishka import Provider, Scope, make_async_container
     from dishka.integrations.fastapi import setup_dishka
 
@@ -70,27 +66,23 @@ def _make_app(use_case: BackfillInboundEmailUseCase) -> FastAPI:
 
     provider = Provider(scope=Scope.APP)
     provider.provide(lambda: use_case, provides=BackfillInboundEmailUseCase, scope=Scope.APP)
+    provider.provide(lambda: resolver, provides=ForwardingAddressResolver, scope=Scope.APP)
     container = make_async_container(provider)
     setup_dishka(container=container, app=app)
     return app
 
 
-def _sign(body: bytes, secret: str = _SECRET) -> str:
-    return hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
-
-
-def _payload_bytes(
+def _payload(
     backfill_id: str = "msg-1",
     raw: bytes = _RAW_MIME,
     recipients: list[str] | None = None,
-) -> bytes:
-    return json.dumps(
-        {
-            "backfill_id": backfill_id,
-            "raw_mime_b64": base64.b64encode(raw).decode(),
-            "recipients": recipients if recipients is not None else ["u-tok@fwd.test"],
-        }
-    ).encode()
+    raw_b64: str | None = None,
+) -> dict:
+    return {
+        "backfill_id": backfill_id,
+        "raw_mime_b64": raw_b64 if raw_b64 is not None else base64.b64encode(raw).decode(),
+        "recipients": recipients if recipients is not None else [_FWD],
+    }
 
 
 @pytest.fixture
@@ -101,26 +93,20 @@ def mock_use_case() -> MagicMock:
 
 
 @pytest.fixture
-def client(mock_use_case: MagicMock, monkeypatch: pytest.MonkeyPatch) -> TestClient:
-    monkeypatch.setenv("SUPABASE_SECRET_KEY", _SECRET)
-    get_settings.cache_clear()
-    try:
-        yield TestClient(_make_app(mock_use_case), raise_server_exceptions=True)
-    finally:
-        get_settings.cache_clear()
+def mock_resolver() -> MagicMock:
+    r = MagicMock(spec=ForwardingAddressResolver)
+    r.resolve_recipients = AsyncMock(return_value=_OWNER)
+    return r
 
 
-def _post(client: TestClient, body: bytes, signature: str | None) -> object:
-    headers = {"Content-Type": "application/json"}
-    if signature is not None:
-        headers[SIGNATURE_HEADER] = signature
-    return client.post("/v1/emails/backfill", content=body, headers=headers)
+@pytest.fixture
+def client(mock_use_case: MagicMock, mock_resolver: MagicMock) -> TestClient:
+    return TestClient(_make_app(mock_use_case, mock_resolver), raise_server_exceptions=True)
 
 
 @pytest.mark.unit
-def test_valid_signature_returns_200_and_ack(client: TestClient, mock_use_case: MagicMock) -> None:
-    body = _payload_bytes()
-    resp = _post(client, body, _sign(body))
+def test_resolved_token_returns_200_and_ack(client: TestClient, mock_use_case: MagicMock) -> None:
+    resp = client.post("/v1/emails/backfill", json=_payload())
     assert resp.status_code == 200
     data = resp.json()["data"]
     assert data["email_id"] == "email-1"
@@ -131,57 +117,34 @@ def test_valid_signature_returns_200_and_ack(client: TestClient, mock_use_case: 
     kwargs = mock_use_case.execute.await_args.kwargs
     assert kwargs["backfill_id"] == "msg-1"
     assert kwargs["raw_mime"] == _RAW_MIME
-    assert list(kwargs["recipients"]) == ["u-tok@fwd.test"]
+    assert list(kwargs["recipients"]) == [_FWD]
 
 
 @pytest.mark.unit
-def test_missing_signature_is_401(client: TestClient, mock_use_case: MagicMock) -> None:
-    resp = _post(client, _payload_bytes(), signature=None)
-    assert resp.status_code == 401
-    mock_use_case.execute.assert_not_awaited()
-
-
-@pytest.mark.unit
-def test_wrong_signature_is_401(client: TestClient, mock_use_case: MagicMock) -> None:
-    body = _payload_bytes()
-    resp = _post(client, body, _sign(body, secret="sb_secret_other"))
-    assert resp.status_code == 401
-    mock_use_case.execute.assert_not_awaited()
-
-
-@pytest.mark.unit
-def test_signature_over_different_body_is_401(client: TestClient) -> None:
-    resp = _post(client, _payload_bytes(backfill_id="msg-2"), _sign(_payload_bytes(backfill_id="msg-1")))
-    assert resp.status_code == 401
-
-
-@pytest.mark.unit
-def test_no_secret_configured_fails_closed_503(
-    mock_use_case: MagicMock, monkeypatch: pytest.MonkeyPatch
+def test_unresolved_token_is_401(
+    client: TestClient, mock_resolver: MagicMock, mock_use_case: MagicMock
 ) -> None:
-    monkeypatch.delenv("SUPABASE_SECRET_KEY", raising=False)
-    get_settings.cache_clear()
-    try:
-        test_client = TestClient(_make_app(mock_use_case), raise_server_exceptions=True)
-        body = _payload_bytes()
-        resp = _post(test_client, body, _sign(body))
-        assert resp.status_code == 503
-    finally:
-        get_settings.cache_clear()
+    mock_resolver.resolve_recipients = AsyncMock(return_value=None)
+    resp = client.post("/v1/emails/backfill", json=_payload(recipients=["stranger@x.test"]))
+    assert resp.status_code == 401
+    mock_use_case.execute.assert_not_awaited()
 
 
 @pytest.mark.unit
-def test_invalid_base64_is_422(client: TestClient) -> None:
-    body = json.dumps(
-        {"backfill_id": "msg-1", "raw_mime_b64": "!!!not-base64!!!", "recipients": []}
-    ).encode()
-    resp = _post(client, body, _sign(body))
+def test_empty_recipients_is_422(client: TestClient) -> None:
+    resp = client.post("/v1/emails/backfill", json=_payload(recipients=[]))
     assert resp.status_code == 422
+
+
+@pytest.mark.unit
+def test_invalid_base64_is_422(client: TestClient, mock_use_case: MagicMock) -> None:
+    resp = client.post("/v1/emails/backfill", json=_payload(raw_b64="!!!not-base64!!!"))
+    assert resp.status_code == 422
+    mock_use_case.execute.assert_not_awaited()
 
 
 @pytest.mark.unit
 def test_invalid_backfill_id_maps_to_422(client: TestClient, mock_use_case: MagicMock) -> None:
     mock_use_case.execute = AsyncMock(side_effect=InvalidBackfillIdError("bad id"))
-    body = _payload_bytes(backfill_id="has space")
-    resp = _post(client, body, _sign(body))
+    resp = client.post("/v1/emails/backfill", json=_payload(backfill_id="has space"))
     assert resp.status_code == 422

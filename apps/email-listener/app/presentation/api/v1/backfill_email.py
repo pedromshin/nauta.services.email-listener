@@ -4,75 +4,41 @@ Transport for historical mail that never traversed SES (Gmail import, mbox
 replay). Runs the FULL standard ingestion pipeline via
 BackfillInboundEmailUseCase — identical enrichment to the SNS path.
 
-Auth: HMAC request signing, NOT the X-API-Key gate. The backfill operator is
-an offline tool that provably holds SUPABASE_SECRET_KEY (a secret this
-service already receives from Secrets Manager), so the request carries
-X-Backfill-Signature = hex(HMAC-SHA256(SUPABASE_SECRET_KEY, raw_request_body))
-and the secret itself never travels on the wire (the prod ALB is plain HTTP
-until the ACM cert lands — see infrastructure/aws/alb.tf). Replaying a
-captured request can only re-ingest the exact same email (idempotent upsert),
-so replay is harmless by construction.
+Auth is CAPABILITY-BASED, not a shared infra secret: the request must carry a
+forwarding recipient (``u-{token}@domain``) whose token resolves, against the
+listener's own DB, to a real user. That forwarding token is a 256-bit CSPRNG
+per-user secret — the SAME capability that authorizes real inbound mail for
+the account (anyone who can email ``u-{token}@`` can already cause ingestion
+into that user). So possession of the token is exactly the right authorization
+for a backfill into that user's corpus, and it can never write into any other
+account. An unknown/absent token fails closed (401). This deliberately avoids
+depending on EMAIL_LISTENER_API_KEY / SUPABASE_SECRET_KEY at the boundary.
 
 NOTE: no `from __future__ import annotations` here — the generic
-ApiResponse[BackfillEmailAck] return annotation must be a real type at
-runtime for FastAPI/pydantic response-model resolution (mirrors
-inbound_email.py).
+ApiResponse[BackfillEmailAck] return annotation must be a real type at runtime
+for FastAPI/pydantic response-model resolution (mirrors inbound_email.py).
 """
 
 import base64
 import binascii
-import hashlib
-import hmac
 
 import structlog
 from dishka.integrations.fastapi import FromDishka, inject
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.application.use_cases.backfill_inbound_email import (
     BackfillInboundEmailUseCase,
     InvalidBackfillIdError,
 )
+from app.domain.ports.forwarding_address_resolver import ForwardingAddressResolver
 from app.presentation.api.response import ApiResponse
-from app.settings import get_settings
 
 logger = structlog.get_logger(__name__)
 
-SIGNATURE_HEADER = "X-Backfill-Signature"
-
 MAX_RAW_MIME_BYTES = 10 * 1024 * 1024  # decoded MIME cap, mirrors inbound_email.py
-# base64 inflates ~4/3; allow envelope overhead on top of the encoded payload.
-_MAX_BODY_BYTES = (MAX_RAW_MIME_BYTES * 4) // 3 + 64 * 1024
 
-
-async def require_backfill_signature(request: Request) -> None:
-    """401 unless the request body is HMAC-signed with SUPABASE_SECRET_KEY.
-
-    Mirrors require_api_key's fail-closed posture: a missing server-side
-    secret rejects everything (503) rather than admitting anyone.
-    """
-    secret = get_settings().supabase_secret_key
-    if not secret:
-        raise HTTPException(status_code=503, detail="Service misconfigured")
-
-    provided = request.headers.get(SIGNATURE_HEADER, "")
-    if not provided:
-        raise HTTPException(status_code=401, detail="Missing signature")
-
-    body = await request.body()
-    if len(body) > _MAX_BODY_BYTES:
-        raise HTTPException(status_code=413, detail="Body too large")
-
-    expected = hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
-    if not hmac.compare_digest(provided.strip().lower(), expected):
-        raise HTTPException(status_code=401, detail="Invalid signature")
-
-
-router = APIRouter(
-    prefix="/v1/emails",
-    tags=["emails-backfill"],
-    dependencies=[Depends(require_backfill_signature)],
-)
+router = APIRouter(prefix="/v1/emails", tags=["emails-backfill"])
 
 
 class BackfillEmailIn(BaseModel):
@@ -80,7 +46,9 @@ class BackfillEmailIn(BaseModel):
 
     backfill_id: str = Field(min_length=1, max_length=200)
     raw_mime_b64: str = Field(min_length=1)
-    recipients: list[str] = Field(default_factory=list)
+    # At least one recipient is required: it carries the forwarding token that
+    # both authorizes the request and anchors user attribution.
+    recipients: list[str] = Field(min_length=1)
 
 
 class BackfillEmailAck(BaseModel):
@@ -96,8 +64,18 @@ class BackfillEmailAck(BaseModel):
 async def backfill_email(
     payload: BackfillEmailIn,
     use_case: FromDishka[BackfillInboundEmailUseCase],
+    forwarding_resolver: FromDishka[ForwardingAddressResolver],
 ) -> ApiResponse[BackfillEmailAck]:
-    """Ingest one backfilled raw email through the standard pipeline (synchronous)."""
+    """Ingest one backfilled raw email through the standard pipeline (synchronous).
+
+    Authorization: at least one recipient must be a forwarding address whose
+    token resolves to a real user. Fail-closed (401) otherwise — mirrors the
+    forwarding-token trust model of the live SNS path.
+    """
+    owner_user_id = await forwarding_resolver.resolve_recipients(payload.recipients)
+    if owner_user_id is None:
+        raise HTTPException(status_code=401, detail="No recipient resolves to a known forwarding token")
+
     try:
         raw = base64.b64decode(payload.raw_mime_b64, validate=True)
     except (binascii.Error, ValueError) as exc:
