@@ -4,16 +4,21 @@
 > UPDATE THIS FILE at every batch launch, batch completion, and merge. This file is the single
 > source of truth for "where are we"; chat context is disposable.
 
-## Status: BATCH 2 IN FLIGHT 🔄 (2026-07-23, Pedro's mobile product drop)
+## Status: BATCH 2 MERGED TO MAIN ✅ (2026-07-23, main @ 1525a44) — 2 items awaiting external state
 
-> BACKSTOP: a 5-agent implementation workflow (wf_1e51a19b-d16) is running in the ACTIVE
-> session for: genui widget submit 422 fix, email-context importer-scoping fix (listener),
-> chat auto-open + quick-actions FAB + duplicate mutation, inbox inline email preview +
-> carousel refactor, de-maritime purge (code + evals + migration 0050). Zoom-trap fix +
-> canvas-platform design doc already committed (718d072). If you fire while this session is
-> alive, STAND DOWN — do not touch the tree, agents are editing it. If the session appears
-> DEAD with uncommitted changes, read this file's batch list + `git status`, salvage by
-> running the web/listener test gates, and commit per-workstream.
+> BACKSTOP: batch-2 (zoom-trap, genui flat-submit, email-context importer fix, inbox inline
+> preview + carousel, chat auto-open + FAB + duplicate, de-maritime code purge) is COMMITTED
+> and MERGED to main (1579b6e + 1525a44). All gates green locally (web 133 files + tsc +
+> build; listener full sweep 91.57% cov + ruff/mypy/lint-imports; all packages).
+> OPEN ITEMS:
+> 1. Listener deploy run 30052959299 (main@1525a44) was IN FLIGHT — verify it went green.
+>    Context: the 1579b6e deploy failed because uv.lock was gitignored and CI floated to
+>    ruff 0.16.0; fixed by committing the lock (1525a44). If still red, read the job log —
+>    do NOT churn code to satisfy an unpinned linter.
+> 2. Migration 0050 (maritime data purge) is NOT applied to prod: the "Migrate prod DB"
+>    Action fails because the POSTGRES_URL_NON_POOLING repo secret is UNSET. PEDRO must set
+>    it (Supabase → connection string, non-pooling) and re-run the workflow with
+>    confirm=MIGRATE-PROD. Idempotent; deployed code does not depend on it.
 > Task #13 infra remainder stays DEFERRED pending Pedro (runbook staged). Trigger stays ENABLED.
 
 ## Previous status: ALL WORK COMPLETE ✅ (waves W0–W6, prod deploy SHA 0a63f8a, follow-ups through cad7c5e)
