@@ -4,14 +4,17 @@
 > UPDATE THIS FILE at every batch launch, batch completion, and merge. This file is the single
 > source of truth for "where are we"; chat context is disposable.
 
-## Status: RUNNING — Batch 1R (W0 repairs)
+## Status: RUNNING — Batch 2 (W1, 6 lanes)
 
-Batch 1 DONE 2026-07-23T03:0xZ: 3 gap docs committed (c1bf55c); 4 W0 fix branches
-merged (92c9098) after skeptic review; full listener suite green (91.36% cov),
-api-client 22/22, web 5/5; pushed. Skeptics confirmed 3 residual gaps → Batch 1R:
-ING-6 attachment surfacing, RES-1 read path (+migration for 0039 RPCs), REG-1
-deterministic page ids. The 4 pre-existing OCR corpus failures are environmental
-(fail identically on baseline c1bf55c; live-OCR deps absent in container) — not ours.
+Batch 1 DONE: 3 gap docs (c1bf55c) + 4 W0 fixes merged (92c9098), all suites green.
+Batch 1R DONE 2026-07-23T04:4xZ (e158449 pushed): ING-6/RES-1/REG-1 repairs merged.
+NOTE: worktree agents fork from dde04bb (repo base), NOT branch HEAD — expect
+conflicts when agents touch W0/1R files; resolve as SYNTHESIS in main loop (see
+e158449 message for the REG-1 pattern: keep re-ingest-first + count-gate, adopt
+DB-clock cutoff; supersede lte / count gt; cutoff None ⇒ skip supersede).
+Verified on merged tree: listener full suite exit 0 + mypy/ruff/lint-imports
+clean; api-client 568/568; db (PGlite) 27/27; web tsc clean; emails/[id] 79/80.
+4 OCR corpus failures are pre-existing environmental (Textract deps absent).
 
 - Branch: `claude/polytoken-email-infra-cont-jzz1pg` (all merges land here; NO PR)
 - Model policy: fable-5 (verify panels/synthesis) · opus-4.8 (mutations/security, session default) · sonnet-5 (mechanical). Never haiku.
@@ -19,20 +22,18 @@ deterministic page ids. The 4 pre-existing OCR corpus failures are environmental
   `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>` + `Claude-Session: https://claude.ai/code/session_01RZuPfFSoRaTp59yqF91AZs`
 
 ## Active workflow
-- Run ID: `wf_b93b55e9-cca` (Batch 1R repairs)
-- Script: `/root/.claude/projects/-home-user-polytoken-ai/a7169b4b-2d04-50fc-9192-30f267d087bc/workflows/scripts/batch-1r-repairs-wf_b93b55e9-cca.js`
-- Resume (after container death): `Workflow({scriptPath: <above>, resumeFromRunId: "wf_b93b55e9-cca"})` — NO args, ever.
-- Journal: `/root/.claude/projects/-home-user-polytoken-ai/a7169b4b-2d04-50fc-9192-30f267d087bc/subagents/workflows/wf_b93b55e9-cca/journal.jsonl`
-- Prior batch (all cached): `wf_acbedf4e-6ec`
-- Batch 2 script PRE-AUTHORED, launch after 1R merges:
-  `Workflow({scriptPath: "/tmp/claude-0/-home-user-polytoken-ai/a7169b4b-2d04-50fc-9192-30f267d087bc/scratchpad/batch-2-w1.js"})`
-  (6 lanes: evals, st04, kg-ui, snappy, hygiene, infra — worktree-isolated, fable-5 skeptics)
+- Run ID: `wf_05119d6c-159` (Batch 2 / W1: evals, st04, kg-ui, snappy, hygiene, infra)
+- Script: `/tmp/claude-0/-home-user-polytoken-ai/a7169b4b-2d04-50fc-9192-30f267d087bc/scratchpad/batch-2-w1.js`
+- Resume (after container death): `Workflow({scriptPath: <above>, resumeFromRunId: "wf_05119d6c-159"})` — NO args, ever.
+- Journal: `/root/.claude/projects/-home-user-polytoken-ai/a7169b4b-2d04-50fc-9192-30f267d087bc/subagents/workflows/wf_05119d6c-159/journal.jsonl`
+- Prior batches (all cached): `wf_acbedf4e-6ec` (B1), `wf_b93b55e9-cca` (B1R)
 
 ## Batch plan (whole program)
 | Batch | Contents | Status |
 |---|---|---|
-| 1 | Gap docs (hygiene audit, USER-STORIES, snappiness plan) + W0 fixes (ING-1..6+CVE, RES-1..4, RPR-1/REG-1/3, UI-1..3) + 2-skeptic verify | **RUNNING** |
-| 2 | Merge B1 → W1: eval harness E1–E6, ST-04 error surfacing, KG-2/3/8, cost-opt deliverable, snappiness execution, codebase-hygiene mechanical splits, Supabase drift check doc, terraform IMPORT-RUNBOOK (imports only, never apply first), dev tooling (.mcp.json; settings.json handed to Pedro) | pending |
+| 1 | Gap docs + W0 fixes + 2-skeptic verify | **DONE** (92c9098) |
+| 1R | ING-6/RES-1/REG-1 repairs, fable-5 skeptics | **DONE** (e158449) |
+| 2 | W1 6 lanes: eval harness, ST-04 health, KG-2/3/8+panel, snappiness exec, hygiene P0, terraform imports+drift. Deferred to 2R/3: cost-opt deliverable, .mcp.json, settings.json handoff | **RUNNING** |
 | 3 | W2 AI spine: AI-01..06 (ingest-time resolution, capability 4-way projection, agent canvas mutation, send-to-chat/canvas, omnibox, graph memory) | pending |
 | 4 | W3 canvas+viz: CI-01..07, TM-01..03, EN-01→CV-03 spreadsheet wiring, UX-pattern catalog, **+ phase 62 redesign surfaces (gate waived)** | pending |
 | 5 | W4 drive+home: DR-01..05, CH-01, TM-04, HM-01/02, OneDrive migration design doc + import tooling, **+ phase 63 research-canvas visuals (gate waived)** | pending |
