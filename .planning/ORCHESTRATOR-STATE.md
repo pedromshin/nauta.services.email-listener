@@ -19,8 +19,21 @@ unblocked the deploy. Executed end-to-end from this container over HTTPS:
    project, so the DROP script IS the DB rollback — additive migs, clean reversal).
 2. **Code on main (DONE).** Branch fast-forwarded main (0a63f8a, linear, 100 commits).
    This fires: Vercel production build (web) + `deploy-email-listener.yml` (ECR/ECS).
-3. **Deploys firing / in-flight at handoff.** Listener Action run started for 0a63f8a.
-   Vercel prod build triggered by the main push (no API visibility from here).
+3. **Listener deploy DONE ✅.** `deploy-email-listener.yml` run 30017547005 (SHA 0a63f8a):
+   Test job green (ruff/mypy/pytest); Build&deploy green — image built, Trivy pass, pushed
+   to ECR, ECS update, **service stability confirmed**, smoke test passed. New listener live.
+4. **Web deploy (Vercel) BLOCKED ⚠️ — needs Pedro.** Project is `nauta-web`
+   (prj_70hRKIxh1giNAfzQvbrR1tX7pP2j, git-connected). 15+ min after the main push, prod
+   (`nauta-web.vercel.app`) AND the `nauta-web-git-main` branch alias still serve OLD code
+   (title "NAUTA Global Trade", `/api/pipeline/health` 404). A successful build would surface
+   on the branch alias — it doesn't — so the **Vercel Production build failed**. Almost
+   certainly the two build-time vars **`NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY`**
+   are unset in the Vercel Production env (`next build` hard-fails without them; proven locally).
+   A failed build is non-destructive — old prod stays live. FIX (Pedro, dashboard): set those
+   two vars in nauta-web → Settings → Environment Variables (Production) using the prod
+   Supabase URL + anon key, then redeploy (Deployments → ⋯ → Redeploy, or push any commit).
+   Can't be done from here — no Vercel token in this container. (Confirm cause in the failed
+   deployment's build log: expect a build error naming those env vars.)
 
 OPEN ITEMS (human, not blockers):
   - **ROTATE the prod secrets** Pedro pasted this session (POSTGRES_URL(_NON_POOLING),
