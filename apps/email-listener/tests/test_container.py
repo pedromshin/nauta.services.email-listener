@@ -21,13 +21,15 @@ from app.domain.ports.component_repository import ComponentRepository
 from app.domain.ports.email_repository import EmailRepository
 from app.domain.ports.entity_type_repository import EntityTypeRepository
 from app.domain.ports.extraction_repository import ExtractionRepository
-from app.domain.ports.raw_email_store import RawEmailStore
+from app.domain.ports.raw_email_store import BackfillRawEmailStore, RawEmailStore
 from app.domain.ports.segmenter_protocol import SegmenterProtocol
 from app.infrastructure.llm.segmentation_adapter import AnthropicSegmenter
 from app.infrastructure.pdf.pdf_parser import PdfParser
+from app.infrastructure.raw_email_store_routing import RoutingRawEmailStore
 from app.infrastructure.s3.raw_email_store import S3RawEmailStore
 from app.infrastructure.supabase.attachment_repository import SupabaseAttachmentRepository
 from app.infrastructure.supabase.attachment_storage import SupabaseAttachmentStorage
+from app.infrastructure.supabase.raw_email_backfill_store import SupabaseRawEmailBackfillStore
 from app.infrastructure.supabase.component_repository import SupabaseComponentRepository
 from app.infrastructure.supabase.email_repository import SupabaseEmailRepository
 from app.infrastructure.supabase.entity_type_repository import SupabaseEntityTypeRepository
@@ -90,12 +92,20 @@ class TestContainerResolution:
             repo = asyncio.run(container.get(ExtractionRepository))
             assert isinstance(repo, SupabaseExtractionRepository)
 
-    def test_raw_email_store_resolves_to_s3_impl(self) -> None:
+    def test_raw_email_store_resolves_to_routing_impl(self) -> None:
+        """RawEmailStore is the prefix-routing composite: SES ids -> S3, bf- ids -> Supabase."""
         with patch(_PATCH_TARGET, return_value=MagicMock()), patch("app.container.boto3") as boto3_mock:
             container = create_container()
             store = asyncio.run(container.get(RawEmailStore))
-            assert isinstance(store, S3RawEmailStore)
+            assert isinstance(store, RoutingRawEmailStore)
+            assert isinstance(store._ses_store, S3RawEmailStore)  # noqa: SLF001
             boto3_mock.client.assert_called()
+
+    def test_backfill_raw_email_store_resolves_to_supabase_impl(self) -> None:
+        with patch(_PATCH_TARGET, return_value=MagicMock()):
+            container = create_container()
+            store = asyncio.run(container.get(BackfillRawEmailStore))
+            assert isinstance(store, SupabaseRawEmailBackfillStore)
 
     def test_attachment_storage_resolves_to_supabase_impl(self) -> None:
         with patch(_PATCH_TARGET, return_value=MagicMock()):

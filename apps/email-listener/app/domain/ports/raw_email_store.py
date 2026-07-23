@@ -18,3 +18,24 @@ class RawEmailStore(Protocol):
     async def fetch(self, message_id: str) -> bytes:
         """Return the raw MIME bytes for the given SES message id."""
         ...
+
+
+# Message-id namespace for backfilled (non-SES) emails. Ids carrying this
+# prefix are stored/fetched via the writable BackfillRawEmailStore; everything
+# else is an SES id served by the read-only S3 store. The prefix is part of
+# the persisted raw_storage_key's last segment, so ReprocessEmailUseCase's
+# rsplit("/")-derived bare id round-trips back to the same routing decision.
+BACKFILL_MESSAGE_ID_PREFIX = "bf-"
+
+
+class BackfillRawEmailStore(RawEmailStore, Protocol):
+    """Writable raw-MIME store for backfilled emails (Gmail import, mbox replay).
+
+    SES owns writes to the S3 inbound bucket (the ECS task role is
+    deliberately read-only there), so backfilled raw MIME lands in a store the
+    listener can write — Supabase Storage in the concrete implementation.
+    """
+
+    async def store(self, message_id: str, raw: bytes) -> None:
+        """Persist the raw MIME bytes for the given backfill message id (upsert)."""
+        ...

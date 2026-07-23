@@ -100,6 +100,9 @@ class BaseAppSettings(BaseSettings):
     # --- Attachments (Supabase Storage) ---
     ATTACHMENTS_BUCKET: str = "email-attachments"
 
+    # --- Backfilled raw MIME (Supabase Storage; SES S3 is read-only for the task role) ---
+    RAW_EMAILS_BUCKET: str = "raw-emails"
+
     # --- Tenant (single-tenant for now; D-05 keeps rows importer-scoped) ---
     DEFAULT_IMPORTER_ID: str = "00000000-0000-0000-0000-000000000001"
 

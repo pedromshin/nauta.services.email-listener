@@ -23,6 +23,7 @@ from app.application.capabilities.registry import CapabilityRegistry, define_cap
 from app.application.use_cases.autofill import AutofillUseCase
 from app.application.use_cases.autofill_fields import AutofillFieldsUseCase
 from app.application.use_cases.backfill_entity_identities import BackfillEntityIdentitiesUseCase
+from app.application.use_cases.backfill_inbound_email import BackfillInboundEmailUseCase
 from app.application.use_cases.classify_document import ClassifyDocumentUseCase
 from app.application.use_cases.confirm_action_dispatch import (
     ConfirmActionHandler,
@@ -109,7 +110,7 @@ from app.domain.ports.generation_audit_repository import GenerationAuditReposito
 from app.domain.ports.importer_resolver import ImporterResolver
 from app.domain.ports.knowledge_synthesizer import KnowledgeSynthesizer
 from app.domain.ports.parser_registry_port import ParserRegistryPort
-from app.domain.ports.raw_email_store import RawEmailStore
+from app.domain.ports.raw_email_store import BackfillRawEmailStore, RawEmailStore
 from app.domain.ports.retrieval_port import RetrievalPort
 from app.domain.ports.retrieval_provider import RetrievalProvider
 from app.domain.ports.segmenter_protocol import SegmenterProtocol
@@ -143,6 +144,7 @@ from app.infrastructure.llm.segmentation_adapter import AnthropicSegmenter
 from app.infrastructure.ocr.textract_adapter import TextractOcrAdapter
 from app.infrastructure.pdf.parser_registry import get_parser, register
 from app.infrastructure.pdf.pdf_parser import PdfParser
+from app.infrastructure.raw_email_store_routing import RoutingRawEmailStore
 from app.infrastructure.s3.raw_email_store import S3RawEmailStore
 from app.infrastructure.supabase.attachment_repository import SupabaseAttachmentRepository
 from app.infrastructure.supabase.attachment_storage import SupabaseAttachmentStorage
@@ -163,6 +165,7 @@ from app.infrastructure.supabase.extraction_repository import SupabaseExtraction
 from app.infrastructure.supabase.forwarding_address_repository import SupabaseForwardingAddressRepository
 from app.infrastructure.supabase.importer_repository import SupabaseImporterRepository
 from app.infrastructure.supabase.knowledge_graph_repository import SupabaseKnowledgeGraphRepository
+from app.infrastructure.supabase.raw_email_backfill_store import SupabaseRawEmailBackfillStore
 from app.infrastructure.supabase.retrieval_repository import SupabaseRetrievalRepository
 from app.infrastructure.supabase.source_ledger_repository import SupabaseSourceLedgerRepository
 from app.infrastructure.supabase.supabase_chat_conversation_repository import (
@@ -220,11 +223,20 @@ def _provide_anthropic_client() -> AsyncAnthropicBedrock:
     return get_anthropic_client()
 
 
-def _provide_raw_email_store() -> RawEmailStore:
-    """SES inbound raw MIME store on S3 (default boto3 credential chain — IAM role)."""
+def _provide_backfill_raw_email_store(client: Client) -> BackfillRawEmailStore:
+    """Writable backfill raw MIME store on Supabase Storage (private bucket)."""
+    return SupabaseRawEmailBackfillStore(client=client, bucket=get_settings().RAW_EMAILS_BUCKET)
+
+
+def _provide_raw_email_store(backfill_store: BackfillRawEmailStore) -> RawEmailStore:
+    """Raw MIME reads routed by id namespace: SES ids -> S3, bf- ids -> Supabase.
+
+    The S3 half keeps the default boto3 credential chain (ECS task IAM role).
+    """
     settings = get_settings()
     s3_client = boto3.client("s3", region_name=settings.ses_s3_region)
-    return S3RawEmailStore(bucket=settings.SES_S3_BUCKET, prefix=settings.ses_s3_prefix, client=s3_client)
+    ses_store = S3RawEmailStore(bucket=settings.SES_S3_BUCKET, prefix=settings.ses_s3_prefix, client=s3_client)
+    return RoutingRawEmailStore(ses_store=ses_store, backfill_store=backfill_store)
 
 
 def _provide_attachment_storage(client: Client) -> AttachmentStorage:
@@ -1252,6 +1264,7 @@ def _build_provider() -> Provider:  # noqa: PLR0915
     provider.provide(_provide_entity_type_correction_repository, provides=EntityTypeCorrectionRepository)
 
     # ── Ingestion adapters ────────────────────────────────────────────────────
+    provider.provide(_provide_backfill_raw_email_store, provides=BackfillRawEmailStore)
     provider.provide(_provide_raw_email_store, provides=RawEmailStore)
     provider.provide(_provide_attachment_storage, provides=AttachmentStorage)
     provider.provide(_provide_ingestion_config, provides=IngestionConfig)
@@ -1298,6 +1311,7 @@ def _build_provider() -> Provider:  # noqa: PLR0915
     # _provide_set_component_entity_type_use_case).
     provider.provide(_provide_suggest_entity_types_use_case, provides=SuggestEntityTypesUseCase)
     provider.provide(ReprocessEmailUseCase)
+    provider.provide(BackfillInboundEmailUseCase)
     # ST-04: pipeline-health read model (GET /v1/pipeline/health).
     provider.provide(GetPipelineHealthUseCase)
     # AutofillUseCase has Optional embedder/retrieval params (None defaults) that
