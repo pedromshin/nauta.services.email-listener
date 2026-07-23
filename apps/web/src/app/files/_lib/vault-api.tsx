@@ -42,7 +42,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import * as React from "react";
 import { useState } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
-import { httpBatchLink, loggerLink } from "@trpc/client";
+import { httpBatchStreamLink, loggerLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
 import SuperJSON from "superjson";
 
@@ -103,7 +103,10 @@ export function VaultApiProvider(props: {
             process.env.NODE_ENV === "development" ||
             (op.direction === "down" && op.result instanceof Error),
         }),
-        httpBatchLink({
+        // Mirrors ~/trpc/react's httpBatchStreamLink swap (snappiness plan
+        // §3) — the two clients must stay transport-identical; see the
+        // header's cleanup contract.
+        httpBatchStreamLink({
           transformer: SuperJSON,
           url: getBaseUrl() + "/api/trpc",
           headers() {

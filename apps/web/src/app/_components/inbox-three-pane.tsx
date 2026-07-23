@@ -8,7 +8,8 @@ import Link from "next/link";
 // this component directly (mirrors genui-panel-node.tsx's identical note —
 // found live, 53-03-PLAN.md Task 1, inbox-mobile-stack.test.tsx).
 import * as React from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@polytoken/ui/button";
@@ -20,6 +21,7 @@ import {
 import { Skeleton } from "@polytoken/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@polytoken/ui/tabs";
 
+import { useHoverPrefetch } from "~/hooks/use-hover-prefetch";
 import { api } from "~/trpc/react";
 
 import type { EntityChipEntry } from "./entity-chips";
@@ -475,6 +477,26 @@ export function InboxThreePane({
   const showLoading = isLoading || emailsListQuery.isLoading;
   const showError = isError || emailsListQuery.isError;
 
+  // ---------------------------------------------------------------------------
+  // Snappiness plan §4 — hover/focus prefetch for the inbox→email-detail
+  // transition (the app's highest-frequency navigation). Hovering a row for
+  // the debounce window warms BOTH caches in parallel: the Next router cache
+  // (route JS/RSC payload via router.prefetch — dynamic authed routes get no
+  // automatic viewport prefetch worth relying on) and the TanStack cache
+  // (utils.emails.detail.prefetch), so the eventual click's critical path is
+  // (near-)zero network. Debounce + dedupe + cap live in useHoverPrefetch.
+  // ---------------------------------------------------------------------------
+  const router = useRouter();
+  const utils = api.useUtils();
+  const prefetchEmailDetail = useCallback(
+    (emailId: string) => {
+      router.prefetch(`/emails/${emailId}`);
+      void utils.emails.detail.prefetch({ id: emailId });
+    },
+    [router, utils],
+  );
+  const hoverPrefetch = useHoverPrefetch(prefetchEmailDetail);
+
   return (
     <>
       {/* Desktop (>=md): the exact three-pane ResizablePanelGroup, byte-identical. */}
@@ -550,6 +572,8 @@ export function InboxThreePane({
                   ruleSuggestionCountByEmailId={ruleSuggestionCountByEmailId}
                   selectedEmailId={selectedEmailId}
                   onSelectMember={setSelectedEmailId}
+                  onHoverPrefetch={hoverPrefetch.begin}
+                  onHoverPrefetchCancel={hoverPrefetch.cancel}
                 />
               ))}
 
@@ -676,6 +700,8 @@ export function InboxThreePane({
                   ruleSuggestionCountByEmailId={ruleSuggestionCountByEmailId}
                   selectedEmailId={selectedEmailId}
                   onSelectMember={handleSelectMemberMobile}
+                  onHoverPrefetch={hoverPrefetch.begin}
+                  onHoverPrefetchCancel={hoverPrefetch.cancel}
                 />
               ))}
 

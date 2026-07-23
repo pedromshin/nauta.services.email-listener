@@ -36,6 +36,13 @@ interface InboxThreadGroupProps {
   readonly ruleSuggestionCountByEmailId?: ReadonlyMap<string, number>;
   readonly selectedEmailId: string | null;
   readonly onSelectMember: (emailId: string) => void;
+  /**
+   * Snappiness plan §4: forwarded verbatim to each member `InboxRow` so
+   * hovering/focusing a row warms the email-detail route + tRPC data.
+   * Optional so existing call sites and tests compile unchanged.
+   */
+  readonly onHoverPrefetch?: (emailId: string) => void;
+  readonly onHoverPrefetchCancel?: (emailId: string) => void;
 }
 
 const formatDate = (value: Date | string | null): string =>
@@ -69,6 +76,8 @@ export function InboxThreadGroup({
   ruleSuggestionCountByEmailId,
   selectedEmailId,
   onSelectMember,
+  onHoverPrefetch,
+  onHoverPrefetchCancel,
 }: InboxThreadGroupProps): React.ReactElement | null {
   const [expanded, setExpanded] = useState(false);
 
@@ -86,6 +95,8 @@ export function InboxThreadGroup({
         isSelected={only.id === selectedEmailId}
         onSelect={onSelectMember}
         ruleSuggestionCount={ruleSuggestionCountByEmailId?.get(only.id) ?? 0}
+        onHoverPrefetch={onHoverPrefetch}
+        onHoverPrefetchCancel={onHoverPrefetchCancel}
       />
     );
   }
@@ -159,6 +170,8 @@ export function InboxThreadGroup({
               ruleSuggestionCount={
                 ruleSuggestionCountByEmailId?.get(member.id) ?? 0
               }
+              onHoverPrefetch={onHoverPrefetch}
+              onHoverPrefetchCancel={onHoverPrefetchCancel}
             />
           ))}
         </div>
