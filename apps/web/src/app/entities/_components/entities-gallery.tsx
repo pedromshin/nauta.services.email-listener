@@ -26,6 +26,7 @@ import { api } from "~/trpc/react";
 import type { GalleryItem } from "./entities-table";
 import { EntitiesMosaic } from "./entities-mosaic";
 import { EntitiesTable } from "./entities-table";
+import { ReviewQueueChip } from "../review/_components/review-queue-chip";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -250,6 +251,8 @@ export function EntitiesGallery(): React.ReactElement {
       {/* Page header */}
       <header className="flex items-center gap-4 border-b px-6 py-4 shrink-0 bg-background/95 border-border/50">
         <h1 className="text-2xl font-semibold tracking-tight">Entities</h1>
+        {/* EN-02: entry into the merge-review queue (renders only when pending pairs exist) */}
+        <ReviewQueueChip />
         <span className="text-sm text-muted-foreground ml-auto">
           {allItems.length > 0 ? `${allItems.length} entities` : null}
         </span>
