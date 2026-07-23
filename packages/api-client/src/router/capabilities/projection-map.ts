@@ -134,6 +134,7 @@ const DAEMON_CORE = "apps/daemon/src/tools/capabilities.ts";
 const DAEMON_BROWSER = "apps/daemon/src/tools/browser.ts";
 const DAEMON_DIR = "apps/daemon/src/tools/dir.ts";
 const CONTROL_PLANE_DESKTOP = "packages/capabilities/src/desktop.ts";
+const CONTROL_PLANE_CANVAS = "packages/capabilities/src/canvas.ts";
 const CHAT_REGISTRY = "apps/email-listener/app/application/capabilities/registry.py";
 
 const declaredTool = (declaringSource: string): ToolProjection =>
@@ -345,6 +346,30 @@ export const CAPABILITY_PROJECTIONS: readonly CapabilityProjectionDeclaration[] 
     card: CARD_WIRED,
     genui: GENUI_VIA_BINDING,
     canvas: canvasNode("source"),
+  },
+  // AI-01 canvas-mutation triple (control-plane; landed with the same batch as
+  // this gate — entries added at merge time, exactly the friction the gate is
+  // designed to create for new capabilities).
+  {
+    id: "canvas.addNode",
+    tool: declaredTool(CONTROL_PLANE_CANVAS),
+    card: CARD_WIRED,
+    genui: GENUI_VIA_BINDING,
+    canvas: canvasNode("genui-panel"),
+  },
+  {
+    id: "canvas.connect",
+    tool: declaredTool(CONTROL_PLANE_CANVAS),
+    card: CARD_WIRED,
+    genui: GENUI_VIA_BINDING,
+    canvas: canvasNode("genui-panel"),
+  },
+  {
+    id: "canvas.removeNode",
+    tool: declaredTool(CONTROL_PLANE_CANVAS),
+    card: CARD_WIRED,
+    genui: GENUI_VIA_BINDING,
+    canvas: canvasNode("genui-panel"),
   },
 ]);
 

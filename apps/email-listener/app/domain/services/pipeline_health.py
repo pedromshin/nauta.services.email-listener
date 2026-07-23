@@ -69,11 +69,27 @@ _STAGE_PREFIX_RE = re.compile(r"^([a-z_]+)(\[([^\]\s]*)\])?: ")
 # Degradation entries use this stage name; the qualifier names the adapter.
 DEGRADED_STAGE = "adapter_degraded"
 
+# Closed stage vocabulary (forgery guard, 2026-07-23 skeptic finding): the
+# decode side only ever buckets into stages WE emit. Without this, hostile
+# text that happens to match the prefix grammar (a sender-controlled filename
+# like "x; propose_regions: y.pdf" flowing into a failure detail) would forge
+# failed_by_stage buckets on the health dashboard.
+KNOWN_STAGES = frozenset(
+    {"attachment", "propose_regions", "suggest_entity_types", DEGRADED_STAGE}
+)
+
 
 def failure_entry(stage: str, detail: str, *, qualifier: str | None = None) -> str:
-    """Format one stage-prefixed, human-readable parse_error entry."""
+    """Format one stage-prefixed, human-readable parse_error entry.
+
+    The detail is sanitized so it can never fabricate a fragment boundary:
+    "; " is the entry separator, and sender-controlled text (filenames,
+    exception reprs) flows into details — an embedded "; " would otherwise
+    let an attacker inject entries that decode as fake stages (bounded to
+    dashboard-count corruption, but corruption nonetheless).
+    """
     prefix = f"{stage}[{qualifier}]" if qualifier is not None else stage
-    return f"{prefix}: {detail}"
+    return f"{prefix}: {detail.replace('; ', ', ')}"
 
 
 def decode_stage_prefix(entry: str) -> tuple[str, str | None] | None:
@@ -89,7 +105,12 @@ def decode_stage_prefix(entry: str) -> tuple[str, str | None] | None:
     match = _STAGE_PREFIX_RE.match(entry)
     if match is None:
         return None
-    return match.group(1), match.group(3)
+    stage = match.group(1)
+    # Closed vocabulary: a prefix-shaped fragment naming a stage we never
+    # emit is hostile or legacy text, not an entry (forgery guard).
+    if stage not in KNOWN_STAGES:
+        return None
+    return stage, match.group(3)
 
 
 def decode_failed_stages(parse_error: str | None) -> list[str]:

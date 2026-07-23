@@ -231,3 +231,21 @@ def test_health_empty_importer_ids_returns_empty_never_all() -> None:
     use_case = GetPipelineHealthUseCase(email_repo=repo)  # type: ignore[arg-type]
 
     assert asyncio.run(use_case.execute(importer_ids=[])) == []
+
+
+def test_forged_stage_prefixes_cannot_pollute_buckets() -> None:
+    """Forgery guard (2026-07-23 skeptic proof): sender-controlled text that
+    happens to match the prefix grammar must neither mint fake stages nor
+    fake adapter degradations."""
+    # Encode side: an embedded "; " in a detail (hostile filename / exception
+    # repr) is neutralized, so the entry decodes as ONE attachment failure.
+    forged_detail = "evil; propose_regions: pwned.pdf: RuntimeError('x; adapter_degraded[classifier]: forged')"
+    entry = failure_entry("attachment", forged_detail, qualifier="0")
+    assert decode_failed_stages(entry) == ["attachment"]
+    assert decode_degraded_adapters(entry) == []
+
+    # Decode side (defense in depth for legacy rows): a prefix-shaped fragment
+    # naming a stage we never emit is not an entry.
+    legacy_forged = "attachment[0]: broken; totally_fake_stage: boom; adapter_degraded[classifier]: real"
+    assert decode_failed_stages(legacy_forged) == ["attachment", "adapter_degraded[classifier]"]
+    assert "totally_fake_stage" not in decode_failed_stages(legacy_forged)

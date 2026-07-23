@@ -178,7 +178,11 @@ export const CANVAS_NODE_TYPE_IDS: readonly string[] = Object.freeze(
 // the tool definition's parameter schema).
 // ---------------------------------------------------------------------------
 
-const positionSchema = z.object({ x: z.number(), y: z.number() }).strict();
+// .finite(): Infinity/-NaN survive z.number() but JSON.stringify them to null
+// in jsonb, permanently failing snapshot validation on every later load — the
+// row would be refused forever and the UI could then save an empty canvas over
+// the user's layout (skeptic finding, 2026-07-23).
+const positionSchema = z.object({ x: z.number().finite(), y: z.number().finite() }).strict();
 
 export const canvasAddNodeInputSchema = z
   .object({
@@ -256,7 +260,12 @@ export const canvasConnectInputSchema = z
       })
       .optional(),
   })
-  .strict();
+  .strict()
+  // Self-loops are never meaningful for data edges and the canvas renders
+  // them degenerately (skeptic finding, 2026-07-23).
+  .refine((data) => data.sourceNodeId !== data.targetNodeId, {
+    message: "sourceNodeId and targetNodeId must differ (self-loops are not allowed)",
+  });
 export type CanvasConnectInput = z.infer<typeof canvasConnectInputSchema>;
 
 export const canvasRemoveNodeInputSchema = z
@@ -277,8 +286,8 @@ export const canvasNodeSnapshotSchema = z
     id: z.string().min(1),
     type: z.string().min(1),
     position: positionSchema,
-    width: z.number().optional(),
-    height: z.number().optional(),
+    width: z.number().finite().positive().optional(),
+    height: z.number().finite().positive().optional(),
     data: z.record(z.string(), z.unknown()),
   })
   .strict();
