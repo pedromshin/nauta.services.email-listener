@@ -67,6 +67,7 @@ from app.application.use_cases.receive_inbound_email import ReceiveInboundEmailU
 from app.application.use_cases.reprocess_email import ReprocessEmailUseCase
 from app.application.use_cases.research.deep_research import define_research_capability
 from app.application.use_cases.resolve_entity_candidates import ResolveEntityCandidatesUseCase
+from app.application.use_cases.resolve_ingest_entities import ResolveIngestEntitiesUseCase
 from app.application.use_cases.resolve_retheme import ResolveRethemeUseCase
 from app.application.use_cases.run_chat_turn import RunChatTurn
 from app.application.use_cases.run_chat_turn_confirm_action import (
@@ -572,6 +573,29 @@ def _provide_backfill_use_case(
     )
 
 
+def _provide_resolve_ingest_entities_use_case(
+    components: ComponentRepository,
+    entity_instances: EntityInstanceRepository,
+    client: Client,
+) -> ResolveIngestEntitiesUseCase:
+    """Factory for ResolveIngestEntitiesUseCase (AI-03).
+
+    SupabaseEntityResolutionRepository and SupabaseKnowledgeGraphRepository are
+    concrete infrastructure classes (no port Protocol), so — mirroring
+    _provide_promote_entity_use_case / _provide_confirm_region_use_case — this
+    factory instantiates them directly from the Client rather than binding them
+    as ports. The use case is ALWAYS constructible (its test suite exists
+    regardless of the flag); whether the ingest pipeline actually runs it is
+    gated by INGEST_ENTITY_RESOLUTION_ENABLED inside _provide_ingest_use_case.
+    """
+    return ResolveIngestEntitiesUseCase(
+        components=components,
+        entity_instances=entity_instances,
+        resolution_repo=SupabaseEntityResolutionRepository(client=client),
+        knowledge=SupabaseKnowledgeGraphRepository(client=client),
+    )
+
+
 def _provide_ingest_use_case(
     raw_store: RawEmailStore,
     email_repo: EmailRepository,
@@ -585,6 +609,7 @@ def _provide_ingest_use_case(
     thread_resolver: ThreadResolver,
     forwarding_resolver: ForwardingAddressResolver,
     suggest_entity_types: SuggestEntityTypesUseCase,
+    resolve_ingest_entities: ResolveIngestEntitiesUseCase,
 ) -> IngestInboundEmailUseCase:
     """Factory for IngestInboundEmailUseCase.
 
@@ -607,11 +632,18 @@ def _provide_ingest_use_case(
     forwarding_resolver (Phase 45, THRD-04) is resolved BEFORE importer_id
     inside execute() and is also best-effort (T-45-05-03): its output anchors
     a newly-created importer to the forwarding token's owning user_id.
+
+    resolve_ingest_entities (AI-03) is the ingest-time entity-resolution stage.
+    It is injected ALWAYS but wired into the use case only when
+    INGEST_ENTITY_RESOLUTION_ENABLED is set — a False flag passes None, so the
+    pipeline STRUCTURALLY omits the stage (a real kill-switch, not a mutation),
+    matching the SEARCH_KNOWLEDGE_TOOL_ENABLED exposure-gate convention.
     """
     raw_registry = _provide_parser_registry()
     # _provide_parser_registry returns ``object`` to satisfy dishka; cast back
     # to the correct callable type for IngestInboundEmailUseCase.
     parser_registry: ParserRegistryPort = raw_registry  # type: ignore[assignment]
+    resolution_enabled = get_settings().INGEST_ENTITY_RESOLUTION_ENABLED
     return IngestInboundEmailUseCase(
         raw_store=raw_store,
         email_repo=email_repo,
@@ -625,6 +657,7 @@ def _provide_ingest_use_case(
         thread_resolver=thread_resolver,
         forwarding_resolver=forwarding_resolver,
         suggest_entity_types=suggest_entity_types,
+        resolve_ingest_entities=resolve_ingest_entities if resolution_enabled else None,
     )
 
 
@@ -1253,6 +1286,10 @@ def _build_provider() -> Provider:  # noqa: PLR0915
     # is a Callable type alias with forward-ref annotations that dishka cannot
     # analyse.  Use a factory function instead of provide(class) to sidestep the
     # UndefinedTypeAnalysisError.
+    # ResolveIngestEntitiesUseCase (AI-03): concrete resolution + knowledge
+    # repos are instantiated inside its factory; injected into the ingest
+    # factory, which gates it on INGEST_ENTITY_RESOLUTION_ENABLED.
+    provider.provide(_provide_resolve_ingest_entities_use_case, provides=ResolveIngestEntitiesUseCase)
     provider.provide(_provide_ingest_use_case, provides=IngestInboundEmailUseCase)
     provider.provide(ProposeRegionsUseCase)
     # SuggestEntityTypesUseCase (Phase 57-02, LEARN-02): factory passes the

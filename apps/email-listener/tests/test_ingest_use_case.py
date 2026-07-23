@@ -60,6 +60,7 @@ def _make_use_case(
     importer_resolver: MagicMock | None = None,
     thread_resolver: MagicMock | None = None,
     forwarding_resolver: MagicMock | None = None,
+    resolve_ingest_entities: MagicMock | None = None,
 ) -> tuple[IngestInboundEmailUseCase, dict[str, MagicMock]]:
     """Factory that constructs IngestInboundEmailUseCase with all collaborators.
 
@@ -119,6 +120,7 @@ def _make_use_case(
         importer_resolver=importer_resolver,
         thread_resolver=thread_resolver,
         forwarding_resolver=forwarding_resolver,
+        resolve_ingest_entities=resolve_ingest_entities,
     )
     mocks: dict[str, MagicMock] = {
         "raw_store": raw_store,
@@ -132,6 +134,8 @@ def _make_use_case(
         "thread_resolver": thread_resolver,
         "forwarding_resolver": forwarding_resolver,
     }
+    if resolve_ingest_entities is not None:
+        mocks["resolve_ingest_entities"] = resolve_ingest_entities
     return use_case, mocks
 
 
@@ -851,3 +855,86 @@ def test_parse_error_stays_capped_and_human_readable() -> None:
     assert email.parse_error is not None
     assert len(email.parse_error) <= _PARSE_ERROR_MAX_LEN
     assert not email.parse_error.lstrip().startswith("{")
+
+
+# ---------------------------------------------------------------------------
+# AI-03 — ingest-time entity resolution stage (post-persist, isolated)
+# ---------------------------------------------------------------------------
+
+
+def test_resolution_stage_runs_after_persist_with_sender() -> None:
+    """When wired, the resolution stage runs post-persist with the email's
+    id/importer and the parsed sender."""
+    resolve = MagicMock()
+    resolve.execute = AsyncMock(return_value={"candidate_links": 1, "suggested_edges": 1, "components": 1})
+
+    use_case, _mocks = _make_use_case(_raw_email(), resolve_ingest_entities=resolve)
+    email = asyncio.run(use_case.execute(SES_MESSAGE_ID))
+
+    resolve.execute.assert_awaited_once_with(
+        email_id=email.id,
+        importer_id=IMPORTER_ID,
+        sender_address="maria@exporter.com",
+        sender_name="Maria",
+    )
+    # A clean resolution leaves the email fully parsed.
+    assert email.parse_status == "parsed"
+
+
+def test_resolution_stage_absent_by_default_does_not_run() -> None:
+    """Without the collaborator (default None) the stage is structurally omitted
+    — the flag's OFF state — and ingestion still finalizes clean."""
+    use_case, mocks = _make_use_case(_raw_email())
+    email = asyncio.run(use_case.execute(SES_MESSAGE_ID))
+
+    assert "resolve_ingest_entities" not in mocks
+    assert email.parse_status == "parsed"
+
+
+def test_resolution_failure_records_stage_prefix_and_marks_failed_without_losing_email() -> None:
+    """A resolution crash is isolated under the ST-04 contract: the email is
+    still persisted, parse_status transitions to 'failed', and parse_error
+    carries the 'entity_resolution' stage prefix (never propagates to the
+    SNS-facing caller)."""
+    resolve = MagicMock()
+    resolve.execute = AsyncMock(side_effect=RuntimeError("resolution rpc down"))
+
+    use_case, mocks = _make_use_case(_raw_email(), resolve_ingest_entities=resolve)
+    email = asyncio.run(use_case.execute(SES_MESSAGE_ID))  # must not raise
+
+    # The email is NOT lost — it was persisted before the stage ran.
+    mocks["email_repo"].save.assert_awaited_once()
+    assert email is not None
+    assert email.importer_id == IMPORTER_ID
+
+    # Stage-prefixed failure recorded; email finalized 'failed', not 'parsed'.
+    assert email.parse_status == "failed"
+    assert email.parse_error is not None
+    assert "entity_resolution: " in email.parse_error
+    assert "resolution rpc down" in email.parse_error
+    assert email.parsed_at is None
+
+    _email_id, status, error = mocks["email_repo"].update_parse_status.await_args.args
+    assert status == "failed"
+    assert "entity_resolution" in error
+
+
+def test_resolution_failure_still_allows_other_stage_failures_to_coexist() -> None:
+    """A resolution failure and a propose_regions failure both surface in the
+    same failures summary (each stage isolated independently)."""
+    propose_regions = MagicMock()
+    propose_regions.execute = AsyncMock(side_effect=RuntimeError("propose boom"))
+    resolve = MagicMock()
+    resolve.execute = AsyncMock(side_effect=RuntimeError("resolve boom"))
+
+    use_case, _mocks = _make_use_case(
+        _raw_email(with_attachment=False),
+        propose_regions=propose_regions,
+        resolve_ingest_entities=resolve,
+    )
+    email = asyncio.run(use_case.execute(SES_MESSAGE_ID))
+
+    assert email.parse_status == "failed"
+    assert email.parse_error is not None
+    assert "propose_regions" in email.parse_error
+    assert "entity_resolution" in email.parse_error

@@ -10,6 +10,7 @@ Two pure-domain concerns (stdlib only):
        attachment[0]: bl.pdf: RuntimeError('corrupt PDF stream')
        propose_regions: RuntimeError('bedrock down')
        suggest_entity_types: TimeoutError()
+       entity_resolution: RuntimeError('resolution rpc failed')
        adapter_degraded[classifier]: classify_regions failed: APIError
 
    Entries are joined with ``"; "``. :func:`decode_failed_stages` recovers the
@@ -74,9 +75,7 @@ DEGRADED_STAGE = "adapter_degraded"
 # text that happens to match the prefix grammar (a sender-controlled filename
 # like "x; propose_regions: y.pdf" flowing into a failure detail) would forge
 # failed_by_stage buckets on the health dashboard.
-KNOWN_STAGES = frozenset(
-    {"attachment", "propose_regions", "suggest_entity_types", DEGRADED_STAGE}
-)
+KNOWN_STAGES = frozenset({"attachment", "propose_regions", "suggest_entity_types", "entity_resolution", DEGRADED_STAGE})
 
 
 def failure_entry(stage: str, detail: str, *, qualifier: str | None = None) -> str:

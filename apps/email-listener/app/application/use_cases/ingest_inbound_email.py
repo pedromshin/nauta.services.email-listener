@@ -11,8 +11,12 @@ Post-persist dispatch (D-10):
 - ProposeRegionsUseCase is called once after all attachments are processed.
 - SuggestEntityTypesUseCase is called after propose_regions to auto-classify
   candidate regions with entity-type suggestions (suggest-only, best-effort).
-  All three post-persist steps are isolated: failures are logged but never
-  propagate to the SNS-facing caller.
+- ResolveIngestEntitiesUseCase (AI-03) is called LAST, once the components are
+  classified, to resolve the email's entity regions against the identity corpus
+  and propose pending candidate links + suggested-tier knowledge edges
+  (suggest-only; nothing lands as canon without the human promotion gate).
+  All four post-persist steps are isolated: failures are logged, recorded into
+  the failures list, but never propagate to the SNS-facing caller.
 
 Parse-status lifecycle (ING-6, extended by ST-04):
 - Post-persist failures are ISOLATED but never INVISIBLE. Every swallowed
@@ -46,6 +50,7 @@ from datetime import UTC, datetime
 import structlog
 
 from app.application.use_cases.propose_regions import ProposeRegionsUseCase
+from app.application.use_cases.resolve_ingest_entities import ResolveIngestEntitiesUseCase
 from app.application.use_cases.suggest_entity_types import SuggestEntityTypesUseCase
 from app.domain.entities.attachment import Attachment
 from app.domain.entities.email import Email
@@ -129,6 +134,7 @@ class IngestInboundEmailUseCase:
         thread_resolver: ThreadResolver,
         forwarding_resolver: ForwardingAddressResolver,
         suggest_entity_types: SuggestEntityTypesUseCase | None = None,
+        resolve_ingest_entities: ResolveIngestEntitiesUseCase | None = None,
     ) -> None:
         self._raw_store = raw_store
         self._email_repo = email_repo
@@ -142,6 +148,10 @@ class IngestInboundEmailUseCase:
         self._thread_resolver = thread_resolver
         self._forwarding_resolver = forwarding_resolver
         self._suggest_entity_types = suggest_entity_types
+        # AI-03: optional so existing tests / non-wired construction keep working
+        # and so the ingest-time resolution stage can be turned OFF without code
+        # change (the container injects None when the flag is disabled).
+        self._resolve_ingest_entities = resolve_ingest_entities
 
     async def execute(self, ses_message_id: str, recipients: Sequence[str] = ()) -> Email:
         """Ingest the email identified by the SES message id; returns the persisted Email."""
@@ -249,6 +259,27 @@ class IngestInboundEmailUseCase:
                         email_id=saved.id,
                     )
                     failures.append(failure_entry("suggest_entity_types", repr(exc)))
+
+            # AI-03: ingest-time entity resolution + suggested knowledge edges.
+            # Runs LAST so it sees the just-classified entity regions. Optional
+            # (config flag) — the container injects None to disable it. Isolated
+            # under the same ST-04 contract: a failure is recorded with the
+            # 'entity_resolution' stage prefix and drives 'failed', but never
+            # aborts ingestion nor loses the email.
+            if self._resolve_ingest_entities is not None:
+                try:
+                    await self._resolve_ingest_entities.execute(
+                        email_id=saved.id,
+                        importer_id=importer_id,
+                        sender_address=saved.sender_address,
+                        sender_name=saved.sender_name,
+                    )
+                except Exception as exc:
+                    logger.exception(
+                        "entity_resolution_failed",
+                        email_id=saved.id,
+                    )
+                    failures.append(failure_entry("entity_resolution", repr(exc)))
 
         # Drive the parse_status lifecycle so the UI's 'failed'/'degraded' tone
         # + Reprocess affordance can fire; a healthy run transitions
