@@ -65,10 +65,18 @@ into grouped `app/composition/*.py` modules, each owning its factories + a `regi
   graph. This is the gate: any binding lost during a move fails here loudly.
 - ✅ GROUP 1 GenUI (`a28402b`): 11 factories → `app/composition/genui_providers.py`. 1434 → 1252.
   Verified: 13 boot tests + mypy + lint-imports + 304 genui tests green. Zero behavior change.
-- ✅ GROUP 2 Supabase repositories (`26748ad`): the highest-churn cluster (every repo→port binding +
-  retrieval/correction/instrumentation factories + 4 chat-spine repos) → `repository_providers.py`.
-  1252 → 1165. Verified: 13 boot tests + mypy + lint-imports + 86 chat/retrieval tests green.
-  PATTERN PROVEN + safety-netted: each further group is low-risk mechanical continuation.
+- ✅ GROUP 2 Supabase repositories (`26748ad`): highest-churn cluster → `repository_providers.py`. 1252→1165.
+- ✅ GROUP 3 LLM adapters (`4a040fa`): autofiller/classifier/segmenter + both chat adapters + router
+  → `llm_adapter_providers.py`. 1165→1092.
+- ✅ ULTRACODE AUDIT (`wf_2708aa65`, 5 agents/3 adversarial lenses): binding-set EQUIVALENT (88=88,
+  nothing dropped), moved-factory bodies byte-identical, none touch patched globals. Found + FIXED a
+  safety-net hole: boot test reached only 66/88 → strengthened to resolve ALL 88 (`6e31a09`).
+- ✅ GROUPS 4+5 cost + anticipatory (`4c6d331`): → `cost_providers.py`, `anticipatory_providers.py`. 1092→1039.
+- container.py now 1039 (from 1434). **5 of ~9 groups extracted; ALL shipped to main.**
+- ⏭️ REMAINING (turnkey spec in `.planning/assessment/2026-07-24/12-container-split-remaining.md`):
+  chat_turn → document_region → entity → ingestion (order + per-group gotchas + must-stay list +
+  the exact 4-step verify loop are all in that doc). ingestion needs a deferred import (parser_registry).
+  PATTERN PROVEN + full-graph safety net: each remaining group is low-risk mechanical continuation.
 - ⛔ CONSTRAINT (do not trip): the boot tests patch `app.container.get_supabase_client` /
   `get_anthropic_client` / `boto3`. The client-singleton factories that call those globals MUST
   stay in container.py — only move factories that take `client`/ports as INJECTED params.
