@@ -57,6 +57,22 @@ no live process). Recovered by hand and shipped the real work:
   NEXT: Task #7 FOUNDATION — Track 2 (split container.py FIRST) → Track 1 (TF state) → Track 3
   (graphile-worker + Workspace→Canvas→Node rows). Strategic FORK still OPEN (doesn't block 2/1/3).
 
+## TRACK 2 FOUNDATION IN PROGRESS — container.py decomposition (2026-07-24)
+Goal: split the 1434-line `container.py` (the "merge-conflict magnet", ~60 dishka providers)
+into grouped `app/composition/*.py` modules, each owning its factories + a `register(provider)`.
+- ✅ SAFETY NET first (`3772eae`): `app/__tests__/test_container_boot.py` resolves all 19 major
+  top-level providers under mocked clients — their transitive closure spans nearly the whole
+  graph. This is the gate: any binding lost during a move fails here loudly.
+- ✅ GROUP 1 GenUI (`a28402b`): 11 factories → `app/composition/genui_providers.py`. container.py
+  1434 → 1252 lines. Verified: 13 boot tests + mypy + lint-imports + 304 genui tests green. Zero
+  behavior change.
+- ⛔ CONSTRAINT (do not trip): the boot tests patch `app.container.get_supabase_client` /
+  `get_anthropic_client` / `boto3`. The client-singleton factories that call those globals MUST
+  stay in container.py — only move factories that take `client`/ports as INJECTED params.
+- NEXT groups (same register-pattern, verify with boot test each time): repositories (highest
+  churn), LLM adapters (autofiller/classifier/segmenter/chat), ingestion, entity/region use cases,
+  chat spine. Then Track 1 (TF state) → Track 3 (graphile-worker + node rows).
+
 ## Status: ASSESSMENT + MASTER PLAN DELIVERED ✅ · foundation started (2026-07-24)
 
 > Pedro pasted the "optimized handoff" (assessment-and-plan brief) + "use ultracode and best model",
