@@ -52,6 +52,7 @@ import {
 import { api } from "~/trpc/react";
 
 import { useSendTo, type SendableObject } from "../../_components/use-send-to";
+import { ThreadPickerDialog } from "./thread-picker";
 
 /** A `vault_file` sourceRef as it appears on a context-edge row (jsonb, so
  * `unknown` at the wire — narrowed defensively). */
@@ -109,6 +110,10 @@ export function ComposerAttachments({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [vaultOpen, setVaultOpen] = useState(false);
+  // The searchable inbox picker (ThreadPickerDialog) opens as a modal from the
+  // attach menu — a dropdown can't host a search input without its typeahead
+  // fighting the field.
+  const [inboxPickerOpen, setInboxPickerOpen] = useState(false);
 
   const edgesQuery = api.chat.listContextEdges.useQuery({ conversationId });
   const requestUpload = api.files.requestUpload.useMutation();
@@ -124,10 +129,13 @@ export function ComposerAttachments({
     { enabled: vaultOpen },
   );
 
-  // Inbox threads, fetched only when the attach menu is opened.
+  // Inbox threads — resolves the SUBJECT for any attached-thread chip (the edge
+  // stores only a threadId). Shares the {} query key with ThreadPickerDialog so
+  // opening the picker never refetches. Enabled whenever a context edge exists
+  // (cheap) or the picker is open.
   const threadsQuery = api.emails.listThreads.useQuery(
-    { limit: 50 },
-    { enabled: vaultOpen },
+    {},
+    { enabled: (edgesQuery.data?.length ?? 0) > 0 || inboxPickerOpen },
   );
 
   const attachedFiles = (edgesQuery.data ?? [])
@@ -296,33 +304,13 @@ export function ComposerAttachments({
             Upload from device
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuLabel className="text-2xs font-normal text-faded">
-            From your inbox
-          </DropdownMenuLabel>
-          {threadsQuery.isPending ? (
-            <DropdownMenuItem disabled>Loading threads…</DropdownMenuItem>
-          ) : threadsQuery.isError ? (
-            <DropdownMenuItem disabled>Couldn&apos;t reach your inbox</DropdownMenuItem>
-          ) : (
-            (() => {
-              const threads = (threadsQuery.data?.items ?? []).filter(
-                (t): t is typeof t & { threadId: string } => t.threadId !== null,
-              );
-              if (threads.length === 0) {
-                return <DropdownMenuItem disabled>No email threads yet</DropdownMenuItem>;
-              }
-              return threads.slice(0, 20).map((t) => (
-                <DropdownMenuItem
-                  key={t.threadId}
-                  disabled={busy}
-                  onSelect={() => attachEmailThread(t.threadId, t.subject ?? "(no subject)")}
-                >
-                  <Mail className="size-4 shrink-0 text-faded" aria-hidden />
-                  <span className="truncate">{t.subject ?? "(no subject)"}</span>
-                </DropdownMenuItem>
-              ));
-            })()
-          )}
+          <DropdownMenuItem
+            onSelect={() => setInboxPickerOpen(true)}
+            disabled={busy}
+          >
+            <Mail className="size-4" aria-hidden />
+            Search your inbox…
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel className="text-2xs font-normal text-faded">
             From your vault
@@ -353,6 +341,18 @@ export function ComposerAttachments({
           )}
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {/* Searchable inbox picker — opened from "Search your inbox…" above. A
+          modal palette (not nested in the dropdown) so its search field owns
+          the keyboard. */}
+      <ThreadPickerDialog
+        open={inboxPickerOpen}
+        onOpenChange={setInboxPickerOpen}
+        onSelect={(threadId, subject) => {
+          attachEmailThread(threadId, subject);
+          setInboxPickerOpen(false);
+        }}
+      />
     </div>
   );
 }
