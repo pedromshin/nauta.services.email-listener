@@ -4,7 +4,23 @@
 > UPDATE THIS FILE at every batch launch, batch completion, and merge. This file is the single
 > source of truth for "where are we"; chat context is disposable.
 
-## Status: EDITOR-MERGE SHIPPED TO MAIN ✅ (2026-07-24, main @ 54622c1) — Vercel building
+## Status: SHIPPING THE VISION 🚢 (2026-07-24, main @ 0dd20bb) — editor-merge + more node types live
+
+> Post editor-merge, prod verified healthy (root 307, /emails/[id] 307 — no 500s). Continued
+> per "everything is everything":
+>   - 0dd20bb feat(web): blank Spreadsheet node addable from the canvas Add-node menu
+>     (api.spreadsheets.create → place node). Add-node menu now offers 5 types: Email treemap,
+>     Drive treemap, Spreadsheet, Email thread, Knowledge node. Web 136 files / 1719 green;
+>     prod build clean. Fast-forwarded main 54622c1..0dd20bb.
+> Remaining vision (large, better built with Pedro verifying — staged, not blind-shipped):
+>   - AI-creates-a-node-from-a-prompt (tell the agent → it builds a genui data node from the
+>     right SQL). Listener + web; the big "wow". Design in .planning/research/2026-07-23-
+>     CANVAS-WORKSPACE-PLATFORM.md.
+>   - chat writes files into a node (into an existing dir/drive node or a new one).
+>   - document node create flow (documents router has no create yet — needs a mutation).
+> #13 listener-auth still deferred pending Pedro.
+
+## Prior status: EDITOR-MERGE SHIPPED TO MAIN ✅ (2026-07-24, main @ 54622c1) — Vercel building
 
 > Pedro: "everything is everything" — do it all, no more asking. Shipped the HEADLINE that
 > had been dodged all session:
