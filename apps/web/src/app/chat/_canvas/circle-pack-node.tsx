@@ -95,7 +95,13 @@ export const CirclePackNode = memo(function CirclePackNode({
         </button>
       </div>
 
-      <div className="relative flex flex-1 items-center justify-center p-2">
+      {/* GESTURE ISOLATION ("NAVIGATE FREELY THROUGH THE TREEMAP ... ALL INSIDE
+          THE CANVAS") — `nowheel nopan nodrag` keep a wheel/pinch/drag OVER the
+          pack from bubbling to React Flow, so the gesture explores the treemap
+          (CirclePack's own click-to-zoom + zoom-out) instead of panning the
+          board. The header row keeps `node-drag-handle`, so the card still
+          drags by its title bar. Mirrors spreadsheet-node / editor-node. */}
+      <div className="nowheel nopan nodrag relative flex flex-1 items-center justify-center p-2">
         {data.scope === "drive" ? (
           <DriveLandscapeBody data={data} label={label} />
         ) : (
