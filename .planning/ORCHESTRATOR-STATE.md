@@ -4,6 +4,40 @@
 > UPDATE THIS FILE at every batch launch, batch completion, and merge. This file is the single
 > source of truth for "where are we"; chat context is disposable.
 
+## Status: ASSESSMENT + MASTER PLAN DELIVERED ✅ · foundation started (2026-07-24)
+
+> Pedro pasted the "optimized handoff" (assessment-and-plan brief) + "use ultracode and best model",
+> then course-corrected hard: "nothing shows up on my UI… I need stuff actually built and on my UI."
+> Two workflows launched:
+>   1. VISIBLE BUILD BATCH (wf_6f85ee71-d16) — 6 slices in isolated worktrees (treemap zoom-out,
+>      attachment carousel, chat auto-load+FAB, screenshot fix, genui graceful-fail, email-context-
+>      in-chat), each wired to a reachable route + adversarially verified. STILL RUNNING as of this
+>      write; branches `claude/wf1-*`. On return: merge verified → full integrated gates → ship to
+>      main (ONE Vercel build) → give Pedro click-paths. NOTHING on main yet.
+>   2. ASSESSMENT + PLAN (wf_a0b0c50b-cb6) — DONE. 8 recon + 6 research lanes → docs in
+>      `.planning/assessment/2026-07-24/` + `.planning/research/2026-07-24/`; synthesis in
+>      `00-MASTER-PLAN.md` (committed 52bdfb2). Artifact (phone-readable) published.
+>
+> Pedro's DECISION (AskUserQuestion): "Ship visible batch + start foundation." The strategic FORK
+> (broad platform vs email wedge) is still OPEN — it only reorders feature Tracks 6 vs 7/8/9, all
+> downstream of the foundation, so it does NOT block Tracks 0–3.
+>
+> TRACK 0 (landmine safing) — DONE this session (docs only, zero code risk):
+>   - CLAUDE.md: added the "Live-infra landmines" guard (magnitudetech/nauta are LIVE — renaming =
+>     mail outage; no TF remote state; SES sandbox; SNS swallows failures) + fixed the stale
+>     orientation pointer (was → 07-22 META-AUDIT; now → this ledger + the master plan).
+>   - STATE.md: added a banner (it's GSD phase-tracking, not the live ledger).
+>   - Key rotation + budget-alert decoupling + AWS Budget hard-cap = Pedro's out-of-band actions
+>     (can't be done from here); flagged in the master plan §4 + Track 0.
+>
+> NEXT (after the visible batch merges — deliberately sequenced AFTER it so I don't collide with the
+> in-flight wf1 branches on container.py/run_chat_turn.py):
+>   - TRACK 2: split container.py (merge-conflict magnet) FIRST, then run_chat_turn.py / chat-canvas.tsx
+>     / manifest.ts; add TypeScript CI (zero exists today); real-Postgres tenant-isolation CI job.
+>   - TRACK 1: Terraform remote state + import ALL live resources (gate before any apply).
+>   - TRACK 3: graphile-worker durable runtime (3a, fixes silent email loss) + Workspace→Canvas→Node
+>     rows (3b). Serialized behind 1 & 2; sole migration owner.
+
 ## Status: DOCUMENT-NODE SHIPPED TO MAIN ✅ (2026-07-24, main @ 2615ebc) — Vercel building
 
 > New session (opus-4.8, session_016dmeeGLzwLPZfRwGpByHmn) resuming the unattended run.

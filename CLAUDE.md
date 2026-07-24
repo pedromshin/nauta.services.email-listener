@@ -2,6 +2,12 @@
 
 Facts below are sourced from `docs/RUN-LOCAL.md` (canonical local-stack doc — it wins over any other doc) and root `package.json`. Read those before improvising.
 
+## ⚠️ Live-infra landmines — read before touching infra or domain/resource names
+- **`magnitudetech.com.br` and `nauta-*` are LIVE production names, NOT stale residue.** Inbound mail is built entirely on `magnitudetech.com.br` (`infrastructure/aws/ses.tf:3`; receipt rules route there; `personal-forward` → `pedro@magnitudetech.com.br`). The Vercel project is still named `nauta-web` (`docs/DEPLOY.md:20`); `var.project` default is `nauta-services` (`variables.tf:16`) — S3 inbound bucket, SNS topics, TF-state bucket, `nauta-el` TG prefix. Purging the maritime **domain model** is safe (done). **Renaming these *resources* recreates the SES pipeline + re-points DNS = mail outage.** Never fold "purge domain model" and "rename infra namespace" into one task.
+- **No Terraform remote state backend** (S3 backend commented in `main.tf`). Any `terraform apply` from a checkout lacking the local imported state can recreate/drop live SES rules → mail outage. Do NOT `apply` until shared state exists and every live resource is imported (see `infrastructure/aws/IMPORT-RUNBOOK.md`).
+- **SES may be in sandbox** (`ProductionAccessEnabled=False`) — outbound only reaches verified identities, so any multi-user outbound-mail feature is blocked on AWS production-access approval regardless of code.
+- **Inbound SNS handler swallows failures** (`apps/email-listener/.../sns_inbound.py` returns 200 on any exception) — a failed ingest silently, permanently loses the email today. The graphile-worker durable runtime (Track 3a in the master plan) is the fix.
+
 ## Package management
 - **npm workspaces, NOT pnpm.** Root `package.json` `workspaces: ["packages/*", "apps/web", "apps/daemon"]`. `pnpm install` pollutes the tree — always `npm`.
 - `apps/email-listener` is Python managed by **uv** (not pip/poetry): `uv run pytest`, `uv run ruff`, `uv run mypy app`. Root scripts wrap these (`npm run test|lint|typecheck|check`).
@@ -38,7 +44,7 @@ Facts below are sourced from `docs/RUN-LOCAL.md` (canonical local-stack doc — 
 | `packages/genui` | generative-UI components |
 | `packages/db` | Drizzle schema + migrations (`npm run db:migrate` at root) |
 | `packages/ui` | shared UI kit (see skill `polytoken-design-system`) |
-| `.planning/` | GSD planning state (roadmap, phases, ui-reviews; current audit: `.planning/research/2026-07-22-META-AUDIT.md`) |
+| `.planning/` | GSD planning state. **Current status/ledger: `.planning/ORCHESTRATOR-STATE.md`** (the single live "where are we"). **Latest assessment + build sequence: `.planning/assessment/2026-07-24/00-MASTER-PLAN.md`.** `STATE.md`/`HANDOFF.json` are GSD phase-tracking (older); the 07-22 `research/META-AUDIT.md` is superseded — do not orient on it. |
 
 ## Skills tracking
 - `.gitignore` ignores `.claude/skills/` wholesale — any NEW skill must be un-ignored with a `!.claude/skills/<name>/` negation line or it silently goes untracked.

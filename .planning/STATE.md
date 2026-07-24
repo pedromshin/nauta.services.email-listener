@@ -14,6 +14,12 @@ progress:
 
 # State
 
+> **⚠️ Not the live "where are we."** This file tracks GSD milestone/phase state and is
+> older than the active work. For current status use **`.planning/ORCHESTRATOR-STATE.md`**
+> (the single live run ledger); for the forward build sequence use
+> **`.planning/assessment/2026-07-24/00-MASTER-PLAN.md`**. The 07-22 META-AUDIT referenced
+> below is superseded — do not orient a fresh session on it.
+
 ## Project Reference
 
 See: `.planning/PROJECT.md` · Roadmap: `.planning/ROADMAP.md` · Ground truth for this
