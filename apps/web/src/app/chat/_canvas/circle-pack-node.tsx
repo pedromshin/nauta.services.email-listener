@@ -2,10 +2,12 @@
 
 /**
  * circle-pack-node.tsx — CirclePackNode: the canvas's `circle-pack` custom node
- * (FEATURE-CATALOG TM-03 + TM-04). It wraps the shared `CirclePack` primitive
- * (TM-01, `@polytoken/ui/circle-pack`) so the agent can PLACE a landscape in
- * answer to "show me what's eating my inbox" OR "…my drive" (composes with
- * AI-01's canvas.addNode — this file only registers the type + component).
+ * (FEATURE-CATALOG TM-03 + TM-04). It wraps the shared `Treemap` primitive
+ * (`@polytoken/ui/treemap`, the WizTree-style rectangular landscape that
+ * replaced the circle pack) so the agent can PLACE a landscape in answer to
+ * "show me what's eating my inbox" OR "…my drive" (composes with AI-01's
+ * canvas.addNode — this file only registers the type + component). The node id
+ * stays `circle-pack` for wire/registry stability; only the rendering changed.
  *
  * Ref-only, like every sibling: `node.data` carries a SCOPE (mailbox/importer/
  * entity id, or drive + folder path), never the aggregated tree. The hierarchy
@@ -29,7 +31,7 @@ import type { Node, NodeProps } from "@xyflow/react";
 import { useRouter } from "next/navigation";
 import { AlertCircle, CircleDashed, X } from "lucide-react";
 
-import { CirclePack, type CircleDatum } from "@polytoken/ui/circle-pack";
+import { Treemap, type TreeNode } from "@polytoken/ui/treemap";
 import { Skeleton } from "@polytoken/ui/skeleton";
 
 import { api } from "~/trpc/react";
@@ -167,13 +169,13 @@ function MailboxLandscapeBody({
     importerId: data.importerId,
   });
 
-  const tree = query.data as CircleDatum<LandscapeLeaf> | undefined;
+  const tree = query.data as TreeNode<LandscapeLeaf> | undefined;
   const hasContent = tree !== undefined && (tree.children?.length ?? 0) > 0;
 
   if (query.isPending) {
     return (
       <div role="status" aria-label="Loading landscape" className="flex size-full items-center justify-center">
-        <Skeleton className="size-[220px] rounded-full" />
+        <Skeleton className="size-full rounded-card" />
       </div>
     );
   }
@@ -194,27 +196,33 @@ function MailboxLandscapeBody({
   }
   if (hasContent && tree) {
     return (
-      <CirclePack<LandscapeLeaf>
+      <Treemap<LandscapeLeaf>
         data={tree}
         width={PACK_W}
         height={PACK_H}
         ariaLabel={label}
-        className="border-0 bg-transparent"
-        onLeafActivate={(circle) => {
-          const leaf = circle.datum.leaf;
+        className="size-full border-0 bg-transparent"
+        evidenceLabels
+        onLeafActivate={(rect) => {
+          const leaf = rect.datum.leaf;
           if (leaf) router.push(hrefFor("email", leaf.emailId));
         }}
-        renderHoverCard={(circle) => (
+        formatValue={(rect) =>
+          rect.isLeaf
+            ? (rect.datum.leaf?.senderAddress ?? "")
+            : `${rect.value.toLocaleString()} messages`
+        }
+        renderHoverCard={(rect) => (
           <span className="flex flex-col gap-0.5">
             {/* The mail's own subject — serif + data-evidence (the pair). */}
             <span className="truncate font-serif text-ink" data-evidence>
-              {circle.datum.name}
+              {rect.datum.name}
             </span>
             {/* polytoken's summary line — sans chrome. */}
             <span className="tabular text-2xs text-faded">
-              {circle.isLeaf
-                ? (circle.datum.leaf?.senderAddress ?? "")
-                : `${circle.value.toLocaleString()} messages`}
+              {rect.isLeaf
+                ? (rect.datum.leaf?.senderAddress ?? "")
+                : `${rect.value.toLocaleString()} messages`}
             </span>
           </span>
         )}

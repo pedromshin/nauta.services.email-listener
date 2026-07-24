@@ -1,12 +1,13 @@
 "use client";
 
 /**
- * drive-landscape-view.tsx — DriveLandscapeView: the drive circle-pack view
- * (FEATURE-CATALOG TM-04). It renders the SHARED `CirclePack` primitive (TM-01,
- * `@polytoken/ui/circle-pack`) over a hierarchy built by descending
+ * drive-landscape-view.tsx — DriveLandscapeView: the drive landscape view
+ * (FEATURE-CATALOG TM-04). It renders the SHARED `Treemap` primitive
+ * (`@polytoken/ui/treemap`, the WizTree-style rectangular landscape that
+ * replaced the circle pack) over a hierarchy built by descending
  * `files.folderSizeRollup` (the merged DR-04 aggregate) with the pure
- * `buildDriveHierarchy` builder — the vault as a landscape of nested byte
- * circles.
+ * `buildDriveHierarchy` builder — the vault as a landscape of nested, LABELLED
+ * byte tiles.
  *
  * REUSE, NOT REBUILD: the layout math, zoom, keyboard nav and hover card are all
  * the primitive's; this file owns only (a) fetching the levels via an injected
@@ -32,7 +33,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle, CircleDashed } from "lucide-react";
 
-import { CirclePack, type CircleDatum } from "@polytoken/ui/circle-pack";
+import { Treemap, type TreeNode } from "@polytoken/ui/treemap";
 import { Skeleton } from "@polytoken/ui/skeleton";
 
 import { formatBytes } from "../_lib/vault-format";
@@ -100,7 +101,7 @@ export function DriveLandscapeView({
 }: DriveLandscapeViewProps): React.ReactElement {
   const pathKey = (rootPath ?? []).join("/");
 
-  const query = useQuery<CircleDatum<DriveLeaf>>({
+  const query = useQuery<TreeNode<DriveLeaf>>({
     queryKey: ["drive-landscape", pathKey],
     queryFn: () => buildDriveHierarchy({ fetchLevel, rootPath, rootName }),
   });
@@ -125,7 +126,7 @@ export function DriveLandscapeView({
           aria-label="Loading drive landscape"
           className="flex size-full items-center justify-center"
         >
-          <Skeleton className="size-[220px] rounded-full" />
+          <Skeleton className="size-full rounded-card" />
         </div>
       ) : query.isError ? (
         <div className="flex h-full flex-col items-center justify-center gap-1.5 px-1 text-center">
@@ -140,47 +141,32 @@ export function DriveLandscapeView({
           </button>
         </div>
       ) : hasContent && tree ? (
-        <CirclePack<DriveLeaf>
+        <Treemap<DriveLeaf>
           data={tree}
           width={w}
           height={h}
+          className="size-full"
           ariaLabel="Drive landscape"
-          onLeafActivate={(circle) => {
-            const leaf = circle.datum.leaf;
+          onLeafActivate={(rect) => {
+            const leaf = rect.datum.leaf;
             // Only real files deep-link; a folder aggregate / overflow tail does not.
             if (leaf && !leaf.isFolder && leaf.overflow !== true) onActivateLeaf?.(leaf);
           }}
-          renderLeaf={({ circle }) =>
-            circle.r >= 22 ? (
-              <text
-                textAnchor="middle"
-                className="pointer-events-none fill-ink"
-                style={{ fontSize: Math.min(11, circle.r / 3) }}
-              >
-                <tspan x={0} y={-1}>
-                  {truncate(circle.datum.name, Math.max(4, Math.floor(circle.r / 4)))}
-                </tspan>
-                <tspan
-                  x={0}
-                  y={circle.r / 2.6 + 2}
-                  className="fill-faded"
-                  style={{ fontSize: Math.min(9, circle.r / 4) }}
-                >
-                  {formatBytes(circle.datum.leaf?.size)}
-                </tspan>
-              </text>
-            ) : null
+          formatValue={(rect) =>
+            rect.isLeaf && rect.datum.leaf?.isFolder !== true
+              ? formatBytes(rect.value)
+              : `${formatBytes(rect.value)} total`
           }
-          renderHoverCard={(circle) => (
+          renderHoverCard={(rect) => (
             <span className="flex flex-col gap-0.5">
               {/* A file name is a sans chrome LABEL on /files (D-66-06), not
                   evidence — the same treatment the vault listing gives it. */}
-              <span className="truncate text-ink">{circle.datum.name}</span>
+              <span className="truncate text-ink">{rect.datum.name}</span>
               {/* polytoken's summary line — sans chrome. */}
               <span className="tabular text-2xs text-faded">
-                {circle.isLeaf && circle.datum.leaf?.isFolder !== true
-                  ? formatBytes(circle.value)
-                  : `${formatBytes(circle.value)} total`}
+                {rect.isLeaf && rect.datum.leaf?.isFolder !== true
+                  ? formatBytes(rect.value)
+                  : `${formatBytes(rect.value)} total`}
               </span>
             </span>
           )}
@@ -195,10 +181,4 @@ export function DriveLandscapeView({
       )}
     </div>
   );
-}
-
-/** Trim a label to fit inside a small circle (leaf slot only). */
-function truncate(value: string, max: number): string {
-  if (value.length <= max) return value;
-  return `${value.slice(0, Math.max(1, max - 1))}…`;
 }

@@ -2,7 +2,7 @@
  * drive-landscape-view.test.tsx — DriveLandscapeView BEHAVIOR (TM-04), jsdom.
  *
  * jsdom does NO layout (CLAUDE.md): these assert BEHAVIOR only — that the view
- * builds a hierarchy from `fetchLevel`, mounts the shared CirclePack primitive,
+ * builds a hierarchy from `fetchLevel`, mounts the shared Treemap primitive,
  * routes a file-leaf activation to `onActivateLeaf` while withholding it for a
  * folder/overflow leaf, and shows the empty state for an empty vault. NO visual
  * or geometric claim is made here (that is the geometry/screenshot gate's job).
@@ -73,10 +73,10 @@ const flatVault: FetchLevel = (path) => {
 };
 
 describe("DriveLandscapeView (TM-04 behavior)", () => {
-  it("builds a hierarchy from fetchLevel and mounts the shared CirclePack primitive", async () => {
+  it("builds a hierarchy from fetchLevel and mounts the shared Treemap primitive", async () => {
     await mount(<DriveLandscapeView fetchLevel={flatVault} width={320} height={240} />);
-    await waitFor(() => container.querySelector('[data-testid="circle-pack"]') !== null);
-    expect(container.querySelector('[data-testid="circle-pack"]')).not.toBeNull();
+    await waitFor(() => container.querySelector('[data-testid="treemap"]') !== null);
+    expect(container.querySelector('[data-testid="treemap"]')).not.toBeNull();
     // The vault's file names reached the leaf/hover render path.
     expect(container.textContent).toContain("report.pdf");
   });
@@ -91,9 +91,9 @@ describe("DriveLandscapeView (TM-04 behavior)", () => {
         onActivateLeaf={onActivateLeaf}
       />,
     );
-    await waitFor(() => container.querySelector('g[data-leaf="true"]') !== null);
-    // Click a leaf circle (the primitive fires onLeafActivate on click).
-    const leaf = container.querySelector('g[data-leaf="true"]');
+    await waitFor(() => container.querySelector('[data-leaf="true"]') !== null);
+    // Click a leaf tile (the primitive fires onLeafActivate on click).
+    const leaf = container.querySelector('[data-leaf="true"]');
     expect(leaf).not.toBeNull();
     await act(async () => {
       leaf!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -122,8 +122,8 @@ describe("DriveLandscapeView (TM-04 behavior)", () => {
         onActivateLeaf={onActivateLeaf}
       />,
     );
-    await waitFor(() => container.querySelector('[data-testid="circle-pack"]') !== null);
-    const leaf = container.querySelector('g[data-leaf="true"]');
+    await waitFor(() => container.querySelector('[data-testid="treemap"]') !== null);
+    const leaf = container.querySelector('[data-leaf="true"]');
     if (leaf) {
       await act(async () => {
         leaf.dispatchEvent(new MouseEvent("click", { bubbles: true }));
@@ -136,7 +136,7 @@ describe("DriveLandscapeView (TM-04 behavior)", () => {
     const empty: FetchLevel = () => Promise.resolve<FolderRollup>({ total: 0, children: [] });
     await mount(<DriveLandscapeView fetchLevel={empty} width={320} height={240} />);
     await waitFor(() => container.textContent!.includes("Nothing to map yet"));
-    expect(container.querySelector('[data-testid="circle-pack"]')).toBeNull();
+    expect(container.querySelector('[data-testid="treemap"]')).toBeNull();
     expect(container.textContent).toContain("Nothing to map yet");
   });
 });

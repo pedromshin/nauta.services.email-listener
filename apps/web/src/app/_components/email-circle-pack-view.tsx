@@ -1,15 +1,17 @@
 "use client";
 
 /**
- * email-circle-pack-view.tsx — the email circle-pack "landscape" view
- * (FEATURE-CATALOG TM-02): a fourth inbox view beside the three-pane. It renders
- * the shared `CirclePack` primitive (TM-01) over `emails.circlePackLandscape`
- * (TM-02 aggregate, owned-scoped): entity/sender → thread → email, leaf size =
- * message count, leaf tint = recency. Clicking a leaf deep-links `/emails/[id]`.
+ * email-circle-pack-view.tsx — the email "landscape" view (FEATURE-CATALOG
+ * TM-02): a fourth inbox view beside the three-pane. It renders the shared
+ * `Treemap` primitive (the WizTree-style rectangular landscape that replaced the
+ * circle pack) over `emails.circlePackLandscape` (TM-02 aggregate, owned-scoped):
+ * entity/sender → thread → email, tile size = message count, tile tint = recency,
+ * and — the point of the treemap — each tile is LABELLED. Clicking a leaf
+ * deep-links `/emails/[id]`.
  *
- * "See your email as a landscape" — the pack fills the pane; it measures itself
- * so the circles use the real available box (jsdom does no layout, so the fixed
- * fallback keeps SSR/tests sane).
+ * "See your email as a landscape" — the treemap fills the pane; it measures
+ * itself so the tiles use the real available box (jsdom does no layout, so the
+ * fixed fallback keeps SSR/tests sane).
  *
  * DESIGN LAW: chrome monochrome (the primitive commits to ink washes only); the
  * hover card's subject is the mail's own words → serif + data-evidence (the
@@ -21,7 +23,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CircleDashed } from "lucide-react";
 
-import { CirclePack, type CircleDatum } from "@polytoken/ui/circle-pack";
+import { Treemap, type TreeNode } from "@polytoken/ui/treemap";
 import { Skeleton } from "@polytoken/ui/skeleton";
 
 import { api } from "~/trpc/react";
@@ -62,7 +64,7 @@ export function EmailCirclePackView(): React.ReactElement {
   const { ref, width, height } = useMeasuredSize();
   const query = api.emails.circlePackLandscape.useQuery({});
 
-  const tree = query.data as CircleDatum<LandscapeLeaf> | undefined;
+  const tree = query.data as TreeNode<LandscapeLeaf> | undefined;
   const hasContent = tree !== undefined && (tree.children?.length ?? 0) > 0;
 
   return (
@@ -72,8 +74,8 @@ export function EmailCirclePackView(): React.ReactElement {
       className="relative flex h-full w-full items-center justify-center overflow-hidden bg-leaf p-panel"
     >
       {query.isPending ? (
-        <div role="status" aria-label="Loading landscape">
-          <Skeleton className="size-[min(60vh,60vw)] rounded-full" />
+        <div role="status" aria-label="Loading landscape" className="size-full">
+          <Skeleton className="size-full rounded-card" />
         </div>
       ) : query.isError ? (
         <div className="flex flex-col items-center gap-2 text-center">
@@ -88,26 +90,32 @@ export function EmailCirclePackView(): React.ReactElement {
           </button>
         </div>
       ) : hasContent && tree ? (
-        <CirclePack<LandscapeLeaf>
+        <Treemap<LandscapeLeaf>
           data={tree}
           width={width}
           height={height}
-          ariaLabel="Email landscape — senders, threads and messages as packed circles"
-          className="bg-transparent"
-          onLeafActivate={(circle) => {
-            const leaf = circle.datum.leaf;
+          ariaLabel="Email landscape — senders, threads and messages as a treemap"
+          className="size-full bg-transparent"
+          evidenceLabels
+          onLeafActivate={(rect) => {
+            const leaf = rect.datum.leaf;
             if (leaf) router.push(hrefFor("email", leaf.emailId));
           }}
-          renderHoverCard={(circle) => (
+          formatValue={(rect) =>
+            rect.isLeaf
+              ? (rect.datum.leaf?.senderAddress ?? "")
+              : `${rect.value.toLocaleString()} messages`
+          }
+          renderHoverCard={(rect) => (
             <span className="flex flex-col gap-0.5">
               {/* the mail's own subject — serif + data-evidence (the pair) */}
               <span className="truncate font-serif text-ink" data-evidence>
-                {circle.datum.name}
+                {rect.datum.name}
               </span>
               <span className="tabular text-2xs text-faded">
-                {circle.isLeaf
-                  ? (circle.datum.leaf?.senderAddress ?? "")
-                  : `${circle.value.toLocaleString()} messages`}
+                {rect.isLeaf
+                  ? (rect.datum.leaf?.senderAddress ?? "")
+                  : `${rect.value.toLocaleString()} messages`}
               </span>
             </span>
           )}
