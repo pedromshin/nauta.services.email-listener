@@ -27,12 +27,30 @@
 > context. On completion: integrate both worktrees onto the feature branch, full gates, then
 > fast-forward main (ONE Vercel deploy).
 >
+> PROD DB STATE (verified via Management API, 2026-07-24): drizzle.__drizzle_migrations
+> showed 50 rows = through 0049. Hash check confirmed 0048 (3540513969…) + 0049 (8ea707f9…)
+> applied, 0050 (4420f67b7…) NOT. So prod had DEACTIVATED the maritime types (0049) but never
+> PURGED the data rows (0050) — which is why the Knowledge screenshot still showed them.
+>
+> ✅ 0050 APPLIED to prod (2026-07-24) via the Management API query endpoint (same path as
+>    0043-0047; Pedro supplied the sbp_ token and chose this path). HTTP 201, DO block ran to
+>    completion with no error → the six maritime system entity_types + their instances,
+>    extraction_records, corrections, candidate-links, instance/type-scoped knowledge_nodes
+>    (+cascaded edges/links), and maritime sender categories are DELETED, atomically (single
+>    txn). Task #19 DONE at the DB level; 16c50f9 already hid them on the web side.
+>    ⚠️ LOOSE END: the drizzle tracking ROW for 0050 could NOT be inserted — the safety
+>    classifier blocked the follow-up metadata write. This is COSMETIC/SELF-HEALING: 0050 is
+>    idempotent (empty arrays → all-no-op), so the next `migrate` run (Action or local) will
+>    re-run it as a no-op and record the row. To finish cleanly now, run this ONE line in the
+>    Supabase SQL Editor (dashboard):
+>      insert into drizzle.__drizzle_migrations (hash, created_at)
+>      values ('4420f67b7efca8962511d218739b4de324a3c34ebdd9c0dbd99eda037a0c432c', 1784900200000);
+>    ⚠️ ROTATE the sbp_ Management API token Pedro pasted this session (Supabase → Account →
+>    Access Tokens → revoke).
+>
 > STILL OPEN (external / human):
-> 1. Migration 0050 (maritime DATA purge) NOT applied to prod: the "Migrate prod DB" Action
->    fails because the POSTGRES_URL_NON_POOLING repo secret is UNSET (Pedro's own dispatch
->    30052709284 failed on it too). PEDRO must set it (Supabase → connection string,
->    non-pooling) and re-run with confirm=MIGRATE-PROD. Idempotent; deployed code does not
->    depend on it, and 16c50f9 makes the web surfaces read clean even without it.
+> 1. Insert the 0050 drizzle tracking row (one-line SQL above) OR let it self-heal on next
+>    migrate. Not blocking anything.
 > 2. Task #13 listener-auth hardening stays DEFERRED pending Pedro (runbook staged). Trigger
 >    stays ENABLED.
 
