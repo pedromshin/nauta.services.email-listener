@@ -81,7 +81,7 @@ from app.application.use_cases.set_component_relationship import (
 from app.application.use_cases.submit_widget_interaction import SubmitWidgetInteraction
 from app.application.use_cases.suggest_entity_types import SuggestEntityTypesUseCase
 from app.application.use_cases.synthesize_knowledge import KnowledgeSynthesizerService
-from app.composition import genui_providers
+from app.composition import genui_providers, repository_providers
 from app.domain.ports.anticipatory_ports import AnticipatoryCapStore, AppropriatenessJudge
 from app.domain.ports.attachment_repository import AttachmentRepository
 from app.domain.ports.attachment_storage import AttachmentStorage
@@ -134,36 +134,13 @@ from app.infrastructure.pdf.parser_registry import get_parser, register
 from app.infrastructure.pdf.pdf_parser import PdfParser
 from app.infrastructure.raw_email_store_routing import RoutingRawEmailStore
 from app.infrastructure.s3.raw_email_store import S3RawEmailStore
-from app.infrastructure.supabase.attachment_repository import SupabaseAttachmentRepository
 from app.infrastructure.supabase.attachment_storage import SupabaseAttachmentStorage
-from app.infrastructure.supabase.autofill_retrieval_event_repository import (
-    SupabaseAutofillRetrievalEventRepository,
-)
-from app.infrastructure.supabase.chat_context_edge_repository import SupabaseChatContextEdgeRepository
 from app.infrastructure.supabase.client import get_supabase_client
-from app.infrastructure.supabase.component_repository import SupabaseComponentRepository
-from app.infrastructure.supabase.email_repository import SupabaseEmailRepository
-from app.infrastructure.supabase.entity_instance_repository import SupabaseEntityInstanceRepository
 from app.infrastructure.supabase.entity_resolution_repository import SupabaseEntityResolutionRepository
-from app.infrastructure.supabase.entity_type_correction_repository import (
-    SupabaseEntityTypeCorrectionRepository,
-)
-from app.infrastructure.supabase.entity_type_repository import SupabaseEntityTypeRepository
-from app.infrastructure.supabase.extraction_repository import SupabaseExtractionRepository
 from app.infrastructure.supabase.forwarding_address_repository import SupabaseForwardingAddressRepository
 from app.infrastructure.supabase.importer_repository import SupabaseImporterRepository
 from app.infrastructure.supabase.knowledge_graph_repository import SupabaseKnowledgeGraphRepository
 from app.infrastructure.supabase.raw_email_backfill_store import SupabaseRawEmailBackfillStore
-from app.infrastructure.supabase.retrieval_repository import SupabaseRetrievalRepository
-from app.infrastructure.supabase.source_ledger_repository import SupabaseSourceLedgerRepository
-from app.infrastructure.supabase.supabase_chat_conversation_repository import (
-    SupabaseChatConversationRepository,
-)
-from app.infrastructure.supabase.supabase_chat_message_repository import SupabaseChatMessageRepository
-from app.infrastructure.supabase.supabase_chat_run_repository import SupabaseChatRunRepository
-from app.infrastructure.supabase.supabase_chat_widget_interaction_repository import (
-    SupabaseChatWidgetInteractionRepository,
-)
 from app.infrastructure.supabase.supabase_cost_ledger_repository import SupabaseCostLedgerRepository
 from app.infrastructure.supabase.thread_repository import SupabaseThreadRepository
 from app.infrastructure.tools.duckduckgo_search_provider import DuckDuckGoSearchProvider
@@ -290,30 +267,6 @@ def _provide_embedder() -> EmbeddingProtocol:
     """
     client = boto3.client("bedrock-runtime", region_name=get_settings().bedrock_region)
     return EmbeddingAdapter(client=client)
-
-
-def _provide_retrieval(client: Client) -> RetrievalPort:
-    """SupabaseRetrievalRepository — hybrid vector+trigram retrieval (RRF k=60, D-15).
-
-    Both sub-queries filter by importer_id for cross-tenant isolation (T-04-28).
-    """
-    return SupabaseRetrievalRepository(client=client)
-
-
-def _provide_entity_type_correction_repository(client: Client) -> EntityTypeCorrectionRepository:
-    """SupabaseEntityTypeCorrectionRepository (Phase 57-01, LEARN-01).
-
-    Mirrors _provide_retrieval: the constructor's ``client`` param is typed
-    ``Any`` (matching retrieval_repository.py's exact style per the plan),
-    which dishka cannot auto-inject directly — a factory typed against the
-    concrete ``Client`` resolves it explicitly.
-    """
-    return SupabaseEntityTypeCorrectionRepository(client=client)
-
-
-def _provide_autofill_retrieval_event_repository(client: Client) -> AutofillRetrievalEventRepository:
-    """SupabaseAutofillRetrievalEventRepository — best-effort instrumentation writer (RECALL-02, 31-02)."""
-    return SupabaseAutofillRetrievalEventRepository(client=client)
 
 
 def _provide_autofill_use_case(
@@ -716,26 +669,6 @@ def _provide_bedrock_chat_adapter(client: AsyncAnthropicBedrock) -> BedrockChatA
     )
 
 
-def _provide_chat_message_repository(client: Client) -> ChatMessageRepository:
-    """SupabaseChatMessageRepository — chat_messages adapter (FOUND-1, D-16, D-18, Phase 22-06)."""
-    return SupabaseChatMessageRepository(client=client)
-
-
-def _provide_chat_run_repository(client: Client) -> ChatRunRepository:
-    """SupabaseChatRunRepository — chat_runs/chat_run_events adapter (SEAM-03/04, D-27, Phase 22-06)."""
-    return SupabaseChatRunRepository(client=client)
-
-
-def _provide_chat_conversation_repository(client: Client) -> ChatConversationRepository:
-    """SupabaseChatConversationRepository — the turn loop's chat_conversations write (D-10/D-12)."""
-    return SupabaseChatConversationRepository(client=client)
-
-
-def _provide_chat_widget_interaction_repository(client: Client) -> ChatWidgetInteractionRepository:
-    """SupabaseChatWidgetInteractionRepository — chat_widget_interactions adapter (Phase 24-01/24-02)."""
-    return SupabaseChatWidgetInteractionRepository(client=client)
-
-
 def _provide_chat_provider_router(
     bedrock: BedrockChatAdapter,
     openrouter: OpenRouterChatAdapter,
@@ -1085,26 +1018,11 @@ def _build_provider() -> Provider:  # noqa: PLR0915
     # ── Shared httpx AsyncClient (singleton) — OpenRouter transport, D-07 seam ─
     provider.provide(_provide_httpx_client, provides=httpx.AsyncClient, scope=Scope.APP)
 
-    # ── Repository adapters ───────────────────────────────────────────────────
-    provider.provide(SupabaseEmailRepository, provides=EmailRepository)
-    provider.provide(SupabaseAttachmentRepository, provides=AttachmentRepository)
-    provider.provide(SupabaseComponentRepository, provides=ComponentRepository)
-    provider.provide(SupabaseEntityTypeRepository, provides=EntityTypeRepository)
-    provider.provide(SupabaseExtractionRepository, provides=ExtractionRepository)
-    # Entity identity repository (D-02/D-09/D-10/D-11) — bound to port Protocol.
-    provider.provide(SupabaseEntityInstanceRepository, provides=EntityInstanceRepository)
-    # Retrieval-outcome instrumentation writer (RECALL-02, 31-02) — best-effort.
-    provider.provide(_provide_autofill_retrieval_event_repository, provides=AutofillRetrievalEventRepository)
-    # chat_source_ledger auto-collect write adapter (Phase 56-02, RCNV-01) —
-    # additive-default RunChatTurn collaborator, threaded in below.
-    provider.provide(SupabaseSourceLedgerRepository, provides=SourceLedgerRepository)
-    # chat_context_edges read adapter (Phase 56-04, RCNV-04) — the
-    # linked-context injection pipeline's ONE read collaborator, additive-
-    # default RunChatTurn collaborator, threaded in below.
-    provider.provide(SupabaseChatContextEdgeRepository, provides=ChatContextEdgeRepository)
-    # entity_type_corrections capture + trgm retrieval (Phase 57-01, LEARN-01) —
-    # best-effort collaborator threaded into SetComponentEntityTypeUseCase below.
-    provider.provide(_provide_entity_type_correction_repository, provides=EntityTypeCorrectionRepository)
+    # ── Supabase repository adapters + retrieval + chat-spine persistence ─────
+    # Extracted group (Track 2 decomposition) — every repository binding (email/
+    # attachment/component/entity/extraction/source-ledger/context-edge/retrieval +
+    # the four chat-spine repos) lives in app.composition.repository_providers.register.
+    repository_providers.register(provider)
 
     # ── Ingestion adapters ────────────────────────────────────────────────────
     provider.provide(_provide_backfill_raw_email_store, provides=BackfillRawEmailStore)
@@ -1125,9 +1043,6 @@ def _build_provider() -> Provider:  # noqa: PLR0915
     provider.provide(_provide_embedder, provides=EmbeddingProtocol)
     # Entity-type classifier: ONE call classifies all candidate regions of a document.
     provider.provide(_provide_entity_type_classifier, provides=EntityTypeClassifierProtocol)
-
-    # ── Retrieval (hybrid vector+trgm, D-15 learning flywheel) ────────────────
-    provider.provide(_provide_retrieval, provides=RetrievalPort)
 
     # ── Segmentation / parser registry ───────────────────────────────────────
     # ParserRegistryPort is a Callable type alias with forward-ref annotations;
@@ -1225,14 +1140,12 @@ def _build_provider() -> Provider:  # noqa: PLR0915
     provider.provide(_provide_bedrock_chat_adapter, provides=BedrockChatAdapter)
     provider.provide(_provide_openrouter_chat_adapter, provides=OpenRouterChatAdapter)
 
-    # ── Chat spine — persistence repos + provider router (Phase 22-06) ───────
-    provider.provide(_provide_chat_message_repository, provides=ChatMessageRepository)
-    provider.provide(_provide_chat_run_repository, provides=ChatRunRepository)
-    provider.provide(_provide_chat_conversation_repository, provides=ChatConversationRepository)
+    # ── Chat spine — provider router (Phase 22-06) ───────────────────────────
+    # The chat-spine persistence repos (message/run/conversation/widget-interaction)
+    # are bound in repository_providers.register above; the router selects a transport.
     provider.provide(_provide_chat_provider_router, provides=ChatProviderRouter)
 
-    # ── Dual-channel genui — widget-interaction repo + submit use case (Phase 24-01/24-02) ──
-    provider.provide(_provide_chat_widget_interaction_repository, provides=ChatWidgetInteractionRepository)
+    # ── Dual-channel genui — chat turn + submit use case (Phase 24-01/24-02) ──
     provider.provide(_provide_run_chat_turn, provides=RunChatTurn)
     provider.provide(_provide_submit_widget_interaction, provides=SubmitWidgetInteraction)
 
