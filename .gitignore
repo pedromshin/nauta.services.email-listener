@@ -69,10 +69,17 @@ apps/email-listener/listener-*.log
 .planning/night-run/remote-control.log
 .planning/night-run/resume-log.txt
 
-# GSD plugin, vendored locally for this session (not a real /plugin install)
+# GSD Core (open-gsd/gsd-core v1.8.0) — vendored into the repo so the /gsd:*
+# commands, gsd-* agents and gsd-* skills persist across ephemeral remote
+# sessions (there is no persistent user-scope plugin store here). The hook
+# scripts live under .claude/gsd/ (tracked) but are NOT auto-wired — see
+# .planning/GSD-INSTALL.md for the opt-in settings snippet and the reconciliation
+# notes. Non-GSD agents/skills stay ignored, matching the original convention.
 .claude/skills/*
 !.claude/skills/polytoken-design-system/
-.claude/agents/
+!.claude/skills/gsd-*/
+.claude/agents/*
+!.claude/agents/gsd-*.md
 .claude/gsd-support/
 # Transient Workflow-tool isolated worktrees (created/removed per run)
 .claude/worktrees/
