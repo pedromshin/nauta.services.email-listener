@@ -74,6 +74,8 @@ apps/email-listener/listener-*.log
 !.claude/skills/polytoken-design-system/
 .claude/agents/
 .claude/gsd-support/
+# Transient Workflow-tool isolated worktrees (created/removed per run)
+.claude/worktrees/
 
 # Windows-path junk from daemon tests running on Linux (pre-existing win32 tests)
 apps/daemon/\\tmp\\daemon-tools-*
