@@ -1,10 +1,86 @@
 # ORCHESTRATOR-STATE — grand orchestrator run ledger
 
-> Read by the hourly backstop Routine (trig_01FYyp3Kpfa2vgWBY56N4Gq1) and by any resumed session.
 > UPDATE THIS FILE at every batch launch, batch completion, and merge. This file is the single
 > source of truth for "where are we"; chat context is disposable.
 
-## Status: SHIPPING THE VISION 🚢 (2026-07-24, main @ 0dd20bb) — editor-merge + more node types live
+## Status: SESSION WRAPPED / GSD TORN DOWN ✅ (2026-07-24, main @ 0dd20bb) — clean handoff to a fresh session
+
+> Pedro is starting a FRESH session. This session's GSD orchestrator is torn down:
+>   - Hourly backstop Routine trig_01FYyp3Kpfa2vgWBY56N4Gq1 DELETED (no longer fires).
+>   - 16 stale agent/workflow git worktrees removed (git worktree list is now just the main
+>     checkout); orphan worktree-* branches deleted.
+> Everything concrete is SHIPPED + LIVE on main (@ 0dd20bb, polytoken.ai). Branch
+> claude/polytoken-email-infra-cont-jzz1pg == main + these planning-doc commits.
+> ONE feature remains (user-gated, NOT built): AI-builds-a-node-from-a-prompt — the
+> emit-style canvas.addNode agent tool + web canvas-apply seam (full scope in the section
+> below). Needs the live agent→canvas loop to verify; do NOT blind-build it.
+> Prod DB migration 0050 (maritime purge) IS applied; drizzle tracking row for 0050 is the
+> only loose end (self-heals, one-line insert in the earlier section).
+
+## ▶ SESSION LONGEVITY, MULTI-AGENT ORCHESTRATION & CONTEXT PLAYBOOK (read this to run 12h+ unattended)
+
+WHY THIS EXISTS: Pedro runs this from a phone that goes dark for hours. The work must keep
+going without him, survive container restarts, fan out to dozens of agents, and never drown
+its own context. The mechanisms:
+
+### 1. Keeping the session alive / working while the phone is dead
+- This is a CLOUD (Claude Code Remote) session — it runs server-side, so the phone being off
+  or asleep does NOT stop it. What CAN stop momentum: (a) the container is ephemeral and gets
+  reclaimed after inactivity; (b) background agents are KILLED on a container restart with NO
+  completion notification. So momentum can't depend on the chat staying warm — it must be
+  RE-DRIVEN from durable state.
+- THE HEARTBEAT: a scheduled **backstop Routine** that fires a prompt into THIS session on a
+  cron, telling it to resume from this ledger. That is what makes 12h+ unattended runs work —
+  every fire re-reads ORCHESTRATOR-STATE.md, resumes any dead workflow, launches the next
+  batch, updates the ledger, and exits. Re-create it at the START of a long run:
+    mcp__Claude_Code_Remote__create_trigger(
+      name: "grand-orchestrator-backstop",
+      cron_expression: "19 * * * *",            # hourly, anchored to creation minute
+      prompt: "<the BACKSTOP FIRE prompt — read ORCHESTRATOR-STATE.md, check /workflows +
+               TaskList, resume a dead Workflow via resumeFromRunId, merge completed verified
+               branches + push + update the ledger + launch the next batch, else keep the
+               trigger enabled and exit. Guardrails: no prod DB / email content / secrets
+               inline / PR. Only delete the trigger when the ledger says ALL work COMPLETE.>")
+  (default create_trigger binds to the calling session, so it resumes THIS conversation.)
+  Delete it with delete_trigger when the run is truly done. This session's backstop
+  (trig_01FYyp3Kpfa2vgWBY56N4Gq1) was DELETED at wrap-up — the fresh session makes its own.
+- Also useful: mcp__Claude_Code_Remote__send_later for a one-shot self-check-in at a specific
+  time (it is a self-binding run_once Routine under the hood).
+
+### 2. Dozens of agents, safely
+- Use the **Workflow tool** for deterministic multi-agent fan-out (phases:
+  understand → design → implement → review; parallel()/pipeline()). It survives restarts:
+  relaunch Workflow({scriptPath, resumeFromRunId}) and the unchanged prefix returns cached.
+  Concurrency is capped at min(16, cores-2); a single parallel/pipeline call takes ≤4096 items;
+  lifetime cap 1000 agents.
+- Use the **Agent tool** for one-off background subagents. CRITICAL: background Agent tasks DIE
+  on container restart with no notification — so (a) prefer Workflow (resumable) for anything
+  long; (b) for Agent worktrees, treat "output file frozen >~15min + worktree still dirty +
+  no completion notification" as DEAD, and SALVAGE its uncommitted diff (this session did
+  exactly that twice — see the batch-3 salvage history below).
+- Parallel file-mutating agents MUST use `isolation: "worktree"` so they don't clobber each
+  other; then integrate the branches. Clean up worktrees at the end (git worktree remove).
+
+### 3. Healthy context management (so a 12h run doesn't rot)
+- THIS LEDGER is the single source of truth — "chat context is disposable." Update it at every
+  batch launch / completion / merge. A resumed or freshly-summarized session must be able to
+  reconstruct "where are we" from this file + git log ALONE.
+- COMMIT + PUSH every working increment (gated green first). Restarts then lose nothing.
+  Never leave large uncommitted work across a likely-restart boundary.
+- Delegate reading/searching to SUBAGENTS (Explore / general-purpose): their big transcripts
+  stay OUT of the parent's context — the parent keeps only the conclusion. Never read a huge
+  file or tool result into main context; slice/grep/head, or hand it to a subagent with an
+  explicit "return only X" instruction. (Oversized MCP tool results are auto-spilled to a
+  file — read it in ~80k-char python slices inside a subagent, never inline.)
+- Context auto-summarizes when it grows long; /compact on demand. The summary + ledger + git
+  are what survive — so anything that must persist belongs in a FILE, not a sentence.
+- Gate before every push: apps/web → `npx tsc --noEmit -p apps/web` + `npx vitest run` (from
+  apps/web) + a placeholder-env `next build` (SKIP_ENV_VALIDATION=1, NEXT_DIST_DIR=.next-verify,
+  then `git checkout -- next-env.d.ts tsconfig.json` to drop build churn); listener → root
+  `npm run check`. jsdom proves NO layout — screenshot/geometry gates need a live server, which
+  this container does not have, so VISUALS are unverified until Pedro looks.
+
+## Prior status: SHIPPING THE VISION 🚢 (2026-07-24, main @ 0dd20bb) — editor-merge + more node types live
 
 > Post editor-merge, prod verified healthy (root 307, /emails/[id] 307 — no 500s). Continued
 > per "everything is everything":
