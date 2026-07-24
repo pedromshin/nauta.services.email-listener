@@ -4,22 +4,37 @@
 > UPDATE THIS FILE at every batch launch, batch completion, and merge. This file is the single
 > source of truth for "where are we"; chat context is disposable.
 
-## Status: BATCH 2 MERGED TO MAIN ✅ (2026-07-23, main @ 1525a44) — 2 items awaiting external state
+## Status: BATCH 3 IN FLIGHT 🔧 (2026-07-24, branch @ 6695956) — 2 UI worktree agents running; batch-2 fully live
 
-> BACKSTOP: batch-2 (zoom-trap, genui flat-submit, email-context importer fix, inbox inline
-> preview + carousel, chat auto-open + FAB + duplicate, de-maritime code purge) is COMMITTED
-> and MERGED to main (1579b6e + 1525a44). All gates green locally (web 133 files + tsc +
-> build; listener full sweep 91.57% cov + ruff/mypy/lint-imports; all packages).
-> OPEN ITEMS:
-> 1. Listener deploy run 30052959299 (main@1525a44) was IN FLIGHT — verify it went green.
->    Context: the 1579b6e deploy failed because uv.lock was gitignored and CI floated to
->    ruff 0.16.0; fixed by committing the lock (1525a44). If still red, read the job log —
->    do NOT churn code to satisfy an unpinned linter.
-> 2. Migration 0050 (maritime data purge) is NOT applied to prod: the "Migrate prod DB"
->    Action fails because the POSTGRES_URL_NON_POOLING repo secret is UNSET. PEDRO must set
->    it (Supabase → connection string, non-pooling) and re-run the workflow with
->    confirm=MIGRATE-PROD. Idempotent; deployed code does not depend on it.
-> Task #13 infra remainder stays DEFERRED pending Pedro (runbook staged). Trigger stays ENABLED.
+> BATCH 2 is DONE and LIVE on prod. Listener deploy run 30052959299 (main@1525a44)
+> concluded **SUCCESS** ✅ (verified via actions_get 2026-07-24) — email-context importer
+> fix is live on the prod listener. Open item 1 RESOLVED.
+>
+> BATCH 3 (this session, opus-4-8 after Fable-5 hit its usage limit) — responding to Pedro's
+> mobile drop "editor is email preview itself / canvas on mobile / treemap navigable inside
+> canvas / chat buttons overlapping / improve email context picker / minor chat bugs /
+> remove maritime". Landed to the feature branch so far:
+>   - 16c50f9 fix(web): hide retired maritime entity types from Knowledge + entityTypes.list
+>     (is_active + retired-slug exclusion; shared allow-list router/retired-entity-types.ts;
+>     api-client 730 tests green + tsc clean). Belt-and-braces vs the un-applied 0050.
+>   - 6695956 feat(web): text-anchored body-region highlighter (CSS Custom Highlight API) —
+>     the CORRECT fix for the misaligned body overlays (the "PEDREDRO," garble). Pure matcher
+>     unit-tested (6 green). Wiring lands with the editor-merge.
+> TWO worktree agents in flight (isolated worktrees, opus): (a) merge the /emails/[id] editor
+> INTO the inbox inline preview as the single surface + wire the highlighter + redirect the
+> route; (b) canvas-on-mobile + circle-pack treemap node gesture-isolation/expand + FAB
+> overlap + double-send latch + stuck-skeleton fallback + shared ThreadPicker for chat email
+> context. On completion: integrate both worktrees onto the feature branch, full gates, then
+> fast-forward main (ONE Vercel deploy).
+>
+> STILL OPEN (external / human):
+> 1. Migration 0050 (maritime DATA purge) NOT applied to prod: the "Migrate prod DB" Action
+>    fails because the POSTGRES_URL_NON_POOLING repo secret is UNSET (Pedro's own dispatch
+>    30052709284 failed on it too). PEDRO must set it (Supabase → connection string,
+>    non-pooling) and re-run with confirm=MIGRATE-PROD. Idempotent; deployed code does not
+>    depend on it, and 16c50f9 makes the web surfaces read clean even without it.
+> 2. Task #13 listener-auth hardening stays DEFERRED pending Pedro (runbook staged). Trigger
+>    stays ENABLED.
 
 ## Previous status: ALL WORK COMPLETE ✅ (waves W0–W6, prod deploy SHA 0a63f8a, follow-ups through cad7c5e)
 
