@@ -59,6 +59,14 @@ export function Composer({
 }: ComposerProps): React.ReactElement {
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  // DOUBLE-SEND LATCH ("LOOK AT CHAT MINOR BUGS") — `submit` reads `value` from
+  // a stale closure and `isStreaming` only flips true once the SSE opens, so a
+  // second activation IN THE SAME TICK (Enter keydown + a button tap, or a
+  // double-tap) could fire `onSubmit` twice before `setValue("")` and the
+  // stream state ever caught up. This synchronous ref rejects the second
+  // activation of a burst; it resets after the current frame (the same rAF that
+  // restores focus) so the next genuine send is never blocked.
+  const submittingRef = useRef(false);
 
   const resizeTextarea = useCallback(() => {
     const el = textareaRef.current;
@@ -77,12 +85,17 @@ export function Composer({
 
   const submit = useCallback(() => {
     const trimmed = value.trim();
-    if (!trimmed || isStreaming) return;
+    // `submittingRef` is the synchronous double-send guard (see its decl) —
+    // checked BEFORE `onSubmit`, so a same-tick second activation is dropped.
+    if (!trimmed || isStreaming || submittingRef.current) return;
+    submittingRef.current = true;
     onSubmit(trimmed);
     setValue("");
     // Focus management (UI-SPEC Accessibility): submitting never moves
-    // focus away from the composer.
+    // focus away from the composer. The latch resets here, one frame later, so
+    // a genuine follow-up send is never blocked.
     requestAnimationFrame(() => {
+      submittingRef.current = false;
       textareaRef.current?.focus();
       resizeTextarea();
     });

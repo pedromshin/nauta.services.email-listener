@@ -3,11 +3,14 @@
  * MOBL-01 mobile inline feed (53-UI-SPEC.md §2 "/chat mobile feed") without
  * regressing the desktop canvas/toggle/inline-rail behavior.
  *
- * Task 1 — `useIsMobileViewport` mocked `true`: `ChatCanvasIsland` (the
- * `dynamic(ssr:false)` React-Flow island) is NEVER invoked, even when the
- * persisted `chat:canvas-view:{id}` value is "canvas"; `ChatCanvasViewToggle`
- * is not in the DOM. Mocked `false`: the toggle IS present (desktop path
- * intact) and canvas mode still mounts the island.
+ * Task 1 (UPDATED — "I NEED CANVAS ON MOBILE"): the MOBL-01 lock that
+ * force-mounted chat below `md` was removed. `ChatCanvasIsland` (the
+ * `dynamic(ssr:false)` React-Flow island) and `ChatCanvasViewToggle` now mount
+ * on EVERY viewport, driven purely by the persisted `chat:canvas-view:{id}`
+ * value — so a phone can reach the canvas. `useIsMobileViewport` no longer
+ * gates the branch (page.tsx dropped the import); `mockIsMobile` is inert for
+ * ChatPage and both describe blocks now assert the same viewport-independent
+ * behavior (toggle present, canvas mounts on viewMode="canvas").
  *
  * Task 2 — `ConversationRail`'s mobile Sheet is closed by default; the
  * existing top-bar rail-toggle button (lifted `mobileRailOpen` state, D-11's
@@ -243,31 +246,34 @@ afterEach(() => {
   mockIsMobile = true;
 });
 
-describe("/chat mobile feed — useIsMobileViewport mocked true (MOBL-01, 53-UI-SPEC §2)", () => {
-  it("ChatCanvasIsland is never mounted even when the stored viewMode is 'canvas'", async () => {
+describe("/chat mobile feed — canvas is reachable on mobile ('I NEED CANVAS ON MOBILE')", () => {
+  // The MOBL-01 lock that force-mounted chat below md is gone: the React-Flow
+  // island and its Chat/Canvas toggle now mount on EVERY viewport, driven
+  // purely by the persisted viewMode. `mockIsMobile` no longer changes ChatPage
+  // (page.tsx dropped useIsMobileViewport); it stays true here to prove the
+  // canvas is reachable on a phone.
+  it("mounts ChatCanvasIsland on mobile when the stored viewMode is 'canvas'", async () => {
     mockIsMobile = true;
     window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, "canvas");
 
     const container = await mount(<ChatPage />);
     await selectConversation(container);
 
-    expect(chatCanvasIslandMock).not.toHaveBeenCalled();
+    expect(chatCanvasIslandMock).toHaveBeenCalled();
   });
 
-  it("ChatCanvasViewToggle (the Chat/Canvas TabsList) is not in the DOM", async () => {
+  it("shows the ChatCanvasViewToggle on mobile so chat <-> canvas is switchable", async () => {
     mockIsMobile = true;
 
     const container = await mount(<ChatPage />);
     await selectConversation(container);
 
-    expect(container.querySelector('[aria-label="View"]')).toBeNull();
-    expect(container.querySelector('[aria-label="Chat view"]')).toBeNull();
-    expect(container.querySelector('[aria-label="Canvas view"]')).toBeNull();
+    expect(container.querySelector('[aria-label="View"]')).not.toBeNull();
   });
 
-  it("the docked MessageList/Composer path renders instead", async () => {
+  it("renders the docked MessageList/Composer when viewMode is 'chat'", async () => {
     mockIsMobile = true;
-    window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, "canvas");
+    window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, "chat");
 
     const container = await mount(<ChatPage />);
     await selectConversation(container);
@@ -275,9 +281,10 @@ describe("/chat mobile feed — useIsMobileViewport mocked true (MOBL-01, 53-UI-
     expect(
       container.querySelector('textarea[placeholder="Ask the agent anything…"]'),
     ).not.toBeNull();
+    expect(chatCanvasIslandMock).not.toHaveBeenCalled();
   });
 
-  it("the persisted chat:canvas-view value is still read but never overwritten while mobile-forced", async () => {
+  it("does not overwrite the persisted chat:canvas-view value on mount", async () => {
     mockIsMobile = true;
     window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, "canvas");
 
@@ -312,9 +319,11 @@ describe("/chat desktop path — useIsMobileViewport mocked false (regression)",
   });
 });
 
-describe("(source) page.tsx gates the toggle + canvas branch on useIsMobileViewport", () => {
-  it("imports useIsMobileViewport", () => {
-    expect(PAGE_SOURCE).toContain("useIsMobileViewport");
+describe("(source) page.tsx no longer force-coerces the view mode by viewport", () => {
+  it("dropped the useIsMobileViewport import that gated the canvas branch", () => {
+    // Canvas mounts on every viewport now — the old
+    // `isMobile ? "chat" : viewMode` coercion and its hook import are gone.
+    expect(PAGE_SOURCE).not.toContain('from "~/hooks/use-is-mobile-viewport"');
   });
 });
 

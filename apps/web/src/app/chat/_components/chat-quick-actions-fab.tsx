@@ -8,6 +8,7 @@ import * as React from "react";
 import { useState } from "react";
 import { Copy, Cpu, MessageSquarePlus, Pencil, Zap } from "lucide-react";
 
+import { cn } from "@polytoken/ui";
 import { Button } from "@polytoken/ui/button";
 import {
   Dialog,
@@ -106,7 +107,19 @@ export function ChatQuickActionsFab({
   }
 
   return (
-    <div className="absolute bottom-4 right-4 z-20">
+    // FAB-OVERLAP ("CHAT BUTTONS ARE OVERLAPPING") — the FAB is anchored to the
+    // main column, whose bottom edge IS the composer dock when a conversation is
+    // open (composer.tsx). At `bottom-4` the 44px trigger paints straight over
+    // the composer's Send button. Lift it clear of the dock (`bottom-24`)
+    // whenever a conversation is present; keep `bottom-4` on the empty state,
+    // which renders no composer. Same condition the page uses to mount a
+    // composer (a live `selectedConversation`).
+    <div
+      className={cn(
+        "absolute right-4 z-20",
+        hasConversation ? "bottom-24" : "bottom-4",
+      )}
+    >
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button

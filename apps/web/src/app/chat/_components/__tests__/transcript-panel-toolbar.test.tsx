@@ -416,3 +416,65 @@ describe("the three trees — the toolbar mounts in exactly ONE of them", () => 
     expect(toolbars(container)).toHaveLength(0);
   });
 });
+
+// ── SKELETON TERMINAL FALLBACK ("LOOK AT CHAT MINOR BUGS") ───────────────────
+// A `genui_spec_streaming` part shows SkeletonBars while its spec streams. If
+// the LIVE stream dies before the finalized part lands, the shimmer must give
+// way to the safe fallback — never loop forever (mobile "stuck skeleton" bug).
+// The signal is the turn's terminal-FAILURE status, NOT any non-streaming one:
+// a persisted part with a settled "completed" turn (D-01 async-resume) keeps
+// streaming until chat.getHistory delivers the finalized row.
+describe("skeleton terminal fallback — a dead stream must not shimmer forever", () => {
+  // Truncated → unparseable: the boundary can only show SkeletonBars while it
+  // still believes the stream is live.
+  const streamingPart = (): MessagePart =>
+    ({
+      type: "genui_spec_streaming",
+      partialJson: '{"v":1,"root":{"type":"text","content":"PARTIAL',
+    }) as unknown as MessagePart;
+
+  const skeletonCount = (c: HTMLElement): number =>
+    c.querySelectorAll('[class*="animate-pulse"]').length;
+
+  it("keeps the skeleton while the stream is live (status 'streaming')", async () => {
+    const container = await mount(
+      <TranscriptPanelHost conversationId={CONVERSATION_ID}>
+        <MessageTurn
+          messageId={MESSAGE_ID}
+          role="assistant"
+          parts={[streamingPart()]}
+          status="streaming"
+        />
+      </TranscriptPanelHost>,
+    );
+    expect(skeletonCount(container)).toBeGreaterThan(0);
+  });
+
+  it("swaps the skeleton for the safe fallback once the stream is terminal (status 'stopped')", async () => {
+    const container = await mount(
+      <TranscriptPanelHost conversationId={CONVERSATION_ID}>
+        <MessageTurn
+          messageId={MESSAGE_ID}
+          role="assistant"
+          parts={[streamingPart()]}
+          status="stopped"
+        />
+      </TranscriptPanelHost>,
+    );
+    expect(skeletonCount(container)).toBe(0);
+  });
+
+  it("a persisted streaming part (status 'completed', async-resume) still shows the skeleton — not treated as terminal", async () => {
+    const container = await mount(
+      <TranscriptPanelHost conversationId={CONVERSATION_ID}>
+        <MessageTurn
+          messageId={MESSAGE_ID}
+          role="assistant"
+          parts={[streamingPart()]}
+          status="completed"
+        />
+      </TranscriptPanelHost>,
+    );
+    expect(skeletonCount(container)).toBeGreaterThan(0);
+  });
+});

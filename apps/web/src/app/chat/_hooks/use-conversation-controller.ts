@@ -398,6 +398,14 @@ export function useConversationController({
   // snapshot the persisted row has landed and the transient live pseudo-turn
   // is dropped in favor of it (avoids rendering the same turn twice).
   const historyCountAtStreamStartRef = useRef<number>(0);
+  // DOUBLE-SEND GUARD ("LOOK AT CHAT MINOR BUGS") — the composer has its own
+  // synchronous latch, but the controller is the authoritative backstop: a send
+  // that has already kicked off a turn (optimistic user row shown, stream
+  // opening/streaming) must not start a second one on top of it. Set the moment
+  // a send begins, cleared on every terminal outcome (handleTerminal). This
+  // ref, not `activeStreamState`, because that value is derived AFTER
+  // handleSubmit is defined and would be a stale closure here.
+  const sendInFlightRef = useRef(false);
 
   const widgetInteractions: readonly WidgetInteractionRow[] = useMemo(
     () => widgetInteractionsData ?? [],
@@ -426,6 +434,9 @@ export function useConversationController({
     setOptimisticUserText(null);
     setRegeneratingActiveId(null);
     setInFlightWidget(null);
+    // The turn has settled — release the double-send guard so the next send
+    // (or retry) is allowed through.
+    sendInFlightRef.current = false;
   }, [conversationId, utils]);
 
   // onWidgetRejected (D-10/D-11/D-12): a non-ok submit response maps to an
@@ -523,6 +534,10 @@ export function useConversationController({
 
   const handleSubmit = useCallback(
     (text: string) => {
+      // Reject a second send while one is already in flight (double-send
+      // backstop). Cleared on the terminal outcome (handleTerminal).
+      if (sendInFlightRef.current) return;
+      sendInFlightRef.current = true;
       lastSentTextRef.current = text;
       setOptimisticUserText(text);
       // D-02 (typing supersedes): every currently-pending widget is

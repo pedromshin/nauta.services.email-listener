@@ -337,6 +337,24 @@ export function MessageTurn({
   const showStatusBadge =
     isAssistant && (status === "stopped" || status === "interrupted" || status === "cost_capped");
 
+  // SKELETON TERMINAL FALLBACK ("LOOK AT CHAT MINOR BUGS") — a `*_streaming`
+  // part renders SkeletonBars while it waits for the rest of its spec. If the
+  // LIVE stream dies (stopped / interrupted / cost_capped) BEFORE the finalized
+  // part ever lands, that skeleton would shimmer forever, because
+  // GenuiPartBoundary only reaches the SAFE_FALLBACK_SPEC gate once
+  // `isStreaming` is false. Only the genuine live-failure statuses count as
+  // terminal here — the SAME set the status badge uses above (`failed` never
+  // reaches the parts map; InlineErrorCard replaces the whole turn).
+  //   CRUCIALLY not "any non-streaming status": a PERSISTED turn that carries a
+  //   still-`*_streaming` part (D-01 async-resume) has a settled turn status
+  //   ("complete"/undefined) yet its part legitimately keeps streaming until
+  //   the finalized row lands via chat.getHistory — treating that as terminal
+  //   would prematurely swap in the fallback AND unlock the panel toolbar
+  //   mid-generation (transcript-panel-toolbar force-lock contract).
+  const isTurnStreamTerminal =
+    isAssistant &&
+    (status === "stopped" || status === "interrupted" || status === "cost_capped");
+
   return (
     // `.uturn` / `.aturn` — flex-column siblings, told apart by hierarchy,
     // not by a rail (see this component's header). `min-w-0` on the assistant
@@ -398,7 +416,9 @@ export function MessageTurn({
                   messageId={messageId}
                   partIndex={index}
                   specJson={part.partialJson}
-                  isStreaming={true}
+                  // Terminal stream => fall through to the finalized
+                  // SAFE_FALLBACK_SPEC gate instead of an eternal skeleton.
+                  isStreaming={!isTurnStreamTerminal}
                 />
               );
             }
@@ -438,10 +458,16 @@ export function MessageTurn({
               // for unparseable content) until the finalized part lands via
               // chat.getHistory (D-01 async-resume).
               return (
-                <GeneratingRing key={index} active className="rounded-lg">
+                <GeneratingRing
+                  key={index}
+                  active={!isTurnStreamTerminal}
+                  className="rounded-lg"
+                >
                   <GenuiPartBoundary
                     specJson={part.partialJson}
-                    isStreaming={true}
+                    // Terminal stream => finalized fallback, not eternal
+                    // skeleton (see isTurnStreamTerminal).
+                    isStreaming={!isTurnStreamTerminal}
                   />
                 </GeneratingRing>
               );

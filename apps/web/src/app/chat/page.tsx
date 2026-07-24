@@ -10,7 +10,6 @@ import { PanelLeft, PanelLeftClose } from "lucide-react";
 
 import { Button } from "@polytoken/ui/button";
 
-import { useIsMobileViewport } from "~/hooks/use-is-mobile-viewport";
 import { api } from "~/trpc/react";
 
 import { ChatHomeEmptyState } from "./_components/chat-home-empty-state";
@@ -116,16 +115,16 @@ function ConversationView({
   const [viewMode, setViewMode] = useState<ChatCanvasViewMode>(() =>
     readStoredViewMode(conversationId),
   );
-  // MOBL-01 (53-UI-SPEC.md "Breakpoint & Mount Contract" + Component
-  // Inventory §2) — below `md`, the effective mode is ALWAYS "chat"
-  // regardless of the persisted/stored `viewMode`: `readStoredViewMode` is
-  // still READ above (so returning to desktop restores the prior choice),
-  // it's just never allowed to drive the render while mobile-forced, and
-  // never overwritten (writeStoredViewMode only fires from the toggle's own
-  // onChange, which is unreachable below `md` since the toggle isn't
-  // rendered there at all — see below).
-  const isMobile = useIsMobileViewport();
-  const effectiveViewMode: ChatCanvasViewMode = isMobile ? "chat" : viewMode;
+  // MOBL / "I NEED CANVAS ON MOBILE" — the canvas mounts on EVERY viewport
+  // now. The old `isMobile ? "chat" : viewMode` coercion force-mounted chat
+  // below `md`, so the React Flow board (and every editing control that only
+  // exists on it) was unreachable on a phone. The route is sized
+  // `h-[calc(100svh-var(--app-tabbar-h))]`, so the board fills the mobile
+  // viewport; ChatCanvasIsland is `dynamic(ssr:false)` and mounts fine on
+  // phones. The persisted/stored `viewMode` now drives the render on all
+  // widths, and the toggle (below) is shown everywhere so the user can switch
+  // chat <-> canvas on mobile.
+  const effectiveViewMode: ChatCanvasViewMode = viewMode;
   // Canvas-only ambient save feedback (D-06, 23-UI-SPEC.md "toolbar right
   // zone") — reset to idle whenever the canvas isn't mounted, so switching
   // back to Chat never leaves a stale "Saved"/"retrying" label lingering.
@@ -141,13 +140,11 @@ function ConversationView({
           gone; see ChatHeaderRule. */}
       <ChatHeaderRule>
         {railToggle}
-        {!isMobile && (
-          <ChatCanvasViewToggle
-            conversationId={conversationId}
-            value={viewMode}
-            onChange={setViewMode}
-          />
-        )}
+        <ChatCanvasViewToggle
+          conversationId={conversationId}
+          value={viewMode}
+          onChange={setViewMode}
+        />
         <ModelPicker
           conversationId={conversationId}
           currentModelId={modelId}

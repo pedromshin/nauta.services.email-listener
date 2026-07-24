@@ -460,6 +460,24 @@
 }
 
 /* ══════════════════════════════════════════════════════════════════════
+   EMAIL BODY REGION HIGHLIGHT — the display-only tint the CSS Custom
+   Highlight API paints over a machine-inferred body region's own text
+   (body-region-highlights.ts). The body is flowing prose, so a region is
+   anchored to its `contentText`, NOT to a polygon box — this tints the live
+   text range in place, inserting no wrapper nodes and disturbing neither the
+   sanitized markup nor the text flow.
+
+   A body region is machine-inferred and unconfirmed → the SUGGESTED wash
+   (LAW 1: colour is earned; suggested === soft amber). `::highlight()`
+   accepts only a small property set — background-color is the safe, needed
+   one — and it reuses the same `--sugg-wash` token pmark-suggested carries,
+   so it is theme-aware for free (defined in :root and .dark below).
+   ══════════════════════════════════════════════════════════════════════ */
+::highlight(email-body-region) {
+  background-color: var(--sugg-wash);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
    ENTITY-TYPE SHAPE VOCABULARY -- LAW 3: entity type is shape, never hue
    (58-IDENTITY.md). Type surrendered its five hues so tier could own
    colour outright -- that is what makes law 1 possible. Drawn in

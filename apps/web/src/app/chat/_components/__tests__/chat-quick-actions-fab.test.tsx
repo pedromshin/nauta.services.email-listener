@@ -186,6 +186,35 @@ describe("ChatQuickActionsFab (task #18)", () => {
     ).not.toMatch(/\bshadow-/);
   });
 
+  it("Test 1b: positioning clears the composer dock when a conversation is open, sits at bottom-4 on the empty state", async () => {
+    // Empty state (no conversation → no composer) — bottom-4 is fine.
+    const empty = await mount(
+      <ChatQuickActionsFab
+        selectedConversation={null}
+        onNewChat={vi.fn()}
+        onOpenConversation={vi.fn()}
+      />,
+    );
+    const emptyWrapper = trigger(empty).parentElement!;
+    expect(emptyWrapper.className).toContain("bottom-4");
+    expect(emptyWrapper.className).not.toContain("bottom-24");
+
+    // Conversation open → a composer dock owns the column's bottom edge, so the
+    // FAB must lift clear of it ("CHAT BUTTONS ARE OVERLAPPING").
+    const open = await mount(
+      <ChatQuickActionsFab
+        selectedConversation={SELECTED}
+        onNewChat={vi.fn()}
+        onOpenConversation={vi.fn()}
+      />,
+    );
+    const openWrapper = trigger(open).parentElement!;
+    expect(
+      openWrapper.className,
+      "the FAB must clear the composer dock when a conversation is open",
+    ).toContain("bottom-24");
+  });
+
   it("Test 2a: all four actions render; conversation-scoped items are DISABLED with no conversation", async () => {
     const container = await mount(
       <ChatQuickActionsFab
