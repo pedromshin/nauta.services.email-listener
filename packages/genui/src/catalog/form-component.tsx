@@ -23,6 +23,7 @@ import {
   type FormValues,
 } from "../form/validate-form";
 import { ActionRegistryContext } from "../renderer/action-registry-context";
+import { safeInvokeAction } from "../renderer/safe-invoke-action";
 
 /** The onSubmit action descriptor (a validated ActionSchema value at the wire boundary). */
 export interface FormSubmitAction {
@@ -264,10 +265,15 @@ export function FormComponent({
       // ButtonComponent. Invisible to the wire schema: onSubmit's own shape is unchanged, this
       // is a runtime payload enrichment only.
       if (onSubmit) {
-        try {
-          registry[onSubmit.type]?.({ ...onSubmit, values });
-        } catch {
-          // best-effort — a failed handler must not break the form
+        const handler = registry[onSubmit.type];
+        if (handler !== undefined) {
+          // safeInvokeAction catches both a synchronous throw and a rejected-promise
+          // return (host submit handlers are frequently async) — a failed handler must
+          // never break the form, and the failure is logged server-side, not swallowed.
+          safeInvokeAction(
+            () => handler({ ...onSubmit, values }),
+            `form:${onSubmit.type}`,
+          );
         }
       }
       setSubmitted(true);

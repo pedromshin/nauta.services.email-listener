@@ -70,6 +70,8 @@ import { FormComponent } from "./form-component";
 // would pull in COMPONENT_REGISTRY and create a manifest <-> renderer import cycle. This is
 // the exact precedent form-component.tsx already uses (line 25).
 import { ActionRegistryContext } from "../renderer/action-registry-context";
+// Pure fail-soft invocation helper (no React, no registry import) — safe from manifest.
+import { safeInvokeAction } from "../renderer/safe-invoke-action";
 // Same standalone-module precedent as ActionRegistryContext above, for TabsComponent's nested
 // tab.content rendering — see render-child-context.ts for why this can't be renderNode directly.
 import { RenderChildContext } from "../renderer/render-child-context";
@@ -323,20 +325,24 @@ function ButtonComponent({
 
   // 23-06 Task 1 (STATE-01 trigger half): resolve clicks ONLY via a registry[key] lookup
   // against ActionRegistryContext — never eval/Function. Mirrors form-component.tsx's exact
-  // registry[action.type]?.(action) contract (line 235): registry keyed by action TYPE, handler
-  // receives the FULL action object. Empty catch — a throwing handler must not crash the button
-  // (T-23-14). `onClick` (the Phase-13 ActionSchema object) takes precedence over the legacy
-  // string `action` ActionRegistry key when both are present.
+  // registry[action.type]?.(action) contract: registry keyed by action TYPE, handler receives
+  // the FULL action object. A throwing OR async-rejecting handler must not crash the button —
+  // safeInvokeAction catches both a synchronous throw and a rejected-promise return (host
+  // handlers are frequently async), logs server-side, and no-ops to the user (T-23-14).
+  // `onClick` (the Phase-13 ActionSchema object) takes precedence over the legacy string
+  // `action` ActionRegistry key when both are present.
   const registry = React.useContext(ActionRegistryContext);
   const handleClick = React.useCallback((): void => {
-    try {
-      if (onClick !== undefined) {
-        registry[onClick.type]?.(onClick);
-      } else if (typeof action === "string" && action.length > 0) {
-        registry[action]?.();
+    if (onClick !== undefined) {
+      const handler = registry[onClick.type];
+      if (handler !== undefined) {
+        safeInvokeAction(() => handler(onClick), `button:${onClick.type}`);
       }
-    } catch {
-      // best-effort — a failed handler must not break the button (mirrors form-component.tsx)
+    } else if (typeof action === "string" && action.length > 0) {
+      const handler = registry[action];
+      if (handler !== undefined) {
+        safeInvokeAction(() => handler(), `button:${action}`);
+      }
     }
   }, [registry, onClick, action]);
 
