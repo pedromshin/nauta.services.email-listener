@@ -21,7 +21,7 @@
 import * as React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CircleDashed } from "lucide-react";
+import { LayoutDashboard } from "lucide-react";
 
 import { Treemap, type TreeNode } from "@polytoken/ui/treemap";
 import { Skeleton } from "@polytoken/ui/skeleton";
@@ -79,7 +79,7 @@ export function EmailCirclePackView(): React.ReactElement {
         </div>
       ) : query.isError ? (
         <div className="flex flex-col items-center gap-2 text-center">
-          <CircleDashed className="size-6 text-ink" aria-hidden />
+          <LayoutDashboard className="size-6 text-ink" aria-hidden />
           <p className="text-sm text-faded">Couldn&apos;t load your email landscape.</p>
           <button
             type="button"
@@ -122,7 +122,7 @@ export function EmailCirclePackView(): React.ReactElement {
         />
       ) : (
         <div className="flex max-w-sm flex-col items-center gap-2 text-center">
-          <CircleDashed className="size-6 text-faded" aria-hidden />
+          <LayoutDashboard className="size-6 text-faded" aria-hidden />
           <p className="text-sm font-semibold text-ink">No mail to map yet</p>
           <p className="text-sm text-faded">
             Forward mail to your polytoken address and your inbox will appear here

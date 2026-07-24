@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { LayoutList, CircleDashed } from "lucide-react";
+import { LayoutList, LayoutDashboard } from "lucide-react";
 
 import { api } from "~/trpc/react";
 
 import { EmailCirclePackView } from "./_components/email-circle-pack-view";
 import { InboxThreePane } from "./_components/inbox-three-pane";
 
-/** The inbox's view modes: the Gmail-style three-pane, or the TM-02 circle-pack
+/** The inbox's view modes: the Gmail-style three-pane, or the TM-02 treemap
  * "landscape". A fourth inbox view, switched by the bar below. */
 type InboxView = "list" | "landscape";
 
@@ -18,7 +18,7 @@ const VIEW_OPTIONS: ReadonlyArray<{
   Icon: typeof LayoutList;
 }> = [
   { value: "list", label: "List", Icon: LayoutList },
-  { value: "landscape", label: "Landscape", Icon: CircleDashed },
+  { value: "landscape", label: "Landscape", Icon: LayoutDashboard },
 ];
 
 function InboxViewSwitcher({

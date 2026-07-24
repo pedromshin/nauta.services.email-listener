@@ -31,7 +31,7 @@
 import * as React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, CircleDashed } from "lucide-react";
+import { AlertCircle, LayoutDashboard } from "lucide-react";
 
 import { Treemap, type TreeNode } from "@polytoken/ui/treemap";
 import { Skeleton } from "@polytoken/ui/skeleton";
@@ -173,7 +173,7 @@ export function DriveLandscapeView({
         />
       ) : (
         <div className="flex h-full flex-col items-center justify-center gap-1.5 px-1 text-center">
-          <CircleDashed className="size-5 shrink-0 text-faded" aria-hidden />
+          <LayoutDashboard className="size-5 shrink-0 text-faded" aria-hidden />
           <p className="text-xs text-faded">
             Nothing to map yet. Upload files and your drive appears here as a landscape.
           </p>

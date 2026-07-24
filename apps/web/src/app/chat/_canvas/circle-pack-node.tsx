@@ -29,7 +29,7 @@ import { memo, useCallback } from "react";
 import { Handle, Position, useReactFlow } from "@xyflow/react";
 import type { Node, NodeProps } from "@xyflow/react";
 import { useRouter } from "next/navigation";
-import { AlertCircle, CircleDashed, X } from "lucide-react";
+import { AlertCircle, LayoutDashboard, X } from "lucide-react";
 
 import { Treemap, type TreeNode } from "@polytoken/ui/treemap";
 import { Skeleton } from "@polytoken/ui/skeleton";
@@ -80,7 +80,7 @@ export const CirclePackNode = memo(function CirclePackNode({
       <Handle type="target" position={Position.Left} />
       <div className="node-drag-handle flex h-9 shrink-0 cursor-grab items-center justify-between gap-2 border-b border-hair px-3 active:cursor-grabbing">
         <span className="flex min-w-0 items-center gap-2">
-          <CircleDashed className="size-3 shrink-0 text-faded" aria-hidden />
+          <LayoutDashboard className="size-3 shrink-0 text-faded" aria-hidden />
           {/* polytoken's word for the view — chrome, sans (law 2). */}
           <span className="truncate text-xs font-semibold text-ink">{label}</span>
         </span>
@@ -231,7 +231,7 @@ function MailboxLandscapeBody({
   }
   return (
     <div className="flex h-full flex-col items-center justify-center gap-1.5 px-1 text-center">
-      <CircleDashed className="size-5 shrink-0 text-faded" aria-hidden />
+      <LayoutDashboard className="size-5 shrink-0 text-faded" aria-hidden />
       <p className="text-xs text-faded">
         No mail to map yet. Forward mail to your polytoken address and it will appear here as a
         landscape.
